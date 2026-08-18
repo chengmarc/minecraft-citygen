@@ -1,41 +1,38 @@
-"""Export real builds from the world into .schem pieces and buildings.json.
+"""Export real builds from the world into .schem pieces and buildings.json."""
 
-Each build is grouped by its wool X/Z boundary layer. Inside that boundary:
-  - each gold/diamond pair defines one extracted component cuboid
-  - emerald defines the build ground level
-
-Type 1 builds have one component. Type 2 builds have bottom/middle/top
-components, separated in the source world by air gaps and sorted by Y.
-Marker blocks and catalog signs are stripped from exported schematics.
-"""
+from __future__ import annotations
 
 import json
 import os
 import re
 import sys
 from collections import deque
+from functools import lru_cache
+from pathlib import Path
 
-HERE = os.path.dirname(os.path.abspath(__file__))
-ROOT = os.path.dirname(os.path.dirname(HERE))
-sys.path.insert(0, ROOT)  # shared modules live in the repo root
-from engine.anvil_world_reader import World
-from engine.schematic_writer import blockstate, write_sponge_schem_cells
+if __package__ in (None, ""):
+    sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+
 from config.config_path import BUILD_CATALOG, BUILDS_PROD_SCHEM
 from config.config_world import BUILD_MARKER_Y_RANGE, BUILD_TYPES, DATA_VERSION
+from engine.anvil_world_reader import World
+from engine.schematic_writer import blockstate, write_sponge_schem_cells
 
 CATALOG = BUILD_CATALOG
 MARKER_BLOCKS = {"gold_block", "diamond_block", "emerald_block"}
 
-w = World()
+
+@lru_cache(maxsize=1)
+def get_world():
+    return World()
 
 
 def block_base(x, y, z):
+    w = get_world()
     return w.block(x, y, z)[0].split(":")[1]
 
 
-# ---------------------------------------------------------------- wool boundaries
 def wool_boundary_components(x_a, x_b, z_a, z_b, y0, y1):
-    """Return X/Z bounding boxes for connected wool boundary layers."""
     xlo, xhi = min(x_a, x_b), max(x_a, x_b)
     zlo, zhi = min(z_a, z_b), max(z_a, z_b)
     occ = set()
@@ -66,7 +63,7 @@ def wool_boundary_components(x_a, x_b, z_a, z_b, y0, y1):
 
 def markers_in_bounds(xmn, xmx, zmn, zmx):
     found = {kind: [] for kind in MARKER_BLOCKS}
-    ylo, yhi = BUILD_MARKER_Y_RANGE
+    ylo, yhi = BUILD_MARKER_Y_RANGE.as_tuple()
     for x in range(xmn, xmx + 1):
         for z in range(zmn, zmx + 1):
             for y in range(ylo, yhi + 1):
@@ -83,10 +80,7 @@ def component_cuboids(golds, diamonds):
         raise ValueError(f"expected matching gold/diamond markers, got G={golds} D={diamonds}")
 
     cuboids = []
-    for gold, diamond in zip(
-        sorted(golds, key=lambda pos: pos[1]),
-        sorted(diamonds, key=lambda pos: pos[1]),
-    ):
+    for gold, diamond in zip(sorted(golds, key=lambda pos: pos[1]), sorted(diamonds, key=lambda pos: pos[1])):
         x0, x1 = sorted((gold[0], diamond[0]))
         y0, y1 = sorted((gold[1], diamond[1]))
         z0, z1 = sorted((gold[2], diamond[2]))
@@ -117,19 +111,11 @@ def detect_builds(build_type, x_a, x_b, z_a, z_b, y0, y1):
         footprint_z1 = max(bb[5] for bb in cuboids)
         width = footprint_x1 - footprint_x0 + 1
         depth = footprint_z1 - footprint_z0 + 1
-        builds.append((
-            build_type,
-            [footprint_x0, footprint_z0, y0],
-            [width, depth],
-            cuboids,
-            emeralds[0][1],
-            (xmn, xmx, zmn, zmx),
-        ))
+        builds.append((build_type, [footprint_x0, footprint_z0, y0], [width, depth], cuboids, emeralds[0][1], (xmn, xmx, zmn, zmx)))
 
     return builds, skipped
 
 
-# ---------------------------------------------------------------- signs
 def sign_text(be):
     parts = []
     for side in ("front_text", "back_text"):
@@ -157,13 +143,10 @@ def parse_range(text, labels):
 
 
 def catalog_signs(xmn, xmx, zmn, zmx):
+    w = get_world()
     stack_rng, appearance, strip = None, None, []
-    stack_labels = (
-        r"stack\s*:\s*",
-    )
-    rep_labels = (
-        r"appearance\s*:\s*",
-    )
+    stack_labels = (r"stack\s*:\s*",)
+    rep_labels = (r"appearance\s*:\s*",)
     for cx in range(xmn >> 4, (xmx >> 4) + 1):
         for cz in range(zmn >> 4, (zmx >> 4) + 1):
             chunk = w._load_chunk(cx, cz)
@@ -187,8 +170,8 @@ def catalog_signs(xmn, xmx, zmn, zmx):
     return stack_rng, appearance, set(strip)
 
 
-# ---------------------------------------------------------------- extraction
 def extract_cuboid(cuboid, strip_signs):
+    w = get_world()
     x0, x1, y0, y1, z0, z1 = cuboid
     cells = []
     for y in range(y0, y1 + 1):
@@ -216,47 +199,54 @@ def remove_existing_schems():
             os.remove(os.path.join(BUILDS_PROD_SCHEM, filename))
 
 
-def main():
+def run(*, logger=None, progress=None):
+    os.makedirs(BUILDS_PROD_SCHEM, exist_ok=True)
     remove_existing_schems()
 
     builds = []
-    for build_type, xa, xb, za, zb, y0, y1 in BUILD_TYPES:
+    for region in BUILD_TYPES:
+        build_type = region.build_type
+        xa, xb, za, zb, y0, y1 = region.bounds.as_tuple()
         detected, skipped = detect_builds(build_type, xa, xb, za, zb, y0, y1)
         builds.extend(detected)
-        print(f"type {build_type} region: {len(detected)} builds from wool boundaries")
+        if logger is not None:
+            logger(f"type {build_type} region: {len(detected)} builds from wool boundaries")
         for xmn, zmn, reason in skipped:
-            print(f"  !! boundary at x={xmn} z={zmn}: {reason} -- SKIPPED")
+            if logger is not None:
+                logger(f"  !! boundary at x={xmn} z={zmn}: {reason} -- SKIPPED")
 
     catalog = {}
+    total = len(builds)
     for i, (build_type, origin, size, cuboids, ground_y, boundary) in enumerate(builds):
         key = f"{i + 1:03d}"
         x0, x1, z0, z1 = boundary
         stack_rng, appearance, strip = catalog_signs(x0, x1, z0, z1)
 
         first_y0 = cuboids[0][2]
-        entry = {
-            "type": build_type,
-            "size": size,
-            "origin": origin,
-            "ground_offset": ground_y - first_y0,
-            "pieces": {},
-        }
+        entry = {"type": build_type, "size": size, "origin": origin, "ground_offset": ground_y - first_y0, "pieces": {}}
         if build_type == 1:
-            write_schem(extract_cuboid(cuboids[0], strip),
-                        os.path.join(BUILDS_PROD_SCHEM, f"{key}.schem"))
+            write_schem(extract_cuboid(cuboids[0], strip), os.path.join(BUILDS_PROD_SCHEM, f"{key}.schem"))
             entry["pieces"]["whole"] = cuboids[0][3] - cuboids[0][2] + 1
         else:
             entry["stack"] = stack_rng if stack_rng is not None else [1, 1]
             entry["appearance"] = appearance if appearance is not None else [1, 1]
             for name, cuboid in zip(("bottom", "middle", "top"), cuboids):
-                write_schem(extract_cuboid(cuboid, strip),
-                            os.path.join(BUILDS_PROD_SCHEM, f"{key}_{name}.schem"))
+                write_schem(extract_cuboid(cuboid, strip), os.path.join(BUILDS_PROD_SCHEM, f"{key}_{name}.schem"))
                 entry["pieces"][name] = cuboid[3] - cuboid[2] + 1
         catalog[key] = entry
-        print(f"extracted {key}", flush=True)
+        if logger is not None:
+            logger(f"extracted {key}")
+        if progress is not None:
+            progress(i + 1, total, key)
 
     json.dump(catalog, open(CATALOG, "w"), indent=2)
-    print(f"wrote {len(catalog)} builds to {CATALOG}")
+    if logger is not None:
+        logger(f"wrote {len(catalog)} builds to {CATALOG}")
+    return {"count": len(catalog), "catalog_path": CATALOG, "items": sorted(catalog)}
+
+
+def main():
+    run(logger=print)
 
 
 if __name__ == "__main__":

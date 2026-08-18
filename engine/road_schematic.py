@@ -76,11 +76,11 @@ def placements(net):
 
 
 def build(fine, seed):
-    R.set_size(fine)
-    net = R.gen_networks(seed)
+    size = R.make_size(fine)
+    net = R.gen_networks(seed, size=size)
     tiles = load_tiles()
     offsets = schem_offsets(tiles)
-    span = fine * BLOCKS_PER_FINE_CELL
+    span = size.span
     max_height = max(tile.H for tile in tiles.values())
     grid = np.zeros((max_height, span, span), dtype=np.int16)
     palette = {"minecraft:air": 0}

@@ -44,6 +44,22 @@ REPO_GLOBS = [
     os.path.join(CITY_PROD_SCHEM, "seed_*.schem"),
 ]
 
+LEGACY_REPO_GLOBS = [
+    os.path.join(ROOT, "pipeline", "01_roads_simulation", "*.png"),
+    os.path.join(ROOT, "pipeline", "01_roads_production", "*.png"),
+    os.path.join(ROOT, "pipeline", "01_roads_production", "schematics", "*.schem"),
+    os.path.join(ROOT, "pipeline", "02_builds_simulation", "*.png"),
+    os.path.join(ROOT, "pipeline", "02_builds_production", "*.png"),
+    os.path.join(ROOT, "pipeline", "02_builds_production", "schematics", "*.schem"),
+    os.path.join(ROOT, "pipeline", "02_builds_production", "schematics", "buildings.json"),
+    os.path.join(ROOT, "pipeline", "03_grid_simulation", "seed_*_preview.png"),
+    os.path.join(ROOT, "pipeline", "03_grid_production", "*_render.png"),
+    os.path.join(ROOT, "pipeline", "03_grid_production", "schematics", "seed_*.schem"),
+    os.path.join(ROOT, "pipeline", "04_city_simulation", "seed_*.png"),
+    os.path.join(ROOT, "pipeline", "04_city_production", "seed_*.png"),
+    os.path.join(ROOT, "pipeline", "04_city_production", "schematics", "seed_*.schem"),
+]
+
 EXTERNAL_GLOBS = [
     os.path.join(WORLDEDIT_SCHEM, "seed_*_city.schem"),
 ]
@@ -60,7 +76,7 @@ def purge_artifacts(verbose: bool = False) -> list[str]:
     removed: list[str] = []
     repo_root = os.path.normcase(str(REPO_ROOT))
 
-    for pattern in REPO_GLOBS:
+    for pattern in [*REPO_GLOBS, *LEGACY_REPO_GLOBS]:
         abs_pattern = os.path.abspath(pattern)
         pattern_dir = os.path.normcase(os.path.abspath(os.path.dirname(abs_pattern)))
         if not pattern_dir.startswith(repo_root):

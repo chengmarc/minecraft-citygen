@@ -111,4 +111,4 @@ def topdown(x0, x1, z0, z1, y0, y1, scale=8, out="mc_box.png"):
 
 
 if __name__ == "__main__":
-    topdown(*ROAD_BOX, scale=8)
+    topdown(*ROAD_BOX.as_tuple(), scale=8)

@@ -1,5 +1,7 @@
 """Shared production building schematic assembly."""
 
+from __future__ import annotations
+
 import json
 import os
 
@@ -9,9 +11,17 @@ from engine.schematic_reader import decode_schem_cells
 from engine.schematic_transform import Tile
 
 BUILDS = BUILDS_PROD_SCHEM
-META = json.load(open(BUILD_CATALOG))
+META = None
 
 _piece = {}
+
+
+def load_catalog_meta():
+    global META
+    if META is None:
+        with open(BUILD_CATALOG, encoding="utf-8") as fh:
+            META = json.load(fh)
+    return META
 
 
 def load_piece(path):
@@ -27,7 +37,7 @@ def piece(name):
 
 
 def assemble(key, n_mid, meta=None):
-    catalog = META if meta is None else meta
+    catalog = load_catalog_meta() if meta is None else meta
     if C.catalog_type(catalog[key]) == 1:
         width, height, length, cells = piece(key)
         return Tile(width, height, length, cells)

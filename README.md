@@ -7,7 +7,7 @@ It has two parallel pipelines:
 - **simulation**: fast top-down PNG previews for iteration and layout debugging
 - **production**: Sponge `.schem` output and isometric PNG renders for WorldEdit / Minecraft use
 
-The numbered folders now live under `pipeline/`. Each stage has a simulation side, a production side, or both.
+The pipeline is exposed as importable modules under `pipeline/`. Generated files live under `artifacts/`.
 
 ## What This Repo Does
 
@@ -25,22 +25,26 @@ High-level flow:
 Simulation flow:
 
 ```text
-pipeline/01_roads_simulation     draw tiny transparent road PNG tiles
-pipeline/02_builds_simulation    draw pseudo top-down building PNGs from the catalog
-pipeline/03_grid_simulation      compose those road PNGs into a top-down grid preview
-pipeline/04_city_simulation      compose road PNGs + building PNGs into a labeled city preview
+pipeline.01_roads_simulation   draw tiny transparent road PNG tiles
+pipeline.02_builds_simulation  draw pseudo top-down building PNGs from the catalog
+pipeline.03_grid_simulation    compose those road PNGs into a top-down grid preview
+pipeline.04_city_simulation    compose road PNGs + building PNGs into a labeled city preview
 ```
 
 Production flow:
 
 ```text
-pipeline/01_roads_production     extract road .schem tiles from the Minecraft world, then render them
-pipeline/02_builds_production    extract real building .schem pieces and the building catalog
-pipeline/03_grid_production      compose road .schem tiles into a generated grid .schem
-pipeline/04_city_production      compose the final city .schem, then render it
+pipeline.01_roads_extract     extract road .schem tiles from the Minecraft world
+pipeline.01_roads_render      render extracted road schematics as PNGs
+pipeline.02_builds_extract    extract real building .schem pieces and the building catalog
+pipeline.02_builds_render     render extracted building schematics as PNGs
+pipeline.03_grid_construct    compose road .schem tiles into a generated grid .schem
+pipeline.03_grid_render       render generated grid schematics as PNGs
+pipeline.04_city_construct    compose the final city .schem
+pipeline.04_city_render       render generated city schematics as PNGs
 ```
 
-`city-prod-construct` saves the generated city schematic in `pipeline/04_city_production/schematics/`
+`pipeline.04_city_construct` saves the generated city schematic in `artifacts/city/production/`
 and then copies it into the WorldEdit schematics folder configured by `WORLDEDIT_SCHEM`
 in `config/config_path.py` as `seed_<n>_city.schem`. The exported city schematic
 includes a player paste anchor: `//paste` places you standing on the top face of
@@ -63,12 +67,16 @@ engine/
 
 config/config_algo.py      generation and placement algorithm tuning
 config/config_path.py      central repo and artifact paths
+config/models.py           typed config/domain models shared across the pipeline
 config/config_render.py    preview/render colors, isometric scale, render fill blocks
 config/config_world.py     Minecraft save path, extraction regions, DataVersion
 clear_cache.py             clears generated artifacts and Python __pycache__ folders
 ```
 
-Generated assets currently live beside the scripts that produce them. For example, `pipeline/02_builds_simulation/*.png` are generated pseudo-building previews, and `pipeline/04_city_production/schematics/*.schem` are generated final city schematics. In production stages, `schematics/` is reserved for generated `.schem` and `.json` outputs.
+Generated assets live under `artifacts/`. For example, `artifacts/builds/simulation/*.png`
+contains pseudo-building previews, and `artifacts/city/production/*.schem`
+contains final city schematics. Production stage folders contain generated `.schem`,
+`.png`, and `.json` outputs directly.
 
 ## How To Run
 
@@ -80,37 +88,45 @@ GUI:
 pythonw application.pyw
 ```
 
-Launching `application.pyw` clears previously generated pipeline artifacts before opening the window.
+The GUI keeps existing outputs on startup. Use `Clear Artifacts` in the app when you want to delete generated files.
+
+The stage scripts themselves are numbered directly under `pipeline/`, for example:
+
+```bash
+python pipeline/01_roads_simulation.py
+python pipeline/03_grid_construct.py --seed 5
+python pipeline/04_city_render.py
+```
 
 Manual simulation commands:
 
 ```bash
-python pipeline/01_roads_simulation/draw_roads.py
-python pipeline/02_builds_simulation/draw_builds.py
-python pipeline/03_grid_simulation/draw_grid.py --seed 5
-python pipeline/04_city_simulation/draw_city.py --seed 5
+python -m pipeline.01_roads_simulation
+python -m pipeline.02_builds_simulation
+python -m pipeline.03_grid_simulation --seed 5
+python -m pipeline.04_city_simulation --seed 5
 ```
 
 Or run the full simulation preview pipeline manually:
 
 ```bash
-python pipeline/01_roads_simulation/draw_roads.py
-python pipeline/02_builds_simulation/draw_builds.py
-python pipeline/03_grid_simulation/draw_grid.py --seed 5
-python pipeline/04_city_simulation/draw_city.py --seed 5
+python -m pipeline.01_roads_simulation
+python -m pipeline.02_builds_simulation
+python -m pipeline.03_grid_simulation --seed 5
+python -m pipeline.04_city_simulation --seed 5
 ```
 
 Manual production commands:
 
 ```bash
-python pipeline/01_roads_production/extract_roads.py
-python pipeline/01_roads_production/render_roads.py
-python pipeline/02_builds_production/extract_builds.py
-python pipeline/02_builds_production/render_builds.py
-python pipeline/03_grid_production/construct_grid.py --seed 5
-python pipeline/03_grid_production/render_grid.py
-python pipeline/04_city_production/construct_city.py --seed 5
-python pipeline/04_city_production/render_city.py
+python -m pipeline.01_roads_extract
+python -m pipeline.01_roads_render
+python -m pipeline.02_builds_extract
+python -m pipeline.02_builds_render
+python -m pipeline.03_grid_construct --seed 5
+python -m pipeline.03_grid_render
+python -m pipeline.04_city_construct --seed 5
+python -m pipeline.04_city_render
 ```
 
 Clear generated artifacts and Python cache directories:
@@ -142,7 +158,7 @@ Important knobs:
 
 ### Change Road Simulation Art
 
-Edit `pipeline/01_roads_simulation/draw_roads.py`.
+Edit `pipeline/01_roads_simulation.py`.
 
 This controls the transparent top-down road PNG tiles used by simulation previews. Empty pixels are left transparent.
 
@@ -151,8 +167,8 @@ This controls the transparent top-down road PNG tiles used by simulation preview
 Edit road structures in the Minecraft source world, then run:
 
 ```bash
-python pipeline/01_roads_production/extract_roads.py
-python pipeline/01_roads_production/render_roads.py
+python -m pipeline.01_roads_extract
+python -m pipeline.01_roads_render
 ```
 
 The extraction region comes from `config/config_world.py`.
@@ -162,21 +178,21 @@ The extraction region comes from `config/config_world.py`.
 Edit the source-world buildings and markers, then run:
 
 ```bash
-python pipeline/02_builds_production/extract_builds.py
-python pipeline/02_builds_production/render_builds.py
+python -m pipeline.02_builds_extract
+python -m pipeline.02_builds_render
 ```
 
 The catalog is generated from wool-boundary build groups and gold/diamond
 component cuboids at:
 
 ```text
-pipeline/02_builds_production/schematics/buildings.json
+artifacts/builds/production/buildings.json
 ```
 
 Simulation buildings are generated from that catalog, not from the world:
 
 ```bash
-python pipeline/02_builds_simulation/draw_builds.py
+python -m pipeline.02_builds_simulation
 ```
 
 For type-2 buildings, a `stack: min-max` sign becomes

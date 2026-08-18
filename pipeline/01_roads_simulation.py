@@ -14,14 +14,17 @@ Roads run along the cell centerline so equal road types align when
 tiles are placed next to each other.
 """
 
+from __future__ import annotations
+
 import os
+import sys
+from pathlib import Path
+
 from PIL import Image, ImageDraw, ImageFont
 
-import sys
+if __package__ in (None, ""):
+    sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-HERE = os.path.dirname(os.path.abspath(__file__))
-ROOT = os.path.dirname(os.path.dirname(HERE))
-sys.path.insert(0, ROOT)  # shared modules live in the repo root
 from config.config_algo import CELL
 from config.config_path import ROADS_SIM
 
@@ -103,7 +106,6 @@ def make_tile(w, h, conns):
     d = ImageDraw.Draw(img)
     cx, cy = w // 2, h // 2
 
-    # road corridors from center to each connected edge
     for edge, size in conns.items():
         rw = WIDTH[size]
         x0, x1 = span(cx, rw)
@@ -117,13 +119,6 @@ def make_tile(w, h, conns):
         elif edge == "E":
             d.rectangle([cx, y0, w, y1], fill=ROAD)
 
-    # Junction fill: corridors only run edge->centre, so at a corner (two
-    # perpendicular edges) the inner elbow -- covered by neither corridor -- is
-    # left transparent. Fill the centre with a rectangle whose horizontal
-    # span comes from the vertical (N/S) roads and whose vertical span comes from
-    # the horizontal (E/W) roads. That stays inside both road bands, so unlike a
-    # single max-width square it never bleeds into an unconnected edge on short
-    # 1x2 tiles. Only fills when a turn actually exists (both spans non-zero).
     ns = [WIDTH[s] for e, s in conns.items() if e in ("N", "S")]
     ew = [WIDTH[s] for e, s in conns.items() if e in ("E", "W")]
     if ns and ew:
@@ -131,8 +126,6 @@ def make_tile(w, h, conns):
         y0, y1 = span(cy, max(ew))
         d.rectangle([x0, y0, x1, y1], fill=ROAD)
 
-    # Dead-ends are longer than a half-cell stub: extend the road toward the
-    # closed side, leaving a one-pixel non-connection gap at the tile edge.
     if len(conns) == 1:
         edge, size = next(iter(conns.items()))
         rw = WIDTH[size]
@@ -147,8 +140,6 @@ def make_tile(w, h, conns):
         elif edge == "W":
             d.rectangle([0, y0, w - DEADEND_PAD - 1, y1], fill=ROAD)
 
-    # Centerline markings, one per connection. At 9px/cell these are deliberately
-    # one-pixel marks so the assets stay readable when composed at full scale.
     for edge, size in conns.items():
         col = LINE[size]
         lw = LINE_W[size]
@@ -169,61 +160,54 @@ def make_tile(w, h, conns):
         elif edge == "E":
             dashed(d, (cx, cy), (w, cy), col, lw)
 
-    # Dead-end cap: a solid stripe across the closed end.
     if len(conns) == 1:
         edge, size = next(iter(conns.items()))
         rw = WIDTH[size]
         x0, x1 = span(cx, rw)
         y0, y1 = span(cy, rw)
         if edge == "S":
-            d.rectangle([x0, DEADEND_PAD, x1, DEADEND_PAD + DEADEND_EXT - 1],
-                        fill=(200, 200, 200))
+            d.rectangle([x0, DEADEND_PAD, x1, DEADEND_PAD + DEADEND_EXT - 1], fill=(200, 200, 200))
         elif edge == "N":
-            d.rectangle([x0, h - DEADEND_PAD - DEADEND_EXT, x1, h - DEADEND_PAD - 1],
-                        fill=(200, 200, 200))
+            d.rectangle([x0, h - DEADEND_PAD - DEADEND_EXT, x1, h - DEADEND_PAD - 1], fill=(200, 200, 200))
         elif edge == "E":
-            d.rectangle([DEADEND_PAD, y0, DEADEND_PAD + DEADEND_EXT - 1, y1],
-                        fill=(200, 200, 200))
+            d.rectangle([DEADEND_PAD, y0, DEADEND_PAD + DEADEND_EXT - 1, y1], fill=(200, 200, 200))
         elif edge == "W":
-            d.rectangle([w - DEADEND_PAD - DEADEND_EXT, y0, w - DEADEND_PAD - 1, y1],
-                        fill=(200, 200, 200))
+            d.rectangle([w - DEADEND_PAD - DEADEND_EXT, y0, w - DEADEND_PAD - 1, y1], fill=(200, 200, 200))
     return img
 
 
-# name -> (w, h, connections)
-# Type token is the glyph the base tile resembles: I straight, L corner, T tee,
-# X cross. The T base is oriented as the letter (stem S, bar E-W).
 TILES = {
-    # 2x2 big road
-    "01_big_2x2_deadend":         (CELL * 2, CELL * 2, {"S": "b"}),
-    "02_big_2x2_I":               (CELL * 2, CELL * 2, {"N": "b", "S": "b"}),
-    "03_big_2x2_L":               (CELL * 2, CELL * 2, {"N": "b", "E": "b"}),
-    "04_big_2x2_T":               (CELL * 2, CELL * 2, {"S": "b", "E": "b", "W": "b"}),
-    "05_big_2x2_X":               (CELL * 2, CELL * 2, {"N": "b", "S": "b", "E": "b", "W": "b"}),
-    # 1x1 small road
-    "06_small_1x1_deadend":       (CELL, CELL,     {"S": "s"}),
-    "07_small_1x1_I":             (CELL, CELL,     {"N": "s", "S": "s"}),
-    "08_small_1x1_L":             (CELL, CELL,     {"N": "s", "E": "s"}),
-    "09_small_1x1_T":             (CELL, CELL,     {"S": "s", "E": "s", "W": "s"}),
-    "10_small_1x1_X":             (CELL, CELL,     {"N": "s", "S": "s", "E": "s", "W": "s"}),
-    # big/small mix -- 1x2: 2 cells across the big road's width, 1 cell the other way
-    "11_mix_1x2_L":               (CELL * 2, CELL,     {"N": "b", "E": "s"}),
-    "12_mix_1x2_T_small_main":    (CELL * 2, CELL,     {"S": "b", "E": "s", "W": "s"}),
-    "13_mix_1x2_T_big_main":      (CELL,     CELL * 2, {"S": "s", "E": "b", "W": "b"}),
-    "14_mix_1x2_X":               (CELL * 2, CELL,     {"N": "b", "S": "b", "E": "s", "W": "s"}),
+    "01_big_2x2_deadend": (CELL * 2, CELL * 2, {"S": "b"}),
+    "02_big_2x2_I": (CELL * 2, CELL * 2, {"N": "b", "S": "b"}),
+    "03_big_2x2_L": (CELL * 2, CELL * 2, {"N": "b", "E": "b"}),
+    "04_big_2x2_T": (CELL * 2, CELL * 2, {"S": "b", "E": "b", "W": "b"}),
+    "05_big_2x2_X": (CELL * 2, CELL * 2, {"N": "b", "S": "b", "E": "b", "W": "b"}),
+    "06_small_1x1_deadend": (CELL, CELL, {"S": "s"}),
+    "07_small_1x1_I": (CELL, CELL, {"N": "s", "S": "s"}),
+    "08_small_1x1_L": (CELL, CELL, {"N": "s", "E": "s"}),
+    "09_small_1x1_T": (CELL, CELL, {"S": "s", "E": "s", "W": "s"}),
+    "10_small_1x1_X": (CELL, CELL, {"N": "s", "S": "s", "E": "s", "W": "s"}),
+    "11_mix_1x2_L": (CELL * 2, CELL, {"N": "b", "E": "s"}),
+    "12_mix_1x2_T_small_main": (CELL * 2, CELL, {"S": "b", "E": "s", "W": "s"}),
+    "13_mix_1x2_T_big_main": (CELL, CELL * 2, {"S": "s", "E": "b", "W": "b"}),
+    "14_mix_1x2_X": (CELL * 2, CELL, {"N": "b", "S": "b", "E": "s", "W": "s"}),
 }
 
 
-def main():
+def run(*, logger=None, progress=None):
     os.makedirs(OUT, exist_ok=True)
     imgs = {}
-    for name, (w, h, conns) in TILES.items():
+    total = len(TILES)
+    for index, (name, (w, h, conns)) in enumerate(TILES.items(), start=1):
         img = make_tile(w, h, conns)
-        img.save(os.path.join(OUT, name + ".png"))
+        path = os.path.join(OUT, name + ".png")
+        img.save(path)
         imgs[name] = img
-        print("saved", name + ".png", f"({w}x{h})")
+        if logger is not None:
+            logger("saved", name + ".png", f"({w}x{h})")
+        if progress is not None:
+            progress(index, total, name)
 
-    # Contact sheet: enlarge tiny 9px/cell assets for human inspection.
     cols = 5
     zoom = 8
     pad = 12
@@ -244,8 +228,15 @@ def main():
         sd.text((x, y), name, fill=(230, 230, 230), font=font)
         preview = img.resize((img.width * zoom, img.height * zoom), Image.Resampling.NEAREST)
         sheet.alpha_composite(preview, (x, y + label_h))
-    sheet.save(os.path.join(OUT, "_contact_sheet.png"))
-    print("saved _contact_sheet.png")
+    contact_sheet = os.path.join(OUT, "_contact_sheet.png")
+    sheet.save(contact_sheet)
+    if logger is not None:
+        logger("saved _contact_sheet.png")
+    return {"count": total, "contact_sheet": contact_sheet}
+
+
+def main():
+    run(logger=print)
 
 
 if __name__ == "__main__":

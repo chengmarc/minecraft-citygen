@@ -2,9 +2,9 @@
 Road grid library -- shared helper for the grid pipelines.
 
 Holds network generation, the tile catalogue, and 2D vector compositing used by
-03_grid_simulation/draw_grid.py (sim) and 03_grid_production/construct_grid.py
-(prod). Not a driver itself -- import it, optionally call set_size(), then call
-gen_networks()/compose().
+`pipeline.03_grid_simulation` (sim) and `pipeline.03_grid_construct` (prod).
+Not a driver itself; import it, optionally call `set_size()`, then call
+`gen_networks()` / `compose()`.
 
 Overlay model (big 2x2, small 1x1, mixed 1x2). Two independent Manhattan
 networks are generated, then composited:
@@ -37,14 +37,9 @@ from dataclasses import dataclass
 
 from PIL import Image
 
-from config.config_algo import (CELL, FINE, GAP_MIXED, GAP_BIG, GAP_SMALL, PAD_BIG, PAD_SMALL,
+from config.config_algo import (CELL, FINE as DEFAULT_FINE, GAP_MIXED, GAP_BIG, GAP_SMALL, PAD_BIG, PAD_SMALL,
                                 N_BIG_CORNERS, N_SMALL_CORNERS, N_BIG_TEES, N_SMALL_TEES)
 from config.config_path import ROADS_SIM
-
-# FINE/COARSE/SPAN are the live grid size. CELL/GAP_*/N_*_CORNERS are fixed
-# tuning constants.
-COARSE = FINE // 2    # coarse (big) grid
-SPAN = FINE * CELL    # canvas edge, px
 
 ASSET_DIR = ROADS_SIM   # sim pipeline: vector tiles
 
@@ -63,15 +58,26 @@ class Placement:
     ports: frozenset
 
 
-def set_size(fine, *, even=False):
-    """Set the live grid size and derived dimensions in one place."""
-    global FINE, COARSE, SPAN
-    FINE = int(fine)
+@dataclass(frozen=True)
+class NetworkSize:
+    fine: int
+    coarse: int
+    span: int
+
+
+def make_size(fine, *, even=False):
+    fine = int(fine)
     if even:
-        FINE -= FINE % 2
-    COARSE = FINE // 2
-    SPAN = FINE * CELL
-    return FINE
+        fine -= fine % 2
+    return NetworkSize(fine=fine, coarse=fine // 2, span=fine * CELL)
+
+
+DEFAULT_SIZE = make_size(DEFAULT_FINE)
+
+
+def set_size(fine, *, even=False):
+    """Compatibility wrapper for callers migrating to `make_size()`."""
+    return make_size(fine, even=even)
 
 
 # ---------------------------------------------------------------- tile catalogue
@@ -153,9 +159,13 @@ def choose_tile(catalogue, target):
 
 
 # ---------------------------------------------------------------- generation
-def _generate_avenues(rng, lo=2, hi=None, step=GAP_BIG):
+def _net_size(net, size=None):
+    return net["size"] if size is None else size
+
+
+def _generate_avenues(rng, size, lo=2, hi=None, step=GAP_BIG):
     """Big avenues on the coarse grid, evenly spaced with a little jitter."""
-    hi = COARSE - 2 if hi is None else hi
+    hi = size.coarse - 2 if hi is None else hi
     base = sorted({min(hi, max(lo, a + rng.randint(-1, 1)))
                    for a in range(lo, hi + 1, step)})
     out = []
@@ -215,12 +225,12 @@ def _gap_to(v, a, b):
     return 0 if a <= v <= b else (a - v if v < a else v - b)
 
 
-def _generate_streets(band_iv, lo=2, hi=None):
+def _generate_streets(band_iv, size, lo=2, hi=None):
     """Small streets that keep clear of big bands and each other."""
-    hi = FINE - 2 if hi is None else hi
+    hi = size.fine - 2 if hi is None else hi
     kept = []
     for v in range(lo, hi + 1):
-        if v // 2 in (0, COARSE - 1):
+        if v // 2 in (0, size.coarse - 1):
             continue
         if any(_gap_to(v, a, b) < GAP_MIXED for a, b in band_iv):
             continue
@@ -230,64 +240,59 @@ def _generate_streets(band_iv, lo=2, hi=None):
     return kept
 
 
-def _generate_big_network(rng):
+def _generate_big_network(rng, size):
     # E-W avenues are padded vertically by choosing row positions away from
     # top/bottom. N-S avenues are padded horizontally by choosing column
     # positions away from left/right.
-    big_rows = _generate_avenues(
-        rng, lo=PAD_BIG, hi=COARSE - 1 - PAD_BIG)
-    big_cols = _generate_avenues(
-        rng, lo=PAD_BIG, hi=COARSE - 1 - PAD_BIG)
-    big_rows_ext = {r: (0, COARSE - 1) for r in big_rows}
-    big_cols_ext = {c: (0, COARSE - 1) for c in big_cols}
+    big_rows = _generate_avenues(rng, size, lo=PAD_BIG, hi=size.coarse - 1 - PAD_BIG)
+    big_cols = _generate_avenues(rng, size, lo=PAD_BIG, hi=size.coarse - 1 - PAD_BIG)
+    big_rows_ext = {r: (0, size.coarse - 1) for r in big_rows}
+    big_cols_ext = {c: (0, size.coarse - 1) for c in big_cols}
 
-    _make_corners(rng, big_rows, big_cols, big_rows_ext, big_cols_ext,
-                  COARSE, N_BIG_CORNERS)
+    _make_corners(rng, big_rows, big_cols, big_rows_ext, big_cols_ext, size.coarse, N_BIG_CORNERS)
     _make_tees(rng, [(big_rows_ext, big_rows, big_cols_ext, ()),
                      (big_cols_ext, big_cols, big_rows_ext, ())],
-               COARSE, N_BIG_TEES)
+               size.coarse, N_BIG_TEES)
     return big_rows, big_cols, big_rows_ext, big_cols_ext
 
 
-def _generate_small_network(rng, big_rows, big_cols):
+def _generate_small_network(rng, size, big_rows, big_cols):
     band_row_iv = [(2 * r, 2 * r + 1) for r in big_rows]
     band_col_iv = [(2 * c, 2 * c + 1) for c in big_cols]
     # E-W streets are padded vertically by choosing row positions away from
     # top/bottom. N-S streets are padded horizontally by choosing column
     # positions away from left/right.
-    small_rows = _generate_streets(
-        band_row_iv, lo=PAD_SMALL, hi=FINE - 1 - PAD_SMALL)
-    small_cols = _generate_streets(
-        band_col_iv, lo=PAD_SMALL, hi=FINE - 1 - PAD_SMALL)
+    small_rows = _generate_streets(band_row_iv, size, lo=PAD_SMALL, hi=size.fine - 1 - PAD_SMALL)
+    small_cols = _generate_streets(band_col_iv, size, lo=PAD_SMALL, hi=size.fine - 1 - PAD_SMALL)
 
     # Small-street ends snap to a big corridor edge (mixed T) or a
     # perpendicular small street (small T).
     col_edges = sorted({2 * c - 1 for c in big_cols} | {2 * c + 2 for c in big_cols})
     row_edges = sorted({2 * r - 1 for r in big_rows} | {2 * r + 2 for r in big_rows})
-    small_rows_ext = {r: (0, FINE - 1) for r in small_rows}
-    small_cols_ext = {c: (0, FINE - 1) for c in small_cols}
+    small_rows_ext = {r: (0, size.fine - 1) for r in small_rows}
+    small_cols_ext = {c: (0, size.fine - 1) for c in small_cols}
 
-    _make_corners(rng, small_rows, small_cols, small_rows_ext, small_cols_ext,
-                  FINE, N_SMALL_CORNERS)
+    _make_corners(rng, small_rows, small_cols, small_rows_ext, small_cols_ext, size.fine, N_SMALL_CORNERS)
     _make_tees(rng, [(small_rows_ext, small_rows, small_cols_ext, col_edges),
                      (small_cols_ext, small_cols, small_rows_ext, row_edges)],
-               FINE, N_SMALL_TEES)
+               size.fine, N_SMALL_TEES)
     return small_rows, small_cols, small_rows_ext, small_cols_ext
 
 
-def gen_networks(seed):
+def gen_networks(seed, size=None):
+    size = DEFAULT_SIZE if size is None else size
     rng = random.Random(seed)
-    big_rows, big_cols, big_rows_ext, big_cols_ext = _generate_big_network(rng)
-    small_rows, small_cols, small_rows_ext, small_cols_ext = _generate_small_network(
-        rng, big_rows, big_cols)
+    big_rows, big_cols, big_rows_ext, big_cols_ext = _generate_big_network(rng, size)
+    small_rows, small_cols, small_rows_ext, small_cols_ext = _generate_small_network(rng, size, big_rows, big_cols)
 
     net = {
+        "size": size,
         "big_rows": set(big_rows), "big_cols": set(big_cols),
         "big_rows_ext": big_rows_ext, "big_cols_ext": big_cols_ext,
         "small_rows": set(small_rows), "small_cols": set(small_cols),
         "small_rows_ext": small_rows_ext, "small_cols_ext": small_cols_ext,
     }
-    _cache_road_cells(net)
+    _cache_road_cells(net, size)
     return net
 
 
@@ -296,26 +301,29 @@ def _on_lines(x, y, rows, cols, row_ext, col_ext):
             (x in cols and col_ext[x][0] <= y <= col_ext[x][1]))
 
 
-def _raw_big_node(net, cx, cy):
-    return (0 <= cx < COARSE and 0 <= cy < COARSE and
+def _raw_big_node(net, cx, cy, size=None):
+    size = _net_size(net, size)
+    return (0 <= cx < size.coarse and 0 <= cy < size.coarse and
             _on_lines(cx, cy, net["big_rows"], net["big_cols"],
                       net["big_rows_ext"], net["big_cols_ext"]))
 
 
-def _raw_small_node(net, fx, fy):
-    return (0 <= fx < FINE and 0 <= fy < FINE and
+def _raw_small_node(net, fx, fy, size=None):
+    size = _net_size(net, size)
+    return (0 <= fx < size.fine and 0 <= fy < size.fine and
             _on_lines(fx, fy, net["small_rows"], net["small_cols"],
                       net["small_rows_ext"], net["small_cols_ext"]))
 
 
-def _cache_road_cells(net):
-    big_cells = {(cx, cy) for cy in range(COARSE) for cx in range(COARSE)
-                 if _raw_big_node(net, cx, cy)}
+def _cache_road_cells(net, size=None):
+    size = _net_size(net, size)
+    big_cells = {(cx, cy) for cy in range(size.coarse) for cx in range(size.coarse)
+                 if _raw_big_node(net, cx, cy, size)}
     big_fine_cells = {(2 * cx + dx, 2 * cy + dy)
                       for cx, cy in big_cells
                       for dx in (0, 1) for dy in (0, 1)}
-    small_cells = {(fx, fy) for fy in range(FINE) for fx in range(FINE)
-                   if _raw_small_node(net, fx, fy)}
+    small_cells = {(fx, fy) for fy in range(size.fine) for fx in range(size.fine)
+                   if _raw_small_node(net, fx, fy, size)}
     net["big_cells"] = big_cells
     net["big_fine_cells"] = big_fine_cells
     net["small_cells"] = small_cells
@@ -384,17 +392,18 @@ def _mixed_ports(net, block, arms):
 
 def iter_placements(net, layers=("big", "mixed", "small")):
     """Yield tile placements for renderers, in the requested layer order."""
+    size = net["size"]
     for layer in layers:
         if layer == "big":
-            for cy in range(COARSE):
-                for cx in range(COARSE):
+            for cy in range(size.coarse):
+                for cx in range(size.coarse):
                     if big_node(net, cx, cy):
                         p = _placement("big", big_ports(net, cx, cy), cx * 2, cy * 2)
                         if p is not None:
                             yield p
         elif layer == "small":
-            for fy in range(FINE):
-                for fx in range(FINE):
+            for fy in range(size.fine):
+                for fx in range(size.fine):
                     if small_node(net, fx, fy) and not big_fine(net, fx, fy):
                         p = _placement("small", small_ports(net, fx, fy), fx, fy)
                         if p is not None:
@@ -422,7 +431,8 @@ def iter_placements(net, layers=("big", "mixed", "small")):
 
 # ---------------------------------------------------------------- render
 def compose(net, assets):
-    canvas = Image.new("RGBA", (SPAN, SPAN))
+    size = net["size"]
+    canvas = Image.new("RGBA", (size.span, size.span))
     for placement in iter_placements(net):
         img = rot_img(assets[placement.tile_name], placement.rotation)
         canvas.alpha_composite(img, (placement.fx * CELL, placement.fy * CELL))
