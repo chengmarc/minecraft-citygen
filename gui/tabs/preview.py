@@ -30,7 +30,7 @@ class PreviewTab(WeightedProgressMixin, ttk.Frame):
         self.city_viewer = ImageViewer(top, "City Preview", initial_message="Click Preview to generate the city preview image.")
         self.city_viewer.grid(row=0, column=1, sticky="nsew", padx=(4, 0))
 
-        self.config_frame = ttk.LabelFrame(self, text="Preview Config", padding=8, style="Card.TLabelframe")
+        self.config_frame = ttk.LabelFrame(self, text="⬤ Preview Config", padding=8, style="Card.TLabelframe")
         self.config_frame.grid(row=1, column=0, sticky="ew", pady=(8, 0))
         self.seed_var = tk.StringVar(value=str(DEFAULT_SEED))
         self.config_vars = common.create_config_vars()
@@ -48,7 +48,7 @@ class PreviewTab(WeightedProgressMixin, ttk.Frame):
         self.columnconfigure(0, weight=1)
 
     def set_status(self, status):
-        self.config_frame.configure(text=f"Preview Config - {status}")
+        self.config_frame.configure(text=f"⬤ Preview Config - {status}")
 
     def _run_preview(self):
         seed = self.seed_var.get().strip()

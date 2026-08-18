@@ -23,7 +23,7 @@ class CityTab(WeightedProgressMixin, ttk.Frame):
         self.city_viewer = ImageViewer(self, "City Schematic Render", initial_message="Click Render to construct and render the city schematic.")
         self.city_viewer.grid(row=0, column=0, sticky="nsew")
 
-        self.config_frame = ttk.LabelFrame(self, text="Render Config", padding=8, style="Card.TLabelframe")
+        self.config_frame = ttk.LabelFrame(self, text="⬤ Render Config", padding=8, style="Card.TLabelframe")
         self.config_frame.grid(row=1, column=0, sticky="ew", pady=(8, 0))
         self.seed_var = tk.StringVar(value=str(DEFAULT_SEED))
         self.config_vars = common.create_config_vars()
@@ -34,7 +34,7 @@ class CityTab(WeightedProgressMixin, ttk.Frame):
             "Render",
             self._run_render,
             "city_config",
-            extra_actions=[("Output Folder", self._open_output_folder)],
+            extra_actions=[("Output", self._open_output_folder)],
         )
         self._build_progress_bar(2)
 
@@ -42,7 +42,7 @@ class CityTab(WeightedProgressMixin, ttk.Frame):
         self.columnconfigure(0, weight=1)
 
     def set_status(self, status):
-        self.config_frame.configure(text=f"Render Config - {status}")
+        self.config_frame.configure(text=f"⬤ Render Config - {status}")
 
     def _open_output_folder(self):
         if not os.path.isdir(CITY_PROD_SCHEM):

@@ -4,13 +4,11 @@ from __future__ import annotations
 
 import traceback
 import tkinter as tk
-from tkinter import messagebox, ttk
+from tkinter import ttk
 
-from clear_cache import purge_artifacts
 from gui import common
 from gui.theme import configure_app_style
 from gui.tabs import CityTab, ExtractionTab, PreviewTab
-from gui.widgets import ActionButton
 
 
 class CityGeneratorApp(tk.Tk):
@@ -27,20 +25,10 @@ class CityGeneratorApp(tk.Tk):
         shell = ttk.Frame(self, style="Page.TFrame", padding=10)
         shell.pack(fill="both", expand=True)
         shell.columnconfigure(0, weight=1)
-        shell.rowconfigure(1, weight=1)
-
-        toolbar = ttk.Frame(shell, style="Page.TFrame")
-        toolbar.grid(row=0, column=0, sticky="ew", pady=(0, 8))
-        toolbar.columnconfigure(0, weight=1)
-        ActionButton(
-            toolbar,
-            text="Clear Artifacts",
-            command=self._clear_artifacts,
-            width=max(common.BUTTON_WIDTH + 4, 15),
-        ).grid(row=0, column=1, sticky="e")
+        shell.rowconfigure(0, weight=1)
 
         notebook = ttk.Notebook(shell, style="App.TNotebook")
-        notebook.grid(row=1, column=0, sticky="nsew")
+        notebook.grid(row=0, column=0, sticky="nsew")
         self.notebook = notebook
         self._tab_builders = {
             "Extraction": ExtractionTab,
@@ -73,20 +61,6 @@ class CityGeneratorApp(tk.Tk):
 
     def _on_tab_changed(self, _event=None):
         self._load_tab(self._tab_title(self.notebook.select()))
-
-    def _clear_artifacts(self):
-        confirm = messagebox.askyesno(
-            "Clear artifacts",
-            "Delete generated pipeline artifacts in this repo and exported city schematics in the WorldEdit folder?",
-        )
-        if not confirm:
-            return
-        try:
-            removed = purge_artifacts()
-        except Exception as exc:
-            messagebox.showerror("Clear artifacts failed", str(exc))
-            return
-        messagebox.showinfo("Artifacts cleared", f"Removed {len(removed)} artifact(s).")
 
 
 def main():

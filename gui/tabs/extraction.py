@@ -43,7 +43,7 @@ class ExtractionTab(ttk.Frame):
         self.build_viewer.image_path = common.BUILD_CONTACT_SHEET
         self.build_viewer.grid(row=0, column=1, sticky="nsew", padx=(4, 0))
 
-        self.config_frame = ttk.LabelFrame(self, text="Extraction Config", padding=8, style="Card.TLabelframe")
+        self.config_frame = ttk.LabelFrame(self, text="⬤ Extraction Config", padding=8, style="Card.TLabelframe")
         self.config_frame.grid(row=1, column=0, sticky="ew", pady=(8, 0))
         self.config_frame.columnconfigure(1, weight=1)
 
@@ -76,7 +76,7 @@ class ExtractionTab(ttk.Frame):
         self.rowconfigure(0, weight=1)
 
     def set_status(self, status):
-        self.config_frame.configure(text=f"Extraction Config - {status}")
+        self.config_frame.configure(text=f"⬤ Extraction Config - {status}")
 
     def _run_extract(self, kind, config, viewer, area_env_key):
         env = {"MC_CITY_SAVE": self.world_var.get().strip()}
