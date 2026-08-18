@@ -27,6 +27,7 @@ def run(*, seed=DEFAULT_SEED, fine=DEFAULT_FINE, preview=0, logger=None):
     if preview:
         grid = grid.resize((preview, preview), Image.Resampling.NEAREST)
     out = os.path.join(GRID_SIM, f"seed_{seed}_preview.png")
+    os.makedirs(GRID_SIM, exist_ok=True)
     grid.save(out)
     if logger is not None:
         logger("saved", out, grid.size)

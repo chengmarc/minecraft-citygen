@@ -24,6 +24,13 @@ def _stage_module(name):
     return importlib.import_module(name)
 
 
+def _coerce_int(value, name):
+    try:
+        return int(value)
+    except (TypeError, ValueError) as exc:
+        raise ValueError(f"{name} must be an integer.") from exc
+
+
 def call_with_env(fn, *, env_overrides=None, **kwargs):
     with configured_environment(env_overrides):
         return fn(**kwargs)
@@ -38,15 +45,33 @@ def run_builds_simulation_stage(*, env_overrides=None, logger=None):
 
 
 def run_grid_simulation_stage(seed, fine, *, env_overrides=None, logger=None):
-    return call_with_env(_stage_module(GRID_SIMULATION).run, env_overrides=env_overrides, seed=seed, fine=fine, logger=logger)
+    return call_with_env(
+        _stage_module(GRID_SIMULATION).run,
+        env_overrides=env_overrides,
+        seed=_coerce_int(seed, "Seed"),
+        fine=_coerce_int(fine, "Fine"),
+        logger=logger,
+    )
 
 
 def run_city_simulation_stage(seed, fine, *, env_overrides=None, logger=None):
-    return call_with_env(_stage_module(CITY_SIMULATION).run, env_overrides=env_overrides, seed=seed, fine=fine, logger=logger)
+    return call_with_env(
+        _stage_module(CITY_SIMULATION).run,
+        env_overrides=env_overrides,
+        seed=_coerce_int(seed, "Seed"),
+        fine=_coerce_int(fine, "Fine"),
+        logger=logger,
+    )
 
 
 def run_city_construct_stage(seed, fine, *, env_overrides=None, logger=None):
-    return call_with_env(_stage_module(CITY_CONSTRUCT).run, env_overrides=env_overrides, seed=seed, fine=fine, logger=logger)
+    return call_with_env(
+        _stage_module(CITY_CONSTRUCT).run,
+        env_overrides=env_overrides,
+        seed=_coerce_int(seed, "Seed"),
+        fine=_coerce_int(fine, "Fine"),
+        logger=logger,
+    )
 
 
 def run_city_render_stage(*, env_overrides=None, logger=None):

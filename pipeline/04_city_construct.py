@@ -158,10 +158,24 @@ def run(*, seed=DEFAULT_SEED, fine=None, out=None, no_ground_fill=False, logger=
     write_sponge_schem_grid(grid, master, out, RG.DATA_VERSION, offset=(0, -(city_ground_y + 1), 0))
     if logger is not None:
         logger("saved", out)
-    copied = copy_city_to_worldedit(out, seed)
-    if logger is not None:
-        logger("copied", copied)
-    return {"output_path": out, "copied_path": copied, "building_count": len(inst), "summary": summary}
+    copied = None
+    copy_error = None
+    try:
+        copied = copy_city_to_worldedit(out, seed)
+    except OSError as exc:
+        copy_error = str(exc)
+        if logger is not None:
+            logger("warning: could not copy to WorldEdit schematics folder:", copy_error)
+    else:
+        if logger is not None:
+            logger("copied", copied)
+    return {
+        "output_path": out,
+        "copied_path": copied,
+        "copy_error": copy_error,
+        "building_count": len(inst),
+        "summary": summary,
+    }
 
 
 def main():

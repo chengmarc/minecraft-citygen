@@ -99,6 +99,7 @@ def render(net, placements, out, preview):
 
 def run(*, seed=DEFAULT_SEED, fine=DEFAULT_FINE, preview=0, out=None, logger=None):
     out = out or os.path.join(CITY_SIM, f"seed_{seed}.png")
+    os.makedirs(os.path.dirname(out), exist_ok=True)
 
     size = R.make_size(fine, even=True)
     net = R.gen_networks(seed, size=size)
