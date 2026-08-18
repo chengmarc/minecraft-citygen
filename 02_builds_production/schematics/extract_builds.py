@@ -255,6 +255,7 @@ def main():
                             os.path.join(BUILDS_PROD_SCHEM, f"{key}_{name}.schem"))
                 entry["pieces"][name] = cuboid[3] - cuboid[2] + 1
         catalog[key] = entry
+        print(f"extracted {key}", flush=True)
 
     json.dump(catalog, open(CATALOG, "w"), indent=2)
     print(f"wrote {len(catalog)} builds to {CATALOG}")

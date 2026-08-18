@@ -157,6 +157,7 @@ def main():
         path = os.path.join(OUT, name + ".schem")
         f.gzipped = True
         f.save(path)
+        print(f"extracted {name}", flush=True)
         results.append((name, dims, pal))
     for name, dims, pal in sorted(results):
         print(f"  {name:32} {dims[0]:2}x{dims[1]}x{dims[2]:2} (WxHxL)  palette={pal}")

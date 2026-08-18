@@ -73,6 +73,12 @@ Generated assets currently live beside the scripts that produce them. For exampl
 
 Use Git Bash from the repo root.
 
+GUI:
+
+```bash
+python gui.py
+```
+
 Simulation:
 
 ```bash
