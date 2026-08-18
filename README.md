@@ -64,7 +64,7 @@ config_path.py             central repo and artifact paths
 config_render.py           preview/render colors, isometric scale, render fill blocks
 config_world.py            Minecraft save path, extraction regions, DataVersion
 pipeline.sh                named pipeline runner for Git Bash
-clear_pycache.py           removes Python __pycache__ folders
+clear_cache.py             clears generated artifacts and Python __pycache__ folders
 ```
 
 Generated assets currently live beside the scripts that produce them. For example, `02_builds_simulation/*.png` are generated pseudo-building previews, and `04_city_production/schematics/*.schem` are generated final city schematics.
@@ -107,10 +107,10 @@ bash pipeline.sh city-prod-construct --seed 5
 bash pipeline.sh city-prod-render
 ```
 
-Clean Python cache directories:
+Clear generated artifacts and Python cache directories:
 
 ```bash
-python clear_pycache.py
+python clear_cache.py
 ```
 
 ## How To Modify

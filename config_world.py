@@ -44,5 +44,5 @@ BUILD_MARKER_Y_RANGE = (60, 230)
 BUILD_TYPES = (
     _parse_build_types(os.environ["MC_CITY_BUILD_TYPES"])
     if "MC_CITY_BUILD_TYPES" in os.environ
-    else [BUILD_MODERN_A, BUILD_MODERN_B, BUILD_MODERN_TYPE2]
+    else [BUILD_MODERN_A, BUILD_MODERN_TYPE2]
 )
