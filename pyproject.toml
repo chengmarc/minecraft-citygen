@@ -7,6 +7,9 @@ name = "minecraft-city-generator"
 version = "0.1.0"
 description = "Procedural Minecraft city generation pipelines."
 requires-python = ">=3.10"
+dependencies = [
+    "Pillow>=10.0",
+]
 
 [tool.setuptools.packages.find]
 include = ["config", "config.*", "engine", "engine.*", "gui", "gui.*", "pipeline", "pipeline.*"]

@@ -19,6 +19,7 @@ except ImportError:  # pragma: no cover
     ImageTk = None
 
 ROOT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+ICON_DIR = os.path.join(ROOT_DIR, "gui", "icons")
 ROAD_CONTACT_SHEET = os.path.join(ROADS_PROD, "_contact_sheet.png")
 BUILD_CONTACT_SHEET = os.path.join(BUILDS_PROD, "_contact_sheet.png")
 
@@ -105,6 +106,8 @@ RENDER_PROGRESS_WEIGHTS = [
 
 SCRIPT_PROGRESS_HEADROOM = 0.88
 SCRIPT_PROGRESS_TICK_MS = 120
+_ICON_CACHE = {}
+_ICON_COLOR_CACHE = {}
 
 
 def resolve_color(widget, color, fallback):
@@ -162,6 +165,59 @@ def pick_ui_font(root):
 
 def ui_font(family, size, *styles):
     return (family, size, *styles)
+
+
+def load_icon(name, size=16):
+    cache_key = (name, int(size))
+    if cache_key in _ICON_CACHE:
+        return _ICON_CACHE[cache_key]
+    if Image is None or ImageTk is None:
+        return None
+
+    icon_path = os.path.join(ICON_DIR, f"{name}.png")
+    if not os.path.exists(icon_path):
+        return None
+
+    try:
+        image = Image.open(icon_path).convert("RGBA")
+        image = image.resize((int(size), int(size)), Image.Resampling.LANCZOS)
+        photo = ImageTk.PhotoImage(image)
+    except Exception:
+        return None
+
+    _ICON_CACHE[cache_key] = photo
+    return photo
+
+
+def icon_text_color(name):
+    if name in _ICON_COLOR_CACHE:
+        return _ICON_COLOR_CACHE[name]
+    if Image is None:
+        return TEXT
+
+    icon_path = os.path.join(ICON_DIR, f"{name}.png")
+    if not os.path.exists(icon_path):
+        return TEXT
+
+    try:
+        image = Image.open(icon_path).convert("RGBA")
+        samples = [
+            (r, g, b, a)
+            for (r, g, b, a) in image.getdata()
+            if a > 0
+        ]
+        if not samples:
+            return TEXT
+        total_alpha = sum(a for _r, _g, _b, a in samples)
+        red = round(sum(r * a for r, _g, _b, a in samples) / total_alpha)
+        green = round(sum(g * a for _r, g, _b, a in samples) / total_alpha)
+        blue = round(sum(b * a for _r, _g, b, a in samples) / total_alpha)
+        color = f"#{red:02x}{green:02x}{blue:02x}"
+    except Exception:
+        return TEXT
+
+    _ICON_COLOR_CACHE[name] = color
+    return color
 
 
 def grid_preview_path(seed):

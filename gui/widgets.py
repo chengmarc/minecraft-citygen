@@ -184,13 +184,40 @@ class ImageViewer(ttk.Frame):
 
 
 class ActionButton(ttk.Frame):
-    def __init__(self, master, **button_kwargs):
+    def __init__(self, master, icon_name=None, icon_size=24, **button_kwargs):
         super().__init__(master, style="Page.TFrame")
         self.columnconfigure(0, weight=1)
         self.rowconfigure(0, weight=1)
+        self._icon = (
+            common.load_icon(icon_name, size=icon_size)
+            if icon_name
+            else None
+        )
+        style_name = "Action.TButton"
 
-        self.button = ttk.Button(self, style="Action.TButton", **button_kwargs)
+        if self._icon is not None:
+            button_kwargs.setdefault("image", self._icon)
+            button_kwargs.setdefault("compound", "left")
+        if icon_name:
+            style_name = self._ensure_icon_style(icon_name)
+
+        self.button = ttk.Button(self, style=style_name, **button_kwargs)
         self.button.grid(row=0, column=0, sticky="nsew")
+
+    def _ensure_icon_style(self, icon_name):
+        color = common.icon_text_color(icon_name)
+        style_name = f"{icon_name}.Action.TButton"
+        style = ttk.Style(self)
+        style.configure(style_name, foreground=color)
+        style.map(
+            style_name,
+            foreground=[
+                ("disabled", common.blend(color, common.BORDER, 0.45)),
+                ("pressed", color),
+                ("active", color),
+            ],
+        )
+        return style_name
 
     def configure(self, cnf=None, **kwargs):
         return self.button.configure(cnf, **kwargs)
@@ -224,7 +251,12 @@ class ExtractionSubPanel(ttk.LabelFrame):
         else:
             self._build_build_area(area_value)
         button_rowspan = 1 if area_kind == "road" else 2
-        self.extract_button = ActionButton(self.content, text="Extract", width=common.BUTTON_WIDTH)
+        self.extract_button = ActionButton(
+            self.content,
+            text="Extract",
+            icon_name="extract",
+            width=common.BUTTON_WIDTH + 2,
+        )
         self.extract_button.grid(row=0, column=4, rowspan=button_rowspan, padx=(4, 0))
 
         self.content.columnconfigure(1, weight=1)
@@ -479,16 +511,31 @@ def build_shared_config_frame(
 
     if extra_actions:
         for column, (text, command) in enumerate(extra_actions):
+            icon_name = None
+            if text in {"Output", "Output Folder"}:
+                icon_name = "folder"
             extra_button = ActionButton(
                 actions_frame,
                 text=text,
+                icon_name=icon_name,
                 command=command,
                 width=max(common.BUTTON_WIDTH, len(text) + 1),
             )
             extra_button.grid(row=0, column=column, sticky="e", padx=(0, 6))
 
     action_column = len(extra_actions or [])
-    action_button = ActionButton(actions_frame, text=action_text, command=action_command, width=common.BUTTON_WIDTH)
+    icon_name = None
+    if action_text == "Preview":
+        icon_name = "preview"
+    elif action_text == "Render":
+        icon_name = "render"
+    action_button = ActionButton(
+        actions_frame,
+        text=action_text,
+        icon_name=icon_name,
+        command=action_command,
+        width=common.BUTTON_WIDTH + 3,
+    )
     action_button.grid(row=0, column=action_column, sticky="e")
 
     config_grid = ttk.Frame(config_frame, style="Card.TFrame")
@@ -510,4 +557,3 @@ def build_shared_config_frame(
             Tooltip(input_widget, description)
 
     return action_button
-
