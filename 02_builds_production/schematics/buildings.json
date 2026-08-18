@@ -1,0 +1,674 @@
+{
+  "001": {
+    "type": 1,
+    "size": [
+      27,
+      22
+    ],
+    "origin": [
+      -44,
+      -263,
+      64
+    ],
+    "ground_offset": 1,
+    "pieces": {
+      "whole": 25
+    }
+  },
+  "002": {
+    "type": 1,
+    "size": [
+      16,
+      19
+    ],
+    "origin": [
+      -112,
+      -260,
+      64
+    ],
+    "ground_offset": 1,
+    "pieces": {
+      "whole": 17
+    }
+  },
+  "003": {
+    "type": 1,
+    "size": [
+      19,
+      19
+    ],
+    "origin": [
+      -68,
+      -260,
+      64
+    ],
+    "ground_offset": 1,
+    "pieces": {
+      "whole": 20
+    }
+  },
+  "004": {
+    "type": 1,
+    "size": [
+      18,
+      18
+    ],
+    "origin": [
+      -91,
+      -259,
+      64
+    ],
+    "ground_offset": 1,
+    "pieces": {
+      "whole": 14
+    }
+  },
+  "005": {
+    "type": 1,
+    "size": [
+      17,
+      17
+    ],
+    "origin": [
+      -134,
+      -258,
+      64
+    ],
+    "ground_offset": 1,
+    "pieces": {
+      "whole": 21
+    }
+  },
+  "006": {
+    "type": 1,
+    "size": [
+      20,
+      16
+    ],
+    "origin": [
+      -159,
+      -257,
+      64
+    ],
+    "ground_offset": 1,
+    "pieces": {
+      "whole": 9
+    }
+  },
+  "007": {
+    "type": 1,
+    "size": [
+      11,
+      14
+    ],
+    "origin": [
+      -197,
+      -255,
+      64
+    ],
+    "ground_offset": 1,
+    "pieces": {
+      "whole": 10
+    }
+  },
+  "008": {
+    "type": 1,
+    "size": [
+      17,
+      14
+    ],
+    "origin": [
+      -181,
+      -255,
+      64
+    ],
+    "ground_offset": 1,
+    "pieces": {
+      "whole": 14
+    }
+  },
+  "009": {
+    "type": 1,
+    "size": [
+      13,
+      13
+    ],
+    "origin": [
+      -233,
+      -254,
+      64
+    ],
+    "ground_offset": 1,
+    "pieces": {
+      "whole": 31
+    }
+  },
+  "010": {
+    "type": 1,
+    "size": [
+      13,
+      13
+    ],
+    "origin": [
+      -215,
+      -254,
+      64
+    ],
+    "ground_offset": 1,
+    "pieces": {
+      "whole": 14
+    }
+  },
+  "011": {
+    "type": 1,
+    "size": [
+      15,
+      15
+    ],
+    "origin": [
+      -52,
+      -230,
+      64
+    ],
+    "ground_offset": 1,
+    "pieces": {
+      "whole": 13
+    }
+  },
+  "012": {
+    "type": 1,
+    "size": [
+      15,
+      15
+    ],
+    "origin": [
+      -32,
+      -230,
+      64
+    ],
+    "ground_offset": 1,
+    "pieces": {
+      "whole": 10
+    }
+  },
+  "013": {
+    "type": 1,
+    "size": [
+      14,
+      15
+    ],
+    "origin": [
+      -111,
+      -228,
+      64
+    ],
+    "ground_offset": 1,
+    "pieces": {
+      "whole": 7
+    }
+  },
+  "014": {
+    "type": 1,
+    "size": [
+      15,
+      15
+    ],
+    "origin": [
+      -92,
+      -221,
+      64
+    ],
+    "ground_offset": 1,
+    "pieces": {
+      "whole": 22
+    }
+  },
+  "015": {
+    "type": 1,
+    "size": [
+      15,
+      15
+    ],
+    "origin": [
+      -72,
+      -221,
+      64
+    ],
+    "ground_offset": 1,
+    "pieces": {
+      "whole": 18
+    }
+  },
+  "016": {
+    "type": 1,
+    "size": [
+      11,
+      11
+    ],
+    "origin": [
+      -127,
+      -215,
+      64
+    ],
+    "ground_offset": 1,
+    "pieces": {
+      "whole": 7
+    }
+  },
+  "017": {
+    "type": 1,
+    "size": [
+      10,
+      10
+    ],
+    "origin": [
+      -27,
+      -210,
+      64
+    ],
+    "ground_offset": 1,
+    "pieces": {
+      "whole": 8
+    }
+  },
+  "018": {
+    "type": 1,
+    "size": [
+      13,
+      11
+    ],
+    "origin": [
+      -110,
+      -208,
+      64
+    ],
+    "ground_offset": 1,
+    "pieces": {
+      "whole": 16
+    }
+  },
+  "019": {
+    "type": 1,
+    "size": [
+      5,
+      8
+    ],
+    "origin": [
+      -52,
+      -208,
+      64
+    ],
+    "ground_offset": 1,
+    "pieces": {
+      "whole": 8
+    }
+  },
+  "020": {
+    "type": 1,
+    "size": [
+      9,
+      10
+    ],
+    "origin": [
+      -42,
+      -208,
+      64
+    ],
+    "ground_offset": 1,
+    "pieces": {
+      "whole": 22
+    }
+  },
+  "021": {
+    "type": 1,
+    "size": [
+      22,
+      16
+    ],
+    "origin": [
+      -88,
+      -201,
+      64
+    ],
+    "ground_offset": 1,
+    "pieces": {
+      "whole": 11
+    }
+  },
+  "022": {
+    "type": 1,
+    "size": [
+      18,
+      18
+    ],
+    "origin": [
+      -132,
+      -199,
+      64
+    ],
+    "ground_offset": 1,
+    "pieces": {
+      "whole": 19
+    }
+  },
+  "023": {
+    "type": 1,
+    "size": [
+      15,
+      15
+    ],
+    "origin": [
+      -152,
+      -196,
+      64
+    ],
+    "ground_offset": 0,
+    "pieces": {
+      "whole": 8
+    }
+  },
+  "024": {
+    "type": 1,
+    "size": [
+      11,
+      11
+    ],
+    "origin": [
+      -61,
+      -195,
+      64
+    ],
+    "ground_offset": 1,
+    "pieces": {
+      "whole": 13
+    }
+  },
+  "025": {
+    "type": 1,
+    "size": [
+      11,
+      14
+    ],
+    "origin": [
+      -28,
+      -195,
+      64
+    ],
+    "ground_offset": 1,
+    "pieces": {
+      "whole": 11
+    }
+  },
+  "026": {
+    "type": 1,
+    "size": [
+      12,
+      9
+    ],
+    "origin": [
+      -45,
+      -193,
+      64
+    ],
+    "ground_offset": 1,
+    "pieces": {
+      "whole": 10
+    }
+  },
+  "027": {
+    "type": 1,
+    "size": [
+      19,
+      19
+    ],
+    "origin": [
+      -176,
+      -192,
+      64
+    ],
+    "ground_offset": 1,
+    "pieces": {
+      "whole": 20
+    }
+  },
+  "028": {
+    "type": 1,
+    "size": [
+      11,
+      11
+    ],
+    "origin": [
+      -109,
+      -192,
+      64
+    ],
+    "ground_offset": 1,
+    "pieces": {
+      "whole": 26
+    }
+  },
+  "029": {
+    "type": 1,
+    "size": [
+      13,
+      13
+    ],
+    "origin": [
+      -93,
+      -180,
+      64
+    ],
+    "ground_offset": 1,
+    "pieces": {
+      "whole": 29
+    }
+  },
+  "030": {
+    "type": 1,
+    "size": [
+      20,
+      12
+    ],
+    "origin": [
+      -72,
+      -179,
+      64
+    ],
+    "ground_offset": 1,
+    "pieces": {
+      "whole": 7
+    }
+  },
+  "031": {
+    "type": 1,
+    "size": [
+      14,
+      14
+    ],
+    "origin": [
+      -47,
+      -179,
+      64
+    ],
+    "ground_offset": 1,
+    "pieces": {
+      "whole": 19
+    }
+  },
+  "032": {
+    "type": 1,
+    "size": [
+      13,
+      13
+    ],
+    "origin": [
+      -149,
+      -176,
+      64
+    ],
+    "ground_offset": 1,
+    "pieces": {
+      "whole": 14
+    }
+  },
+  "033": {
+    "type": 1,
+    "size": [
+      13,
+      13
+    ],
+    "origin": [
+      -131,
+      -176,
+      64
+    ],
+    "ground_offset": 1,
+    "pieces": {
+      "whole": 14
+    }
+  },
+  "034": {
+    "type": 1,
+    "size": [
+      15,
+      31
+    ],
+    "origin": [
+      -113,
+      -176,
+      64
+    ],
+    "ground_offset": 1,
+    "pieces": {
+      "whole": 33
+    }
+  },
+  "035": {
+    "type": 1,
+    "size": [
+      11,
+      11
+    ],
+    "origin": [
+      -28,
+      -176,
+      64
+    ],
+    "ground_offset": 1,
+    "pieces": {
+      "whole": 16
+    }
+  },
+  "036": {
+    "type": 1,
+    "size": [
+      29,
+      23
+    ],
+    "origin": [
+      -183,
+      -168,
+      64
+    ],
+    "ground_offset": 1,
+    "pieces": {
+      "whole": 26
+    }
+  },
+  "037": {
+    "type": 1,
+    "size": [
+      24,
+      17
+    ],
+    "origin": [
+      -79,
+      -162,
+      64
+    ],
+    "ground_offset": 1,
+    "pieces": {
+      "whole": 27
+    }
+  },
+  "038": {
+    "type": 1,
+    "size": [
+      15,
+      15
+    ],
+    "origin": [
+      -50,
+      -160,
+      64
+    ],
+    "ground_offset": 1,
+    "pieces": {
+      "whole": 12
+    }
+  },
+  "039": {
+    "type": 1,
+    "size": [
+      13,
+      15
+    ],
+    "origin": [
+      -30,
+      -160,
+      64
+    ],
+    "ground_offset": 1,
+    "pieces": {
+      "whole": 14
+    }
+  },
+  "040": {
+    "type": 1,
+    "size": [
+      13,
+      13
+    ],
+    "origin": [
+      -149,
+      -158,
+      64
+    ],
+    "ground_offset": 1,
+    "pieces": {
+      "whole": 14
+    }
+  },
+  "041": {
+    "type": 1,
+    "size": [
+      13,
+      13
+    ],
+    "origin": [
+      -131,
+      -158,
+      64
+    ],
+    "ground_offset": 1,
+    "pieces": {
+      "whole": 14
+    }
+  },
+  "042": {
+    "type": 1,
+    "size": [
+      9,
+      13
+    ],
+    "origin": [
+      -93,
+      -158,
+      64
+    ],
+    "ground_offset": 1,
+    "pieces": {
+      "whole": 14
+    }
+  }
+}
