@@ -4,11 +4,11 @@ import os
 import sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-ROOT = os.path.dirname(HERE)
+ROOT = os.path.dirname(os.path.dirname(HERE))
 sys.path.insert(0, ROOT)  # shared modules live in the repo root
 from engine.isometric_renderer import render_schem_visible_iso
-from config_path import GRID_PROD, GRID_PROD_SCHEM
-from config_render import FULL_SCHEM_ISO_BLOCK_H, FULL_SCHEM_ISO_TILE_H, FULL_SCHEM_ISO_TILE_W
+from config.config_path import GRID_PROD, GRID_PROD_SCHEM
+from config.config_render import FULL_SCHEM_ISO_BLOCK_H, FULL_SCHEM_ISO_TILE_H, FULL_SCHEM_ISO_TILE_W
 
 SCHEM = GRID_PROD_SCHEM
 

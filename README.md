@@ -7,7 +7,7 @@ It has two parallel pipelines:
 - **simulation**: fast top-down PNG previews for iteration and layout debugging
 - **production**: Sponge `.schem` output and isometric PNG renders for WorldEdit / Minecraft use
 
-The numbered folders are the pipeline stages. Each stage has a simulation side, a production side, or both.
+The numbered folders now live under `pipeline/`. Each stage has a simulation side, a production side, or both.
 
 ## What This Repo Does
 
@@ -25,24 +25,26 @@ High-level flow:
 Simulation flow:
 
 ```text
-01_roads_simulation     draw tiny transparent road PNG tiles
-02_builds_simulation    draw pseudo top-down building PNGs from the catalog
-03_grid_simulation      compose those road PNGs into a top-down grid preview
-04_city_simulation      compose road PNGs + building PNGs into a labeled city preview
+pipeline/01_roads_simulation     draw tiny transparent road PNG tiles
+pipeline/02_builds_simulation    draw pseudo top-down building PNGs from the catalog
+pipeline/03_grid_simulation      compose those road PNGs into a top-down grid preview
+pipeline/04_city_simulation      compose road PNGs + building PNGs into a labeled city preview
 ```
 
 Production flow:
 
 ```text
-01_roads_production     extract road .schem tiles from the Minecraft world, then render them
-02_builds_production    extract real building .schem pieces and the building catalog
-03_grid_production      compose road .schem tiles into a generated grid .schem
-04_city_production      compose the final city .schem, then render it
+pipeline/01_roads_production     extract road .schem tiles from the Minecraft world, then render them
+pipeline/02_builds_production    extract real building .schem pieces and the building catalog
+pipeline/03_grid_production      compose road .schem tiles into a generated grid .schem
+pipeline/04_city_production      compose the final city .schem, then render it
 ```
 
-`city-prod-construct` saves the generated city schematic in `04_city_production/schematics/`
+`city-prod-construct` saves the generated city schematic in `pipeline/04_city_production/schematics/`
 and then copies it into the WorldEdit schematics folder configured by `WORLDEDIT_SCHEM`
-in `config_path.py` as `seed_<n>_city.schem`.
+in `config/config_path.py` as `seed_<n>_city.schem`. The exported city schematic
+includes a player paste anchor: `//paste` places you standing on the top face of
+a smooth stone block at the schematic's reserved corner marker.
 
 ## Repository Layout
 
@@ -59,52 +61,56 @@ engine/
   anvil_world_reader.py    minimal Minecraft Anvil world reader
   color_render.csv         block color table used by isometric rendering
 
-config_algo.py             generation and placement algorithm tuning
-config_path.py             central repo and artifact paths
-config_render.py           preview/render colors, isometric scale, render fill blocks
-config_world.py            Minecraft save path, extraction regions, DataVersion
-pipeline.sh                named pipeline runner for Git Bash
+config/config_algo.py      generation and placement algorithm tuning
+config/config_path.py      central repo and artifact paths
+config/config_render.py    preview/render colors, isometric scale, render fill blocks
+config/config_world.py     Minecraft save path, extraction regions, DataVersion
 clear_cache.py             clears generated artifacts and Python __pycache__ folders
 ```
 
-Generated assets currently live beside the scripts that produce them. For example, `02_builds_simulation/*.png` are generated pseudo-building previews, and `04_city_production/schematics/*.schem` are generated final city schematics.
+Generated assets currently live beside the scripts that produce them. For example, `pipeline/02_builds_simulation/*.png` are generated pseudo-building previews, and `pipeline/04_city_production/schematics/*.schem` are generated final city schematics. In production stages, `schematics/` is reserved for generated `.schem` and `.json` outputs.
 
 ## How To Run
 
-Use Git Bash from the repo root.
+Use the GUI from the repo root.
 
 GUI:
 
 ```bash
-python gui.py
+pythonw application.pyw
 ```
 
-Simulation:
+Launching `application.pyw` clears previously generated pipeline artifacts before opening the window.
+
+Manual simulation commands:
 
 ```bash
-bash pipeline.sh roads-sim
-bash pipeline.sh builds-sim
-bash pipeline.sh grid-sim --seed 5
-bash pipeline.sh city-sim --seed 5
+python pipeline/01_roads_simulation/draw_roads.py
+python pipeline/02_builds_simulation/draw_builds.py
+python pipeline/03_grid_simulation/draw_grid.py --seed 5
+python pipeline/04_city_simulation/draw_city.py --seed 5
 ```
 
-Or run the full simulation preview pipeline:
+Or run the full simulation preview pipeline manually:
 
 ```bash
-bash pipeline.sh all-sim --seed 5
+python pipeline/01_roads_simulation/draw_roads.py
+python pipeline/02_builds_simulation/draw_builds.py
+python pipeline/03_grid_simulation/draw_grid.py --seed 5
+python pipeline/04_city_simulation/draw_city.py --seed 5
 ```
 
-Production:
+Manual production commands:
 
 ```bash
-bash pipeline.sh roads-prod-extract
-bash pipeline.sh roads-prod-render
-bash pipeline.sh builds-prod-extract
-bash pipeline.sh builds-prod-render
-bash pipeline.sh grid-prod-construct --seed 5
-bash pipeline.sh grid-prod-render
-bash pipeline.sh city-prod-construct --seed 5
-bash pipeline.sh city-prod-render
+python pipeline/01_roads_production/extract_roads.py
+python pipeline/01_roads_production/render_roads.py
+python pipeline/02_builds_production/extract_builds.py
+python pipeline/02_builds_production/render_builds.py
+python pipeline/03_grid_production/construct_grid.py --seed 5
+python pipeline/03_grid_production/render_grid.py
+python pipeline/04_city_production/construct_city.py --seed 5
+python pipeline/04_city_production/render_city.py
 ```
 
 Clear generated artifacts and Python cache directories:
@@ -119,7 +125,7 @@ Use these files as the main extension points.
 
 ### Change Grid Size Or Network Shape
 
-Edit `config_algo.py`.
+Edit `config/config_algo.py`.
 
 Important knobs:
 
@@ -136,7 +142,7 @@ Important knobs:
 
 ### Change Road Simulation Art
 
-Edit `01_roads_simulation/draw_roads.py`.
+Edit `pipeline/01_roads_simulation/draw_roads.py`.
 
 This controls the transparent top-down road PNG tiles used by simulation previews. Empty pixels are left transparent.
 
@@ -145,43 +151,43 @@ This controls the transparent top-down road PNG tiles used by simulation preview
 Edit road structures in the Minecraft source world, then run:
 
 ```bash
-bash pipeline.sh roads-prod-extract
-bash pipeline.sh roads-prod-render
+python pipeline/01_roads_production/extract_roads.py
+python pipeline/01_roads_production/render_roads.py
 ```
 
-The extraction region comes from `config_world.py`.
+The extraction region comes from `config/config_world.py`.
 
 ### Change Building Catalog Or Real Building Assets
 
 Edit the source-world buildings and markers, then run:
 
 ```bash
-bash pipeline.sh builds-prod-extract
-bash pipeline.sh builds-prod-render
+python pipeline/02_builds_production/extract_builds.py
+python pipeline/02_builds_production/render_builds.py
 ```
 
 The catalog is generated from wool-boundary build groups and gold/diamond
 component cuboids at:
 
 ```text
-02_builds_production/schematics/buildings.json
+pipeline/02_builds_production/schematics/buildings.json
 ```
 
 Simulation buildings are generated from that catalog, not from the world:
 
 ```bash
-bash pipeline.sh builds-sim
+python pipeline/02_builds_simulation/draw_builds.py
 ```
 
-For type-2 buildings, a `recommended_layer: min-max` sign becomes
-`repeat: [min, max]`, controlling how many middle sections are stacked in
+For type-2 buildings, a `stack: min-max` sign becomes
+`stack: [min, max]`, controlling how many middle sections are stacked in
 production.
 
-For type-2 buildings, a `recommended_rep: min-max` or `recommended_rep: n`
+For type-2 buildings, an `appearance: min-max` or `appearance: n`
 sign becomes `appearance: [min, max]` in `buildings.json`. Each generated city
 samples one target count from that range and places that asset until the target
 is reached. To skip specific assets entirely, edit `BANNED_BUILDINGS` in
-`config_algo.py`.
+`config/config_algo.py`.
 
 ### Change City Placement
 

@@ -4,12 +4,12 @@ import os
 import sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-ROOT = os.path.dirname(HERE)
+ROOT = os.path.dirname(os.path.dirname(HERE))
 sys.path.insert(0, ROOT)  # shared modules live in the repo root
 from engine.isometric_renderer import render_cells_visible_iso, write_contact
 from engine.schematic_reader import decode_schem_cells
 from engine.city_layout import catalog_type
-from config_path import BUILD_CATALOG, BUILDS_PROD, BUILDS_PROD_SCHEM
+from config.config_path import BUILD_CATALOG, BUILDS_PROD, BUILDS_PROD_SCHEM
 
 SCHEM = BUILDS_PROD_SCHEM
 CATALOG = BUILD_CATALOG

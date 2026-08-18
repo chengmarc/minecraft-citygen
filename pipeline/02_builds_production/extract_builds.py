@@ -20,8 +20,8 @@ ROOT = os.path.dirname(os.path.dirname(HERE))
 sys.path.insert(0, ROOT)  # shared modules live in the repo root
 from engine.anvil_world_reader import World
 from engine.schematic_writer import blockstate, write_sponge_schem_cells
-from config_path import BUILD_CATALOG, BUILDS_PROD_SCHEM
-from config_world import BUILD_MARKER_Y_RANGE, BUILD_TYPES, DATA_VERSION
+from config.config_path import BUILD_CATALOG, BUILDS_PROD_SCHEM
+from config.config_world import BUILD_MARKER_Y_RANGE, BUILD_TYPES, DATA_VERSION
 
 CATALOG = BUILD_CATALOG
 MARKER_BLOCKS = {"gold_block", "diamond_block", "emerald_block"}
@@ -157,14 +157,12 @@ def parse_range(text, labels):
 
 
 def catalog_signs(xmn, xmx, zmn, zmx):
-    layer_rng, appearance, strip = None, None, []
-    layer_labels = (
-        r"recommend(?:ed)?[_\s-]*layer\s*:?",
-        r"recommend\s*:",
+    stack_rng, appearance, strip = None, None, []
+    stack_labels = (
+        r"stack\s*:\s*",
     )
     rep_labels = (
-        r"recommend(?:ed)?[_\s-]*rep(?:etition)?\s*:?",
-        r"max[_\s-]*repetition\s*:?",
+        r"appearance\s*:\s*",
     )
     for cx in range(xmn >> 4, (xmx >> 4) + 1):
         for cz in range(zmn >> 4, (zmx >> 4) + 1):
@@ -178,15 +176,15 @@ def catalog_signs(xmn, xmx, zmn, zmx):
                 if not (xmn <= x <= xmx and zmn <= z <= zmx):
                     continue
                 text = sign_text(be)
-                layer = parse_range(text, layer_labels)
+                stack = parse_range(text, stack_labels)
                 rep = parse_range(text, rep_labels)
-                if layer is not None:
-                    layer_rng = layer
+                if stack is not None:
+                    stack_rng = stack
                     strip.append((x, y, z))
                 if rep is not None:
                     appearance = rep
                     strip.append((x, y, z))
-    return layer_rng, appearance, set(strip)
+    return stack_rng, appearance, set(strip)
 
 
 # ---------------------------------------------------------------- extraction
@@ -233,7 +231,7 @@ def main():
     for i, (build_type, origin, size, cuboids, ground_y, boundary) in enumerate(builds):
         key = f"{i + 1:03d}"
         x0, x1, z0, z1 = boundary
-        layer_rng, appearance, strip = catalog_signs(x0, x1, z0, z1)
+        stack_rng, appearance, strip = catalog_signs(x0, x1, z0, z1)
 
         first_y0 = cuboids[0][2]
         entry = {
@@ -248,7 +246,7 @@ def main():
                         os.path.join(BUILDS_PROD_SCHEM, f"{key}.schem"))
             entry["pieces"]["whole"] = cuboids[0][3] - cuboids[0][2] + 1
         else:
-            entry["repeat"] = layer_rng if layer_rng is not None else [1, 1]
+            entry["stack"] = stack_rng if stack_rng is not None else [1, 1]
             entry["appearance"] = appearance if appearance is not None else [1, 1]
             for name, cuboid in zip(("bottom", "middle", "top"), cuboids):
                 write_schem(extract_cuboid(cuboid, strip),

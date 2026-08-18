@@ -12,12 +12,13 @@ import sys
 from PIL import Image, ImageDraw, ImageFont
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-ROOT = os.path.dirname(HERE)
+ROOT = os.path.dirname(os.path.dirname(HERE))
 sys.path.insert(0, ROOT)  # shared modules live in the repo root
+from config.config_algo import DEFAULT_SEED
 from engine import city_layout as C
 from engine import road_network as R
-from config_path import BUILDS_SIM, CITY_SIM
-from config_render import CITY_GROUND_FILL_RGBA
+from config.config_path import BUILDS_SIM, CITY_SIM
+from config.config_render import CITY_GROUND_FILL_RGBA
 
 BUILDS = BUILDS_SIM
 _FONTS = {}
@@ -98,7 +99,7 @@ def render(net, placements, out, preview):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--seed", type=int, default=5)
+    ap.add_argument("--seed", type=int, default=DEFAULT_SEED)
     ap.add_argument("--fine", type=int, default=R.FINE, help="fine grid edge in cells (even)")
     ap.add_argument("--preview", type=int, default=0, help="edge of preview png (0 = full res)")
     ap.add_argument("--out", default=None, help="default: ./seed_<seed>.png")

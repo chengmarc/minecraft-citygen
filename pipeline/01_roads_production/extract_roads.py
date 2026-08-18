@@ -13,8 +13,8 @@ ROOT = os.path.dirname(os.path.dirname(HERE))
 sys.path.insert(0, ROOT)  # shared modules live in the repo root
 from engine.anvil_world_reader import World
 from engine.schematic_writer import blockstate, sponge_schem_from_cells
-from config_path import ROADS_PROD_SCHEM
-from config_world import DATA_VERSION, ROAD_BOX
+from config.config_path import ROADS_PROD_SCHEM
+from config.config_world import DATA_VERSION, ROAD_BOX
 
 X0, X1, Z0, Z1, Y0, Y1 = ROAD_BOX
 OUT = ROADS_PROD_SCHEM

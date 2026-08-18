@@ -7,36 +7,45 @@ import re
 import subprocess
 import sys
 import threading
+import traceback
 
 
 def _configure_tcl_tk():
-    tcl_root = os.path.join(sys.base_prefix, "tcl")
+    tcl_root = os.path.normpath(os.path.join(sys.base_prefix, "tcl"))
+    dll_root = os.path.normpath(os.path.join(sys.base_prefix, "DLLs"))
     tcl_library = os.path.join(tcl_root, "tcl8.6")
     tk_library = os.path.join(tcl_root, "tk8.6")
+    if os.path.isdir(dll_root):
+        os.environ["PATH"] = dll_root + os.pathsep + os.environ.get("PATH", "")
     if os.path.exists(os.path.join(tcl_library, "init.tcl")):
-        os.environ.setdefault("TCL_LIBRARY", tcl_library)
+        os.environ["TCL_LIBRARY"] = tcl_library.replace("\\", "/")
     if os.path.exists(os.path.join(tk_library, "tk.tcl")):
-        os.environ.setdefault("TK_LIBRARY", tk_library)
+        os.environ["TK_LIBRARY"] = tk_library.replace("\\", "/")
+    if os.path.isdir(tcl_root):
+        roots = [
+            os.path.join(tcl_root, "tcl8.6").replace("\\", "/"),
+            tcl_root.replace("\\", "/"),
+        ]
+        os.environ["TCLLIBPATH"] = " ".join("{" + root + "}" for root in roots)
 
 
 _configure_tcl_tk()
 
 import tkinter as tk
+import tkinter.font as tkfont
 from tkinter import messagebox, ttk
 
-import config_algo
 from clear_cache import purge_artifacts
-from config_path import BUILDS_PROD, CITY_PROD, CITY_SIM, GRID_SIM, ROADS_PROD
-from config_world import BUILD_TYPES, ROAD_BOX, SAVE
-try:
-    from ttkthemes import ThemedTk
-except ImportError:  # pragma: no cover - optional theme package.
-    ThemedTk = None
+from config import config_algo
+from config.config_path import BUILDS_PROD, CITY_PROD, CITY_PROD_SCHEM, CITY_SIM, GRID_SIM, ROADS_PROD
+from config.config_algo import DEFAULT_SEED
+from config.config_world import BUILD_TYPES, ROAD_BOX, SAVE
 
 try:
-    from PIL import Image, ImageTk
+    from PIL import Image, ImageDraw, ImageTk
 except ImportError:  # pragma: no cover - tkinter can still show PNGs directly.
     Image = None
+    ImageDraw = None
     ImageTk = None
 
 
@@ -54,7 +63,70 @@ TOOLTIP_BG = "#101828"
 TOOLTIP_TEXT = "#f8fafc"
 BUTTON_SHADOW = "#97a3ba"
 BUTTON_WIDTH = 8
-GUI_THEME = "breeze"
+GUI_THEME = "vista"
+APP_WIDTH = 1024
+APP_HEIGHT = 768
+UI_RADIUS = 4
+STARTUP_ERROR_LOG = os.path.join(ROOT_DIR, "application_startup_error.log")
+UI_FONT_FAMILY = "SF Pro Text"
+UI_FONT_FALLBACKS = ("Segoe UI Variable", "Segoe UI", "Inter", "Arial")
+
+
+def _resolve_color(widget, color, fallback):
+    try:
+        source = color or fallback
+        r, g, b = widget.winfo_rgb(source)
+        return f"#{r // 256:02x}{g // 256:02x}{b // 256:02x}"
+    except Exception:
+        return fallback
+
+
+def _blend(hex_a, hex_b, ratio):
+    ratio = max(0.0, min(1.0, float(ratio)))
+    a = tuple(int(hex_a[i:i + 2], 16) for i in (1, 3, 5))
+    b = tuple(int(hex_b[i:i + 2], 16) for i in (1, 3, 5))
+    mixed = tuple(round(av + (bv - av) * ratio) for av, bv in zip(a, b))
+    return f"#{mixed[0]:02x}{mixed[1]:02x}{mixed[2]:02x}"
+
+
+def _rounded_image(width, height, radius, fill, outline=None, outline_width=1):
+    img = Image.new("RGBA", (width, height), (0, 0, 0, 0))
+    draw = ImageDraw.Draw(img)
+    inset = max(outline_width / 2, 0)
+    draw.rounded_rectangle(
+        (inset, inset, width - 1 - inset, height - 1 - inset),
+        radius=radius,
+        fill=fill,
+        outline=outline,
+        width=outline_width,
+    )
+    return img
+
+
+def _replace_layout_element(layout, source, target):
+    replaced = []
+    for name, options in layout:
+        new_options = dict(options)
+        children = new_options.get("children")
+        if children:
+            new_options["children"] = _replace_layout_element(children, source, target)
+        replaced.append((target if name == source else name, new_options))
+    return replaced
+
+
+def pick_ui_font(root):
+    try:
+        installed = set(tkfont.families(root))
+    except Exception:
+        installed = set()
+    for family in (UI_FONT_FAMILY, *UI_FONT_FALLBACKS):
+        if family in installed:
+            return family
+    return "TkDefaultFont"
+
+
+def ui_font(family, size, *styles):
+    return (family, size, *styles)
 
 
 def grid_preview_path(seed):
@@ -122,6 +194,10 @@ PREVIEW_CONFIGS = [
     ("TYPE2_TOP_FIT_CHOICES", "Landmark Variety", "Higher values allow more eligible landmark designs to appear along avenue frontage."),
     ("TYPE2_SAME_COARSE_SPAN", "Landmark Separation", "Controls how far apart repeated landmark designs must be. Higher values spread repeated landmarks farther apart."),
 ]
+PREVIEW_CONFIG_LOOKUP = {
+    name: (label, description)
+    for name, label, description in PREVIEW_CONFIGS
+}
 
 PREVIEW_CONFIG_GROUPS = [
     (
@@ -168,15 +244,15 @@ CLEARANCE_OPTIONS = {
 }
 
 PREVIEW_PROGRESS_WEIGHTS = [
-    ("01_roads_simulation/draw_roads.py", 15),
-    ("02_builds_simulation/draw_builds.py", 20),
-    ("03_grid_simulation/draw_grid.py", 30),
-    ("04_city_simulation/draw_city.py", 35),
+    ("pipeline/01_roads_simulation/draw_roads.py", 15),
+    ("pipeline/02_builds_simulation/draw_builds.py", 20),
+    ("pipeline/03_grid_simulation/draw_grid.py", 30),
+    ("pipeline/04_city_simulation/draw_city.py", 35),
 ]
 
 RENDER_PROGRESS_WEIGHTS = [
-    ("04_city_production/schematics/construct_city.py", 60),
-    ("04_city_production/render_city.py", 40),
+    ("pipeline/04_city_production/construct_city.py", 60),
+    ("pipeline/04_city_production/render_city.py", 40),
 ]
 
 SCRIPT_PROGRESS_HEADROOM = 0.88
@@ -198,6 +274,195 @@ def config_default(name):
     return str(value)
 
 
+def create_config_vars():
+    return {
+        name: tk.StringVar(value=config_default(name))
+        for name, _label, _description in PREVIEW_CONFIGS
+    }
+
+
+def build_algo_env(config_vars):
+    env = os.environ.copy()
+    for name, _label, _description in PREVIEW_CONFIGS:
+        value = config_vars[name].get().strip()
+        if name == "BANNED_BUILDINGS":
+            env[f"MC_CITY_{name}"] = value
+            continue
+        if name == "FINE":
+            try:
+                value = CANVAS_SIZE_OPTIONS[value]
+            except KeyError as exc:
+                raise ValueError("City Size must be one of the selector values.") from exc
+        if name == "GAP_MIXED":
+            try:
+                value = CLEARANCE_OPTIONS[value]
+            except KeyError as exc:
+                raise ValueError("Grid Density must be one of the selector values.") from exc
+        try:
+            int(value)
+        except ValueError as exc:
+            raise ValueError(f"{name} must be an integer.") from exc
+        env[f"MC_CITY_{name}"] = value
+    return env
+
+
+def validate_seed(seed):
+    try:
+        int(seed)
+    except ValueError as exc:
+        raise ValueError("Seed must be an integer.") from exc
+
+
+def create_config_input(master, text_var, name):
+    if name in PREVIEW_SLIDER_RANGES:
+        lo, hi = PREVIEW_SLIDER_RANGES[name]
+        return IntegerSlider(master, text_var, lo, hi)
+    return ttk.Entry(master, textvariable=text_var, width=13)
+
+
+def build_shared_config_frame(
+    config_frame,
+    seed_var,
+    config_vars,
+    action_text,
+    action_command,
+    uniform_name,
+    extra_actions=None,
+):
+    config_frame.columnconfigure(6, weight=1)
+
+    ttk.Label(config_frame, text="Seed").grid(row=0, column=0, sticky="w", padx=(0, 6))
+    ttk.Entry(config_frame, textvariable=seed_var, width=14).grid(row=0, column=1, sticky="w")
+
+    city_size_label = ttk.Label(config_frame, text="City Size")
+    city_size_label.grid(row=0, column=2, sticky="w", padx=(8, 6))
+    Tooltip(city_size_label, PREVIEW_CONFIG_LOOKUP["FINE"][1])
+    city_size_input = ttk.Combobox(
+        config_frame,
+        textvariable=config_vars["FINE"],
+        values=list(CANVAS_SIZE_OPTIONS),
+        state="readonly",
+        width=12,
+    )
+    city_size_input.grid(row=0, column=3, sticky="w")
+    Tooltip(city_size_input, PREVIEW_CONFIG_LOOKUP["FINE"][1])
+
+    density_label = ttk.Label(config_frame, text="Grid Density")
+    density_label.grid(row=0, column=4, sticky="w", padx=(8, 6))
+    Tooltip(density_label, PREVIEW_CONFIG_LOOKUP["GAP_MIXED"][1])
+    density_input = ttk.Combobox(
+        config_frame,
+        textvariable=config_vars["GAP_MIXED"],
+        values=list(CLEARANCE_OPTIONS),
+        state="readonly",
+        width=13,
+    )
+    density_input.grid(row=0, column=5, sticky="w")
+    Tooltip(density_input, PREVIEW_CONFIG_LOOKUP["GAP_MIXED"][1])
+
+    actions_frame = ttk.Frame(config_frame, style="Card.TFrame")
+    actions_frame.grid(row=0, column=7, sticky="e")
+
+    if extra_actions:
+        for column, (text, command) in enumerate(extra_actions):
+            extra_button = ActionButton(
+                actions_frame,
+                text=text,
+                command=command,
+                width=max(BUTTON_WIDTH, len(text) + 1),
+            )
+            extra_button.grid(row=0, column=column, sticky="e", padx=(0, 6))
+
+    action_column = len(extra_actions or [])
+    action_button = ActionButton(
+        actions_frame,
+        text=action_text,
+        command=action_command,
+        width=BUTTON_WIDTH,
+    )
+    action_button.grid(row=0, column=action_column, sticky="e")
+
+    config_grid = ttk.Frame(config_frame, style="Card.TFrame")
+    config_grid.grid(row=1, column=0, columnspan=8, sticky="ew", pady=(6, 0))
+    for column in range(len(PREVIEW_CONFIG_GROUPS)):
+        config_grid.columnconfigure(column, weight=1, uniform=uniform_name)
+
+    for group_col, (_group_title, names) in enumerate(PREVIEW_CONFIG_GROUPS):
+        group = ttk.LabelFrame(config_grid, text="", padding=6, style="Inset.TLabelframe")
+        group.grid(row=0, column=group_col, sticky="nsew", padx=(0 if group_col == 0 else 4, 0))
+        group.columnconfigure(1, weight=1)
+        for row, name in enumerate(names):
+            label, description = PREVIEW_CONFIG_LOOKUP[name]
+            label_widget = ttk.Label(group, text=label)
+            label_widget.grid(row=row, column=0, sticky="w", padx=(0, 6), pady=2)
+            Tooltip(label_widget, description)
+            input_widget = create_config_input(group, config_vars[name], name)
+            input_widget.grid(row=row, column=1, sticky="ew", pady=2)
+            Tooltip(input_widget, description)
+
+    return action_button
+
+
+def run_weighted_scripts_async(
+    owner,
+    button,
+    scripts,
+    env,
+    start_status,
+    fail_title,
+    fail_status,
+    complete_status,
+    on_success,
+):
+    def worker():
+        owner.after(0, lambda: button.configure(state="disabled"))
+        owner.after(0, owner._start_progress)
+        owner.after(0, lambda: owner.set_status(start_status))
+
+        try:
+            completed_weight = 0
+            total_scripts = len(scripts)
+            for index, (command, weight) in enumerate(scripts, start=1):
+                script = command[0]
+                owner.after(
+                    0,
+                    lambda index=index, total=total_scripts, script=script, completed=completed_weight, weight=weight:
+                        owner._begin_script_progress(
+                            completed,
+                            completed + weight,
+                            f"Running {index}/{total}: {os.path.basename(script)}",
+                        ),
+                )
+                result = subprocess.run(
+                    [sys.executable, "-u", *command],
+                    cwd=ROOT_DIR,
+                    env=env,
+                    capture_output=True,
+                    text=True,
+                    check=False,
+                )
+                if result.returncode != 0:
+                    raise RuntimeError(
+                        f"{script} failed with exit code {result.returncode}\n\n"
+                        f"{result.stderr or result.stdout}"
+                    )
+                completed_weight += weight
+                owner.after(0, lambda value=completed_weight: owner._complete_script_progress(value))
+        except Exception as exc:
+            message = str(exc).strip()
+            owner.after(0, lambda: owner.set_status(fail_status))
+            owner.after(0, lambda: messagebox.showerror(fail_title, message))
+        else:
+            owner.after(0, on_success)
+            owner.after(0, owner._finish_progress)
+            owner.after(0, lambda: owner.set_status(complete_status))
+        finally:
+            owner.after(0, owner._stop_progress)
+            owner.after(0, lambda: button.configure(state="normal"))
+
+    threading.Thread(target=worker, daemon=True).start()
+
+
 class ImageViewer(ttk.Frame):
     def __init__(self, master, title, initial_message="", min_height=420, show_title=False):
         super().__init__(master, style="Card.TFrame", padding=6)
@@ -209,6 +474,7 @@ class ImageViewer(ttk.Frame):
         self._image_id = None
         self._message_id = None
         self._has_title = bool(title and show_title)
+        self._layout_after_id = None
 
         canvas_row = 1 if self._has_title else 0
         if self._has_title:
@@ -232,7 +498,7 @@ class ImageViewer(ttk.Frame):
         self.columnconfigure(0, weight=1)
         self.rowconfigure(canvas_row, weight=1)
 
-        self.canvas.bind("<Configure>", lambda _event: self._fit_square())
+        self.canvas.bind("<Configure>", self._schedule_layout)
         self.canvas.bind("<Enter>", lambda _event: self.canvas.focus_set())
         self.canvas.bind("<MouseWheel>", self._on_zoom_wheel)
         self.canvas.bind("<Button-4>", lambda event: self._zoom_at(event.x, event.y, 1.12))
@@ -246,12 +512,13 @@ class ImageViewer(ttk.Frame):
         self._photo = None
         self._image_id = None
         self.canvas.delete("all")
+        font_family = self.winfo_toplevel().ui_font_family
         self._message_id = self.canvas.create_text(
             20,
             20,
             anchor="nw",
             fill=CANVAS_TEXT,
-            font=("Segoe UI", 11),
+            font=ui_font(font_family, 11),
             text=message,
             width=360,
         )
@@ -275,13 +542,28 @@ class ImageViewer(ttk.Frame):
         self._zoom = self._initial_zoom()
         self._render_image(center=True)
 
-    def _fit_square(self):
-        title_offset = 28 if self._has_title else 0
-        size = min(self.winfo_width(), max(self.winfo_height() - title_offset, 1))
-        if size > 1:
-            self.canvas.configure(width=size, height=size)
-        if self._source_image and not self._photo:
-            self._render_image(center=True)
+    def _schedule_layout(self, _event=None):
+        if self._source_image is None or self._photo is None or self._image_id is None:
+            return
+        if self._layout_after_id is not None:
+            self.after_cancel(self._layout_after_id)
+        self._layout_after_id = self.after(60, self._apply_layout)
+
+    def _apply_layout(self):
+        self._layout_after_id = None
+        if self._image_id is None or self._photo is None:
+            return
+        x, y = self.canvas.coords(self._image_id)
+        width = self._photo.width()
+        height = self._photo.height()
+        canvas_width = self.canvas.winfo_width()
+        canvas_height = self.canvas.winfo_height()
+        if width <= canvas_width:
+            x = max((canvas_width - width) // 2, 0)
+        if height <= canvas_height:
+            y = max((canvas_height - height) // 2, 0)
+        self.canvas.coords(self._image_id, x, y)
+        self._update_scrollregion()
 
     def _initial_zoom(self):
         if not self._source_image:
@@ -315,7 +597,17 @@ class ImageViewer(ttk.Frame):
             x, y = self.canvas.coords(self._image_id)
 
         self.canvas.coords(self._image_id, x, y)
-        bbox = self.canvas.bbox(self._image_id) or (0, 0, width, height)
+        self._update_scrollregion()
+
+    def _update_scrollregion(self):
+        if self._image_id is None:
+            return
+        bbox = self.canvas.bbox(self._image_id) or (
+            0,
+            0,
+            self._photo.width() if self._photo else 0,
+            self._photo.height() if self._photo else 0,
+        )
         self.canvas.configure(
             scrollregion=(
                 min(0, bbox[0]),
@@ -353,11 +645,8 @@ class ActionButton(ttk.Frame):
         self.columnconfigure(0, weight=1)
         self.rowconfigure(0, weight=1)
 
-        self.shadow = tk.Frame(self, bg=BUTTON_SHADOW, bd=0, highlightthickness=0)
-        self.shadow.grid(row=0, column=0, sticky="nsew", padx=(2, 0), pady=(3, 0))
-
         self.button = ttk.Button(self, style="Action.TButton", **button_kwargs)
-        self.button.grid(row=0, column=0, sticky="nsew", padx=(0, 2), pady=(0, 3))
+        self.button.grid(row=0, column=0, sticky="nsew")
 
     def configure(self, cnf=None, **kwargs):
         return self.button.configure(cnf, **kwargs)
@@ -455,6 +744,8 @@ class IntegerSlider(ttk.Frame):
         self.minimum = minimum
         self.maximum = maximum
         self.value_var = tk.IntVar(value=self._coerce(text_var.get()))
+        self._tick_after_id = None
+        self._last_tick_width = None
         tick_bg = self.tk.call("ttk::style", "lookup", "Card.TFrame", "-background") or self.cget("background")
 
         self.scale = ttk.Scale(
@@ -474,7 +765,7 @@ class IntegerSlider(ttk.Frame):
         )
         self.ticks = tk.Canvas(self, height=10, highlightthickness=0, bg=tick_bg, bd=0)
         self.ticks.grid(row=1, column=0, sticky="ew", pady=(1, 0))
-        self.ticks.bind("<Configure>", lambda _event: self._draw_ticks())
+        self.ticks.bind("<Configure>", self._schedule_draw_ticks)
         self.columnconfigure(0, weight=1)
         text_var.trace_add("write", self._on_text_change)
 
@@ -499,11 +790,21 @@ class IntegerSlider(ttk.Frame):
             self.value_var.set(parsed)
             self.scale.set(parsed)
 
+    def _schedule_draw_ticks(self, _event=None):
+        if self._tick_after_id is not None:
+            self.after_cancel(self._tick_after_id)
+        self._tick_after_id = self.after(16, self._draw_ticks)
+
     def _draw_ticks(self):
+        self._tick_after_id = None
         self.ticks.delete("all")
         width = self.ticks.winfo_width()
         if width <= 1:
+            self._last_tick_width = None
             return
+        if self._last_tick_width == width:
+            return
+        self._last_tick_width = width
         inset = max(8, int(9 * float(self.tk.call("tk", "scaling"))))
         span = max(width - inset * 2, 1)
         steps = max(self.maximum - self.minimum, 1)
@@ -535,7 +836,7 @@ class Tooltip:
             pady=5,
             bg=TOOLTIP_BG,
             fg=TOOLTIP_TEXT,
-            font=("Segoe UI", 10),
+            font=ui_font(self.widget.winfo_toplevel().ui_font_family, 10),
             wraplength=280,
         )
         label.pack()
@@ -544,6 +845,70 @@ class Tooltip:
         if self.window:
             self.window.destroy()
             self.window = None
+
+
+class WeightedProgressMixin:
+    def _init_weighted_progress(self):
+        self._progress_after_id = None
+        self._progress_soft_target = 0.0
+
+    def _build_progress_bar(self, row):
+        self.progress_var = tk.DoubleVar(value=0)
+        self.progress_bar = ttk.Progressbar(
+            self,
+            mode="determinate",
+            variable=self.progress_var,
+        )
+        self.progress_bar.grid(row=row, column=0, sticky="ew", pady=(6, 0))
+
+    def _start_progress(self):
+        self._cancel_progress_animation()
+        self.progress_bar.stop()
+        self.progress_bar.configure(mode="determinate", maximum=100)
+        self.progress_var.set(0)
+        self._progress_soft_target = 0.0
+
+    def _finish_progress(self):
+        self._cancel_progress_animation()
+        self.progress_bar.stop()
+        self.progress_bar.configure(mode="determinate")
+        self.progress_var.set(self.progress_bar.cget("maximum"))
+
+    def _stop_progress(self):
+        self._cancel_progress_animation()
+        self.progress_bar.stop()
+        self.progress_bar.configure(mode="determinate")
+
+    def _begin_script_progress(self, start_value, end_value, status):
+        self._cancel_progress_animation()
+        self.progress_var.set(start_value)
+        segment = max(float(end_value) - float(start_value), 0.0)
+        self._progress_soft_target = float(start_value) + segment * SCRIPT_PROGRESS_HEADROOM
+        self.set_status(status)
+        self._schedule_progress_tick()
+
+    def _complete_script_progress(self, value):
+        self._cancel_progress_animation()
+        self.progress_var.set(value)
+
+    def _schedule_progress_tick(self):
+        self._progress_after_id = self.after(SCRIPT_PROGRESS_TICK_MS, self._progress_tick)
+
+    def _progress_tick(self):
+        self._progress_after_id = None
+        current = float(self.progress_var.get())
+        if current >= self._progress_soft_target:
+            return
+        remaining = self._progress_soft_target - current
+        step = max(0.2, remaining * 0.07)
+        self.progress_var.set(min(current + step, self._progress_soft_target))
+        if float(self.progress_var.get()) < self._progress_soft_target:
+            self._schedule_progress_tick()
+
+    def _cancel_progress_animation(self):
+        if self._progress_after_id is not None:
+            self.after_cancel(self._progress_after_id)
+            self._progress_after_id = None
 
 
 class ExtractionTab(ttk.Frame):
@@ -601,7 +966,7 @@ class ExtractionTab(ttk.Frame):
                 "road",
                 self.road_config,
                 self.road_viewer,
-                ["01_roads_production/schematics/extract_roads.py", "01_roads_production/render_roads.py"],
+                    ["pipeline/01_roads_production/extract_roads.py", "pipeline/01_roads_production/render_roads.py"],
                 "MC_CITY_ROAD_BOX",
                 14,
             )
@@ -614,7 +979,7 @@ class ExtractionTab(ttk.Frame):
                 "build",
                 self.build_config,
                 self.build_viewer,
-                ["02_builds_production/schematics/extract_builds.py", "02_builds_production/render_builds.py"],
+                    ["pipeline/02_builds_production/extract_builds.py", "pipeline/02_builds_production/render_builds.py"],
                 "MC_CITY_BUILD_TYPES",
                 None,
             )
@@ -749,12 +1114,10 @@ class ExtractionTab(ttk.Frame):
         self.progress_bar.configure(mode='determinate')
 
 
-class PreviewTab(ttk.Frame):
+class PreviewTab(WeightedProgressMixin, ttk.Frame):
     def __init__(self, master):
         super().__init__(master, padding=10, style="Page.TFrame")
-        self._progress_after_id = None
-        self._progress_soft_target = 0.0
-        self._progress_hard_target = 0.0
+        self._init_weighted_progress()
 
         top = ttk.Frame(self, style="Page.TFrame")
         top.grid(row=0, column=0, sticky="nsew")
@@ -783,89 +1146,17 @@ class PreviewTab(ttk.Frame):
             style="Card.TLabelframe",
         )
         self.config_frame.grid(row=1, column=0, sticky="ew", pady=(8, 0))
-        bottom = self.config_frame
-        bottom.columnconfigure(6, weight=1)
-
-        self.seed_var = tk.StringVar(value="5")
-        self.config_vars = {
-            name: tk.StringVar(value=config_default(name))
-            for name, _label, _description in PREVIEW_CONFIGS
-        }
-        config_lookup = {
-            name: (label, description)
-            for name, label, description in PREVIEW_CONFIGS
-        }
-        ttk.Label(bottom, text="Seed").grid(row=0, column=0, sticky="w", padx=(0, 6))
-        ttk.Entry(bottom, textvariable=self.seed_var, width=14).grid(row=0, column=1, sticky="w")
-        canvas_label = ttk.Label(bottom, text="City Size")
-        canvas_label.grid(row=0, column=2, sticky="w", padx=(8, 6))
-        Tooltip(canvas_label, config_lookup["FINE"][1])
-        canvas_input = ttk.Combobox(
-            bottom,
-            textvariable=self.config_vars["FINE"],
-            values=list(CANVAS_SIZE_OPTIONS),
-            state="readonly",
-            width=12,
+        self.seed_var = tk.StringVar(value=str(DEFAULT_SEED))
+        self.config_vars = create_config_vars()
+        self.preview_button = build_shared_config_frame(
+            self.config_frame,
+            self.seed_var,
+            self.config_vars,
+            "Preview",
+            self._run_preview,
+            "preview_config",
         )
-        canvas_input.grid(row=0, column=3, sticky="w")
-        Tooltip(canvas_input, config_lookup["FINE"][1])
-        clearance_label = ttk.Label(bottom, text="Grid Density")
-        clearance_label.grid(row=0, column=4, sticky="w", padx=(8, 6))
-        Tooltip(clearance_label, config_lookup["GAP_MIXED"][1])
-        clearance_input = ttk.Combobox(
-            bottom,
-            textvariable=self.config_vars["GAP_MIXED"],
-            values=list(CLEARANCE_OPTIONS),
-            state="readonly",
-            width=13,
-        )
-        clearance_input.grid(row=0, column=5, sticky="w")
-        Tooltip(clearance_input, config_lookup["GAP_MIXED"][1])
-        self.preview_button = ActionButton(
-            bottom,
-            text="Preview",
-            command=self._run_preview,
-            width=BUTTON_WIDTH,
-        )
-        self.preview_button.grid(row=0, column=7, sticky="e", padx=(6, 0))
-
-        config_grid = ttk.Frame(bottom, style="Card.TFrame")
-        config_grid.grid(row=1, column=0, columnspan=8, sticky="ew", pady=(6, 0))
-        for column in range(len(PREVIEW_CONFIG_GROUPS)):
-            config_grid.columnconfigure(column, weight=1, uniform="preview_config")
-
-        for group_col, (group_title, names) in enumerate(PREVIEW_CONFIG_GROUPS):
-            group = ttk.LabelFrame(config_grid, text="", padding=6, style="Inset.TLabelframe")
-            group.grid(row=0, column=group_col, sticky="nsew", padx=(0 if group_col == 0 else 4, 0))
-            group.columnconfigure(1, weight=1)
-            for row, name in enumerate(names):
-                label, description = config_lookup[name]
-                label_widget = ttk.Label(group, text=label)
-                label_widget.grid(
-                    row=row,
-                    column=0,
-                    sticky="w",
-                    padx=(0, 6),
-                    pady=2,
-                )
-                Tooltip(label_widget, description)
-                input_widget = self._config_input(group, name)
-                input_widget.grid(
-                    row=row,
-                    column=1,
-                    sticky="ew",
-                    pady=2,
-                )
-                Tooltip(input_widget, description)
-
-        # ---- Progress bar (no label) ----
-        self.progress_var = tk.DoubleVar(value=0)
-        self.progress_bar = ttk.Progressbar(
-            self,
-            mode="determinate",
-            variable=self.progress_var,
-        )
-        self.progress_bar.grid(row=2, column=0, sticky="ew", pady=(6, 0))
+        self._build_progress_bar(2)
 
         self.rowconfigure(0, weight=1)
         self.columnconfigure(0, weight=1)
@@ -873,172 +1164,43 @@ class PreviewTab(ttk.Frame):
     def set_status(self, status):
         self.config_frame.configure(text=f"Preview Config - {status}")
 
-    def _config_input(self, master, name):
-        if name == "GAP_MIXED":
-            return ttk.Combobox(
-                master,
-                textvariable=self.config_vars[name],
-                values=list(CLEARANCE_OPTIONS),
-                state="readonly",
-                width=13,
-            )
-        if name in PREVIEW_SLIDER_RANGES:
-            lo, hi = PREVIEW_SLIDER_RANGES[name]
-            return IntegerSlider(master, self.config_vars[name], lo, hi)
-        return ttk.Entry(master, textvariable=self.config_vars[name], width=13)
-
     def _run_preview(self):
         seed = self.seed_var.get().strip()
         try:
-            int(seed)
-        except ValueError:
-            messagebox.showerror("Invalid seed", "Seed must be an integer.")
-            return
-        try:
-            env = self._preview_env()
+            validate_seed(seed)
+            env = build_algo_env(self.config_vars)
             fine = env["MC_CITY_FINE"]
         except ValueError as exc:
-            messagebox.showerror("Invalid preview config", str(exc))
+            title = "Invalid seed" if str(exc) == "Seed must be an integer." else "Invalid preview config"
+            messagebox.showerror(title, str(exc))
             return
 
         scripts = [
-            (["01_roads_simulation/draw_roads.py"], PREVIEW_PROGRESS_WEIGHTS[0][1]),
-            (["02_builds_simulation/draw_builds.py"], PREVIEW_PROGRESS_WEIGHTS[1][1]),
-            (["03_grid_simulation/draw_grid.py", "--seed", seed, "--fine", fine], PREVIEW_PROGRESS_WEIGHTS[2][1]),
-            (["04_city_simulation/draw_city.py", "--seed", seed, "--fine", fine], PREVIEW_PROGRESS_WEIGHTS[3][1]),
+            (["pipeline/01_roads_simulation/draw_roads.py"], PREVIEW_PROGRESS_WEIGHTS[0][1]),
+            (["pipeline/02_builds_simulation/draw_builds.py"], PREVIEW_PROGRESS_WEIGHTS[1][1]),
+            (["pipeline/03_grid_simulation/draw_grid.py", "--seed", seed, "--fine", fine], PREVIEW_PROGRESS_WEIGHTS[2][1]),
+            (["pipeline/04_city_simulation/draw_city.py", "--seed", seed, "--fine", fine], PREVIEW_PROGRESS_WEIGHTS[3][1]),
         ]
-
-        def worker():
-            self.after(0, lambda: self.preview_button.configure(state="disabled"))
-            self.after(0, self._start_progress)
-            self.after(0, lambda: self.set_status("Starting preview..."))
-
-            try:
-                completed_weight = 0
-                total_scripts = len(scripts)
-                for index, (command, weight) in enumerate(scripts, start=1):
-                    script = command[0]
-                    self.after(
-                        0,
-                        lambda index=index, total=total_scripts, script=script, completed=completed_weight, weight=weight:
-                            self._begin_script_progress(
-                                completed,
-                                completed + weight,
-                                f"Running {index}/{total}: {os.path.basename(script)}",
-                            ),
-                    )
-                    result = subprocess.run(
-                        [sys.executable, "-u", *command],
-                        cwd=ROOT_DIR,
-                        env=env,
-                        capture_output=True,
-                        text=True,
-                        check=False,
-                    )
-                    if result.returncode != 0:
-                        raise RuntimeError(
-                            f"{script} failed with exit code {result.returncode}\n\n"
-                            f"{result.stderr or result.stdout}"
-                        )
-                    completed_weight += weight
-                    self.after(0, lambda value=completed_weight: self._complete_script_progress(value))
-            except Exception as exc:
-                message = str(exc).strip()
-                self.after(0, lambda: self.set_status("Preview failed"))
-                self.after(0, lambda: messagebox.showerror("Preview failed", message))
-            else:
-                self.after(0, lambda: self.grid_viewer.load_image(grid_preview_path(seed)))
-                self.after(0, lambda: self.city_viewer.load_image(city_preview_path(seed)))
-                self.after(0, self._finish_progress)
-                self.after(0, lambda: self.set_status("Preview complete"))
-            finally:
-                self.after(0, self._stop_progress)
-                self.after(0, lambda: self.preview_button.configure(state="normal"))
-
-        threading.Thread(target=worker, daemon=True).start()
-
-    def _start_progress(self):
-        self._cancel_progress_animation()
-        self.progress_bar.stop()
-        self.progress_bar.configure(mode="determinate", maximum=100)
-        self.progress_var.set(0)
-        self._progress_soft_target = 0.0
-        self._progress_hard_target = 0.0
-
-    def _finish_progress(self):
-        self._cancel_progress_animation()
-        self.progress_bar.stop()
-        self.progress_bar.configure(mode="determinate")
-        self.progress_var.set(self.progress_bar.cget("maximum"))
-
-    def _stop_progress(self):
-        self._cancel_progress_animation()
-        self.progress_bar.stop()
-        self.progress_bar.configure(mode='determinate')
-
-    def _begin_script_progress(self, start_value, end_value, status):
-        self._cancel_progress_animation()
-        self.progress_var.set(start_value)
-        self._progress_hard_target = float(end_value)
-        segment = max(float(end_value) - float(start_value), 0.0)
-        self._progress_soft_target = float(start_value) + segment * SCRIPT_PROGRESS_HEADROOM
-        self.set_status(status)
-        self._schedule_progress_tick()
-
-    def _complete_script_progress(self, value):
-        self._cancel_progress_animation()
-        self.progress_var.set(value)
-
-    def _schedule_progress_tick(self):
-        self._progress_after_id = self.after(SCRIPT_PROGRESS_TICK_MS, self._progress_tick)
-
-    def _progress_tick(self):
-        self._progress_after_id = None
-        current = float(self.progress_var.get())
-        if current >= self._progress_soft_target:
-            return
-        remaining = self._progress_soft_target - current
-        step = max(0.2, remaining * 0.07)
-        self.progress_var.set(min(current + step, self._progress_soft_target))
-        if float(self.progress_var.get()) < self._progress_soft_target:
-            self._schedule_progress_tick()
-
-    def _cancel_progress_animation(self):
-        if self._progress_after_id is not None:
-            self.after_cancel(self._progress_after_id)
-            self._progress_after_id = None
-
-    def _preview_env(self):
-        env = os.environ.copy()
-        for name, _label, _description in PREVIEW_CONFIGS:
-            value = self.config_vars[name].get().strip()
-            if name == "BANNED_BUILDINGS":
-                env[f"MC_CITY_{name}"] = value
-                continue
-            if name == "FINE":
-                try:
-                    value = CANVAS_SIZE_OPTIONS[value]
-                except KeyError:
-                    raise ValueError("City Size must be one of the selector values.")
-            if name == "GAP_MIXED":
-                try:
-                    value = CLEARANCE_OPTIONS[value]
-                except KeyError:
-                    raise ValueError("Grid Density must be one of the selector values.")
-            try:
-                int(value)
-            except ValueError:
-                raise ValueError(f"{name} must be an integer.")
-            env[f"MC_CITY_{name}"] = value
-        return env
+        run_weighted_scripts_async(
+            self,
+            self.preview_button,
+            scripts,
+            env,
+            "Starting preview...",
+            "Preview failed",
+            "Preview failed",
+            "Preview complete",
+            lambda: (
+                self.grid_viewer.load_image(grid_preview_path(seed)),
+                self.city_viewer.load_image(city_preview_path(seed)),
+            ),
+        )
 
 
-class CityTab(ttk.Frame):
+class CityTab(WeightedProgressMixin, ttk.Frame):
     def __init__(self, master):
         super().__init__(master, padding=10, style="Page.TFrame")
-        self._progress_after_id = None
-        self._progress_soft_target = 0.0
-        self._progress_hard_target = 0.0
+        self._init_weighted_progress()
 
         self.city_viewer = ImageViewer(
             self,
@@ -1054,74 +1216,18 @@ class CityTab(ttk.Frame):
             style="Card.TLabelframe",
         )
         self.config_frame.grid(row=1, column=0, sticky="ew", pady=(8, 0))
-        bottom = self.config_frame
-        bottom.columnconfigure(6, weight=1)
-
-        self.seed_var = tk.StringVar(value="5")
-        self.config_vars = {
-            name: tk.StringVar(value=config_default(name))
-            for name, _label, _description in PREVIEW_CONFIGS
-        }
-        config_lookup = {
-            name: (label, description)
-            for name, label, description in PREVIEW_CONFIGS
-        }
-
-        ttk.Label(bottom, text="Seed").grid(row=0, column=0, sticky="w", padx=(0, 6))
-        ttk.Entry(bottom, textvariable=self.seed_var, width=14).grid(row=0, column=1, sticky="w")
-        city_size_label = ttk.Label(bottom, text="City Size")
-        city_size_label.grid(row=0, column=2, sticky="w", padx=(8, 6))
-        Tooltip(city_size_label, config_lookup["FINE"][1])
-        city_size_input = ttk.Combobox(
-            bottom,
-            textvariable=self.config_vars["FINE"],
-            values=list(CANVAS_SIZE_OPTIONS),
-            state="readonly",
-            width=12,
+        self.seed_var = tk.StringVar(value=str(DEFAULT_SEED))
+        self.config_vars = create_config_vars()
+        self.render_button = build_shared_config_frame(
+            self.config_frame,
+            self.seed_var,
+            self.config_vars,
+            "Render",
+            self._run_render,
+            "city_config",
+            extra_actions=[("Output Folder", self._open_output_folder)],
         )
-        city_size_input.grid(row=0, column=3, sticky="w")
-        Tooltip(city_size_input, config_lookup["FINE"][1])
-        density_label = ttk.Label(bottom, text="Grid Density")
-        density_label.grid(row=0, column=4, sticky="w", padx=(8, 6))
-        Tooltip(density_label, config_lookup["GAP_MIXED"][1])
-        density_input = ttk.Combobox(
-            bottom,
-            textvariable=self.config_vars["GAP_MIXED"],
-            values=list(CLEARANCE_OPTIONS),
-            state="readonly",
-            width=13,
-        )
-        density_input.grid(row=0, column=5, sticky="w")
-        Tooltip(density_input, config_lookup["GAP_MIXED"][1])
-        self.render_button = ActionButton(bottom, text="Render", command=self._run_render, width=BUTTON_WIDTH)
-        self.render_button.grid(row=0, column=7, sticky="e", padx=(6, 0))
-
-        config_grid = ttk.Frame(bottom, style="Card.TFrame")
-        config_grid.grid(row=1, column=0, columnspan=8, sticky="ew", pady=(6, 0))
-        for column in range(len(PREVIEW_CONFIG_GROUPS)):
-            config_grid.columnconfigure(column, weight=1, uniform="city_config")
-
-        for group_col, (group_title, names) in enumerate(PREVIEW_CONFIG_GROUPS):
-            group = ttk.LabelFrame(config_grid, text="", padding=6, style="Inset.TLabelframe")
-            group.grid(row=0, column=group_col, sticky="nsew", padx=(0 if group_col == 0 else 4, 0))
-            group.columnconfigure(1, weight=1)
-            for row, name in enumerate(names):
-                label, description = config_lookup[name]
-                label_widget = ttk.Label(group, text=label)
-                label_widget.grid(row=row, column=0, sticky="w", padx=(0, 6), pady=2)
-                Tooltip(label_widget, description)
-                input_widget = self._config_input(group, name)
-                input_widget.grid(row=row, column=1, sticky="ew", pady=2)
-                Tooltip(input_widget, description)
-
-        # ---- Progress bar (no label) ----
-        self.progress_var = tk.DoubleVar(value=0)
-        self.progress_bar = ttk.Progressbar(
-            self,
-            mode="determinate",
-            variable=self.progress_var,
-        )
-        self.progress_bar.grid(row=2, column=0, sticky="ew", pady=(6, 0))
+        self._build_progress_bar(2)
 
         self.rowconfigure(0, weight=1)
         self.columnconfigure(0, weight=1)
@@ -1129,168 +1235,51 @@ class CityTab(ttk.Frame):
     def set_status(self, status):
         self.config_frame.configure(text=f"Render Config - {status}")
 
-    def _config_input(self, master, name):
-        if name in PREVIEW_SLIDER_RANGES:
-            lo, hi = PREVIEW_SLIDER_RANGES[name]
-            return IntegerSlider(master, self.config_vars[name], lo, hi)
-        return ttk.Entry(master, textvariable=self.config_vars[name], width=13)
+    def _open_output_folder(self):
+        if not os.path.isdir(CITY_PROD_SCHEM):
+            messagebox.showerror("Output folder missing", CITY_PROD_SCHEM)
+            return
+        os.startfile(CITY_PROD_SCHEM)
 
     def _run_render(self):
         seed = self.seed_var.get().strip()
         try:
-            int(seed)
-        except ValueError:
-            messagebox.showerror("Invalid seed", "Seed must be an integer.")
-            return
-        try:
-            env = self._city_env()
+            validate_seed(seed)
+            env = build_algo_env(self.config_vars)
             fine = env["MC_CITY_FINE"]
         except ValueError as exc:
-            messagebox.showerror("Invalid city config", str(exc))
+            title = "Invalid seed" if str(exc) == "Seed must be an integer." else "Invalid city config"
+            messagebox.showerror(title, str(exc))
             return
 
         scripts = [
-            (["04_city_production/schematics/construct_city.py", "--seed", seed, "--fine", fine], RENDER_PROGRESS_WEIGHTS[0][1]),
-            (["04_city_production/render_city.py"], RENDER_PROGRESS_WEIGHTS[1][1]),
+            (["pipeline/04_city_production/construct_city.py", "--seed", seed, "--fine", fine], RENDER_PROGRESS_WEIGHTS[0][1]),
+            (["pipeline/04_city_production/render_city.py"], RENDER_PROGRESS_WEIGHTS[1][1]),
         ]
-
-        def worker():
-            self.after(0, lambda: self.render_button.configure(state="disabled"))
-            self.after(0, self._start_progress)
-            self.after(0, lambda: self.set_status("Starting render..."))
-
-            try:
-                completed_weight = 0
-                total_scripts = len(scripts)
-                for index, (command, weight) in enumerate(scripts, start=1):
-                    script = command[0]
-                    self.after(
-                        0,
-                        lambda index=index, total=total_scripts, script=script, completed=completed_weight, weight=weight:
-                            self._begin_script_progress(
-                                completed,
-                                completed + weight,
-                                f"Running {index}/{total}: {os.path.basename(script)}",
-                            ),
-                    )
-                    result = subprocess.run(
-                        [sys.executable, "-u", *command],
-                        cwd=ROOT_DIR,
-                        env=env,
-                        capture_output=True,
-                        text=True,
-                        check=False,
-                    )
-                    if result.returncode != 0:
-                        raise RuntimeError(
-                            f"{script} failed with exit code {result.returncode}\n\n"
-                            f"{result.stderr or result.stdout}"
-                        )
-                    completed_weight += weight
-                    self.after(0, lambda value=completed_weight: self._complete_script_progress(value))
-            except Exception as exc:
-                message = str(exc).strip()
-                self.after(0, lambda: self.set_status("Render failed"))
-                self.after(0, lambda: messagebox.showerror("Render failed", message))
-            else:
-                self.after(0, lambda: self.city_viewer.load_image(city_render_path(seed)))
-                self.after(0, self._finish_progress)
-                self.after(0, lambda: self.set_status("Render complete"))
-            finally:
-                self.after(0, self._stop_progress)
-                self.after(0, lambda: self.render_button.configure(state="normal"))
-
-        threading.Thread(target=worker, daemon=True).start()
-
-    def _start_progress(self):
-        self._cancel_progress_animation()
-        self.progress_bar.stop()
-        self.progress_bar.configure(mode="determinate", maximum=100)
-        self.progress_var.set(0)
-        self._progress_soft_target = 0.0
-        self._progress_hard_target = 0.0
-
-    def _finish_progress(self):
-        self._cancel_progress_animation()
-        self.progress_bar.stop()
-        self.progress_bar.configure(mode="determinate")
-        self.progress_var.set(self.progress_bar.cget("maximum"))
-
-    def _stop_progress(self):
-        self._cancel_progress_animation()
-        self.progress_bar.stop()
-        self.progress_bar.configure(mode='determinate')
-
-    def _begin_script_progress(self, start_value, end_value, status):
-        self._cancel_progress_animation()
-        self.progress_var.set(start_value)
-        self._progress_hard_target = float(end_value)
-        segment = max(float(end_value) - float(start_value), 0.0)
-        self._progress_soft_target = float(start_value) + segment * SCRIPT_PROGRESS_HEADROOM
-        self.set_status(status)
-        self._schedule_progress_tick()
-
-    def _complete_script_progress(self, value):
-        self._cancel_progress_animation()
-        self.progress_var.set(value)
-
-    def _schedule_progress_tick(self):
-        self._progress_after_id = self.after(SCRIPT_PROGRESS_TICK_MS, self._progress_tick)
-
-    def _progress_tick(self):
-        self._progress_after_id = None
-        current = float(self.progress_var.get())
-        if current >= self._progress_soft_target:
-            return
-        remaining = self._progress_soft_target - current
-        step = max(0.2, remaining * 0.07)
-        self.progress_var.set(min(current + step, self._progress_soft_target))
-        if float(self.progress_var.get()) < self._progress_soft_target:
-            self._schedule_progress_tick()
-
-    def _cancel_progress_animation(self):
-        if self._progress_after_id is not None:
-            self.after_cancel(self._progress_after_id)
-            self._progress_after_id = None
-
-    def _city_env(self):
-        env = os.environ.copy()
-        for name, _label, _description in PREVIEW_CONFIGS:
-            value = self.config_vars[name].get().strip()
-            if name == "BANNED_BUILDINGS":
-                env[f"MC_CITY_{name}"] = value
-                continue
-            if name == "FINE":
-                try:
-                    value = CANVAS_SIZE_OPTIONS[value]
-                except KeyError:
-                    raise ValueError("City Size must be one of the selector values.")
-            if name == "GAP_MIXED":
-                try:
-                    value = CLEARANCE_OPTIONS[value]
-                except KeyError:
-                    raise ValueError("Grid Density must be one of the selector values.")
-            try:
-                int(value)
-            except ValueError:
-                raise ValueError(f"{name} must be an integer.")
-            env[f"MC_CITY_{name}"] = value
-        return env
+        run_weighted_scripts_async(
+            self,
+            self.render_button,
+            scripts,
+            env,
+            "Starting render...",
+            "Render failed",
+            "Render failed",
+            "Render complete",
+            lambda: self.city_viewer.load_image(city_render_path(seed)),
+        )
 
 
-APP_TK_BASE = ThemedTk if ThemedTk is not None else tk.Tk
+APP_TK_BASE = tk.Tk
 
 
 class CityGeneratorApp(APP_TK_BASE):
     def __init__(self):
-        if ThemedTk is not None:
-            super().__init__(theme=GUI_THEME)
-        else:
-            super().__init__()
         purge_artifacts()
+        super().__init__()
+        self.withdraw()
+        self.ui_font_family = pick_ui_font(self)
         self.title("Minecraft City Generator")
-        self.minsize(960, 720)
-        self.geometry("1160x840")
+        self.geometry(f"{APP_WIDTH}x{APP_HEIGHT}")
 
         theme_bg = self._configure_style()
         self.configure(bg=theme_bg)
@@ -1302,46 +1291,220 @@ class CityGeneratorApp(APP_TK_BASE):
 
         notebook = ttk.Notebook(shell, style="App.TNotebook")
         notebook.grid(row=0, column=0, sticky="nsew")
-        notebook.add(ExtractionTab(notebook), text="Extraction")
-        notebook.add(PreviewTab(notebook), text="Preview")
-        notebook.add(CityTab(notebook), text="Render")
+        self.notebook = notebook
+        self._tab_builders = {
+            "Extraction": ExtractionTab,
+            "Preview": PreviewTab,
+            "Render": CityTab,
+        }
+        self._tab_frames = {}
+        self._loaded_tabs = set()
+        for title in self._tab_builders:
+            frame = ttk.Frame(notebook, style="Page.TFrame")
+            frame.columnconfigure(0, weight=1)
+            frame.rowconfigure(0, weight=1)
+            notebook.add(frame, text=title)
+            self._tab_frames[title] = frame
+        notebook.bind("<<NotebookTabChanged>>", self._on_tab_changed, add="+")
+        self._load_tab("Extraction")
+        self.update_idletasks()
+        self.deiconify()
+
+    def _tab_title(self, tab_id):
+        return self.notebook.tab(tab_id, "text")
+
+    def _load_tab(self, title):
+        if title in self._loaded_tabs:
+            return
+        frame = self._tab_frames[title]
+        tab = self._tab_builders[title](frame)
+        tab.grid(row=0, column=0, sticky="nsew")
+        self._loaded_tabs.add(title)
+
+    def _on_tab_changed(self, _event=None):
+        self._load_tab(self._tab_title(self.notebook.select()))
+
+    def _photo_asset(self, key, width, height, radius, fill, outline=None, outline_width=1):
+        image = ImageTk.PhotoImage(
+            _rounded_image(width, height, radius, fill, outline=outline, outline_width=outline_width)
+        )
+        self._theme_images[key] = image
+        return image
+
+    def _replace_style_element(self, style, style_name, source, target):
+        try:
+            current = style.layout(style_name)
+            style.layout(style_name, _replace_layout_element(current, source, target))
+        except tk.TclError:
+            return
+
+    def _create_image_element(self, style, name, default, *states, border=8, sticky="nsew"):
+        try:
+            style.element_create(name, "image", default, *states, border=border, sticky=sticky)
+        except tk.TclError:
+            return
+
+    def _apply_rounded_theme(self, style, frame_bg, label_fg):
+        if Image is None or ImageDraw is None or ImageTk is None:
+            return
+
+        self._theme_images = {}
+        surface = _blend(frame_bg, "#ffffff", 0.78)
+        surface_alt = _blend(surface, "#ffffff", 0.20)
+        outline = _blend(frame_bg, BORDER, 0.80)
+        panel_outline = _blend(frame_bg, "#2b3444", 0.82)
+        subtle_outline = _blend(outline, "#ffffff", 0.18)
+        accent_active = _blend(ACCENT, "#ffffff", 0.14)
+        accent_pressed = _blend(ACCENT, "#000000", 0.12)
+        disabled_fill = _blend(surface, frame_bg, 0.35)
+        disabled_outline = _blend(outline, frame_bg, 0.35)
+        slider_fill = _blend(ACCENT, "#ffffff", 0.05)
+
+        button_normal = self._photo_asset("button_normal", 28, 28, UI_RADIUS + 2, ACCENT, outline=ACCENT)
+        button_active = self._photo_asset("button_active", 28, 28, UI_RADIUS + 2, accent_active, outline=accent_active)
+        button_pressed = self._photo_asset("button_pressed", 28, 28, UI_RADIUS + 2, accent_pressed, outline=accent_pressed)
+        button_disabled = self._photo_asset("button_disabled", 28, 28, UI_RADIUS + 2, disabled_fill, outline=disabled_outline)
+        field_normal = self._photo_asset("field_normal", 28, 28, UI_RADIUS + 2, "#ffffff", outline=outline)
+        field_focus = self._photo_asset("field_focus", 28, 28, UI_RADIUS + 2, "#ffffff", outline=ACCENT)
+        field_disabled = self._photo_asset("field_disabled", 28, 28, UI_RADIUS + 2, disabled_fill, outline=disabled_outline)
+        tab_normal = self._photo_asset("tab_normal", 30, 24, UI_RADIUS + 2, surface, outline=subtle_outline)
+        tab_selected = self._photo_asset("tab_selected", 30, 24, UI_RADIUS + 2, "#ffffff", outline=ACCENT)
+        group_border = self._photo_asset("group_border", 28, 28, UI_RADIUS + 2, frame_bg, outline=panel_outline, outline_width=2)
+        progress_trough = self._photo_asset("progress_trough", 28, 14, UI_RADIUS + 3, surface, outline=subtle_outline)
+        progress_bar = self._photo_asset("progress_bar", 28, 14, UI_RADIUS + 3, ACCENT, outline=ACCENT)
+        scale_trough = self._photo_asset("scale_trough", 28, 10, UI_RADIUS + 1, surface, outline=subtle_outline)
+        scale_slider = self._photo_asset("scale_slider", 18, 18, 9, slider_fill, outline=ACCENT)
+
+        self._create_image_element(
+            style,
+            "Rounded.Button.border",
+            button_normal,
+            ("disabled", button_disabled),
+            ("pressed", button_pressed),
+            ("active", button_active),
+        )
+        self._create_image_element(
+            style,
+            "Rounded.Entry.field",
+            field_normal,
+            ("disabled", field_disabled),
+            ("focus", field_focus),
+            ("invalid", field_focus),
+        )
+        self._create_image_element(
+            style,
+            "Rounded.Combobox.field",
+            field_normal,
+            ("readonly", field_normal),
+            ("disabled", field_disabled),
+            ("focus", field_focus),
+        )
+        self._create_image_element(
+            style,
+            "Rounded.Notebook.tab",
+            tab_normal,
+            ("selected", tab_selected),
+            ("active", tab_selected),
+        )
+        self._create_image_element(style, "Rounded.Labelframe.border", group_border)
+        self._create_image_element(style, "Rounded.Progressbar.trough", progress_trough, border=7)
+        self._create_image_element(style, "Rounded.Progressbar.pbar", progress_bar, border=7)
+        self._create_image_element(style, "Rounded.Scale.trough", scale_trough, border=5)
+        self._create_image_element(
+            style,
+            "Rounded.Scale.slider",
+            scale_slider,
+            ("pressed", button_pressed),
+            ("active", button_active),
+            border=9,
+        )
+
+        self._replace_style_element(style, "TButton", "Button.border", "Rounded.Button.border")
+        self._replace_style_element(style, "TEntry", "Entry.field", "Rounded.Entry.field")
+        self._replace_style_element(style, "TCombobox", "Combobox.field", "Rounded.Combobox.field")
+        self._replace_style_element(style, "TNotebook.Tab", "Notebook.tab", "Rounded.Notebook.tab")
+        self._replace_style_element(style, "TLabelframe", "Labelframe.border", "Rounded.Labelframe.border")
+        self._replace_style_element(
+            style,
+            "Horizontal.TProgressbar",
+            "Horizontal.Progressbar.trough",
+            "Rounded.Progressbar.trough",
+        )
+        self._replace_style_element(
+            style,
+            "Horizontal.TProgressbar",
+            "Horizontal.Progressbar.pbar",
+            "Rounded.Progressbar.pbar",
+        )
+        self._replace_style_element(style, "Horizontal.TScale", "Horizontal.Scale.trough", "Rounded.Scale.trough")
+        self._replace_style_element(style, "Horizontal.TScale", "Horizontal.Scale.slider", "Rounded.Scale.slider")
+
+        style.configure("TEntry", padding=(10, 6), fieldbackground="#ffffff", borderwidth=0, relief="flat")
+        style.configure("TCombobox", padding=(10, 6), fieldbackground="#ffffff", borderwidth=0, relief="flat", arrowsize=12)
+        style.configure("TNotebook.Tab", padding=(14, 8))
+        style.configure("Horizontal.TProgressbar", thickness=14, borderwidth=0)
+        style.configure("Horizontal.TScale", sliderthickness=18, troughcolor=surface)
+        style.map("TNotebook.Tab", foreground=[("selected", label_fg), ("active", label_fg)])
+        style.map(
+            "TCombobox",
+            fieldbackground=[("readonly", "#ffffff"), ("focus", "#ffffff")],
+            background=[("readonly", "#ffffff")],
+        )
 
     def _configure_style(self):
         style = ttk.Style(self)
-        theme_names = set(style.theme_names())
-        if GUI_THEME in theme_names:
-            style.theme_use(GUI_THEME)
-        elif "vista" in theme_names:
-            style.theme_use("vista")
-        elif "clam" in theme_names:
-            style.theme_use("clam")
+        style.theme_use(GUI_THEME)
 
-        frame_bg = style.lookup("TFrame", "background") or self.cget("bg")
+        frame_bg = _resolve_color(self, style.lookup("TFrame", "background"), "#f3f6fb")
         label_fg = style.lookup("TLabel", "foreground") or TEXT
+        ui_family = self.ui_font_family
 
-        style.configure(".", font=("Segoe UI", 10), foreground=label_fg)
+        style.configure(".", font=ui_font(ui_family, 10), foreground=label_fg)
         style.configure("Page.TFrame", background=frame_bg)
         style.configure("Card.TFrame", background=frame_bg)
         style.configure("TLabel", background=frame_bg, foreground=label_fg)
         style.configure("App.TNotebook", background=frame_bg, borderwidth=0)
-        style.configure("TNotebook.Tab", padding=(12, 6), font=("Segoe UI", 10, "bold"))
-        style.configure("TLabelframe.Label", font=("Segoe UI", 10, "bold"))
+        style.configure("TNotebook.Tab", padding=(12, 6), font=ui_font(ui_family, 10, "bold"))
+        style.configure("TLabelframe.Label", font=ui_font(ui_family, 10, "bold"))
         style.configure("Card.TLabelframe", background=frame_bg)
-        style.configure("Card.TLabelframe.Label", background=frame_bg, foreground=label_fg, font=("Segoe UI", 10, "bold"))
+        style.configure("Card.TLabelframe.Label", background=frame_bg, foreground=label_fg, font=ui_font(ui_family, 10, "bold"))
         style.configure("Inset.TLabelframe", background=frame_bg)
-        style.configure("Inset.TLabelframe.Label", background=frame_bg, foreground=label_fg, font=("Segoe UI", 10, "bold"))
-        style.configure("TButton", font=("Segoe UI", 20, "bold"))
-        style.configure("Action.TButton", font=("Segoe UI", 20, "bold"), padding=(2, 1), borderwidth=2, relief="raised")
-        style.map("Action.TButton", relief=[("pressed", "sunken"), ("active", "raised")])
-        style.configure("TEntry", padding=3)
-        style.configure("TCombobox", padding=3)
+        style.configure("Inset.TLabelframe.Label", background=frame_bg, foreground=label_fg, font=ui_font(ui_family, 10, "bold"))
+        style.configure("TButton", font=ui_font(ui_family, 20, "bold"), padding=(12, 6), borderwidth=0, relief="flat")
+        style.configure(
+            "Action.TButton",
+            font=ui_font(ui_family, 20, "bold"),
+            padding=(12, 6),
+            borderwidth=0,
+            relief="flat",
+        )
 
         return frame_bg
 
 
 def main():
-    app = CityGeneratorApp()
-    app.mainloop()
+    try:
+        app = CityGeneratorApp()
+        app.mainloop()
+    except Exception:
+        message = traceback.format_exc()
+        try:
+            with open(STARTUP_ERROR_LOG, "w", encoding="utf-8") as fh:
+                fh.write(message)
+        except Exception:
+            pass
+        try:
+            import ctypes
+
+            ctypes.windll.user32.MessageBoxW(
+                None,
+                f"GUI startup failed.\n\nDetails were written to:\n{STARTUP_ERROR_LOG}",
+                "Minecraft City Generator",
+                0x10,
+            )
+        except Exception:
+            pass
+        raise
 
 
 if __name__ == "__main__":

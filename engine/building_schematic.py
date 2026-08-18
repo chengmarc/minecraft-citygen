@@ -3,7 +3,7 @@
 import json
 import os
 
-from config_path import BUILD_CATALOG, BUILDS_PROD_SCHEM
+from config.config_path import BUILD_CATALOG, BUILDS_PROD_SCHEM
 from engine import city_layout as C
 from engine.schematic_reader import decode_schem_cells
 from engine.schematic_transform import Tile

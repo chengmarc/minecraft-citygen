@@ -20,10 +20,10 @@ from PIL import Image, ImageDraw, ImageFont
 import sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-ROOT = os.path.dirname(HERE)
+ROOT = os.path.dirname(os.path.dirname(HERE))
 sys.path.insert(0, ROOT)  # shared modules live in the repo root
-from config_algo import CELL
-from config_path import ROADS_SIM
+from config.config_algo import CELL
+from config.config_path import ROADS_SIM
 
 SMALL_PAD = 1
 BIG_PAD = 2

@@ -13,9 +13,9 @@ import math
 from collections import deque
 
 from engine import road_network as R
-from config_algo import (BANNED_BUILDINGS, CELL, TYPE1_TOP_FIT_CHOICES,
-                         TYPE2_SAME_COARSE_SPAN, TYPE2_TOP_FIT_CHOICES)
-from config_path import BUILD_CATALOG
+from config.config_algo import (BANNED_BUILDINGS, CELL, TYPE1_TOP_FIT_CHOICES,
+                                TYPE2_SAME_COARSE_SPAN, TYPE2_TOP_FIT_CHOICES)
+from config.config_path import BUILD_CATALOG
 
 CELL_BLOCKS = CELL
 DIRS = {"N": (0, -1), "E": (1, 0), "S": (0, 1), "W": (-1, 0)}

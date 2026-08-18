@@ -36,13 +36,12 @@ ROAD_BOX = (
 # y0/y1 is retained as catalog metadata; marker blocks define extracted geometry.
 
 BUILD_MEDIEVAL = (1, 0, -366, -266, -140, 64, 65) 
-BUILD_MODERN_A = (1, 0, -366, 0, -135, 64, 65)
-BUILD_MODERN_B = (1, 0, -234, -267, -383, 64, 65)
+BUILD_MODERN_TYPE1 = (1, 0, -300, 0, -265, 64, 65)
 BUILD_MODERN_TYPE2 = (2, 0, 300, 0, -300, 64, 65)
 
 BUILD_MARKER_Y_RANGE = (60, 230)
 BUILD_TYPES = (
     _parse_build_types(os.environ["MC_CITY_BUILD_TYPES"])
     if "MC_CITY_BUILD_TYPES" in os.environ
-    else [BUILD_MODERN_A, BUILD_MODERN_TYPE2]
+    else [BUILD_MODERN_TYPE1, BUILD_MODERN_TYPE2]
 )

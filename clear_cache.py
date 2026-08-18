@@ -7,7 +7,7 @@ import os
 import shutil
 from pathlib import Path
 
-from config_path import (
+from config.config_path import (
     BUILD_CATALOG,
     BUILDS_PROD,
     BUILDS_PROD_SCHEM,

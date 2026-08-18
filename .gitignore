@@ -1,1 +1,19 @@
-__pycache__
+__pycache__/
+**/__pycache__/
+
+# Generated simulation artifacts
+pipeline/01_roads_simulation/*.png
+pipeline/02_builds_simulation/*.png
+pipeline/03_grid_simulation/seed_*_preview.png
+pipeline/04_city_simulation/seed_*.png
+
+# Generated production artifacts
+pipeline/01_roads_production/*.png
+pipeline/01_roads_production/schematics/*.schem
+pipeline/02_builds_production/*.png
+pipeline/02_builds_production/schematics/*.schem
+pipeline/02_builds_production/schematics/buildings.json
+pipeline/03_grid_production/*_render.png
+pipeline/03_grid_production/schematics/seed_*.schem
+pipeline/04_city_production/*.png
+pipeline/04_city_production/schematics/seed_*.schem

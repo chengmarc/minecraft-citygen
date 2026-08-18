@@ -2,7 +2,7 @@
 Road grid library -- shared helper for the grid pipelines.
 
 Holds network generation, the tile catalogue, and 2D vector compositing used by
-03_grid_simulation/draw_grid.py (sim) and 03_grid_production/schematics/construct_grid.py
+03_grid_simulation/draw_grid.py (sim) and 03_grid_production/construct_grid.py
 (prod). Not a driver itself -- import it, optionally call set_size(), then call
 gen_networks()/compose().
 
@@ -37,9 +37,9 @@ from dataclasses import dataclass
 
 from PIL import Image
 
-from config_algo import (CELL, FINE, GAP_MIXED, GAP_BIG, GAP_SMALL, PAD_BIG, PAD_SMALL,
-                         N_BIG_CORNERS, N_SMALL_CORNERS, N_BIG_TEES, N_SMALL_TEES)
-from config_path import ROADS_SIM
+from config.config_algo import (CELL, FINE, GAP_MIXED, GAP_BIG, GAP_SMALL, PAD_BIG, PAD_SMALL,
+                                N_BIG_CORNERS, N_SMALL_CORNERS, N_BIG_TEES, N_SMALL_TEES)
+from config.config_path import ROADS_SIM
 
 # FINE/COARSE/SPAN are the live grid size. CELL/GAP_*/N_*_CORNERS are fixed
 # tuning constants.

@@ -4,12 +4,12 @@ import os
 import sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-ROOT = os.path.dirname(HERE)
+ROOT = os.path.dirname(os.path.dirname(HERE))
 sys.path.insert(0, ROOT)  # shared modules live in the repo root
 from engine.isometric_renderer import render_cells_visible_iso, write_contact
 from engine.schematic_reader import decode_schem_cells
-from config_path import ROADS_PROD, ROADS_PROD_SCHEM
-from config_render import ROAD_ASSET_ISO_BLOCK_H, ROAD_ASSET_ISO_TILE_H, ROAD_ASSET_ISO_TILE_W
+from config.config_path import ROADS_PROD, ROADS_PROD_SCHEM
+from config.config_render import ROAD_ASSET_ISO_BLOCK_H, ROAD_ASSET_ISO_TILE_H, ROAD_ASSET_ISO_TILE_W
 
 SCHEM = ROADS_PROD_SCHEM
 

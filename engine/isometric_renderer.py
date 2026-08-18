@@ -4,10 +4,10 @@ import csv
 import numpy as np
 from PIL import Image, ImageDraw, ImageFont
 
-from config_path import COLOR_RENDER_CSV
-from config_render import (CONTACT_SHEET_BG, ISO_MARGIN, ROAD_ASSET_ISO_BLOCK_H,
-                           ROAD_ASSET_ISO_TILE_H, ROAD_ASSET_ISO_TILE_W,
-                           UNKNOWN_BLOCK_RGBA)
+from config.config_path import COLOR_RENDER_CSV
+from config.config_render import (CONTACT_SHEET_BG, ISO_MARGIN, ROAD_ASSET_ISO_BLOCK_H,
+                                  ROAD_ASSET_ISO_TILE_H, ROAD_ASSET_ISO_TILE_W,
+                                  UNKNOWN_BLOCK_RGBA)
 from engine.schematic_reader import decode_schem_array
 
 try:

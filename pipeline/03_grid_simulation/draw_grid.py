@@ -10,14 +10,15 @@ import sys
 from PIL import Image
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-sys.path.insert(0, os.path.dirname(HERE))  # shared modules live in the repo root
+sys.path.insert(0, os.path.dirname(os.path.dirname(HERE)))  # shared modules live in the repo root
+from config.config_algo import DEFAULT_SEED
 from engine import road_network as R
-from config_path import GRID_SIM
+from config.config_path import GRID_SIM
 
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--seed", type=int, default=5)
+    ap.add_argument("--seed", type=int, default=DEFAULT_SEED)
     ap.add_argument("--fine", type=int, default=R.FINE, help="fine grid edge in cells (even)")
     ap.add_argument("--preview", type=int, default=0, help="edge of the preview png (0 = full res)")
     args = ap.parse_args()

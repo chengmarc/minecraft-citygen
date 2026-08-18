@@ -6,7 +6,7 @@ does not depend on anvil-parser's (outdated) block decoder.
 import struct, zlib, gzip, io, os
 import nbtlib
 
-from config_world import REGION_DIR, ROAD_BOX
+from config.config_world import REGION_DIR, ROAD_BOX
 from engine.isometric_renderer import block_color, is_air
 
 GRASS = block_color("minecraft:grass_block", (110, 170, 90))

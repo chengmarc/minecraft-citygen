@@ -2,7 +2,7 @@
 
 Uses the production footprint catalog only for build size/type metadata.
 No Minecraft world blocks are read here; the source world is consumed upstream
-when 02_builds_production/schematics/extract_builds.py writes buildings.json.
+when 02_builds_production/extract_builds.py writes buildings.json.
 Each output PNG is one pixel per Minecraft block, so 9 px equals one fine city
 cell and placement matches the production schematic grid.
 """
@@ -15,11 +15,11 @@ import sys
 from PIL import Image, ImageDraw, ImageFont
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-ROOT = os.path.dirname(HERE)
+ROOT = os.path.dirname(os.path.dirname(HERE))
 sys.path.insert(0, ROOT)  # shared modules live in the repo root
 from engine.city_layout import catalog_type
-from config_path import BUILD_CATALOG, BUILDS_SIM
-from config_render import BUILD_PREVIEW_COLORS, CONTACT_SHEET_BG
+from config.config_path import BUILD_CATALOG, BUILDS_SIM
+from config.config_render import BUILD_PREVIEW_COLORS, CONTACT_SHEET_BG
 
 CATALOG = BUILD_CATALOG
 

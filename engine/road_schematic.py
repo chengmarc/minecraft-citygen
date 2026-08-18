@@ -5,9 +5,9 @@ import os
 
 import numpy as np
 
-from config_algo import CELL
-from config_path import ROADS_PROD_SCHEM
-from config_world import DATA_VERSION
+from config.config_algo import CELL
+from config.config_path import ROADS_PROD_SCHEM
+from config.config_world import DATA_VERSION
 from engine import road_network as R
 from engine.schematic_reader import decode_schem_cells
 from engine.schematic_transform import Tile, rot_tile

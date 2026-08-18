@@ -8,7 +8,8 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(os.path.dirname(HERE))
 sys.path.insert(0, ROOT)  # shared modules live in the repo root
 
-from config_path import GRID_PROD_SCHEM  # noqa: E402
+from config.config_algo import DEFAULT_SEED  # noqa: E402
+from config.config_path import GRID_PROD_SCHEM  # noqa: E402
 from engine.road_schematic import build, to_schem  # noqa: E402
 from engine.schematic_writer import save_sponge_schem  # noqa: E402
 from engine import road_network as R  # noqa: E402
@@ -16,7 +17,7 @@ from engine import road_network as R  # noqa: E402
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--seed", type=int, default=7)
+    ap.add_argument("--seed", type=int, default=DEFAULT_SEED)
     ap.add_argument("--fine", type=int, default=R.FINE)
     ap.add_argument("--out", default=None, help="output .schem (default: ./seed_<seed>.schem)")
     args = ap.parse_args()
