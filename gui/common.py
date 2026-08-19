@@ -20,6 +20,7 @@ except ImportError:  # pragma: no cover
 
 ROOT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 ICON_DIR = os.path.join(ROOT_DIR, "gui", "icons")
+APP_ICON_PATH = os.path.join(ICON_DIR, "app-icon.png")
 ROAD_CONTACT_SHEET = os.path.join(ROADS_PROD, "_contact_sheet.png")
 BUILD_CONTACT_SHEET = os.path.join(BUILDS_PROD, "_contact_sheet.png")
 
