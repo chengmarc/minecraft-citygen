@@ -97,6 +97,7 @@ python packaging/build_windows_release.py --clean --include-portable --include-s
 ## First-Run Notes
 
 - `tkinter` must be available in your Python install because the desktop app uses Tk.
+- `ttkbootstrap` is the GUI theme layer and is installed with the base project dependencies.
 - the app ships with a bundled default Minecraft Java world, and that is the default extraction source
 - set `MC_CITY_SAVE` or paste a different world path into the Extraction tab when you want to override it
 - final `.schem` exports are copied into `artifacts/worldedit` by default

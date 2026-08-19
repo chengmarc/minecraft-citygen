@@ -46,7 +46,11 @@ def run(*, logger=None, progress=None):
             progress(index, total, key)
 
     contact = os.path.join(BUILDS_PROD, "_contact_sheet.png")
+    if progress is not None:
+        progress(0, 1, "Rendering build contact sheet...")
     write_contact(images, contact, cols=8, cell_w=180, cell_h=180)
+    if progress is not None:
+        progress(1, 1, "Rendered build contact sheet.")
     if logger is not None:
         logger(f"rendered {len(images)} builds -> {contact}")
     return {"count": len(images), "contact_sheet": contact}

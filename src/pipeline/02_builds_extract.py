@@ -203,6 +203,8 @@ def run(*, logger=None, progress=None):
     os.makedirs(BUILDS_PROD_SCHEM, exist_ok=True)
     remove_existing_schems()
 
+    if progress is not None:
+        progress(0, 1, "Scanning build regions...")
     builds = []
     for region in BUILD_TYPES:
         build_type = region.build_type

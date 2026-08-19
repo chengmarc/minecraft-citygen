@@ -4,7 +4,9 @@ from __future__ import annotations
 
 import threading
 import tkinter as tk
-from tkinter import messagebox, ttk
+from tkinter import messagebox
+
+import ttkbootstrap as ttk
 
 from config.config_world import BUILD_TYPES, ROAD_BOX, SAVE
 from pipeline import services
@@ -15,8 +17,10 @@ from gui.widgets import ActionButton, ExtractionSubPanel, ImageViewer, RegionSel
 
 class ExtractionTab(ttk.Frame):
     def __init__(self, master):
-        super().__init__(master)
+        super().__init__(master, padding=8)
         self._suspend_auto_save = False
+        self._progress_after_id = None
+        self._progress_soft_target = 0.0
         saved_config = self.winfo_toplevel().get_saved_config_section("extraction") or common.default_extraction_tab_config()
 
         top = ttk.Frame(self)
@@ -32,28 +36,30 @@ class ExtractionTab(ttk.Frame):
             title="Extracted Road Assets",
             min_height=420,
             initial_message="Click Extract to scan road assets and render the contact sheet.",
+            show_title=False,
         )
         self.road_viewer.image_path = common.ROAD_CONTACT_SHEET
-        self.road_viewer.grid(row=0, column=0, sticky="nsew")
+        self.road_viewer.grid(row=0, column=0, sticky="nsew", padx=(0, 4))
 
         self.build_viewer = ImageViewer(
             top,
             title="Extracted Build Assets",
             min_height=420,
             initial_message="Click Extract to scan build assets and render the contact sheet.",
+            show_title=False,
         )
         self.build_viewer.image_path = common.BUILD_CONTACT_SHEET
-        self.build_viewer.grid(row=0, column=1, sticky="nsew")
+        self.build_viewer.grid(row=0, column=1, sticky="nsew", padx=(4, 0))
 
-        self.config_frame = ttk.LabelFrame(self, text="Extraction")
-        self.config_frame.grid(row=1, column=0, sticky="ew")
+        self.config_frame = ttk.Frame(self, padding=12)
+        self.config_frame.grid(row=1, column=0, sticky="ew", pady=(8, 0))
         self.config_frame.columnconfigure(0, weight=1)
 
         self.world_var = tk.StringVar(value=SAVE)
         header_row = ttk.Frame(self.config_frame)
         header_row.grid(row=0, column=0, sticky="ew")
         header_row.columnconfigure(2, weight=1)
-        ttk.Label(header_row, text="World Location").grid(row=0, column=0, sticky="w")
+        ttk.Label(header_row, text="World Location").grid(row=0, column=0, sticky="w", padx=(0, 6))
         ttk.Entry(header_row, textvariable=self.world_var, width=48).grid(row=0, column=1, sticky="w")
         header_actions = ttk.Frame(header_row)
         header_actions.grid(row=0, column=3, sticky="e")
@@ -66,27 +72,27 @@ class ExtractionTab(ttk.Frame):
         self.extract_button.grid(row=0, column=0)
 
         subpanels = ttk.Frame(self.config_frame)
-        subpanels.grid(row=1, column=0, sticky="ew")
+        subpanels.grid(row=1, column=0, sticky="ew", pady=(10, 0))
         subpanels.columnconfigure(0, weight=1, uniform="extract_config")
         subpanels.columnconfigure(1, weight=1, uniform="extract_config")
         subpanels.columnconfigure(2, weight=1, uniform="extract_config")
 
         self.road_config = ExtractionSubPanel(subpanels, "Road Assets Region", "road", ROAD_BOX, show_extract_button=False)
-        self.road_config.grid(row=0, column=0, sticky="nsew")
+        self.road_config.grid(row=0, column=0, sticky="nsew", padx=(0, 4))
         self.road_config.set_pick_command(
             "road",
             lambda: self._open_region_selector(self.road_config, "road", "Road Region Selector"),
         )
 
         self.house_config = ExtractionSubPanel(subpanels, "House Assets Region", "house", BUILD_TYPES, show_extract_button=False)
-        self.house_config.grid(row=0, column=1, sticky="nsew")
+        self.house_config.grid(row=0, column=1, sticky="nsew", padx=4)
         self.house_config.set_pick_command(
             "house",
             lambda: self._open_region_selector(self.house_config, "house", "House Region Selector"),
         )
 
         self.landmark_config = ExtractionSubPanel(subpanels, "Landmark Assets Region", "landmark", BUILD_TYPES, show_extract_button=False)
-        self.landmark_config.grid(row=0, column=2, sticky="nsew")
+        self.landmark_config.grid(row=0, column=2, sticky="nsew", padx=(4, 0))
         self.landmark_config.set_pick_command(
             "landmark",
             lambda: self._open_region_selector(self.landmark_config, "landmark", "Landmark Region Selector"),
@@ -95,15 +101,24 @@ class ExtractionTab(ttk.Frame):
         self._apply_config_state(saved_config)
         self._bind_auto_save()
 
-        self.progress_var = tk.DoubleVar(value=0)
-        self.progress_bar = ttk.Progressbar(self, mode="determinate", variable=self.progress_var)
-        self.progress_bar.grid(row=2, column=0, sticky="ew")
+        self.status_var = tk.StringVar(value="")
+        self.status_label = ttk.Label(self, textvariable=self.status_var, anchor="w")
+        self.status_label.grid(row=2, column=0, sticky="ew", pady=(2, 0))
+        self.status_label.grid_remove()
 
-        self.rowconfigure(2, weight=0)
+        self.progress_var = tk.DoubleVar(value=0)
+        self.progress_bar = ttk.Progressbar(self, mode="determinate", variable=self.progress_var, bootstyle="primary")
+        self.progress_bar.grid(row=3, column=0, sticky="ew", pady=(2, 0))
+
+        self.rowconfigure(3, weight=0)
         self.rowconfigure(0, weight=1)
 
     def set_status(self, status):
-        self.config_frame.configure(text=f"Extraction - {status}")
+        self.status_var.set(status)
+        if status:
+            self.status_label.grid()
+        else:
+            self.status_label.grid_remove()
 
     def _current_config_state(self):
         return {
@@ -196,15 +211,23 @@ class ExtractionTab(ttk.Frame):
             self.after(0, lambda: self.set_status("Preparing extract..."))
 
             try:
-                current_stage = {"name": None}
+                current_stage = {"name": None, "total": None}
 
-                def on_progress(stage, completed, total, _label):
+                def on_progress(stage, completed, total, label):
                     def update():
-                        if current_stage["name"] != stage:
+                        if current_stage["name"] != stage or current_stage["total"] != total:
                             current_stage["name"] = stage
+                            current_stage["total"] = total
                             self._start_determinate(total)
+                        if total == 1 and completed == 0:
+                            self._begin_soft_progress(label or stage)
+                            return
+                        self._cancel_progress_animation()
                         self.progress_var.set(completed)
-                        self.set_status(f"{stage} {completed}/{total}")
+                        if label and total == 1:
+                            self.set_status(label)
+                        else:
+                            self.set_status(f"{stage} {completed}/{total}")
 
                     self.after(0, update)
 
@@ -226,15 +249,45 @@ class ExtractionTab(ttk.Frame):
         threading.Thread(target=worker, daemon=True).start()
 
     def _start_determinate(self, total):
+        self._cancel_progress_animation()
         self.progress_bar.stop()
         self.progress_bar.configure(mode="determinate", maximum=max(total, 1))
         self.progress_var.set(0)
 
     def _finish_progress(self):
+        self._cancel_progress_animation()
         self.progress_bar.stop()
         self.progress_bar.configure(mode="determinate")
         self.progress_var.set(self.progress_bar.cget("maximum"))
 
     def _stop_progress(self):
+        self._cancel_progress_animation()
         self.progress_bar.stop()
         self.progress_bar.configure(mode="determinate")
+
+    def _begin_soft_progress(self, status):
+        self._cancel_progress_animation()
+        maximum = max(float(self.progress_bar.cget("maximum")), 1.0)
+        self.progress_var.set(0)
+        self._progress_soft_target = maximum * common.SCRIPT_PROGRESS_HEADROOM
+        self.set_status(status)
+        self._schedule_progress_tick()
+
+    def _schedule_progress_tick(self):
+        self._progress_after_id = self.after(common.SCRIPT_PROGRESS_TICK_MS, self._progress_tick)
+
+    def _progress_tick(self):
+        self._progress_after_id = None
+        current = float(self.progress_var.get())
+        if current >= self._progress_soft_target:
+            return
+        remaining = self._progress_soft_target - current
+        step = max(0.02, remaining * 0.07)
+        self.progress_var.set(min(current + step, self._progress_soft_target))
+        if float(self.progress_var.get()) < self._progress_soft_target:
+            self._schedule_progress_tick()
+
+    def _cancel_progress_animation(self):
+        if self._progress_after_id is not None:
+            self.after_cancel(self._progress_after_id)
+            self._progress_after_id = None

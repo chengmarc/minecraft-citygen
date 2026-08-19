@@ -5,28 +5,34 @@ from __future__ import annotations
 import os
 import traceback
 import tkinter as tk
-from tkinter import ttk
+
+import ttkbootstrap as ttk
 
 from gui import common
 from gui.theme import configure_app_style
 from gui.tabs import CityTab, ExtractionTab, PreviewTab
 
 
-class CityGeneratorApp(tk.Tk):
+class CityGeneratorApp(ttk.Window):
     def __init__(self):
-        super().__init__()
+        super().__init__(
+            title="CityGen",
+            theme=common.GUI_THEME,
+            default_button="neutral",
+            iconphoto=None,
+            size=(common.APP_WIDTH, common.APP_HEIGHT),
+            minsize=(960, 720),
+        )
         self.withdraw()
         self._app_icon = None
         self._saved_gui_config = common.load_saved_gui_config()
         self.ui_font_family = common.pick_ui_font(self)
-        self.title("CityGen")
-        self.geometry(f"{common.APP_WIDTH}x{common.APP_HEIGHT}")
         self._configure_icon()
 
         configure_app_style(self, self.ui_font_family)
 
-        self.notebook = ttk.Notebook(self)
-        self.notebook.pack(fill="both", expand=True)
+        self.notebook = ttk.Notebook(self, bootstyle="primary")
+        self.notebook.pack(fill="both", expand=True, padx=10, pady=10)
 
         self._tab_builders = {
             "Extraction": ExtractionTab,
@@ -37,7 +43,7 @@ class CityGeneratorApp(tk.Tk):
         self._loaded_tabs = set()
 
         for title in self._tab_builders:
-            frame = ttk.Frame(self.notebook)
+            frame = ttk.Frame(self.notebook, padding=4)
             frame.columnconfigure(0, weight=1)
             frame.rowconfigure(0, weight=1)
             self.notebook.add(frame, text=title)
@@ -47,6 +53,7 @@ class CityGeneratorApp(tk.Tk):
         self._load_tab("Extraction")
         self.update_idletasks()
         self.deiconify()
+        self.after(0, self._center_window)
 
     def _tab_title(self, tab_id):
         return self.notebook.tab(tab_id, "text")
@@ -78,6 +85,16 @@ class CityGeneratorApp(tk.Tk):
             self.iconphoto(True, self._app_icon)
         except tk.TclError:
             self._app_icon = None
+
+    def _center_window(self):
+        self.update_idletasks()
+        width = self.winfo_width()
+        height = self.winfo_height()
+        screen_width = self.winfo_screenwidth()
+        screen_height = self.winfo_screenheight()
+        x = max((screen_width - width) // 2, 0)
+        y = max((screen_height - height) // 2, 0)
+        self.geometry(f"{width}x{height}+{x}+{y}")
 
 
 def main():

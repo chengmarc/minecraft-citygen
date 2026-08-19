@@ -40,7 +40,11 @@ def run(*, logger=None, progress=None):
             progress(index, total, name)
 
     contact = os.path.join(ROADS_PROD, "_contact_sheet.png")
+    if progress is not None:
+        progress(0, 1, "Rendering road contact sheet...")
     write_contact(images, contact, cols=5, cell_w=220, cell_h=190)
+    if progress is not None:
+        progress(1, 1, "Rendered road contact sheet.")
     if logger is not None:
         logger(f"rendered {len(images)} roads -> {contact}")
     return {"count": len(images), "contact_sheet": contact}

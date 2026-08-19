@@ -10,6 +10,7 @@ This document is the engineering-side companion to the public overview. It expla
 - `Pillow`
 - `numpy`
 - `tkinter` for the desktop GUI
+- `ttkbootstrap` for the desktop theme and modern ttk styling
 
 Declared project metadata currently lives in [pyproject.toml](C:/Users/NewAdmin/Repo/new/pyproject.toml), while some runtime imports are used directly in the codebase.
 

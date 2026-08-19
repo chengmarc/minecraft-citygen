@@ -6,7 +6,8 @@ import os
 import sys
 import threading
 import tkinter as tk
-from tkinter import ttk
+
+import ttkbootstrap as ttk
 
 from engine.render_topdown import render_topdown_preview
 from gui import common
@@ -21,6 +22,18 @@ def _format_extraction_xyz(pos):
     return f"({common.format_xyz(pos)})"
 
 
+def _action_bootstyle(label, icon_name):
+    if label in {"Preview", "Render", "Extract", "Use Selection"}:
+        return "primary"
+    if label in {"Cancel", "Pick", "Output", "Output Folder"}:
+        return "secondary"
+    if icon_name in {"preview", "render", "extract"}:
+        return "primary"
+    if icon_name == "folder":
+        return "secondary"
+    return "secondary"
+
+
 class ImageViewer(ttk.Frame):
     def __init__(
         self,
@@ -32,7 +45,7 @@ class ImageViewer(ttk.Frame):
         fast_zoom=False,
         smooth_zoom=False,
     ):
-        super().__init__(master)
+        super().__init__(master, padding=6)
         self.title = title
         self.image_path = None
         self._source_image = None
@@ -52,7 +65,7 @@ class ImageViewer(ttk.Frame):
 
         canvas_row = 1 if self._has_title else 0
         if self._has_title:
-            ttk.Label(self, text=title).grid(row=0, column=0, sticky="w")
+            ttk.Label(self, text=title).grid(row=0, column=0, sticky="w", pady=(0, 6))
         self.canvas = tk.Canvas(
             self,
             bg=common.CANVAS_BG,
@@ -356,6 +369,13 @@ class ImageViewer(ttk.Frame):
 class ActionButton(ttk.Frame):
     def __init__(self, master, icon_name=None, icon_size=24, **button_kwargs):
         super().__init__(master)
+        self._icon = None
+        if icon_name and "image" not in button_kwargs:
+            self._icon = common.load_icon(icon_name, size=icon_size)
+            if self._icon is not None:
+                button_kwargs.setdefault("image", self._icon)
+                button_kwargs.setdefault("compound", "left")
+        button_kwargs.setdefault("bootstyle", _action_bootstyle(button_kwargs.get("text"), icon_name))
         self.button = ttk.Button(self, **button_kwargs)
         self.button.grid(row=0, column=0, sticky="nsew")
 
@@ -374,9 +394,9 @@ class ActionButton(ttk.Frame):
         return self.button.invoke()
 
 
-class RegionSelectorDialog(tk.Toplevel):
+class RegionSelectorDialog(ttk.Toplevel):
     def __init__(self, master, title, save_path, start_xyz, end_xyz, on_apply):
-        super().__init__(master)
+        super().__init__(master=master)
         self.title(title)
         self.transient(master.winfo_toplevel())
         self.grab_set()
@@ -396,7 +416,7 @@ class RegionSelectorDialog(tk.Toplevel):
         self.selection_start = None
         self.selection_world = None
 
-        shell = ttk.Frame(self)
+        shell = ttk.Frame(self, padding=8)
         shell.grid(row=0, column=0, sticky="nsew")
         self.columnconfigure(0, weight=1)
         self.rowconfigure(0, weight=1)
@@ -411,7 +431,7 @@ class RegionSelectorDialog(tk.Toplevel):
             width=780,
             height=500,
         )
-        self.canvas.grid(row=0, column=0, sticky="nsew")
+        self.canvas.grid(row=0, column=0, sticky="nsew", pady=(0, 8))
         self.canvas.create_text(
             20,
             20,
@@ -863,7 +883,14 @@ class IntegerSlider(ttk.Frame):
         self._last_tick_width = None
         tick_bg = common.APP_BG
 
-        self.scale = ttk.Scale(self, from_=minimum, to=maximum, orient="horizontal", command=self._on_slide)
+        self.scale = ttk.Scale(
+            self,
+            from_=minimum,
+            to=maximum,
+            orient="horizontal",
+            command=self._on_slide,
+            bootstyle="primary",
+        )
         self.scale.set(self.value_var.get())
         self.scale.grid(row=0, column=0, sticky="ew")
         ttk.Label(self, textvariable=self.value_var, width=3, anchor="e").grid(row=0, column=1, sticky="e", padx=(6, 0))
@@ -958,7 +985,7 @@ class WeightedProgressMixin:
 
     def _build_progress_bar(self, row):
         self.progress_var = tk.DoubleVar(value=0)
-        self.progress_bar = ttk.Progressbar(self, mode="determinate", variable=self.progress_var)
+        self.progress_bar = ttk.Progressbar(self, mode="determinate", variable=self.progress_var, bootstyle="primary")
         self.progress_bar.grid(row=row, column=0, sticky="ew", pady=(6, 0))
 
     def _start_progress(self):
@@ -1091,7 +1118,7 @@ def build_shared_config_frame(
     action_button.grid(row=0, column=action_column, sticky="e")
 
     config_grid = ttk.Frame(config_frame)
-    config_grid.grid(row=1, column=0, columnspan=8, sticky="ew", pady=(6, 0))
+    config_grid.grid(row=1, column=0, columnspan=8, sticky="ew", pady=(10, 0))
     for column in range(len(common.PREVIEW_CONFIG_GROUPS)):
         config_grid.columnconfigure(column, weight=1, uniform=uniform_name)
 

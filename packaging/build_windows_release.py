@@ -123,6 +123,8 @@ def base_pyinstaller_command(*, onefile: bool, icon_path: Path | None) -> list[s
         "pipeline",
         "--collect-submodules",
         "tkinter",
+        "--collect-data",
+        "ttkbootstrap",
         "--hidden-import",
         "tkinter",
         "--hidden-import",

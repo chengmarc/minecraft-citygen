@@ -12,6 +12,7 @@ dependencies = [
     "Pillow>=10.0",
     "numpy>=1.26",
     "nbtlib>=2.0.4",
+    "ttkbootstrap>=2.2,<3",
 ]
 
 [project.optional-dependencies]

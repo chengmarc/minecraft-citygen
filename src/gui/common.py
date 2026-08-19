@@ -30,19 +30,19 @@ APP_ICON_PATH = os.path.join(ICON_DIR, "app-icon.png")
 ROAD_CONTACT_SHEET = os.path.join(ROADS_PROD, "_contact_sheet.png")
 BUILD_CONTACT_SHEET = os.path.join(BUILDS_PROD, "_contact_sheet.png")
 
-APP_BG = "#f0f0f0"
-BORDER = "#808080"
-TEXT = "#000000"
-ACCENT = "#0a64ad"
+APP_BG = "#f6f7fb"
+BORDER = "#cbd3df"
+TEXT = "#1d2733"
+ACCENT = "#0d6efd"
 CANVAS_BG = "#ffffff"
-CANVAS_TEXT = "#000000"
-TICK = "#808080"
-TOOLTIP_BG = "#ffffe0"
-TOOLTIP_TEXT = "#000000"
+CANVAS_TEXT = "#1d2733"
+TICK = "#aab4c3"
+TOOLTIP_BG = "#1d2733"
+TOOLTIP_TEXT = "#ffffff"
 BUTTON_WIDTH = 8
-GUI_THEME = "vista"
-APP_WIDTH = 1024
-APP_HEIGHT = 768
+GUI_THEME = "litera"
+APP_WIDTH = 1600
+APP_HEIGHT = 900
 STARTUP_ERROR_LOG = os.path.join(ROOT_DIR, "application_startup_error.log")
 LEGACY_SAVED_GUI_CONFIG_PATH = os.path.join(ROOT_DIR, "citygen_saved_config.json")
 SAVED_GUI_CONFIG_PATH = os.path.join(CONFIG_DIR, "config_citygen.json")
@@ -117,6 +117,31 @@ SCRIPT_PROGRESS_HEADROOM = 0.88
 SCRIPT_PROGRESS_TICK_MS = 120
 _ICON_CACHE = {}
 _ICON_COLOR_CACHE = {}
+
+
+def apply_theme_colors(
+    *,
+    app_bg,
+    border,
+    text,
+    accent,
+    canvas_bg,
+    canvas_text,
+    tick,
+    tooltip_bg,
+    tooltip_text,
+):
+    global APP_BG, BORDER, TEXT, ACCENT, CANVAS_BG, CANVAS_TEXT, TICK, TOOLTIP_BG, TOOLTIP_TEXT
+
+    APP_BG = app_bg
+    BORDER = border
+    TEXT = text
+    ACCENT = accent
+    CANVAS_BG = canvas_bg
+    CANVAS_TEXT = canvas_text
+    TICK = tick
+    TOOLTIP_BG = tooltip_bg
+    TOOLTIP_TEXT = tooltip_text
 
 
 def resolve_color(widget, color, fallback):

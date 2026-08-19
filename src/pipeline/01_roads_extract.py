@@ -160,6 +160,8 @@ def remove_existing_schems():
 def run(*, logger=None, progress=None):
     os.makedirs(OUT, exist_ok=True)
     remove_existing_schems()
+    if progress is not None:
+        progress(0, 1, "Scanning road region...")
     signs = read_signs()
     comps = components()
     if logger is not None:
