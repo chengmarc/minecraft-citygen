@@ -30,6 +30,7 @@ citygen = "gui.launcher:main"
 citygen-doctor = "config.doctor:main"
 
 [tool.setuptools.package-data]
+config = ["default_world/*", "default_world/**/*"]
 engine = ["color_render.csv"]
 gui = ["icons/*.png"]
 

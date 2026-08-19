@@ -9,14 +9,13 @@ The default release artifact is:
 ## Release Rules
 
 - do not publish `dist/portable` or `dist/onefile` artifacts unless there is a specific testing reason
-- version numbers should be kept consistent across package metadata, installer output, app title, and README text
-- the current repo has a known naming mismatch: `pyproject.toml` is `0.1.0`, while the app/README still say `v0.5`
-- resolve that mismatch intentionally before a public release instead of letting it drift
+- do not show a version number inside the app UI or README; the git tag is the release version of record
+- keep packaging metadata intentional, but do not treat it as user-facing release branding
 
 ## Pre-Release Checklist
 
 1. Freeze the scope for the release. Do not mix feature work into the release build pass.
-2. Choose the release version and update all user-visible version strings together.
+2. Choose the release tag you intend to publish.
 3. Update [CHANGELOG.md](CHANGELOG.md) with the release date and the final changes.
 4. Run the test suite:
 
@@ -27,7 +26,7 @@ python -m unittest discover -s tests
 5. Build the installer:
 
 ```bash
-python scripts/build_windows_release.py --clean
+python packaging/build_windows_release.py --clean
 ```
 
 6. Confirm the only published artifact in `dist/release` is `CityGen-setup.exe`.
@@ -69,7 +68,7 @@ Inno Setup must be installed so `ISCC.exe` is available. The current build scrip
 These are for testing only and should not be the default public deliverables:
 
 ```bash
-python scripts/build_windows_release.py --clean --include-portable --include-standalone
+python packaging/build_windows_release.py --clean --include-portable --include-standalone
 ```
 
 This can additionally produce:
@@ -79,7 +78,7 @@ This can additionally produce:
 
 ## Recommended Release Sequence
 
-1. Update versions.
+1. Choose the release tag.
 2. Update changelog.
 3. Run tests.
 4. Build installer.

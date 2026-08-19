@@ -1,6 +1,6 @@
-# CityGen v0.5 Technical Reference
+# CityGen Technical Reference
 
-This document is the engineering-side companion to the public overview. It explains how CityGen v0.5 is structured, how assets are marked in-world, how the road grid is generated, and how final city placement works.
+This document is the engineering-side companion to the public overview. It explains how CityGen is structured, how assets are marked in-world, how the road grid is generated, and how final city placement works.
 
 ## Requirements, Assumptions, and Limitations
 
@@ -28,9 +28,9 @@ Important note:
 
 ### Environment Assumptions
 
-- the default world path in [config/config_world.py](C:/Users/NewAdmin/Repo/new/config/config_world.py) points to a local PrismLauncher Java world, but this is configurable
+- the app defaults to a bundled world in [src/config/default_world](C:/Users/NewAdmin/Repo/new/src/config/default_world), and `MC_CITY_SAVE` can override it
 - the GUI has Windows-oriented behavior in a few places, such as `os.startfile(...)`
-- the pipeline expects local filesystem access to the Minecraft save and the WorldEdit schematics directory
+- the pipeline expects local filesystem access to the Minecraft save and to the export directory used for `.schem` copy-out
 
 ### Practical Limitations
 

@@ -35,6 +35,7 @@ ONEFILE_EXE = RELEASE_DIST / f"{APP_NAME}.exe"
 INSTALLER_EXE = RELEASE_DIST / f"{APP_NAME}-setup.exe"
 ICON_PNG = SRC_ROOT / "gui" / "icons" / "app-icon.png"
 ICON_ICO = BUILD_ROOT / "app-icon.ico"
+DEFAULT_WORLD_DIR = SRC_ROOT / "config" / "default_world"
 README_FILES = (
     (ROOT / "README.md", "README.md"),
     (DOCS_ROOT / "TECHNICAL.md", "TECHNICAL.md"),
@@ -86,7 +87,11 @@ def build_icon() -> Path | None:
         return None
     BUILD_ROOT.mkdir(parents=True, exist_ok=True)
     with Image.open(ICON_PNG) as image:
-        image.save(ICON_ICO, format="ICO", sizes=[(256, 256), (128, 128), (64, 64), (48, 48), (32, 32), (16, 16)])
+        image.save(
+            ICON_ICO,
+            format="ICO",
+            sizes=[(256, 256), (128, 128), (64, 64), (48, 48), (32, 32), (16, 16)],
+        )
     return ICON_ICO
 
 
@@ -126,6 +131,8 @@ def base_pyinstaller_command(*, onefile: bool, icon_path: Path | None) -> list[s
         data_arg(SRC_ROOT / "gui" / "icons", "gui/icons"),
         "--add-data",
         data_arg(SRC_ROOT / "engine" / "color_render.csv", "engine"),
+        "--add-data",
+        data_arg(DEFAULT_WORLD_DIR, "config/default_world"),
     ]
     if onefile:
         command.append("--onefile")
@@ -163,7 +170,12 @@ def build_zip(app_dir: Path) -> Path:
     RELEASE_DIST.mkdir(parents=True, exist_ok=True)
     if ZIP_PATH.exists():
         ZIP_PATH.unlink()
-    archive = shutil.make_archive(str(RELEASE_DIST / ZIP_BASENAME), "zip", root_dir=PORTABLE_DIST, base_dir=APP_NAME)
+    archive = shutil.make_archive(
+        str(RELEASE_DIST / ZIP_BASENAME),
+        "zip",
+        root_dir=PORTABLE_DIST,
+        base_dir=APP_NAME,
+    )
     return Path(archive)
 
 

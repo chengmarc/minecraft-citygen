@@ -11,7 +11,7 @@ The format is based on Keep a Changelog, and versions should match the release v
 ### Added
 
 - installable project metadata and command entry points for the GUI and environment doctor
-- automatic discovery for common Minecraft save folders and WorldEdit schematic folders
+- a bundled default Minecraft world that ships with the app
 - Windows installer build pipeline with PyInstaller, Inno Setup, and local packaging hooks for Tcl/Tk
 - installer-only release flow with a documented Windows release command
 - release support docs in `README.md`, plus this changelog and `RELEASING.md`
@@ -19,7 +19,7 @@ The format is based on Keep a Changelog, and versions should match the release v
 
 ### Changed
 
-- hard-coded machine-specific default paths were replaced with portable discovery and safer fallbacks
+- hard-coded machine-specific default paths were replaced with bundled defaults and explicit environment overrides
 - frozen builds now package Tcl/Tk explicitly instead of relying on PyInstaller's broken auto-detection on this Python install
 - the isometric renderer now works without `numba`, while using CPU `numba` acceleration when it is available
 - release artifacts are now published to `dist/release`, with `CityGen-setup.exe` as the primary deliverable
@@ -30,4 +30,3 @@ The format is based on Keep a Changelog, and versions should match the release v
 - Windows-only output-folder behavior replaced with a cross-platform helper
 - clearer extraction errors when the configured world path is missing
 - packaged app startup failure caused by missing `tkinter` in the frozen build
-

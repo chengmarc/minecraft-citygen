@@ -28,11 +28,11 @@ class ImageViewer(ttk.Frame):
         title,
         initial_message="",
         min_height=420,
-        show_title=False,
+        show_title=True,
         fast_zoom=False,
         smooth_zoom=False,
     ):
-        super().__init__(master, style="Card.TFrame", padding=6)
+        super().__init__(master)
         self.title = title
         self.image_path = None
         self._source_image = None
@@ -52,13 +52,11 @@ class ImageViewer(ttk.Frame):
 
         canvas_row = 1 if self._has_title else 0
         if self._has_title:
-            ttk.Label(self, text=title).grid(row=0, column=0, sticky="w", pady=(0, 8))
+            ttk.Label(self, text=title).grid(row=0, column=0, sticky="w")
         self.canvas = tk.Canvas(
             self,
             bg=common.CANVAS_BG,
-            highlightthickness=1,
-            highlightbackground=common.BORDER,
-            highlightcolor=common.ACCENT,
+            highlightthickness=0,
             bd=0,
             width=420,
             height=min_height,
@@ -357,39 +355,9 @@ class ImageViewer(ttk.Frame):
 
 class ActionButton(ttk.Frame):
     def __init__(self, master, icon_name=None, icon_size=24, **button_kwargs):
-        super().__init__(master, style="Page.TFrame")
-        self.columnconfigure(0, weight=1)
-        self.rowconfigure(0, weight=1)
-        self._icon = (
-            common.load_icon(icon_name, size=icon_size)
-            if icon_name
-            else None
-        )
-        style_name = "Action.TButton"
-
-        if self._icon is not None:
-            button_kwargs.setdefault("image", self._icon)
-            button_kwargs.setdefault("compound", "left")
-        if icon_name:
-            style_name = self._ensure_icon_style(icon_name)
-
-        self.button = ttk.Button(self, style=style_name, **button_kwargs)
+        super().__init__(master)
+        self.button = ttk.Button(self, **button_kwargs)
         self.button.grid(row=0, column=0, sticky="nsew")
-
-    def _ensure_icon_style(self, icon_name):
-        color = common.icon_text_color(icon_name)
-        style_name = f"{icon_name}.Action.TButton"
-        style = ttk.Style(self)
-        style.configure(style_name, foreground=color)
-        style.map(
-            style_name,
-            foreground=[
-                ("disabled", common.blend(color, common.BORDER, 0.45)),
-                ("pressed", color),
-                ("active", color),
-            ],
-        )
-        return style_name
 
     def configure(self, cnf=None, **kwargs):
         return self.button.configure(cnf, **kwargs)
@@ -428,7 +396,7 @@ class RegionSelectorDialog(tk.Toplevel):
         self.selection_start = None
         self.selection_world = None
 
-        shell = ttk.Frame(self, padding=10, style="Page.TFrame")
+        shell = ttk.Frame(self)
         shell.grid(row=0, column=0, sticky="nsew")
         self.columnconfigure(0, weight=1)
         self.rowconfigure(0, weight=1)
@@ -438,9 +406,7 @@ class RegionSelectorDialog(tk.Toplevel):
         self.canvas = tk.Canvas(
             shell,
             bg=common.CANVAS_BG,
-            highlightthickness=1,
-            highlightbackground=common.BORDER,
-            highlightcolor=common.ACCENT,
+            highlightthickness=0,
             bd=0,
             width=780,
             height=500,
@@ -466,14 +432,14 @@ class RegionSelectorDialog(tk.Toplevel):
         self.canvas.bind("<ButtonRelease-1>", self._on_release)
 
         self.status_var = tk.StringVar(value="Loading world preview...")
-        ttk.Label(shell, textvariable=self.status_var, style="Subtle.TLabel").grid(
+        ttk.Label(shell, textvariable=self.status_var).grid(
             row=1,
             column=0,
             sticky="w",
             pady=(8, 0),
         )
 
-        actions = ttk.Frame(shell, style="Page.TFrame")
+        actions = ttk.Frame(shell)
         actions.grid(row=2, column=0, sticky="e", pady=(10, 0))
         ttk.Button(actions, text="Cancel", command=self.destroy).grid(row=0, column=0, padx=(0, 6))
         self.apply_button = ttk.Button(actions, text="Use Selection", command=self._apply, state="disabled")
@@ -789,12 +755,12 @@ class RegionSelectorDialog(tk.Toplevel):
 
 class ExtractionSubPanel(ttk.LabelFrame):
     def __init__(self, master, title, area_kind, area_value, show_extract_button=True):
-        super().__init__(master, text=title, padding=6, style="Inset.TLabelframe")
+        super().__init__(master, text=title)
         self.area_kind = area_kind
         self.area_vars = {}
         self.pick_buttons = {}
         self.extract_button = None
-        self.content = ttk.Frame(self, style="Card.TFrame")
+        self.content = ttk.Frame(self)
 
         self.rowconfigure(0, weight=1)
         self.rowconfigure(2, weight=1)
@@ -888,14 +854,14 @@ class ExtractionSubPanel(ttk.LabelFrame):
 
 class IntegerSlider(ttk.Frame):
     def __init__(self, master, text_var, minimum, maximum):
-        super().__init__(master, style="Card.TFrame")
+        super().__init__(master)
         self.text_var = text_var
         self.minimum = minimum
         self.maximum = maximum
         self.value_var = tk.IntVar(value=self._coerce(text_var.get()))
         self._tick_after_id = None
         self._last_tick_width = None
-        tick_bg = self.tk.call("ttk::style", "lookup", "Card.TFrame", "-background") or self.cget("background")
+        tick_bg = common.APP_BG
 
         self.scale = ttk.Scale(self, from_=minimum, to=maximum, orient="horizontal", command=self._on_slide)
         self.scale.set(self.value_var.get())
@@ -1092,7 +1058,7 @@ def build_shared_config_frame(
     density_input.grid(row=0, column=5, sticky="w")
     Tooltip(density_input, common.PREVIEW_CONFIG_LOOKUP["GAP_MIXED"][1])
 
-    actions_frame = ttk.Frame(config_frame, style="Card.TFrame")
+    actions_frame = ttk.Frame(config_frame)
     actions_frame.grid(row=0, column=7, sticky="e")
 
     if extra_actions:
@@ -1124,13 +1090,13 @@ def build_shared_config_frame(
     )
     action_button.grid(row=0, column=action_column, sticky="e")
 
-    config_grid = ttk.Frame(config_frame, style="Card.TFrame")
+    config_grid = ttk.Frame(config_frame)
     config_grid.grid(row=1, column=0, columnspan=8, sticky="ew", pady=(6, 0))
     for column in range(len(common.PREVIEW_CONFIG_GROUPS)):
         config_grid.columnconfigure(column, weight=1, uniform=uniform_name)
 
     for group_col, (group_title, names) in enumerate(common.PREVIEW_CONFIG_GROUPS):
-        group = ttk.LabelFrame(config_grid, text=group_title, padding=6, style="Inset.TLabelframe")
+        group = ttk.LabelFrame(config_grid, text=group_title)
         group.grid(row=0, column=group_col, sticky="nsew", padx=(0 if group_col == 0 else 4, 0))
         group.columnconfigure(1, weight=1)
         for row, name in enumerate(names):

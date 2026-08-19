@@ -1,7 +1,7 @@
-# CityGen v0.5 - Minecraft City Generator
+# CityGen - Minecraft City Generator
 
 <p align="center">
-  <img src="src/gui/icons/app-icon.png" alt="CityGen v0.5 app icon" width="180">
+  <img src="src/gui/icons/app-icon.png" alt="CityGen app icon" width="180">
 </p>
 
 **Build a full Minecraft city from your own roads and buildings in minutes.**
@@ -13,7 +13,7 @@ This project turns a small handcrafted asset set into a complete city layout, pr
 
 ## What It Is
 
-CityGen v0.5 is a desktop tool that helps you:
+CityGen is a desktop tool that helps you:
 
 - extract roads and building pieces from a Minecraft world
 - generate a full city layout from those pieces
@@ -85,21 +85,22 @@ The installer build includes CPU `numba` acceleration for faster isometric rende
 Build command:
 
 ```bash
-python scripts/build_windows_release.py --clean
+python packaging/build_windows_release.py --clean
 ```
 
 If you explicitly want extra deliverables for testing, opt in:
 
 ```bash
-python scripts/build_windows_release.py --clean --include-portable --include-standalone
+python packaging/build_windows_release.py --clean --include-portable --include-standalone
 ```
 
 ## First-Run Notes
 
 - `tkinter` must be available in your Python install because the desktop app uses Tk.
-- extraction requires a local Minecraft Java world save; set `MC_CITY_SAVE` or paste the path into the Extraction tab
-- the app now auto-detects common Minecraft save and WorldEdit directories when possible
-- if no WorldEdit schematics folder is detected, final `.schem` exports fall back to `artifacts/worldedit`
+- the app ships with a bundled default Minecraft Java world, and that is the default extraction source
+- set `MC_CITY_SAVE` or paste a different world path into the Extraction tab when you want to override it
+- final `.schem` exports are copied into `artifacts/worldedit` by default
+- set `MC_CITY_WORLDEDIT_SCHEM` if you want the export copy target somewhere else
 - optional speedup: install `numba` with `python -m pip install .[speed]`
 
 ## Why It’s Different

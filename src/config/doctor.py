@@ -11,7 +11,7 @@ from pathlib import Path
 if __package__ in (None, ""):
     sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from config.config_path import RESOURCE_ROOT, ROOT, WORLDEDIT_SCHEM
+from config.config_path import DEFAULT_WORLD, RESOURCE_ROOT, ROOT, WORLDEDIT_SCHEM
 from config.config_world import REGION_DIR, REGION_DIR_CANDIDATES, SAVE
 
 
@@ -47,6 +47,7 @@ def main() -> int:
 
     print("Paths")
     _print_path("save", SAVE, exists=bool(SAVE) and os.path.isdir(SAVE))
+    _print_path("bundled default world", DEFAULT_WORLD, exists=os.path.isdir(DEFAULT_WORLD))
     _print_path("region", REGION_DIR, exists=bool(REGION_DIR) and os.path.isdir(REGION_DIR))
     _print_path("worldedit schematics", WORLDEDIT_SCHEM, exists=os.path.isdir(WORLDEDIT_SCHEM))
     if REGION_DIR_CANDIDATES:
@@ -58,7 +59,7 @@ def main() -> int:
     if not SAVE or not os.path.isdir(REGION_DIR):
         print("Action: set MC_CITY_SAVE to your Minecraft world folder or paste it into the Extraction tab.")
     if not os.path.isdir(WORLDEDIT_SCHEM):
-        print("Action: the final .schem will fall back to the repo-local artifacts/worldedit folder.")
+        print("Action: set MC_CITY_WORLDEDIT_SCHEM if you want exports copied somewhere other than artifacts/worldedit.")
 
     return 1 if missing else 0
 

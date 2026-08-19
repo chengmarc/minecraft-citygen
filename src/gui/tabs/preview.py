@@ -15,12 +15,12 @@ from gui.widgets import ImageViewer, WeightedProgressMixin, build_shared_config_
 
 class PreviewTab(WeightedProgressMixin, ttk.Frame):
     def __init__(self, master):
-        super().__init__(master, padding=10, style="Page.TFrame")
+        super().__init__(master)
         self._init_weighted_progress()
         self._suspend_auto_save = False
         saved_config = self.winfo_toplevel().get_saved_config_section("preview") or common.default_algo_tab_config()
 
-        top = ttk.Frame(self, style="Page.TFrame")
+        top = ttk.Frame(self)
         top.grid(row=0, column=0, sticky="nsew")
         top.columnconfigure(0, weight=1, uniform="preview")
         top.columnconfigure(1, weight=1, uniform="preview")
@@ -32,7 +32,7 @@ class PreviewTab(WeightedProgressMixin, ttk.Frame):
             initial_message="Click Preview to generate the grid preview image.",
             smooth_zoom=True,
         )
-        self.grid_viewer.grid(row=0, column=0, sticky="nsew", padx=(0, 4))
+        self.grid_viewer.grid(row=0, column=0, sticky="nsew")
 
         self.city_viewer = ImageViewer(
             top,
@@ -40,12 +40,12 @@ class PreviewTab(WeightedProgressMixin, ttk.Frame):
             initial_message="Click Preview to generate the city preview image.",
             smooth_zoom=True,
         )
-        self.city_viewer.grid(row=0, column=1, sticky="nsew", padx=(4, 0))
+        self.city_viewer.grid(row=0, column=1, sticky="nsew")
         self.grid_viewer.set_view_change_callback(self._sync_preview_viewers)
         self.city_viewer.set_view_change_callback(self._sync_preview_viewers)
 
-        self.config_frame = ttk.LabelFrame(self, text="⬤ Preview Config", padding=8, style="Card.TLabelframe")
-        self.config_frame.grid(row=1, column=0, sticky="ew", pady=(8, 0))
+        self.config_frame = ttk.LabelFrame(self, text="Preview")
+        self.config_frame.grid(row=1, column=0, sticky="ew")
         self.seed_var = tk.StringVar(value=str(saved_config.get("seed", DEFAULT_SEED)))
         self.config_vars = common.create_config_vars(saved_config.get("algo"))
         self.preview_button = build_shared_config_frame(
@@ -63,7 +63,7 @@ class PreviewTab(WeightedProgressMixin, ttk.Frame):
         self.columnconfigure(0, weight=1)
 
     def set_status(self, status):
-        self.config_frame.configure(text=f"⬤ Preview Config - {status}")
+        self.config_frame.configure(text=f"Preview - {status}")
 
     def _current_config_state(self):
         return {

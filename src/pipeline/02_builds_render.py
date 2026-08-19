@@ -12,7 +12,7 @@ if __package__ in (None, ""):
 
 from config.config_path import BUILD_CATALOG, BUILDS_PROD, BUILDS_PROD_SCHEM
 from engine.city_layout import catalog_type
-from engine.isometric_renderer import render_cells_visible_iso, write_contact
+from engine.render_isometric import render_cells_visible_iso, write_contact
 from engine.schematic_reader import decode_schem_cells
 
 SCHEM = BUILDS_PROD_SCHEM

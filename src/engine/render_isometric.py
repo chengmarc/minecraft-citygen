@@ -1,13 +1,12 @@
 """Shared PNG render helpers for schematic/block previews."""
-import csv
 
 import numpy as np
 from PIL import Image, ImageDraw, ImageFont
 
-from config.config_path import COLOR_RENDER_CSV
 from config.config_render import (CONTACT_SHEET_BG, ISO_MARGIN, ROAD_ASSET_ISO_BLOCK_H,
                                   ROAD_ASSET_ISO_TILE_H, ROAD_ASSET_ISO_TILE_W,
                                   UNKNOWN_BLOCK_RGBA)
+from engine.render_palette import block_color, is_air
 from engine.schematic_reader import decode_schem_array
 
 try:
@@ -20,35 +19,6 @@ TILE_H = ROAD_ASSET_ISO_TILE_H
 BLOCK_H = ROAD_ASSET_ISO_BLOCK_H
 MARGIN = ISO_MARGIN
 UNKNOWN = UNKNOWN_BLOCK_RGBA
-
-
-def _load_render_colors(path=COLOR_RENDER_CSV):
-    colors = {}
-    with open(path, newline="", encoding="utf-8-sig") as f:
-        for row in csv.DictReader(f):
-            block = (row.get("block_name") or "").strip()
-            r, g, b = ((row.get(k) or "").strip() for k in ("r", "g", "b"))
-            if not block or not r or not g or not b:
-                continue
-            colors[block] = (int(r), int(g), int(b))
-    return colors
-
-
-COLORS = _load_render_colors()
-
-
-def block_id(state):
-    """Return a namespaced block id from a block state or base name."""
-    name = str(state).split("[", 1)[0]
-    return name if ":" in name else f"minecraft:{name}"
-
-
-def is_air(state):
-    return block_id(state) in {"minecraft:air", "minecraft:cave_air", "minecraft:void_air"}
-
-
-def block_color(state, default=UNKNOWN):
-    return COLORS.get(block_id(state), default)
 
 
 def cells_to_grid(cells):

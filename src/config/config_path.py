@@ -5,9 +5,6 @@ from __future__ import annotations
 import os
 import sys
 
-from config.path_discovery import discover_worldedit_schematics
-
-
 APP_NAME = "CityGen"
 SOURCE_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 PROJECT_ROOT = os.path.dirname(SOURCE_ROOT)
@@ -70,6 +67,7 @@ ROOT = _app_root()
 ENGINE = os.path.join(RESOURCE_ROOT, "engine")
 PIPELINE = os.path.join(RESOURCE_ROOT, "pipeline")
 GUI = os.path.join(RESOURCE_ROOT, "gui")
+DEFAULT_WORLD = os.path.join(RESOURCE_ROOT, "config", "default_world")
 ARTIFACTS = os.path.join(ROOT, "artifacts")
 
 
@@ -94,9 +92,8 @@ CITY_SIM = _artifact_dir("city", "simulation")
 CITY_PROD = _artifact_dir("city", "production")
 CITY_PROD_SCHEM = CITY_PROD
 
-WORLDEDIT_SCHEM = discover_worldedit_schematics(
-    os.environ.get("MC_CITY_SAVE"),
-    _artifact_dir("worldedit"),
+WORLDEDIT_SCHEM = os.path.normpath(
+    os.environ.get("MC_CITY_WORLDEDIT_SCHEM") or _artifact_dir("worldedit")
 )
 
 COLOR_RENDER_CSV = os.path.join(ENGINE, "color_render.csv")

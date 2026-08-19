@@ -15,11 +15,11 @@ from gui.widgets import ActionButton, ExtractionSubPanel, ImageViewer, RegionSel
 
 class ExtractionTab(ttk.Frame):
     def __init__(self, master):
-        super().__init__(master, padding=10, style="Page.TFrame")
+        super().__init__(master)
         self._suspend_auto_save = False
         saved_config = self.winfo_toplevel().get_saved_config_section("extraction") or common.default_extraction_tab_config()
 
-        top = ttk.Frame(self, style="Page.TFrame")
+        top = ttk.Frame(self)
         top.grid(row=0, column=0, sticky="nsew")
         top.columnconfigure(0, weight=1, uniform="extract_view")
         top.columnconfigure(1, weight=1, uniform="extract_view")
@@ -34,7 +34,7 @@ class ExtractionTab(ttk.Frame):
             initial_message="Click Extract to scan road assets and render the contact sheet.",
         )
         self.road_viewer.image_path = common.ROAD_CONTACT_SHEET
-        self.road_viewer.grid(row=0, column=0, sticky="nsew", padx=(0, 4))
+        self.road_viewer.grid(row=0, column=0, sticky="nsew")
 
         self.build_viewer = ImageViewer(
             top,
@@ -43,20 +43,20 @@ class ExtractionTab(ttk.Frame):
             initial_message="Click Extract to scan build assets and render the contact sheet.",
         )
         self.build_viewer.image_path = common.BUILD_CONTACT_SHEET
-        self.build_viewer.grid(row=0, column=1, sticky="nsew", padx=(4, 0))
+        self.build_viewer.grid(row=0, column=1, sticky="nsew")
 
-        self.config_frame = ttk.LabelFrame(self, text="⬤ Extraction Config", padding=8, style="Card.TLabelframe")
-        self.config_frame.grid(row=1, column=0, sticky="ew", pady=(8, 0))
+        self.config_frame = ttk.LabelFrame(self, text="Extraction")
+        self.config_frame.grid(row=1, column=0, sticky="ew")
         self.config_frame.columnconfigure(0, weight=1)
 
         self.world_var = tk.StringVar(value=SAVE)
-        header_row = ttk.Frame(self.config_frame, style="Card.TFrame")
+        header_row = ttk.Frame(self.config_frame)
         header_row.grid(row=0, column=0, sticky="ew")
         header_row.columnconfigure(2, weight=1)
-        ttk.Label(header_row, text="World Location").grid(row=0, column=0, sticky="w", padx=(0, 6))
+        ttk.Label(header_row, text="World Location").grid(row=0, column=0, sticky="w")
         ttk.Entry(header_row, textvariable=self.world_var, width=48).grid(row=0, column=1, sticky="w")
-        header_actions = ttk.Frame(header_row, style="Card.TFrame")
-        header_actions.grid(row=0, column=3, sticky="e", padx=(8, 0))
+        header_actions = ttk.Frame(header_row)
+        header_actions.grid(row=0, column=3, sticky="e")
         self.extract_button = ActionButton(
             header_actions,
             text="Extract",
@@ -65,28 +65,28 @@ class ExtractionTab(ttk.Frame):
         )
         self.extract_button.grid(row=0, column=0)
 
-        subpanels = ttk.Frame(self.config_frame, style="Card.TFrame")
-        subpanels.grid(row=1, column=0, sticky="ew", pady=(6, 0))
+        subpanels = ttk.Frame(self.config_frame)
+        subpanels.grid(row=1, column=0, sticky="ew")
         subpanels.columnconfigure(0, weight=1, uniform="extract_config")
         subpanels.columnconfigure(1, weight=1, uniform="extract_config")
         subpanels.columnconfigure(2, weight=1, uniform="extract_config")
 
         self.road_config = ExtractionSubPanel(subpanels, "Road Assets Region", "road", ROAD_BOX, show_extract_button=False)
-        self.road_config.grid(row=0, column=0, sticky="nsew", padx=(0, 4))
+        self.road_config.grid(row=0, column=0, sticky="nsew")
         self.road_config.set_pick_command(
             "road",
             lambda: self._open_region_selector(self.road_config, "road", "Road Region Selector"),
         )
 
         self.house_config = ExtractionSubPanel(subpanels, "House Assets Region", "house", BUILD_TYPES, show_extract_button=False)
-        self.house_config.grid(row=0, column=1, sticky="nsew", padx=4)
+        self.house_config.grid(row=0, column=1, sticky="nsew")
         self.house_config.set_pick_command(
             "house",
             lambda: self._open_region_selector(self.house_config, "house", "House Region Selector"),
         )
 
         self.landmark_config = ExtractionSubPanel(subpanels, "Landmark Assets Region", "landmark", BUILD_TYPES, show_extract_button=False)
-        self.landmark_config.grid(row=0, column=2, sticky="nsew", padx=(4, 0))
+        self.landmark_config.grid(row=0, column=2, sticky="nsew")
         self.landmark_config.set_pick_command(
             "landmark",
             lambda: self._open_region_selector(self.landmark_config, "landmark", "Landmark Region Selector"),
@@ -97,13 +97,13 @@ class ExtractionTab(ttk.Frame):
 
         self.progress_var = tk.DoubleVar(value=0)
         self.progress_bar = ttk.Progressbar(self, mode="determinate", variable=self.progress_var)
-        self.progress_bar.grid(row=2, column=0, sticky="ew", pady=(6, 0))
+        self.progress_bar.grid(row=2, column=0, sticky="ew")
 
         self.rowconfigure(2, weight=0)
         self.rowconfigure(0, weight=1)
 
     def set_status(self, status):
-        self.config_frame.configure(text=f"⬤ Extraction Config - {status}")
+        self.config_frame.configure(text=f"Extraction - {status}")
 
     def _current_config_state(self):
         return {

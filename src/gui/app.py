@@ -23,17 +23,11 @@ class CityGeneratorApp(tk.Tk):
         self.geometry(f"{common.APP_WIDTH}x{common.APP_HEIGHT}")
         self._configure_icon()
 
-        theme_bg = configure_app_style(self, self.ui_font_family)
-        self.configure(bg=theme_bg)
+        configure_app_style(self, self.ui_font_family)
 
-        shell = ttk.Frame(self, style="Page.TFrame", padding=10)
-        shell.pack(fill="both", expand=True)
-        shell.columnconfigure(0, weight=1)
-        shell.rowconfigure(0, weight=1)
+        self.notebook = ttk.Notebook(self)
+        self.notebook.pack(fill="both", expand=True)
 
-        notebook = ttk.Notebook(shell, style="App.TNotebook")
-        notebook.grid(row=0, column=0, sticky="nsew")
-        self.notebook = notebook
         self._tab_builders = {
             "Extraction": ExtractionTab,
             "Preview": PreviewTab,
@@ -41,13 +35,15 @@ class CityGeneratorApp(tk.Tk):
         }
         self._tab_frames = {}
         self._loaded_tabs = set()
+
         for title in self._tab_builders:
-            frame = ttk.Frame(notebook, style="Page.TFrame")
+            frame = ttk.Frame(self.notebook)
             frame.columnconfigure(0, weight=1)
             frame.rowconfigure(0, weight=1)
-            notebook.add(frame, text=title)
+            self.notebook.add(frame, text=title)
             self._tab_frames[title] = frame
-        notebook.bind("<<NotebookTabChanged>>", self._on_tab_changed, add="+")
+
+        self.notebook.bind("<<NotebookTabChanged>>", self._on_tab_changed, add="+")
         self._load_tab("Extraction")
         self.update_idletasks()
         self.deiconify()

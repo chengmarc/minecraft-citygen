@@ -12,7 +12,7 @@ if __package__ in (None, ""):
 
 from config.config_path import ROADS_PROD, ROADS_PROD_SCHEM
 from config.config_render import ROAD_ASSET_ISO_BLOCK_H, ROAD_ASSET_ISO_TILE_H, ROAD_ASSET_ISO_TILE_W
-from engine.isometric_renderer import render_cells_visible_iso, write_contact
+from engine.render_isometric import render_cells_visible_iso, write_contact
 from engine.schematic_reader import decode_schem_cells
 
 SCHEM = ROADS_PROD_SCHEM

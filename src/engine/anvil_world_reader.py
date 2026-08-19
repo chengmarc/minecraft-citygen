@@ -3,13 +3,15 @@
 Uses only the region container + the section block_states palette/data, so it
 does not depend on anvil-parser's (outdated) block decoder.
 """
-import struct, zlib, gzip, io, os
+import gzip
+import io
+import os
+import struct
+import zlib
+
 import nbtlib
 
 from config.config_world import REGION_DIR, REGION_DIR_CANDIDATES, ROAD_BOX, SAVE
-from engine.isometric_renderer import block_color, is_air
-
-GRASS = block_color("minecraft:grass_block", (110, 170, 90))
 
 
 class World:
@@ -93,33 +95,3 @@ class World:
         entry = palette[v]
         props = entry.get("Properties")
         return (str(entry["Name"]), {str(k): str(props[k]) for k in props} if props else None)
-
-
-# ------------------------------------------------------------------ top-down render
-def topdown(x0, x1, z0, z1, y0, y1, scale=8, out="mc_box.png"):
-    from PIL import Image
-    w = World()
-    W, L = x1 - x0 + 1, z1 - z0 + 1
-    img = Image.new("RGB", (W * scale, L * scale), GRASS)
-    px = img.load()
-    seen = {}
-    for iz, z in enumerate(range(z0, z1 + 1)):
-        for ix, x in enumerate(range(x0, x1 + 1)):
-            col = GRASS
-            for y in range(y1, y0 - 1, -1):
-                name, _ = w.block(x, y, z)
-                if is_air(name):
-                    continue
-                seen[name] = seen.get(name, 0) + 1
-                col = block_color(name)
-                break
-            for dx in range(scale):
-                for dy in range(scale):
-                    px[ix * scale + dx, iz * scale + dy] = col
-    img.save(os.path.join(os.path.dirname(os.path.abspath(__file__)), out))
-    print("saved", out, img.size)
-    print("surface blocks seen:", dict(sorted(seen.items(), key=lambda kv: -kv[1])))
-
-
-if __name__ == "__main__":
-    topdown(*ROAD_BOX.as_tuple(), scale=8)
