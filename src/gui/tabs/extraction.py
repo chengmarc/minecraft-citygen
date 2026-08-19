@@ -12,7 +12,10 @@ from config.config_world import BUILD_TYPES, ROAD_BOX, SAVE
 from pipeline import services
 
 from gui import common
-from gui.widgets import ActionButton, ExtractionSubPanel, ImageViewer, RegionSelectorDialog
+from gui.controls import ActionButton
+from gui.panels import ExtractionSubPanel
+from gui.region_dialog import RegionSelectorDialog
+from gui.viewers import ImageViewer
 
 
 class ExtractionTab(ttk.Frame):
@@ -233,7 +236,7 @@ class ExtractionTab(ttk.Frame):
 
                 services.run_road_extraction_pipeline(env_overrides=env, progress=on_progress)
                 services.run_build_extraction_pipeline(env_overrides=env, progress=on_progress)
-            except Exception as exc:
+            except Exception as exc:  # boundary: report any extraction failure to the user
                 message = str(exc).strip()
                 self.after(0, self._stop_progress)
                 self.after(0, lambda: self.set_status("Extract failed"))

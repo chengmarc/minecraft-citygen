@@ -13,7 +13,7 @@ from pathlib import Path
 if __package__ in (None, ""):
     sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from config.config_path import BUILD_CATALOG, BUILDS_PROD_SCHEM
+from config.config_path import BUILD_CATALOG, BUILDS_PROD
 from config.config_world import BUILD_MARKER_Y_RANGE, BUILD_TYPES, DATA_VERSION
 from engine.anvil_world_reader import World
 from engine.schematic_writer import blockstate, write_sponge_schem_cells
@@ -124,7 +124,7 @@ def sign_text(be):
             try:
                 parsed = json.loads(text)
                 text = parsed.get("text", text) if isinstance(parsed, dict) else text
-            except Exception:
+            except (ValueError, TypeError):
                 pass
             if text:
                 parts.append(text)
@@ -149,7 +149,7 @@ def catalog_signs(xmn, xmx, zmn, zmx):
     rep_labels = (r"appearance\s*:\s*",)
     for cx in range(xmn >> 4, (xmx >> 4) + 1):
         for cz in range(zmn >> 4, (zmx >> 4) + 1):
-            chunk = w._load_chunk(cx, cz)
+            chunk = w.load_chunk(cx, cz)
             if chunk is None:
                 continue
             for be in chunk.get("block_entities", []):
@@ -194,13 +194,13 @@ def write_schem(cells, path):
 
 
 def remove_existing_schems():
-    for filename in os.listdir(BUILDS_PROD_SCHEM):
+    for filename in os.listdir(BUILDS_PROD):
         if filename.endswith(".schem"):
-            os.remove(os.path.join(BUILDS_PROD_SCHEM, filename))
+            os.remove(os.path.join(BUILDS_PROD, filename))
 
 
 def run(*, logger=None, progress=None):
-    os.makedirs(BUILDS_PROD_SCHEM, exist_ok=True)
+    os.makedirs(BUILDS_PROD, exist_ok=True)
     remove_existing_schems()
 
     if progress is not None:
@@ -229,13 +229,13 @@ def run(*, logger=None, progress=None):
         first_y0 = cuboids[0][2]
         entry = {"type": build_type, "size": size, "origin": origin, "ground_offset": ground_y - first_y0, "pieces": {}}
         if build_type == 1:
-            write_schem(extract_cuboid(cuboids[0], strip), os.path.join(BUILDS_PROD_SCHEM, f"{key}.schem"))
+            write_schem(extract_cuboid(cuboids[0], strip), os.path.join(BUILDS_PROD, f"{key}.schem"))
             entry["pieces"]["whole"] = cuboids[0][3] - cuboids[0][2] + 1
         else:
             entry["stack"] = stack_rng if stack_rng is not None else [1, 1]
             entry["appearance"] = appearance if appearance is not None else [1, 1]
             for name, cuboid in zip(("bottom", "middle", "top"), cuboids):
-                write_schem(extract_cuboid(cuboid, strip), os.path.join(BUILDS_PROD_SCHEM, f"{key}_{name}.schem"))
+                write_schem(extract_cuboid(cuboid, strip), os.path.join(BUILDS_PROD, f"{key}_{name}.schem"))
                 entry["pieces"][name] = cuboid[3] - cuboid[2] + 1
         catalog[key] = entry
         if logger is not None:

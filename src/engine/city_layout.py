@@ -8,6 +8,8 @@ The generator is intentionally simple:
   - each frontage position picks randomly among the top fitting buildings
   - optional rule hooks can reject catalog items or candidate placements
 """
+from __future__ import annotations
+
 import json
 import math
 import random

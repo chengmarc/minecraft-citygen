@@ -204,7 +204,7 @@ def run(*, logger=None, progress=None):
         img.save(path)
         imgs[name] = img
         if logger is not None:
-            logger("saved", name + ".png", f"({w}x{h})")
+            logger(f"saved {name}.png ({w}x{h})")
         if progress is not None:
             progress(index, total, name)
 
@@ -219,7 +219,7 @@ def run(*, logger=None, progress=None):
     sd = ImageDraw.Draw(sheet)
     try:
         font = ImageFont.truetype("arial.ttf", 13)
-    except Exception:
+    except OSError:
         font = ImageFont.load_default()
     for i, (name, img) in enumerate(imgs.items()):
         r, c = divmod(i, cols)

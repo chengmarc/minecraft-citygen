@@ -10,18 +10,14 @@ from pathlib import Path
 from config.config_path import (
     BUILD_CATALOG,
     BUILDS_PROD,
-    BUILDS_PROD_SCHEM,
     BUILDS_SIM,
     CITY_PROD,
-    CITY_PROD_SCHEM,
     CITY_SIM,
     GRID_PROD,
-    GRID_PROD_SCHEM,
     GRID_SIM,
     ROADS_SIM,
     ROOT,
     ROADS_PROD,
-    ROADS_PROD_SCHEM,
     WORLDEDIT_SCHEM,
 )
 
@@ -31,17 +27,17 @@ REPO_ROOT = Path(ROOT).resolve()
 REPO_GLOBS = [
     os.path.join(ROADS_SIM, "*.png"),
     os.path.join(ROADS_PROD, "*.png"),
-    os.path.join(ROADS_PROD_SCHEM, "*.schem"),
+    os.path.join(ROADS_PROD, "*.schem"),
     os.path.join(BUILDS_SIM, "*.png"),
     os.path.join(BUILDS_PROD, "*.png"),
-    os.path.join(BUILDS_PROD_SCHEM, "*.schem"),
+    os.path.join(BUILDS_PROD, "*.schem"),
     BUILD_CATALOG,
     os.path.join(GRID_SIM, "seed_*_preview.png"),
     os.path.join(GRID_PROD, "*_render.png"),
-    os.path.join(GRID_PROD_SCHEM, "seed_*.schem"),
+    os.path.join(GRID_PROD, "seed_*.schem"),
     os.path.join(CITY_SIM, "seed_*.png"),
     os.path.join(CITY_PROD, "seed_*.png"),
-    os.path.join(CITY_PROD_SCHEM, "seed_*.schem"),
+    os.path.join(CITY_PROD, "seed_*.schem"),
 ]
 
 LEGACY_REPO_GLOBS = [

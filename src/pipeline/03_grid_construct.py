@@ -11,13 +11,13 @@ if __package__ in (None, ""):
     sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from config.config_algo import DEFAULT_SEED, FINE as DEFAULT_FINE
-from config.config_path import GRID_PROD_SCHEM
+from config.config_path import GRID_PROD
 from engine.road_schematic import build, to_schem
 from engine.schematic_writer import save_sponge_schem
 
 
 def run(*, seed=DEFAULT_SEED, fine=DEFAULT_FINE, out=None, logger=None):
-    out = out or os.path.join(GRID_PROD_SCHEM, f"seed_{seed}.schem")
+    out = out or os.path.join(GRID_PROD, f"seed_{seed}.schem")
     grid, palette, dims, count = build(fine, seed)
     if logger is not None:
         logger(
@@ -26,7 +26,7 @@ def run(*, seed=DEFAULT_SEED, fine=DEFAULT_FINE, out=None, logger=None):
         )
     save_sponge_schem(to_schem(grid, palette, dims), out)
     if logger is not None:
-        logger("saved", out)
+        logger(f"saved {out}")
     return {"output_path": out, "tile_count": count, "dims": dims}
 
 

@@ -10,12 +10,12 @@ from pathlib import Path
 if __package__ in (None, ""):
     sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from config.config_path import BUILD_CATALOG, BUILDS_PROD, BUILDS_PROD_SCHEM
+from config.config_path import BUILD_CATALOG, BUILDS_PROD
 from engine.city_layout import catalog_type
 from engine.render_isometric import render_cells_visible_iso, write_contact
 from engine.schematic_reader import decode_schem_cells
 
-SCHEM = BUILDS_PROD_SCHEM
+SCHEM = BUILDS_PROD
 CATALOG = BUILD_CATALOG
 
 

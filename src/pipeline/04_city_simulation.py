@@ -16,8 +16,16 @@ if __package__ in (None, ""):
 from config.config_algo import DEFAULT_SEED, FINE as DEFAULT_FINE
 from config.config_path import BUILDS_SIM, CITY_SIM
 from config.config_render import CITY_GROUND_FILL_RGBA
-from engine import city_layout as C
-from engine import road_network as R
+from engine.city_layout import (
+    FACE_K,
+    PlacementRules,
+    find_lots,
+    load_catalog,
+    place_city,
+    placement_origin,
+    validate_placements,
+)
+from engine.road_network import CELL, compose, gen_networks, load_assets, make_size, rot_img
 
 BUILDS = BUILDS_SIM
 _FONTS = {}
@@ -29,7 +37,7 @@ def font(size):
             try:
                 _FONTS[size] = ImageFont.truetype(name, size)
                 break
-            except Exception:
+            except OSError:
                 continue
         else:
             _FONTS[size] = ImageFont.load_default()
@@ -44,8 +52,8 @@ def load_build_asset(key):
 
 
 def paste_building(canvas, asset, key, facing, rect):
-    t = R.rot_img(asset, C.FACE_K[facing])
-    px, py = C.placement_origin(rect, facing, t.width, t.height, R.CELL)
+    t = rot_img(asset, FACE_K[facing])
+    px, py = placement_origin(rect, facing, t.width, t.height, CELL)
     canvas.alpha_composite(t, (px, py))
     draw_label(canvas, key, px, py, t.width, t.height)
 
@@ -74,15 +82,15 @@ def fill_lots(road_cells, size):
         for fx in range(size.fine):
             if (fx, fy) in road_cells:
                 continue
-            x0, y0 = fx * R.CELL, fy * R.CELL
-            x1, y1 = x0 + R.CELL - 1, y0 + R.CELL - 1
+            x0, y0 = fx * CELL, fy * CELL
+            x1, y1 = x0 + CELL - 1, y0 + CELL - 1
             draw.rectangle([x0, y0, x1, y1], fill=CITY_GROUND_FILL_RGBA)
     return canvas
 
 
 def render(net, placements, out, preview):
     canvas = fill_lots(net["road_cells"], net["size"])
-    canvas.alpha_composite(R.compose(net, R.load_assets()))
+    canvas.alpha_composite(compose(net, load_assets()))
     cache = {}
     for placement in placements:
         b = placement.building
@@ -101,16 +109,16 @@ def run(*, seed=DEFAULT_SEED, fine=DEFAULT_FINE, preview=0, out=None, logger=Non
     out = out or os.path.join(CITY_SIM, f"seed_{seed}.png")
     os.makedirs(os.path.dirname(out), exist_ok=True)
 
-    size = R.make_size(fine, even=True)
-    net = R.gen_networks(seed, size=size)
+    size = make_size(fine, even=True)
+    net = gen_networks(seed, size=size)
     road_cells = net["road_cells"]
-    lots = C.find_lots(road_cells, size.fine)
-    rules = C.PlacementRules()
-    catalog = C.load_catalog(rules)
+    lots = find_lots(road_cells, size.fine)
+    rules = PlacementRules()
+    catalog = load_catalog(rules)
     rng = random.Random(seed * 7 + 1)
     rule_state = rules.new_state(rng)
 
-    placements = C.place_city(
+    placements = place_city(
         road_cells,
         lots,
         catalog,
@@ -120,7 +128,7 @@ def run(*, seed=DEFAULT_SEED, fine=DEFAULT_FINE, preview=0, out=None, logger=Non
         rule_state,
         type2_frontage_cells=net["big_fine_cells"],
     )
-    C.validate_placements(road_cells, placements, size.fine)
+    validate_placements(road_cells, placements, size.fine)
 
     by_type = {1: 0, 2: 0}
     for placement in placements:

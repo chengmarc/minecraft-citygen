@@ -12,7 +12,9 @@ from pipeline import services
 
 from gui import common
 from gui.jobs import run_weighted_tasks_async
-from gui.widgets import ImageViewer, WeightedProgressMixin, build_shared_config_frame
+from gui.config_frame import build_shared_config_frame
+from gui.progress import WeightedProgressMixin
+from gui.viewers import ImageViewer
 
 
 class PreviewTab(WeightedProgressMixin, ttk.Frame):

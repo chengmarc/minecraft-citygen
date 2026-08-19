@@ -11,9 +11,9 @@ CONN_SRC = {"east": "north", "south": "east", "west": "south", "north": "west"}
 
 @dataclass(frozen=True, slots=True)
 class Tile:
-    W: int
-    H: int
-    L: int
+    width: int
+    height: int
+    length: int
     cells: list[list[list[str]]]
 
 
@@ -42,11 +42,11 @@ def rot_state(state: str, k: int) -> str:
 
 def rot_tile(tile: Tile, k: int) -> Tile:
     for _ in range(k % 4):
-        width, length = tile.W, tile.L
-        new = [[[None] * length for _ in range(width)] for _ in range(tile.H)]
-        for y in range(tile.H):
+        width, length = tile.width, tile.length
+        new = [[[None] * length for _ in range(width)] for _ in range(tile.height)]
+        for y in range(tile.height):
             for z in range(length):
                 for x in range(width):
                     new[y][x][length - 1 - z] = rot_state(tile.cells[y][z][x], 1)
-        tile = Tile(length, tile.H, width, new)
+        tile = Tile(length, tile.height, width, new)
     return tile

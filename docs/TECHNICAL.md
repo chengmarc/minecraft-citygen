@@ -12,13 +12,13 @@ This document is the engineering-side companion to the public overview. It expla
 - `tkinter` for the desktop GUI
 - `ttkbootstrap` for the desktop theme and modern ttk styling
 
-Declared project metadata currently lives in [pyproject.toml](C:/Users/NewAdmin/Repo/new/pyproject.toml), while some runtime imports are used directly in the codebase.
+Declared project metadata currently lives in [pyproject.toml](../pyproject.toml), while some runtime imports are used directly in the codebase.
 
 ### Minecraft / Schematic Assumptions
 
 - Source world format: Minecraft Java Edition region/chunk data
 - Output schematic format: Sponge `.schem`
-- Configured schematic `DATA_VERSION`: `4790` in [config/config_world.py](C:/Users/NewAdmin/Repo/new/config/config_world.py)
+- Configured schematic `DATA_VERSION`: `4790` in [config/config_world.py](../src/config/config_world.py)
 - Intended downstream tool: WorldEdit-compatible schematic workflow
 
 Important note:
@@ -29,7 +29,7 @@ Important note:
 
 ### Environment Assumptions
 
-- the app defaults to a bundled world in [src/config/default_world](C:/Users/NewAdmin/Repo/new/src/config/default_world), and `MC_CITY_SAVE` can override it
+- the app defaults to a bundled world in [src/config/default_world](../src/config/default_world), and `MC_CITY_SAVE` can override it
 - the GUI has Windows-oriented behavior in a few places, such as `os.startfile(...)`
 - the pipeline expects local filesystem access to the Minecraft save and to the export directory used for `.schem` copy-out
 
@@ -72,33 +72,33 @@ The important core unit is:
 1 fine cell = 9 simulation pixels = 9 production blocks
 ```
 
-This is defined by `CELL = 9` in [config/config_algo.py](C:/Users/NewAdmin/Repo/new/config/config_algo.py).
+This is defined by `CELL = 9` in [config/config_algo.py](../src/config/config_algo.py).
 
 ## Repository Structure
 
 Core modules:
 
-- [pipeline/01_roads_extract.py](C:/Users/NewAdmin/Repo/new/pipeline/01_roads_extract.py): extracts road schematics from the world
-- [pipeline/02_builds_extract.py](C:/Users/NewAdmin/Repo/new/pipeline/02_builds_extract.py): extracts building schematics and writes `buildings.json`
-- [pipeline/03_grid_simulation.py](C:/Users/NewAdmin/Repo/new/pipeline/03_grid_simulation.py): renders the road grid preview
-- [pipeline/03_grid_construct.py](C:/Users/NewAdmin/Repo/new/pipeline/03_grid_construct.py): builds the production road grid schematic
-- [pipeline/04_city_simulation.py](C:/Users/NewAdmin/Repo/new/pipeline/04_city_simulation.py): renders the full city preview
-- [pipeline/04_city_construct.py](C:/Users/NewAdmin/Repo/new/pipeline/04_city_construct.py): builds the final city schematic
+- [pipeline/01_roads_extract.py](../src/pipeline/01_roads_extract.py): extracts road schematics from the world
+- [pipeline/02_builds_extract.py](../src/pipeline/02_builds_extract.py): extracts building schematics and writes `buildings.json`
+- [pipeline/03_grid_simulation.py](../src/pipeline/03_grid_simulation.py): renders the road grid preview
+- [pipeline/03_grid_construct.py](../src/pipeline/03_grid_construct.py): builds the production road grid schematic
+- [pipeline/04_city_simulation.py](../src/pipeline/04_city_simulation.py): renders the full city preview
+- [pipeline/04_city_construct.py](../src/pipeline/04_city_construct.py): builds the final city schematic
 
 Core engines:
 
-- [engine/road_network.py](C:/Users/NewAdmin/Repo/new/engine/road_network.py): road-network generation and tile compositing rules
-- [engine/road_schematic.py](C:/Users/NewAdmin/Repo/new/engine/road_schematic.py): turns the road network into a production schematic grid
-- [engine/city_layout.py](C:/Users/NewAdmin/Repo/new/engine/city_layout.py): lot finding and building placement
-- [engine/building_schematic.py](C:/Users/NewAdmin/Repo/new/engine/building_schematic.py): assembles extracted building pieces into final buildings
-- [engine/isometric_renderer.py](C:/Users/NewAdmin/Repo/new/engine/isometric_renderer.py): renders `.schem` files to isometric PNGs
+- [engine/road_network.py](../src/engine/road_network.py): road-network generation and tile compositing rules
+- [engine/road_schematic.py](../src/engine/road_schematic.py): turns the road network into a production schematic grid
+- [engine/city_layout.py](../src/engine/city_layout.py): lot finding and building placement
+- [engine/building_schematic.py](../src/engine/building_schematic.py): assembles extracted building pieces into final buildings
+- [engine/render_isometric.py](../src/engine/render_isometric.py): renders `.schem` files to isometric PNGs
 
 Configuration:
 
-- [config/config_world.py](C:/Users/NewAdmin/Repo/new/config/config_world.py): world path, extraction regions, marker Y range
-- [config/config_algo.py](C:/Users/NewAdmin/Repo/new/config/config_algo.py): road-generation and placement tuning
-- [config/config_path.py](C:/Users/NewAdmin/Repo/new/config/config_path.py): artifact and output paths
-- [config/config_render.py](C:/Users/NewAdmin/Repo/new/config/config_render.py): render and ground-fill settings
+- [config/config_world.py](../src/config/config_world.py): world path, extraction regions, marker Y range
+- [config/config_algo.py](../src/config/config_algo.py): road-generation and placement tuning
+- [config/config_path.py](../src/config/config_path.py): artifact and output paths
+- [config/config_render.py](../src/config/config_render.py): render and ground-fill settings
 
 ## Pipeline Stages
 
@@ -135,11 +135,11 @@ CityGen depends on explicit marker conventions inside the Minecraft source world
 
 ## Road Extraction Convention
 
-Road extraction is implemented in [pipeline/01_roads_extract.py](C:/Users/NewAdmin/Repo/new/pipeline/01_roads_extract.py).
+Road extraction is implemented in [pipeline/01_roads_extract.py](../src/pipeline/01_roads_extract.py).
 
 Region:
 
-- roads are scanned inside `ROAD_BOX` from [config/config_world.py](C:/Users/NewAdmin/Repo/new/config/config_world.py)
+- roads are scanned inside `ROAD_BOX` from [config/config_world.py](../src/config/config_world.py)
 
 Markers:
 
@@ -165,7 +165,7 @@ Practical implication:
 
 ## Build Extraction Convention
 
-Build extraction is implemented in [pipeline/02_builds_extract.py](C:/Users/NewAdmin/Repo/new/pipeline/02_builds_extract.py).
+Build extraction is implemented in [pipeline/02_builds_extract.py](../src/pipeline/02_builds_extract.py).
 
 Build regions:
 
@@ -277,7 +277,7 @@ This file is the input for both simulation-building stand-ins and final producti
 
 ## How the Road Grid Is Generated
 
-Road generation lives in [engine/road_network.py](C:/Users/NewAdmin/Repo/new/engine/road_network.py).
+Road generation lives in [engine/road_network.py](../src/engine/road_network.py).
 
 The generator uses an overlay model with two independent Manhattan networks:
 
@@ -361,7 +361,7 @@ This avoids degenerate overlays and keeps road art compositing predictable.
 
 ## Simulation Grid Output
 
-Simulation grid output is produced by [pipeline/03_grid_simulation.py](C:/Users/NewAdmin/Repo/new/pipeline/03_grid_simulation.py).
+Simulation grid output is produced by [pipeline/03_grid_simulation.py](../src/pipeline/03_grid_simulation.py).
 
 It:
 
@@ -374,7 +374,7 @@ This is meant to be layout-accurate, not visually production-accurate.
 
 ## Production Grid Output
 
-Production grid output is produced by [pipeline/03_grid_construct.py](C:/Users/NewAdmin/Repo/new/pipeline/03_grid_construct.py) and [engine/road_schematic.py](C:/Users/NewAdmin/Repo/new/engine/road_schematic.py).
+Production grid output is produced by [pipeline/03_grid_construct.py](../src/pipeline/03_grid_construct.py) and [engine/road_schematic.py](../src/engine/road_schematic.py).
 
 It:
 
@@ -386,7 +386,7 @@ So the simulation and production grid share the same logical network, but render
 
 ## How Building Placement Works
 
-Building placement lives in [engine/city_layout.py](C:/Users/NewAdmin/Repo/new/engine/city_layout.py).
+Building placement lives in [engine/city_layout.py](../src/engine/city_layout.py).
 
 The placement model is intentionally simple and deterministic for a given seed:
 
@@ -473,7 +473,7 @@ That filter is applied before placement.
 
 ## How the Final City Schematic Is Built
 
-Final city assembly lives in [pipeline/04_city_construct.py](C:/Users/NewAdmin/Repo/new/pipeline/04_city_construct.py).
+Final city assembly lives in [pipeline/04_city_construct.py](../src/pipeline/04_city_construct.py).
 
 The constructor:
 
@@ -514,7 +514,7 @@ The key design goal is that placement logic should be shared, while visual repre
 
 ## Key Configuration Knobs
 
-From [config/config_algo.py](C:/Users/NewAdmin/Repo/new/config/config_algo.py):
+From [config/config_algo.py](../src/config/config_algo.py):
 
 - `CELL`: blocks/pixels per fine cell
 - `FINE`: grid edge in fine cells
@@ -533,7 +533,7 @@ From [config/config_algo.py](C:/Users/NewAdmin/Repo/new/config/config_algo.py):
 - `TYPE2_TOP_FIT_CHOICES`: variation depth for type-2 selection
 - `TYPE2_SAME_COARSE_SPAN`: type-2 repeat exclusion window
 
-From [config/config_world.py](C:/Users/NewAdmin/Repo/new/config/config_world.py):
+From [config/config_world.py](../src/config/config_world.py):
 
 - `ROAD_BOX`: road extraction region
 - `BUILD_TYPES`: build extraction regions

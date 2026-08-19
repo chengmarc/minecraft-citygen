@@ -12,7 +12,7 @@ from pathlib import Path
 if __package__ in (None, ""):
     sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from config.config_path import ROADS_PROD_SCHEM
+from config.config_path import ROADS_PROD
 from config.config_world import DATA_VERSION, ROAD_BOX
 from engine.anvil_world_reader import World
 from engine.schematic_writer import blockstate, sponge_schem_from_cells
@@ -20,7 +20,7 @@ from engine.schematic_writer import blockstate, sponge_schem_from_cells
 (START_XYZ, END_XYZ) = ROAD_BOX.as_tuple()
 X0, Y0, Z0 = START_XYZ
 X1, Y1, Z1 = END_XYZ
-OUT = ROADS_PROD_SCHEM
+OUT = ROADS_PROD
 MARKER = {"minecraft:yellow_wool", "minecraft:white_wool"}
 EXCLUDE = MARKER | {"minecraft:diamond_block"}
 
@@ -44,7 +44,7 @@ def read_signs():
     out = []
     for cx in range(X0 >> 4, (X1 >> 4) + 1):
         for cz in range(Z0 >> 4, (Z1 >> 4) + 1):
-            chunk = w._load_chunk(cx, cz)
+            chunk = w.load_chunk(cx, cz)
             if chunk is None:
                 continue
             for be in chunk.get("block_entities", []):
@@ -60,7 +60,7 @@ def read_signs():
                         try:
                             j = json.loads(s)
                             s = j.get("text", s) if isinstance(j, dict) else s
-                        except Exception:
+                        except (ValueError, TypeError):
                             pass
                         parts.append(s.strip())
                 name = "".join(parts).strip().replace(" ", "")
@@ -174,7 +174,7 @@ def run(*, logger=None, progress=None):
         matches = [s for s in signs if xmn <= s[0] <= xmx and zmn <= s[1] <= zmx]
         if not matches:
             if logger is not None:
-                logger("  !! no sign for", bb)
+                logger(f"  !! no sign for {bb}")
             completed += 1
             if progress is not None:
                 progress(completed, total, None)

@@ -10,11 +10,11 @@ from pathlib import Path
 if __package__ in (None, ""):
     sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from config.config_path import CITY_PROD, CITY_PROD_SCHEM
+from config.config_path import CITY_PROD
 from config.config_render import FULL_SCHEM_ISO_BLOCK_H, FULL_SCHEM_ISO_TILE_H, FULL_SCHEM_ISO_TILE_W
 from engine.render_isometric import render_schem_visible_iso
 
-SCHEM = CITY_PROD_SCHEM
+SCHEM = CITY_PROD
 
 
 def run(*, logger=None, progress=None):

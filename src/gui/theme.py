@@ -12,8 +12,8 @@ def configure_app_style(app, ui_font_family: str) -> str:
     style.use_dynamic_foreground(True)
     _apply_palette(style)
     _configure_widget_styles(style, ui_font_family)
-    app.configure(background=common.APP_BG)
-    return common.APP_BG
+    app.configure(background=common.theme.APP_BG)
+    return common.theme.APP_BG
 
 
 def _apply_palette(style) -> None:
@@ -21,7 +21,7 @@ def _apply_palette(style) -> None:
     surface = common.blend(colors.bg, colors.primary, 0.08)
     tooltip_bg = common.blend(colors.dark, colors.bg, 0.12)
     tick = common.blend(colors.border, colors.bg, 0.32)
-    common.apply_theme_colors(
+    common.theme.apply(
         app_bg=colors.bg,
         border=colors.border,
         text=colors.fg,

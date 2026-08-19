@@ -5,12 +5,12 @@ from __future__ import annotations
 import json
 import os
 
-from config.config_path import BUILD_CATALOG, BUILDS_PROD_SCHEM
-from engine import city_layout as C
+from config.config_path import BUILD_CATALOG, BUILDS_PROD
+from engine.city_layout import catalog_type
 from engine.schematic_reader import decode_schem_cells
 from engine.schematic_transform import Tile
 
-BUILDS = BUILDS_PROD_SCHEM
+BUILDS = BUILDS_PROD
 META = None
 
 _piece = {}
@@ -38,7 +38,7 @@ def piece(name):
 
 def assemble(key, n_mid, meta=None):
     catalog = load_catalog_meta() if meta is None else meta
-    if C.catalog_type(catalog[key]) == 1:
+    if catalog_type(catalog[key]) == 1:
         width, height, length, cells = piece(key)
         return Tile(width, height, length, cells)
     layers, width, length = [], None, None

@@ -1,5 +1,7 @@
 """Algorithm tuning for grid generation and city placement."""
 
+from __future__ import annotations
+
 import os
 
 

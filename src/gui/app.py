@@ -101,12 +101,12 @@ def main():
     try:
         app = CityGeneratorApp()
         app.mainloop()
-    except Exception:
+    except Exception:  # top-level crash boundary: log the traceback, notify, then re-raise
         message = traceback.format_exc()
         try:
             with open(common.STARTUP_ERROR_LOG, "w", encoding="utf-8") as fh:
                 fh.write(message)
-        except Exception:
+        except OSError:
             pass
         try:
             import ctypes
@@ -117,6 +117,6 @@ def main():
                 "CityGen",
                 0x10,
             )
-        except Exception:
+        except (OSError, AttributeError):
             pass
         raise

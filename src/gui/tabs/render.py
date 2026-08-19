@@ -9,12 +9,14 @@ from tkinter import messagebox
 import ttkbootstrap as ttk
 
 from config.config_algo import DEFAULT_SEED
-from config.config_path import CITY_PROD_SCHEM
+from config.config_path import CITY_PROD
 from pipeline import services
 
 from gui import common
 from gui.jobs import run_weighted_tasks_async
-from gui.widgets import ImageViewer, WeightedProgressMixin, build_shared_config_frame
+from gui.config_frame import build_shared_config_frame
+from gui.progress import WeightedProgressMixin
+from gui.viewers import ImageViewer
 
 
 class CityTab(WeightedProgressMixin, ttk.Frame):
@@ -80,11 +82,11 @@ class CityTab(WeightedProgressMixin, ttk.Frame):
         self.winfo_toplevel().set_saved_config_section("render", self._current_config_state())
 
     def _open_output_folder(self):
-        if not os.path.isdir(CITY_PROD_SCHEM):
-            messagebox.showerror("Output folder missing", CITY_PROD_SCHEM)
+        if not os.path.isdir(CITY_PROD):
+            messagebox.showerror("Output folder missing", CITY_PROD)
             return
         try:
-            common.open_in_file_manager(CITY_PROD_SCHEM)
+            common.open_in_file_manager(CITY_PROD)
         except OSError as exc:
             messagebox.showerror("Could not open output folder", str(exc))
 

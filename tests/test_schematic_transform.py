@@ -27,7 +27,7 @@ class SchematicTransformTests(unittest.TestCase):
 
         rotated = rot_tile(tile, 1)
 
-        self.assertEqual((rotated.W, rotated.H, rotated.L), (3, 1, 2))
+        self.assertEqual((rotated.width, rotated.height, rotated.length), (3, 1, 2))
         self.assertEqual(rotated.cells[0][0][0], "minecraft:oak_log[axis=z]")
         self.assertEqual(rotated.cells[0][0][1], "c")
         self.assertEqual(rotated.cells[0][0][2], "a")

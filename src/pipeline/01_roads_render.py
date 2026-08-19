@@ -10,12 +10,12 @@ from pathlib import Path
 if __package__ in (None, ""):
     sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from config.config_path import ROADS_PROD, ROADS_PROD_SCHEM
+from config.config_path import ROADS_PROD
 from config.config_render import ROAD_ASSET_ISO_BLOCK_H, ROAD_ASSET_ISO_TILE_H, ROAD_ASSET_ISO_TILE_W
 from engine.render_isometric import render_cells_visible_iso, write_contact
 from engine.schematic_reader import decode_schem_cells
 
-SCHEM = ROADS_PROD_SCHEM
+SCHEM = ROADS_PROD
 
 
 def run(*, logger=None, progress=None):

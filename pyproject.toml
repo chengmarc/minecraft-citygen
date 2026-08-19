@@ -9,19 +9,19 @@ description = "Procedural Minecraft city generation pipelines."
 readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [
-    "Pillow>=10.0",
-    "numpy>=1.26",
-    "nbtlib>=2.0.4",
+    "Pillow>=10.0,<13",
+    "numpy>=1.26,<3",
+    "nbtlib>=2.0.4,<3",
     "ttkbootstrap>=2.2,<3",
 ]
 
 [project.optional-dependencies]
 speed = [
-    "numba>=0.59",
+    "numba>=0.59,<1",
 ]
 build = [
-    "pyinstaller>=6.10",
-    "numba>=0.59",
+    "pyinstaller>=6.10,<8",
+    "numba>=0.59,<1",
 ]
 
 [project.gui-scripts]

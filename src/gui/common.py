@@ -14,7 +14,7 @@ from config.config_algo import DEFAULT_SEED
 from config.config_path import GUI, ROOT
 from config.config_world import BUILD_TYPES, ROAD_BOX, SAVE
 from config.models import BlockRegion, BuildRegion
-from config.config_path import BUILDS_PROD, CITY_PROD, CITY_PROD_SCHEM, CITY_SIM, GRID_SIM, ROADS_PROD
+from config.config_path import BUILDS_PROD, CITY_PROD, CITY_SIM, GRID_SIM, ROADS_PROD
 
 try:
     from PIL import Image, ImageDraw, ImageTk
@@ -30,15 +30,34 @@ APP_ICON_PATH = os.path.join(ICON_DIR, "app-icon.png")
 ROAD_CONTACT_SHEET = os.path.join(ROADS_PROD, "_contact_sheet.png")
 BUILD_CONTACT_SHEET = os.path.join(BUILDS_PROD, "_contact_sheet.png")
 
-APP_BG = "#f6f7fb"
-BORDER = "#cbd3df"
-TEXT = "#1d2733"
-ACCENT = "#0d6efd"
-CANVAS_BG = "#ffffff"
-CANVAS_TEXT = "#1d2733"
-TICK = "#aab4c3"
-TOOLTIP_BG = "#1d2733"
-TOOLTIP_TEXT = "#ffffff"
+class Theme:
+    """Mutable UI palette; fields are refreshed whenever a ttkbootstrap style is applied."""
+
+    def __init__(self):
+        self.APP_BG = "#f6f7fb"
+        self.BORDER = "#cbd3df"
+        self.TEXT = "#1d2733"
+        self.ACCENT = "#0d6efd"
+        self.CANVAS_BG = "#ffffff"
+        self.CANVAS_TEXT = "#1d2733"
+        self.TICK = "#aab4c3"
+        self.TOOLTIP_BG = "#1d2733"
+        self.TOOLTIP_TEXT = "#ffffff"
+
+    def apply(self, *, app_bg, border, text, accent, canvas_bg, canvas_text, tick, tooltip_bg, tooltip_text):
+        self.APP_BG = app_bg
+        self.BORDER = border
+        self.TEXT = text
+        self.ACCENT = accent
+        self.CANVAS_BG = canvas_bg
+        self.CANVAS_TEXT = canvas_text
+        self.TICK = tick
+        self.TOOLTIP_BG = tooltip_bg
+        self.TOOLTIP_TEXT = tooltip_text
+
+
+theme = Theme()
+
 BUTTON_WIDTH = 8
 GUI_THEME = "litera"
 APP_WIDTH = 1600
@@ -119,37 +138,12 @@ _ICON_CACHE = {}
 _ICON_COLOR_CACHE = {}
 
 
-def apply_theme_colors(
-    *,
-    app_bg,
-    border,
-    text,
-    accent,
-    canvas_bg,
-    canvas_text,
-    tick,
-    tooltip_bg,
-    tooltip_text,
-):
-    global APP_BG, BORDER, TEXT, ACCENT, CANVAS_BG, CANVAS_TEXT, TICK, TOOLTIP_BG, TOOLTIP_TEXT
-
-    APP_BG = app_bg
-    BORDER = border
-    TEXT = text
-    ACCENT = accent
-    CANVAS_BG = canvas_bg
-    CANVAS_TEXT = canvas_text
-    TICK = tick
-    TOOLTIP_BG = tooltip_bg
-    TOOLTIP_TEXT = tooltip_text
-
-
 def resolve_color(widget, color, fallback):
     try:
         source = color or fallback
         r, g, b = widget.winfo_rgb(source)
         return f"#{r // 256:02x}{g // 256:02x}{b // 256:02x}"
-    except Exception:
+    except tk.TclError:
         return fallback
 
 
@@ -189,7 +183,7 @@ def replace_layout_element(layout, source, target):
 def pick_ui_font(root):
     try:
         installed = set(tkfont.families(root))
-    except Exception:
+    except tk.TclError:
         installed = set()
     for family in (UI_FONT_FAMILY, *UI_FONT_FALLBACKS):
         if family in installed:
@@ -216,7 +210,7 @@ def load_icon(name, size=16):
         image = Image.open(icon_path).convert("RGBA")
         image = image.resize((int(size), int(size)), Image.Resampling.LANCZOS)
         photo = ImageTk.PhotoImage(image)
-    except Exception:
+    except (OSError, tk.TclError):
         return None
 
     _ICON_CACHE[cache_key] = photo
@@ -227,11 +221,11 @@ def icon_text_color(name):
     if name in _ICON_COLOR_CACHE:
         return _ICON_COLOR_CACHE[name]
     if Image is None:
-        return TEXT
+        return theme.TEXT
 
     icon_path = os.path.join(ICON_DIR, f"{name}.png")
     if not os.path.exists(icon_path):
-        return TEXT
+        return theme.TEXT
 
     try:
         image = Image.open(icon_path).convert("RGBA")
@@ -241,14 +235,14 @@ def icon_text_color(name):
             if a > 0
         ]
         if not samples:
-            return TEXT
+            return theme.TEXT
         total_alpha = sum(a for _r, _g, _b, a in samples)
         red = round(sum(r * a for r, _g, _b, a in samples) / total_alpha)
         green = round(sum(g * a for _r, g, _b, a in samples) / total_alpha)
         blue = round(sum(b * a for _r, _g, b, a in samples) / total_alpha)
         color = f"#{red:02x}{green:02x}{blue:02x}"
-    except Exception:
-        return TEXT
+    except (OSError, ValueError):
+        return theme.TEXT
 
     _ICON_COLOR_CACHE[name] = color
     return color
@@ -407,7 +401,7 @@ def load_saved_gui_config():
     try:
         with open(SAVED_GUI_CONFIG_PATH, "r", encoding="utf-8") as fh:
             data = json.load(fh)
-    except Exception:
+    except (OSError, ValueError):
         return {}
     return data if isinstance(data, dict) else {}
 

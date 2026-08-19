@@ -16,17 +16,27 @@ if __package__ in (None, ""):
     sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from config.config_algo import DEFAULT_SEED, FINE as DEFAULT_FINE
-from config.config_path import BUILD_CATALOG, CITY_PROD_SCHEM, GRID_PROD_SCHEM, WORLDEDIT_SCHEM
+from config.config_path import BUILD_CATALOG, CITY_PROD, GRID_PROD, WORLDEDIT_SCHEM
 from config.config_render import CITY_GROUND_FILL_BLOCK, CITY_GROUND_Y
-from engine import building_schematic as B
-from engine import city_layout as C
-from engine import road_network as R
-from engine import road_schematic as RG
+from config.config_world import DATA_VERSION
+from engine.building_schematic import assemble
+from engine.city_layout import (
+    FACE_K,
+    PlacementRules,
+    catalog_type,
+    find_lots,
+    load_catalog,
+    place_city,
+    placement_origin,
+    validate_placements,
+)
+from engine.road_network import CELL, gen_networks, make_size
+from engine.road_schematic import build as build_road_grid
 from engine.schematic_reader import decode_schem
 from engine.schematic_transform import rot_tile
 from engine.schematic_writer import write_sponge_schem_grid
 
-CB = R.CELL
+BLOCKS_PER_CELL = CELL
 BUILD_SNAP_DROP = 1
 PLAYER_ANCHOR_MARGIN = 1
 
@@ -38,30 +48,25 @@ def copy_city_to_worldedit(path, seed):
     return dst
 
 
-def run(*, seed=DEFAULT_SEED, fine=None, out=None, no_ground_fill=False, logger=None):
-    out = out or os.path.join(CITY_PROD_SCHEM, f"seed_{seed}.schem")
-    if fine is None:
-        grid_path = os.path.join(GRID_PROD_SCHEM, f"seed_{seed}.schem")
-        if os.path.exists(grid_path):
-            fine = decode_schem(grid_path)[0] // CB
-        else:
-            fine = DEFAULT_FINE
+def _resolve_fine(seed, fine):
+    """Pick the fine-cell grid edge, inferring it from a saved grid schematic when unset."""
+    if fine is not None:
+        return fine
+    grid_path = os.path.join(GRID_PROD, f"seed_{seed}.schem")
+    if os.path.exists(grid_path):
+        return decode_schem(grid_path)[0] // BLOCKS_PER_CELL
+    return DEFAULT_FINE
 
-    size = R.make_size(fine)
-    road_grid, road_pal, (span, Hr, _), nt = RG.build(fine, seed)
-    net = R.gen_networks(seed, size=size)
-    with open(BUILD_CATALOG, encoding="utf-8") as fh:
-        meta = json.load(fh)
-    road_cells = net["road_cells"]
-    lots = C.find_lots(road_cells, size.fine)
-    rules = C.PlacementRules()
-    catalog = C.load_catalog(rules)
+
+def _plan_placements(seed, network, size):
+    """Deterministically place buildings into the non-road lots for this seed."""
+    road_cells = network["road_cells"]
+    lots = find_lots(road_cells, size.fine)
+    rules = PlacementRules()
+    catalog = load_catalog(rules)
     place_rng = random.Random(seed * 7 + 1)
     rule_state = rules.new_state(place_rng)
-    height_rng = random.Random(seed * 7 + 2)
-
-    inst, placements = [], []
-    placements = C.place_city(
+    placements = place_city(
         road_cells,
         lots,
         catalog,
@@ -69,95 +74,141 @@ def run(*, seed=DEFAULT_SEED, fine=None, out=None, no_ground_fill=False, logger=
         place_rng,
         rules,
         rule_state,
-        type2_frontage_cells=net["big_fine_cells"],
+        type2_frontage_cells=network["big_fine_cells"],
     )
+    validate_placements(road_cells, placements, size.fine)
+    return placements
+
+
+def _city_ground_y(placements, catalog_meta):
+    """Ground plane high enough to seat the deepest below-ground building offset."""
     max_below_ground = max(
         (
-            max(0, int(meta[placement.building.num].get("ground_offset", CITY_GROUND_Y)) - CITY_GROUND_Y)
+            max(0, int(catalog_meta[placement.building.num].get("ground_offset", CITY_GROUND_Y)) - CITY_GROUND_Y)
             for placement in placements
         ),
         default=0,
     )
-    city_ground_y = CITY_GROUND_Y + max_below_ground + BUILD_SNAP_DROP
-    road_y0 = city_ground_y - CITY_GROUND_Y
-    maxh = road_y0 + Hr
-    out_span = span + PLAYER_ANCHOR_MARGIN
+    return CITY_GROUND_Y + max_below_ground + BUILD_SNAP_DROP
+
+
+def _assemble_instances(seed, placements, catalog_meta, city_ground_y):
+    """Rotate and position each placed building; return (instances, tallest building top)."""
+    height_rng = random.Random(seed * 7 + 2)
+    instances = []
+    building_top = 0
     for placement in placements:
-        bld = placement.building
-        facing = placement.facing
-        rect = placement.rect
-        m = meta[bld.num]
-        n_mid = height_rng.randint(*m["stack"]) if C.catalog_type(m) == 2 else 0
-        t = rot_tile(B.assemble(bld.num, n_mid, meta), C.FACE_K[facing])
-        px, pz = C.placement_origin(rect, facing, t.W, t.L, CB)
+        building = placement.building
+        entry = catalog_meta[building.num]
+        mid_sections = height_rng.randint(*entry["stack"]) if catalog_type(entry) == 2 else 0
+        tile = rot_tile(assemble(building.num, mid_sections, catalog_meta), FACE_K[placement.facing])
+        px, pz = placement_origin(placement.rect, placement.facing, tile.width, tile.length, BLOCKS_PER_CELL)
         px += PLAYER_ANCHOR_MARGIN
         pz += PLAYER_ANCHOR_MARGIN
-        y0 = city_ground_y - int(m.get("ground_offset", CITY_GROUND_Y)) - BUILD_SNAP_DROP
-        inst.append((t, px, pz, y0))
-        maxh = max(maxh, y0 + t.H)
-    C.validate_placements(road_cells, placements, size.fine)
+        y0 = city_ground_y - int(entry.get("ground_offset", CITY_GROUND_Y)) - BUILD_SNAP_DROP
+        instances.append((tile, px, pz, y0))
+        building_top = max(building_top, y0 + tile.height)
+    return instances, building_top
 
-    master = {"minecraft:air": 0}
-    for st in road_pal:
-        master.setdefault(st, len(master))
-    grid = np.zeros((maxh, out_span, out_span), dtype=np.int16)
-    inv_road = {v: k for k, v in road_pal.items()}
-    remap = np.array([master[inv_road[i]] for i in range(len(road_pal))], dtype=np.int16)
+
+def _compose_grid(road_grid, road_palette, road_span, road_height, road_y0, out_span, max_height, instances):
+    """Blit the road grid and every building instance into one master voxel grid."""
+    master_palette = {"minecraft:air": 0}
+    for state in road_palette:
+        master_palette.setdefault(state, len(master_palette))
+    grid = np.zeros((max_height, out_span, out_span), dtype=np.int16)
+    inv_road_palette = {index: state for state, index in road_palette.items()}
+    remap = np.array([master_palette[inv_road_palette[i]] for i in range(len(road_palette))], dtype=np.int16)
     grid[
-        road_y0:road_y0 + Hr,
-        PLAYER_ANCHOR_MARGIN:PLAYER_ANCHOR_MARGIN + span,
-        PLAYER_ANCHOR_MARGIN:PLAYER_ANCHOR_MARGIN + span,
+        road_y0:road_y0 + road_height,
+        PLAYER_ANCHOR_MARGIN:PLAYER_ANCHOR_MARGIN + road_span,
+        PLAYER_ANCHOR_MARGIN:PLAYER_ANCHOR_MARGIN + road_span,
     ] = remap[road_grid]
+
     build_mask = np.zeros((out_span, out_span), dtype=bool)
-    for t, px, pz, y0 in inst:
-        for y in range(t.H):
+    for tile, px, pz, y0 in instances:
+        for y in range(tile.height):
             gy = y0 + y
-            if not (0 <= gy < maxh):
+            if not (0 <= gy < max_height):
                 continue
-            for z in range(t.L):
+            for z in range(tile.length):
                 gz = pz + z
                 if not (0 <= gz < out_span):
                     continue
-                r = t.cells[y][z]
-                for x in range(t.W):
-                    st = r[x]
-                    if st.startswith("minecraft:air"):
+                row = tile.cells[y][z]
+                for x in range(tile.width):
+                    state = row[x]
+                    if state.startswith("minecraft:air"):
                         continue
                     gx = px + x
                     if not (0 <= gx < out_span):
                         continue
                     build_mask[gz, gx] = True
-                    idx = master.get(st)
+                    idx = master_palette.get(state)
                     if idx is None:
-                        idx = master[st] = len(master)
+                        idx = master_palette[state] = len(master_palette)
                     grid[gy, gz, gx] = idx
+    return grid, master_palette, build_mask
 
-    fill_idx = master.get(CITY_GROUND_FILL_BLOCK)
+
+def _ensure_fill_index(master_palette):
+    fill_idx = master_palette.get(CITY_GROUND_FILL_BLOCK)
     if fill_idx is None:
-        fill_idx = master[CITY_GROUND_FILL_BLOCK] = len(master)
+        fill_idx = master_palette[CITY_GROUND_FILL_BLOCK] = len(master_palette)
+    return fill_idx
+
+
+def _apply_ground_fill(grid, fill_idx, build_mask, road_cells, size, city_ground_y):
+    """Fill empty non-road lot cells on the ground plane with the configured block."""
+    for fy in range(size.fine):
+        for fx in range(size.fine):
+            if (fx, fy) in road_cells:
+                continue
+            z0 = PLAYER_ANCHOR_MARGIN + fy * BLOCKS_PER_CELL
+            z1 = PLAYER_ANCHOR_MARGIN + (fy + 1) * BLOCKS_PER_CELL
+            x0 = PLAYER_ANCHOR_MARGIN + fx * BLOCKS_PER_CELL
+            x1 = PLAYER_ANCHOR_MARGIN + (fx + 1) * BLOCKS_PER_CELL
+            area = grid[city_ground_y, z0:z1, x0:x1]
+            mask = (area == 0) & ~build_mask[z0:z1, x0:x1]
+            area[mask] = fill_idx
+
+
+def run(*, seed=DEFAULT_SEED, fine=None, out=None, no_ground_fill=False, logger=None):
+    out = out or os.path.join(CITY_PROD, f"seed_{seed}.schem")
+    fine = _resolve_fine(seed, fine)
+
+    size = make_size(fine)
+    road_grid, road_palette, (road_span, road_height, _), tile_count = build_road_grid(fine, seed)
+    network = gen_networks(seed, size=size)
+    with open(BUILD_CATALOG, encoding="utf-8") as fh:
+        catalog_meta = json.load(fh)
+
+    placements = _plan_placements(seed, network, size)
+    city_ground_y = _city_ground_y(placements, catalog_meta)
+    road_y0 = city_ground_y - CITY_GROUND_Y
+    out_span = road_span + PLAYER_ANCHOR_MARGIN
+    instances, building_top = _assemble_instances(seed, placements, catalog_meta, city_ground_y)
+    max_height = max(road_y0 + road_height, building_top)
+
+    road_cells = network["road_cells"]
+    grid, master_palette, build_mask = _compose_grid(
+        road_grid, road_palette, road_span, road_height, road_y0, out_span, max_height, instances
+    )
+    fill_idx = _ensure_fill_index(master_palette)
     if not no_ground_fill:
-        for fy in range(size.fine):
-            for fx in range(size.fine):
-                if (fx, fy) in road_cells:
-                    continue
-                z0 = PLAYER_ANCHOR_MARGIN + fy * CB
-                z1 = PLAYER_ANCHOR_MARGIN + (fy + 1) * CB
-                x0 = PLAYER_ANCHOR_MARGIN + fx * CB
-                x1 = PLAYER_ANCHOR_MARGIN + (fx + 1) * CB
-                area = grid[city_ground_y, z0:z1, x0:x1]
-                mask = (area == 0) & ~build_mask[z0:z1, x0:x1]
-                area[mask] = fill_idx
+        _apply_ground_fill(grid, fill_idx, build_mask, road_cells, size, city_ground_y)
     for y in range(city_ground_y + 1):
         grid[y, 0, 0] = fill_idx
+
     summary = (
-        f"seed={seed}, fine={fine}: roads={nt} tiles, buildings={len(inst)}, "
-        f"grid {out_span}x{maxh}x{out_span}, palette={len(master)}"
+        f"seed={seed}, fine={fine}: roads={tile_count} tiles, buildings={len(instances)}, "
+        f"grid {out_span}x{max_height}x{out_span}, palette={len(master_palette)}"
     )
     if logger is not None:
         logger(summary)
-    write_sponge_schem_grid(grid, master, out, RG.DATA_VERSION, offset=(0, -(city_ground_y + 1), 0))
+    write_sponge_schem_grid(grid, master_palette, out, DATA_VERSION, offset=(0, -(city_ground_y + 1), 0))
     if logger is not None:
-        logger("saved", out)
+        logger(f"saved {out}")
     copied = None
     copy_error = None
     try:
@@ -165,15 +216,15 @@ def run(*, seed=DEFAULT_SEED, fine=None, out=None, no_ground_fill=False, logger=
     except OSError as exc:
         copy_error = str(exc)
         if logger is not None:
-            logger("warning: could not copy to WorldEdit schematics folder:", copy_error)
+            logger(f"warning: could not copy to WorldEdit schematics folder: {copy_error}")
     else:
         if logger is not None:
-            logger("copied", copied)
+            logger(f"copied {copied}")
     return {
         "output_path": out,
         "copied_path": copied,
         "copy_error": copy_error,
-        "building_count": len(inst),
+        "building_count": len(instances),
         "summary": summary,
     }
 

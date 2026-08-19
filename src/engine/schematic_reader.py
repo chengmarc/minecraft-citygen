@@ -1,5 +1,7 @@
 """Shared Sponge schematic reading helpers."""
 
+from __future__ import annotations
+
 import nbtlib
 import numpy as np
 

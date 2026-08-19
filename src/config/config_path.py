@@ -1,4 +1,10 @@
-"""Path constants for source, installed, and frozen CityGen runtimes."""
+"""Path constants for source, installed, and frozen CityGen runtimes.
+
+Path building uses ``pathlib`` throughout; the public constants are exported as
+normalized ``str`` values because the rest of the codebase joins onto them with
+``os.path.join``. ``os`` is used only for ``os.environ``, ``os.access``, and
+``os.path.normpath`` (pure normalization, which has no ``pathlib`` equivalent).
+"""
 
 from __future__ import annotations
 
@@ -8,9 +14,8 @@ from pathlib import Path
 
 APP_NAME = "CityGen"
 SOURCE_ROOT = str(Path(__file__).resolve().parents[1])
-APPDATA = os.environ.get("APPDATA", os.path.join(os.path.expanduser("~"), "AppData", "Roaming"))
 _REQUIRED_PACKAGE_DIRS = ("config", "engine", "gui", "pipeline")
-_REPO_MARKERS = (".git", "application.pyw", os.path.join("docs", "TECHNICAL.md"))
+_REPO_MARKERS = (".git", "application.pyw", "docs/TECHNICAL.md")
 
 
 def _norm(path: os.PathLike[str] | str) -> str:
@@ -37,13 +42,19 @@ def _repo_checkout_root(path: str) -> str:
 
 
 def _user_data_root() -> str:
+    """Per-user writable data dir, following each platform's convention."""
     override = os.environ.get("MC_CITY_APP_ROOT")
     if override:
         return _norm(override)
-    local_appdata = os.environ.get("LOCALAPPDATA")
-    if local_appdata:
-        return _norm(Path(local_appdata) / APP_NAME)
-    return _norm(Path(APPDATA) / APP_NAME)
+    home = Path.home()
+    if sys.platform.startswith("win"):
+        base = os.environ.get("LOCALAPPDATA") or os.environ.get("APPDATA") or str(home / "AppData" / "Roaming")
+        return _norm(Path(base) / APP_NAME)
+    if sys.platform == "darwin":
+        return _norm(home / "Library" / "Application Support" / APP_NAME)
+    xdg_data_home = os.environ.get("XDG_DATA_HOME")
+    base = Path(xdg_data_home) if xdg_data_home else home / ".local" / "share"
+    return _norm(base / APP_NAME)
 
 
 def _frozen_app_root(executable: str | None = None) -> str:
@@ -65,36 +76,30 @@ def _app_root() -> str:
 
 RESOURCE_ROOT = _resource_root()
 ROOT = _app_root()
-ENGINE = os.path.join(RESOURCE_ROOT, "engine")
-PIPELINE = os.path.join(RESOURCE_ROOT, "pipeline")
-GUI = os.path.join(RESOURCE_ROOT, "gui")
-DEFAULT_WORLD = os.path.join(RESOURCE_ROOT, "config", "default_world")
-ARTIFACTS = os.path.join(ROOT, "artifacts")
+ENGINE = str(Path(RESOURCE_ROOT) / "engine")
+PIPELINE = str(Path(RESOURCE_ROOT) / "pipeline")
+GUI = str(Path(RESOURCE_ROOT) / "gui")
+DEFAULT_WORLD = str(Path(RESOURCE_ROOT) / "config" / "default_world")
+ARTIFACTS = str(Path(ROOT) / "artifacts")
 
 
-def _artifact_dir(*parts):
-    return os.path.join(ARTIFACTS, *parts)
+def _artifact_dir(*parts: str) -> str:
+    return str(Path(ARTIFACTS).joinpath(*parts))
 
 
 ROADS_SIM = _artifact_dir("roads", "simulation")
 ROADS_PROD = _artifact_dir("roads", "production")
-ROADS_PROD_SCHEM = ROADS_PROD
 
 GRID_SIM = _artifact_dir("grid", "simulation")
 GRID_PROD = _artifact_dir("grid", "production")
-GRID_PROD_SCHEM = GRID_PROD
 
 BUILDS_SIM = _artifact_dir("builds", "simulation")
 BUILDS_PROD = _artifact_dir("builds", "production")
-BUILDS_PROD_SCHEM = BUILDS_PROD
-BUILD_CATALOG = os.path.join(BUILDS_PROD, "buildings.json")
+BUILD_CATALOG = str(Path(BUILDS_PROD) / "buildings.json")
 
 CITY_SIM = _artifact_dir("city", "simulation")
 CITY_PROD = _artifact_dir("city", "production")
-CITY_PROD_SCHEM = CITY_PROD
 
-WORLDEDIT_SCHEM = os.path.normpath(
-    os.environ.get("MC_CITY_WORLDEDIT_SCHEM") or _artifact_dir("worldedit")
-)
+WORLDEDIT_SCHEM = _norm(os.environ.get("MC_CITY_WORLDEDIT_SCHEM") or _artifact_dir("worldedit"))
 
-COLOR_RENDER_CSV = os.path.join(ENGINE, "color_render.csv")
+COLOR_RENDER_CSV = str(Path(ENGINE) / "color_render.csv")

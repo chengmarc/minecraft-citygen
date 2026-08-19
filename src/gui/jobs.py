@@ -37,7 +37,7 @@ def run_weighted_tasks_async(
                 func()
                 completed_weight += weight
                 owner.after(0, lambda value=completed_weight: owner._complete_script_progress(value))
-        except Exception as exc:
+        except Exception as exc:  # boundary: surface any task failure to the GUI
             message = str(exc).strip()
             owner.after(0, lambda: owner.set_status(fail_status))
             owner.after(0, lambda: messagebox.showerror(fail_title, message))

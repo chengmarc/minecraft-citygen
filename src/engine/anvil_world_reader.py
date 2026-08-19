@@ -86,7 +86,8 @@ class World:
         props = entry.get("Properties")
         return {str(key): str(props[key]) for key in props} if props else None
 
-    def _load_chunk(self, cx, cz):
+    def load_chunk(self, cx, cz):
+        """Return the parsed chunk NBT at chunk coords (cx, cz), or None if absent."""
         if (cx, cz) in self._chunks:
             return self._chunks[(cx, cz)]
         path = self._region_path(cx, cz)
@@ -111,7 +112,7 @@ class World:
         key = (cx, cz, sy)
         if key in self._sections:
             return self._sections[key]
-        chunk = self._load_chunk(cx, cz)
+        chunk = self.load_chunk(cx, cz)
         result = (None, None)
         if chunk is not None:
             for s in chunk.get("sections", []):

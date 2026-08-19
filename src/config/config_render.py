@@ -1,5 +1,7 @@
 """Rendering and preview style constants for generated artifacts."""
 
+from __future__ import annotations
+
 ROAD_ASSET_ISO_TILE_W = 12
 ROAD_ASSET_ISO_TILE_H = 6
 ROAD_ASSET_ISO_BLOCK_H = 8

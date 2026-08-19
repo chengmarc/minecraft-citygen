@@ -1,5 +1,7 @@
 """Shared Sponge v2 schematic writing helpers."""
 
+from __future__ import annotations
+
 import os
 
 import nbtlib
