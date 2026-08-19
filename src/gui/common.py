@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import os
 import subprocess
 import sys
@@ -11,6 +12,7 @@ import tkinter.font as tkfont
 from config import config_algo
 from config.config_algo import DEFAULT_SEED
 from config.config_path import GUI, ROOT
+from config.config_world import BUILD_TYPES, ROAD_BOX, SAVE
 from config.models import BlockRegion, BuildRegion
 from config.config_path import BUILDS_PROD, CITY_PROD, CITY_PROD_SCHEM, CITY_SIM, GRID_SIM, ROADS_PROD
 
@@ -41,6 +43,7 @@ APP_WIDTH = 1024
 APP_HEIGHT = 768
 UI_RADIUS = 4
 STARTUP_ERROR_LOG = os.path.join(ROOT_DIR, "application_startup_error.log")
+SAVED_GUI_CONFIG_PATH = os.path.join(ROOT_DIR, "citygen_saved_config.json")
 UI_FONT_FAMILY = "SF Pro Text"
 UI_FONT_FALLBACKS = ("Segoe UI Variable", "Segoe UI", "Inter", "Arial")
 
@@ -238,9 +241,17 @@ def city_render_path(seed):
 
 def format_box(box):
     if isinstance(box, BlockRegion):
-        box = box.as_tuple()
-    elif isinstance(box, BuildRegion):
-        box = box.as_tuple()
+        return box.to_env_value()
+    if isinstance(box, BuildRegion):
+        return box.to_env_value()
+    if len(box) == 6:
+        return BlockRegion.from_values(box).to_env_value()
+    if len(box) in {2, 3, 7} and isinstance(box[0], int):
+        return BuildRegion.from_values(box).to_env_value()
+    if len(box) == 2 and all(hasattr(part, "__len__") and len(part) == 3 for part in box):
+        return f"({tuple(box[0])}, {tuple(box[1])})"
+    if len(box) in {2, 3}:
+        return str(tuple(box))
     return ", ".join(str(value) for value in box)
 
 
@@ -253,6 +264,9 @@ def format_xyz(pos):
 
 
 def parse_xyz(value, label):
+    value = value.strip()
+    if value.startswith("(") and value.endswith(")"):
+        value = value[1:-1]
     parts = [part.strip() for part in value.replace(";", ",").split(",") if part.strip()]
     if len(parts) != 3:
         raise ValueError(f"{label} must be three values: x, y, z")
@@ -267,6 +281,8 @@ def region_to_xyz_pair(region):
         return region.bounds.as_xyz_pair()
     if isinstance(region, BlockRegion):
         return region.as_xyz_pair()
+    if len(region) == 2 and all(hasattr(part, "__len__") and len(part) == 3 for part in region):
+        return BlockRegion.from_values(region).as_xyz_pair()
     if len(region) == 6:
         return BlockRegion.from_values(region).as_xyz_pair()
     return BuildRegion.from_values(region).bounds.as_xyz_pair()
@@ -295,11 +311,77 @@ def config_default(name):
     return str(value)
 
 
-def create_config_vars():
+def algo_defaults_snapshot():
+    return {name: config_default(name) for name, _label, _description in PREVIEW_CONFIGS}
+
+
+def create_config_vars(initial=None):
+    values = algo_defaults_snapshot()
+    if initial:
+        for name in values:
+            if name in initial:
+                values[name] = str(initial[name])
     return {
-        name: tk.StringVar(value=config_default(name))
+        name: tk.StringVar(value=values[name])
         for name, _label, _description in PREVIEW_CONFIGS
     }
+
+
+def snapshot_config_vars(config_vars):
+    return {
+        name: config_vars[name].get()
+        for name, _label, _description in PREVIEW_CONFIGS
+    }
+
+
+def apply_config_vars(config_vars, values):
+    if not values:
+        return
+    for name, _label, _description in PREVIEW_CONFIGS:
+        if name in values:
+            config_vars[name].set(str(values[name]))
+
+
+def default_algo_tab_config():
+    return {
+        "seed": str(DEFAULT_SEED),
+        "algo": algo_defaults_snapshot(),
+    }
+
+
+def _serialize_xyz_pair(start, end):
+    return {
+        "start": list(start),
+        "end": list(end),
+    }
+
+
+def default_extraction_tab_config():
+    road_start, road_end = region_to_xyz_pair(ROAD_BOX)
+    house_start, house_end = region_to_xyz_pair(first_build_region(BUILD_TYPES, 1))
+    landmark_start, landmark_end = region_to_xyz_pair(first_build_region(BUILD_TYPES, 2))
+    return {
+        "world_path": SAVE,
+        "road": _serialize_xyz_pair(road_start, road_end),
+        "house": _serialize_xyz_pair(house_start, house_end),
+        "landmark": _serialize_xyz_pair(landmark_start, landmark_end),
+    }
+
+
+def load_saved_gui_config():
+    if not os.path.exists(SAVED_GUI_CONFIG_PATH):
+        return {}
+    try:
+        with open(SAVED_GUI_CONFIG_PATH, "r", encoding="utf-8") as fh:
+            data = json.load(fh)
+    except Exception:
+        return {}
+    return data if isinstance(data, dict) else {}
+
+
+def save_saved_gui_config(config):
+    with open(SAVED_GUI_CONFIG_PATH, "w", encoding="utf-8") as fh:
+        json.dump(config, fh, indent=2)
 
 
 def build_algo_env(config_vars):

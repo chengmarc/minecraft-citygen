@@ -206,7 +206,9 @@ def run(*, logger=None, progress=None):
     builds = []
     for region in BUILD_TYPES:
         build_type = region.build_type
-        xa, xb, za, zb, y0, y1 = region.bounds.as_tuple()
+        (start_xyz, end_xyz) = region.bounds.as_tuple()
+        xa, y0, za = start_xyz
+        xb, y1, zb = end_xyz
         detected, skipped = detect_builds(build_type, xa, xb, za, zb, y0, y1)
         builds.extend(detected)
         if logger is not None:

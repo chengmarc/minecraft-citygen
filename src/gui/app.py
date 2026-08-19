@@ -17,8 +17,9 @@ class CityGeneratorApp(tk.Tk):
         super().__init__()
         self.withdraw()
         self._app_icon = None
+        self._saved_gui_config = common.load_saved_gui_config()
         self.ui_font_family = common.pick_ui_font(self)
-        self.title("CityGen v0.5")
+        self.title("CityGen")
         self.geometry(f"{common.APP_WIDTH}x{common.APP_HEIGHT}")
         self._configure_icon()
 
@@ -65,6 +66,14 @@ class CityGeneratorApp(tk.Tk):
     def _on_tab_changed(self, _event=None):
         self._load_tab(self._tab_title(self.notebook.select()))
 
+    def get_saved_config_section(self, section):
+        value = self._saved_gui_config.get(section)
+        return value if isinstance(value, dict) else None
+
+    def set_saved_config_section(self, section, value):
+        self._saved_gui_config[section] = value
+        common.save_saved_gui_config(self._saved_gui_config)
+
     def _configure_icon(self):
         if not os.path.exists(common.APP_ICON_PATH):
             return
@@ -92,7 +101,7 @@ def main():
             ctypes.windll.user32.MessageBoxW(
                 None,
                 f"GUI startup failed.\n\nDetails were written to:\n{common.STARTUP_ERROR_LOG}",
-                "CityGen v0.5",
+                "CityGen",
                 0x10,
             )
         except Exception:

@@ -19,14 +19,16 @@ class CityTab(WeightedProgressMixin, ttk.Frame):
     def __init__(self, master):
         super().__init__(master, padding=10, style="Page.TFrame")
         self._init_weighted_progress()
+        self._suspend_auto_save = False
+        saved_config = self.winfo_toplevel().get_saved_config_section("render") or common.default_algo_tab_config()
 
         self.city_viewer = ImageViewer(self, "City Schematic Render", initial_message="Click Render to construct and render the city schematic.")
         self.city_viewer.grid(row=0, column=0, sticky="nsew")
 
         self.config_frame = ttk.LabelFrame(self, text="⬤ Render Config", padding=8, style="Card.TLabelframe")
         self.config_frame.grid(row=1, column=0, sticky="ew", pady=(8, 0))
-        self.seed_var = tk.StringVar(value=str(DEFAULT_SEED))
-        self.config_vars = common.create_config_vars()
+        self.seed_var = tk.StringVar(value=str(saved_config.get("seed", DEFAULT_SEED)))
+        self.config_vars = common.create_config_vars(saved_config.get("algo"))
         self.render_button = build_shared_config_frame(
             self.config_frame,
             self.seed_var,
@@ -36,6 +38,7 @@ class CityTab(WeightedProgressMixin, ttk.Frame):
             "city_config",
             extra_actions=[("Output", self._open_output_folder)],
         )
+        self._bind_auto_save()
         self._build_progress_bar(2)
 
         self.rowconfigure(0, weight=1)
@@ -43,6 +46,32 @@ class CityTab(WeightedProgressMixin, ttk.Frame):
 
     def set_status(self, status):
         self.config_frame.configure(text=f"⬤ Render Config - {status}")
+
+    def _current_config_state(self):
+        return {
+            "seed": self.seed_var.get().strip(),
+            "algo": common.snapshot_config_vars(self.config_vars),
+        }
+
+    def _bind_auto_save(self):
+        self.seed_var.trace_add("write", self._on_config_changed)
+        for variable in self.config_vars.values():
+            variable.trace_add("write", self._on_config_changed)
+
+    def _on_config_changed(self, *_args):
+        if self._suspend_auto_save:
+            return
+        self.winfo_toplevel().set_saved_config_section("render", self._current_config_state())
+
+    def _apply_config_state(self, config):
+        if not config:
+            return
+        self._suspend_auto_save = True
+        try:
+            self.seed_var.set(str(config.get("seed", DEFAULT_SEED)))
+            common.apply_config_vars(self.config_vars, config.get("algo"))
+        finally:
+            self._suspend_auto_save = False
 
     def _open_output_folder(self):
         if not os.path.isdir(CITY_PROD_SCHEM):

@@ -3,17 +3,35 @@
 from __future__ import annotations
 
 import os
+import sys
+import threading
 import tkinter as tk
 from tkinter import ttk
 
+from engine.render_topdown import render_topdown_preview
 from gui import common
 
 Image = common.Image
 ImageTk = common.ImageTk
+CHUNK_SIZE = 16
+MAX_FULL_RENDER_PIXELS = 3_500_000
+
+
+def _format_extraction_xyz(pos):
+    return f"({common.format_xyz(pos)})"
 
 
 class ImageViewer(ttk.Frame):
-    def __init__(self, master, title, initial_message="", min_height=420, show_title=False):
+    def __init__(
+        self,
+        master,
+        title,
+        initial_message="",
+        min_height=420,
+        show_title=False,
+        fast_zoom=False,
+        smooth_zoom=False,
+    ):
         super().__init__(master, style="Card.TFrame", padding=6)
         self.title = title
         self.image_path = None
@@ -24,6 +42,13 @@ class ImageViewer(ttk.Frame):
         self._message_id = None
         self._has_title = bool(title and show_title)
         self._layout_after_id = None
+        self._view_change_callback = None
+        self._suspend_view_notifications = False
+        self._fast_zoom = fast_zoom
+        self._smooth_zoom = smooth_zoom
+        self._zoom_pyramid = None
+        self._view_origin = (0.0, 0.0)
+        self._virtual_size = (0, 0)
 
         canvas_row = 1 if self._has_title else 0
         if self._has_title:
@@ -55,6 +80,9 @@ class ImageViewer(ttk.Frame):
         self._source_image = None
         self._photo = None
         self._image_id = None
+        self._zoom_pyramid = None
+        self._view_origin = (0.0, 0.0)
+        self._virtual_size = (0, 0)
         self.canvas.delete("all")
         font_family = self.winfo_toplevel().ui_font_family
         self._message_id = self.canvas.create_text(
@@ -68,6 +96,15 @@ class ImageViewer(ttk.Frame):
         )
         self.canvas.configure(scrollregion=(0, 0, 420, 420))
 
+    def set_view_change_callback(self, callback):
+        self._view_change_callback = callback
+
+    def sync_view_from(self, other):
+        state = other._current_view_state()
+        if state is None:
+            return
+        self._apply_view_state(state)
+
     def load_image(self, image_path):
         self.image_path = image_path
         self.canvas.delete("all")
@@ -79,10 +116,14 @@ class ImageViewer(ttk.Frame):
         if Image is None or ImageTk is None:
             self._photo = tk.PhotoImage(file=image_path)
             self._image_id = self.canvas.create_image(0, 0, anchor="nw", image=self._photo)
+            self._view_origin = (0.0, 0.0)
+            self._virtual_size = (self._photo.width(), self._photo.height())
             self.canvas.configure(scrollregion=(0, 0, self._photo.width(), self._photo.height()))
+            self._notify_view_changed("load")
             return
 
         self._source_image = Image.open(image_path).convert("RGBA")
+        self._zoom_pyramid = self._build_zoom_pyramid()
         self._zoom = self._initial_zoom()
         self._render_image(center=True)
 
@@ -97,17 +138,18 @@ class ImageViewer(ttk.Frame):
         self._layout_after_id = None
         if self._image_id is None or self._photo is None:
             return
-        x, y = self.canvas.coords(self._image_id)
-        width = self._photo.width()
-        height = self._photo.height()
+        x, y = self._view_origin
+        width, height = self._virtual_size
         canvas_width = self.canvas.winfo_width()
         canvas_height = self.canvas.winfo_height()
         if width <= canvas_width:
             x = max((canvas_width - width) // 2, 0)
         if height <= canvas_height:
             y = max((canvas_height - height) // 2, 0)
-        self.canvas.coords(self._image_id, x, y)
+        self._view_origin = (x, y)
+        self._refresh_display_image()
         self._update_scrollregion()
+        self._notify_view_changed("layout")
 
     def _initial_zoom(self):
         if not self._source_image:
@@ -116,20 +158,11 @@ class ImageViewer(ttk.Frame):
         longest_edge = max(self._source_image.width, self._source_image.height)
         return max(canvas_size / longest_edge, 0.05)
 
-    def _render_image(self, center=False, anchor=None):
+    def _render_image(self, center=False, anchor=None, notify=True):
         if not self._source_image:
             return
         width = max(1, int(self._source_image.width * self._zoom))
         height = max(1, int(self._source_image.height * self._zoom))
-        resample = Image.Resampling.NEAREST if self._zoom >= 1 else Image.Resampling.BILINEAR
-        image = self._source_image.resize((width, height), resample)
-        self._photo = ImageTk.PhotoImage(image)
-
-        if self._image_id is None:
-            self._image_id = self.canvas.create_image(0, 0, anchor="nw", image=self._photo)
-        else:
-            self.canvas.itemconfigure(self._image_id, image=self._photo)
-
         if center:
             x = max((self.canvas.winfo_width() - width) // 2, 0)
             y = max((self.canvas.winfo_height() - height) // 2, 0)
@@ -138,19 +171,25 @@ class ImageViewer(ttk.Frame):
             x = canvas_x - source_x * self._zoom
             y = canvas_y - source_y * self._zoom
         else:
-            x, y = self.canvas.coords(self._image_id)
+            x, y = self._view_origin
 
-        self.canvas.coords(self._image_id, x, y)
+        self._view_origin = (x, y)
+        self._virtual_size = (width, height)
+        self._refresh_display_image()
         self._update_scrollregion()
+        if notify:
+            self._notify_view_changed("zoom")
 
     def _update_scrollregion(self):
         if self._image_id is None:
             return
-        bbox = self.canvas.bbox(self._image_id) or (
-            0,
-            0,
-            self._photo.width() if self._photo else 0,
-            self._photo.height() if self._photo else 0,
+        x, y = self._view_origin
+        width, height = self._virtual_size
+        bbox = (
+            x,
+            y,
+            x + width,
+            y + height,
         )
         self.canvas.configure(
             scrollregion=(
@@ -169,7 +208,7 @@ class ImageViewer(ttk.Frame):
     def _zoom_at(self, canvas_x, canvas_y, factor):
         if not self._source_image or self._image_id is None:
             return "break"
-        x0, y0 = self.canvas.coords(self._image_id)
+        x0, y0 = self._view_origin
         source_x = (canvas_x - x0) / self._zoom
         source_y = (canvas_y - y0) / self._zoom
         self._zoom = min(max(self._zoom * factor, 0.05), 8.0)
@@ -181,6 +220,139 @@ class ImageViewer(ttk.Frame):
 
     def _pan(self, event):
         self.canvas.scan_dragto(event.x, event.y, gain=1)
+        if self._use_viewport_rendering(*self._virtual_size):
+            self._refresh_display_image()
+        self._notify_view_changed("pan")
+
+    def _current_view_state(self):
+        if self._image_id is None:
+            return None
+        return {
+            "zoom": self._zoom,
+            "coords": self._view_origin,
+            "xview": self.canvas.xview()[0],
+            "yview": self.canvas.yview()[0],
+        }
+
+    def _apply_view_state(self, state):
+        if self._image_id is None:
+            return
+        self._suspend_view_notifications = True
+        try:
+            zoom_changed = abs(self._zoom - state["zoom"]) > 1e-9
+            self._view_origin = tuple(state["coords"])
+            if self._source_image is not None and zoom_changed:
+                self._zoom = state["zoom"]
+                self._render_image(notify=False)
+            else:
+                self._zoom = state["zoom"]
+                self._refresh_display_image()
+            self._update_scrollregion()
+            self.canvas.xview_moveto(state["xview"])
+            self.canvas.yview_moveto(state["yview"])
+            if self._use_viewport_rendering(*self._virtual_size):
+                self._refresh_display_image()
+        finally:
+            self._suspend_view_notifications = False
+
+    def _notify_view_changed(self, reason):
+        if self._suspend_view_notifications or self._view_change_callback is None:
+            return
+        state = self._current_view_state()
+        if state is not None:
+            self._view_change_callback(self, state, reason)
+
+    def _build_zoom_pyramid(self):
+        if self._source_image is None:
+            return None
+        levels = [(1.0, self._source_image)]
+        if not self._smooth_zoom:
+            return levels
+
+        scale = 1.0
+        current = self._source_image
+        while min(current.width, current.height) > 192:
+            next_width = max(1, current.width // 2)
+            next_height = max(1, current.height // 2)
+            current = current.resize((next_width, next_height), Image.Resampling.BILINEAR)
+            scale /= 2.0
+            levels.append((scale, current))
+        return levels
+
+    def _select_zoom_source(self, zoom):
+        if not self._zoom_pyramid:
+            return 1.0, self._source_image
+        return min(
+            self._zoom_pyramid,
+            key=lambda item: max(item[0] / max(zoom, 0.05), max(zoom, 0.05) / item[0]),
+        )
+
+    def _use_viewport_rendering(self, width, height):
+        return self._smooth_zoom and width * height > MAX_FULL_RENDER_PIXELS
+
+    def _refresh_display_image(self):
+        if self._source_image is None:
+            return
+        width, height = self._virtual_size
+        if self._use_viewport_rendering(width, height):
+            self._render_viewport_image()
+            return
+
+        _source_scale, source_image = self._select_zoom_source(self._zoom)
+        if self._fast_zoom:
+            resample = Image.Resampling.NEAREST
+        elif self._smooth_zoom:
+            resample = Image.Resampling.BILINEAR
+        else:
+            resample = Image.Resampling.NEAREST if self._zoom >= 1 else Image.Resampling.BILINEAR
+        image = source_image.resize((width, height), resample)
+        self._photo = ImageTk.PhotoImage(image)
+        if self._image_id is None:
+            self._image_id = self.canvas.create_image(0, 0, anchor="nw", image=self._photo)
+        else:
+            self.canvas.itemconfigure(self._image_id, image=self._photo)
+        self.canvas.coords(self._image_id, *self._view_origin)
+
+    def _render_viewport_image(self):
+        source_scale, source_image = self._select_zoom_source(self._zoom)
+        origin_x, origin_y = self._view_origin
+        width, height = self._virtual_size
+        canvas_left = self.canvas.canvasx(0)
+        canvas_top = self.canvas.canvasy(0)
+        canvas_right = canvas_left + max(self.canvas.winfo_width(), 1)
+        canvas_bottom = canvas_top + max(self.canvas.winfo_height(), 1)
+
+        left = max(origin_x, canvas_left)
+        top = max(origin_y, canvas_top)
+        right = min(origin_x + width, canvas_right)
+        bottom = min(origin_y + height, canvas_bottom)
+
+        if right <= left or bottom <= top:
+            image = Image.new("RGBA", (1, 1), (0, 0, 0, 0))
+            self._photo = ImageTk.PhotoImage(image)
+            if self._image_id is None:
+                self._image_id = self.canvas.create_image(origin_x, origin_y, anchor="nw", image=self._photo)
+            else:
+                self.canvas.itemconfigure(self._image_id, image=self._photo)
+                self.canvas.coords(self._image_id, origin_x, origin_y)
+            return
+
+        src_left = max(0, int((left - origin_x) / self._zoom * source_scale))
+        src_top = max(0, int((top - origin_y) / self._zoom * source_scale))
+        src_right = min(source_image.width, max(src_left + 1, int((right - origin_x) / self._zoom * source_scale + 0.9999)))
+        src_bottom = min(source_image.height, max(src_top + 1, int((bottom - origin_y) / self._zoom * source_scale + 0.9999)))
+        crop = source_image.crop((src_left, src_top, src_right, src_bottom))
+        target_width = max(1, int(round(right - left)))
+        target_height = max(1, int(round(bottom - top)))
+        if crop.size != (target_width, target_height):
+            crop = crop.resize((target_width, target_height), Image.Resampling.BILINEAR)
+
+        self._photo = ImageTk.PhotoImage(crop)
+        if self._image_id is None:
+            self._image_id = self.canvas.create_image(left, top, anchor="nw", image=self._photo)
+        else:
+            self.canvas.itemconfigure(self._image_id, image=self._photo)
+            self.canvas.coords(self._image_id, left, top)
 
 
 class ActionButton(ttk.Frame):
@@ -234,11 +406,394 @@ class ActionButton(ttk.Frame):
         return self.button.invoke()
 
 
+class RegionSelectorDialog(tk.Toplevel):
+    def __init__(self, master, title, save_path, start_xyz, end_xyz, on_apply):
+        super().__init__(master)
+        self.title(title)
+        self.transient(master.winfo_toplevel())
+        self.grab_set()
+        self.resizable(False, False)
+
+        self.save_path = save_path
+        self.start_xyz = start_xyz
+        self.end_xyz = end_xyz
+        self.on_apply = on_apply
+        self.preview_image = None
+        self.preview_meta = None
+        self.preview_photo = None
+        self._image_id = None
+        self._zoom = 1.0
+        self._layout_after_id = None
+        self._drag_mode = None
+        self.selection_start = None
+        self.selection_world = None
+
+        shell = ttk.Frame(self, padding=10, style="Page.TFrame")
+        shell.grid(row=0, column=0, sticky="nsew")
+        self.columnconfigure(0, weight=1)
+        self.rowconfigure(0, weight=1)
+        shell.columnconfigure(0, weight=1)
+        shell.rowconfigure(0, weight=1)
+
+        self.canvas = tk.Canvas(
+            shell,
+            bg=common.CANVAS_BG,
+            highlightthickness=1,
+            highlightbackground=common.BORDER,
+            highlightcolor=common.ACCENT,
+            bd=0,
+            width=780,
+            height=500,
+        )
+        self.canvas.grid(row=0, column=0, sticky="nsew")
+        self.canvas.create_text(
+            20,
+            20,
+            anchor="nw",
+            fill=common.CANVAS_TEXT,
+            font=common.ui_font(master.winfo_toplevel().ui_font_family, 11),
+            text="Loading world preview...",
+            width=720,
+            tags=("status",),
+        )
+        self.canvas.bind("<Configure>", self._schedule_layout)
+        self.canvas.bind("<Enter>", lambda _event: self.canvas.focus_set())
+        self.canvas.bind("<MouseWheel>", self._on_zoom_wheel)
+        self.canvas.bind("<Button-4>", lambda event: self._zoom_at(event.x, event.y, 1.12))
+        self.canvas.bind("<Button-5>", lambda event: self._zoom_at(event.x, event.y, 1 / 1.12))
+        self.canvas.bind("<ButtonPress-1>", self._on_press)
+        self.canvas.bind("<B1-Motion>", self._on_drag)
+        self.canvas.bind("<ButtonRelease-1>", self._on_release)
+
+        self.status_var = tk.StringVar(value="Loading world preview...")
+        ttk.Label(shell, textvariable=self.status_var, style="Subtle.TLabel").grid(
+            row=1,
+            column=0,
+            sticky="w",
+            pady=(8, 0),
+        )
+
+        actions = ttk.Frame(shell, style="Page.TFrame")
+        actions.grid(row=2, column=0, sticky="e", pady=(10, 0))
+        ttk.Button(actions, text="Cancel", command=self.destroy).grid(row=0, column=0, padx=(0, 6))
+        self.apply_button = ttk.Button(actions, text="Use Selection", command=self._apply, state="disabled")
+        self.apply_button.grid(row=0, column=1)
+
+        self._set_initial_geometry()
+        self.after(0, self._lock_window_frame)
+        self._start_loading()
+
+    def _set_initial_geometry(self):
+        parent = self.master.winfo_toplevel()
+        self.update_idletasks()
+        width = 800
+        height = 600
+        parent_x = parent.winfo_rootx()
+        parent_y = parent.winfo_rooty()
+        parent_width = max(parent.winfo_width(), width)
+        parent_height = max(parent.winfo_height(), height)
+        x = max(parent_x + (parent_width - width) // 2, 0)
+        y = max(parent_y + (parent_height - height) // 2, 0)
+        self.geometry(f"{width}x{height}+{x}+{y}")
+        self.minsize(width, height)
+        self.maxsize(width, height)
+
+    def _lock_window_frame(self):
+        if sys.platform != "win32":
+            return
+        try:
+            import ctypes
+
+            hwnd = self.winfo_id()
+            get_window_long = ctypes.windll.user32.GetWindowLongW
+            set_window_long = ctypes.windll.user32.SetWindowLongW
+            set_window_pos = ctypes.windll.user32.SetWindowPos
+            gcl_style = -16
+            ws_maximizebox = 0x00010000
+            ws_thickframe = 0x00040000
+            swp_nosize = 0x0001
+            swp_nomove = 0x0002
+            swp_nozorder = 0x0004
+            swp_framechanged = 0x0020
+
+            style = get_window_long(hwnd, gcl_style)
+            style &= ~ws_maximizebox
+            style &= ~ws_thickframe
+            set_window_long(hwnd, gcl_style, style)
+            set_window_pos(hwnd, 0, 0, 0, 0, 0, swp_nosize | swp_nomove | swp_nozorder | swp_framechanged)
+        except Exception:
+            pass
+
+    def _start_loading(self):
+        if Image is None or ImageTk is None:
+            self.status_var.set("Pillow is required for the region selector preview.")
+            return
+
+        def worker():
+            try:
+                image, meta = render_topdown_preview(
+                    self.save_path,
+                    min(self.start_xyz[1], self.end_xyz[1]),
+                    max(self.start_xyz[1], self.end_xyz[1]),
+                )
+            except Exception as exc:
+                self.after(0, lambda: self._show_error(str(exc).strip() or "Failed to load world preview."))
+                return
+            self.after(0, lambda: self._show_preview(image, meta))
+
+        threading.Thread(target=worker, daemon=True).start()
+
+    def _show_error(self, message):
+        self.canvas.delete("all")
+        self._image_id = None
+        self.preview_photo = None
+        self.canvas.create_text(
+            20,
+            20,
+            anchor="nw",
+            fill=common.CANVAS_TEXT,
+            font=common.ui_font(self.winfo_toplevel().ui_font_family, 11),
+            text=message,
+            width=720,
+        )
+        self.status_var.set(message)
+
+    def _show_preview(self, image, meta):
+        self.preview_image = image
+        self.preview_meta = meta
+        self.canvas.delete("all")
+        self._image_id = None
+        self._zoom = self._initial_zoom()
+        self._render_preview(center=True)
+        self._set_selection_from_world(self.start_xyz, self.end_xyz)
+        self.status_var.set("Hold Shift and drag to snap-select chunks.")
+
+    def _schedule_layout(self, _event=None):
+        if self.preview_image is None or self.preview_photo is None or self._image_id is None:
+            return
+        if self._layout_after_id is not None:
+            self.after_cancel(self._layout_after_id)
+        self._layout_after_id = self.after(60, self._apply_layout)
+
+    def _apply_layout(self):
+        self._layout_after_id = None
+        if self._image_id is None or self.preview_photo is None:
+            return
+        x, y = self.canvas.coords(self._image_id)
+        width = self.preview_photo.width()
+        height = self.preview_photo.height()
+        canvas_width = self.canvas.winfo_width()
+        canvas_height = self.canvas.winfo_height()
+        if width <= canvas_width:
+            x = max((canvas_width - width) // 2, 0)
+        if height <= canvas_height:
+            y = max((canvas_height - height) // 2, 0)
+        self.canvas.coords(self._image_id, x, y)
+        self._update_scrollregion()
+        self._redraw_selection()
+
+    def _initial_zoom(self):
+        if self.preview_image is None:
+            return 1.0
+        canvas_size = max(min(self.canvas.winfo_width(), self.canvas.winfo_height()), 1)
+        longest_edge = max(self.preview_image.width, self.preview_image.height)
+        return max(canvas_size / longest_edge, 0.05)
+
+    def _render_preview(self, center=False, anchor=None):
+        if self.preview_image is None:
+            return
+        width = max(1, int(self.preview_image.width * self._zoom))
+        height = max(1, int(self.preview_image.height * self._zoom))
+        resample = Image.Resampling.NEAREST if self._zoom >= 1 else Image.Resampling.BILINEAR
+        image = self.preview_image.resize((width, height), resample)
+        self.preview_photo = ImageTk.PhotoImage(image)
+
+        if self._image_id is None:
+            self._image_id = self.canvas.create_image(0, 0, anchor="nw", image=self.preview_photo, tags=("preview",))
+        else:
+            self.canvas.itemconfigure(self._image_id, image=self.preview_photo)
+
+        if center:
+            x = max((self.canvas.winfo_width() - width) // 2, 0)
+            y = max((self.canvas.winfo_height() - height) // 2, 0)
+        elif anchor:
+            canvas_x, canvas_y, source_x, source_y = anchor
+            x = canvas_x - source_x * self._zoom
+            y = canvas_y - source_y * self._zoom
+        else:
+            x, y = self.canvas.coords(self._image_id)
+
+        self.canvas.coords(self._image_id, x, y)
+        self._update_scrollregion()
+        self._redraw_selection()
+
+    def _update_scrollregion(self):
+        if self._image_id is None:
+            return
+        bbox = self.canvas.bbox(self._image_id) or (
+            0,
+            0,
+            self.preview_photo.width() if self.preview_photo else 0,
+            self.preview_photo.height() if self.preview_photo else 0,
+        )
+        self.canvas.configure(
+            scrollregion=(
+                min(0, bbox[0]),
+                min(0, bbox[1]),
+                max(self.canvas.winfo_width(), bbox[2]),
+                max(self.canvas.winfo_height(), bbox[3]),
+            )
+        )
+
+    def _canvas_point(self, x, y):
+        return self.canvas.canvasx(x), self.canvas.canvasy(y)
+
+    def _clamp_image_point(self, x, y):
+        if self.preview_photo is None or self._image_id is None or self.preview_image is None:
+            return None
+        canvas_x, canvas_y = self._canvas_point(x, y)
+        ox, oy = self.canvas.coords(self._image_id)
+        ix = min(max((canvas_x - ox) / self._zoom, 0), self.preview_image.width - 1)
+        iy = min(max((canvas_y - oy) / self._zoom, 0), self.preview_image.height - 1)
+        return ix, iy
+
+    def _image_point_to_world(self, point):
+        if point is None or self.preview_meta is None:
+            return None
+        ix, iy = point
+        span_x = self.preview_meta["x1"] - self.preview_meta["x0"] + 1
+        span_z = self.preview_meta["z1"] - self.preview_meta["z0"] + 1
+        world_x = self.preview_meta["x0"] + min(int(ix * self.preview_meta["step"]), span_x - 1)
+        world_z = self.preview_meta["z0"] + min(int(iy * self.preview_meta["step"]), span_z - 1)
+        return world_x, world_z
+
+    def _chunk_at_canvas_point(self, x, y):
+        world_point = self._image_point_to_world(self._clamp_image_point(x, y))
+        if world_point is None:
+            return None
+        world_x, world_z = world_point
+        return world_x // CHUNK_SIZE, world_z // CHUNK_SIZE
+
+    def _on_zoom_wheel(self, event):
+        factor = 1.12 if event.delta > 0 else 1 / 1.12
+        self._zoom_at(event.x, event.y, factor)
+        return "break"
+
+    def _zoom_at(self, canvas_x, canvas_y, factor):
+        if self.preview_image is None or self._image_id is None:
+            return "break"
+        view_x, view_y = self._canvas_point(canvas_x, canvas_y)
+        x0, y0 = self.canvas.coords(self._image_id)
+        source_x = (view_x - x0) / self._zoom
+        source_y = (view_y - y0) / self._zoom
+        self._zoom = min(max(self._zoom * factor, 0.05), 8.0)
+        self._render_preview(anchor=(view_x, view_y, source_x, source_y))
+        return "break"
+
+    def _on_press(self, event):
+        if self.preview_image is None:
+            return
+        if event.state & 0x0001:
+            chunk = self._chunk_at_canvas_point(event.x, event.y)
+            if chunk is None:
+                return
+            self._drag_mode = "select"
+            self.selection_start = chunk
+            self._update_selection(chunk, chunk)
+            return
+        self._drag_mode = "pan"
+        self.selection_start = None
+        self.canvas.scan_mark(event.x, event.y)
+
+    def _on_drag(self, event):
+        if self._drag_mode == "select" and self.selection_start is not None:
+            chunk = self._chunk_at_canvas_point(event.x, event.y)
+            if chunk is None:
+                return
+            self._update_selection(self.selection_start, chunk)
+            return
+        if self._drag_mode == "pan":
+            self.canvas.scan_dragto(event.x, event.y, gain=1)
+
+    def _on_release(self, event):
+        if self._drag_mode == "select" and self.selection_start is not None:
+            chunk = self._chunk_at_canvas_point(event.x, event.y)
+            if chunk is not None:
+                self._update_selection(self.selection_start, chunk)
+        self.selection_start = None
+        self._drag_mode = None
+
+    def _update_selection(self, first, second):
+        if self.preview_meta is None:
+            return
+        chunk_x0, chunk_x1 = sorted((int(first[0]), int(second[0])))
+        chunk_z0, chunk_z1 = sorted((int(first[1]), int(second[1])))
+        world_x0 = max(self.preview_meta["x0"], chunk_x0 * CHUNK_SIZE)
+        world_x1 = min(self.preview_meta["x1"], (chunk_x1 + 1) * CHUNK_SIZE - 1)
+        world_z0 = max(self.preview_meta["z0"], chunk_z0 * CHUNK_SIZE)
+        world_z1 = min(self.preview_meta["z1"], (chunk_z1 + 1) * CHUNK_SIZE - 1)
+        self.selection_world = (
+            (world_x0, self.start_xyz[1], world_z0),
+            (world_x1, self.end_xyz[1], world_z1),
+        )
+        self._redraw_selection()
+        self.apply_button.configure(state="normal")
+        self.status_var.set(
+            f"Selection: x {world_x0} to {world_x1}, z {world_z0} to {world_z1} "
+            f"({chunk_x1 - chunk_x0 + 1} x {chunk_z1 - chunk_z0 + 1} chunks)"
+        )
+
+    def _set_selection_from_world(self, start_xyz, end_xyz):
+        if self.preview_meta is None or self.preview_image is None:
+            return
+        chunk_x0 = min(start_xyz[0], end_xyz[0]) // CHUNK_SIZE
+        chunk_x1 = max(start_xyz[0], end_xyz[0]) // CHUNK_SIZE
+        chunk_z0 = min(start_xyz[2], end_xyz[2]) // CHUNK_SIZE
+        chunk_z1 = max(start_xyz[2], end_xyz[2]) // CHUNK_SIZE
+        self._update_selection((chunk_x0, chunk_z0), (chunk_x1, chunk_z1))
+
+    def _redraw_selection(self):
+        self.canvas.delete("selection")
+        if (
+            self.selection_world is None
+            or self.preview_meta is None
+            or self.preview_image is None
+            or self._image_id is None
+        ):
+            return
+        step = self.preview_meta["step"]
+        ox, oy = self.canvas.coords(self._image_id)
+        start, end = self.selection_world
+        world_x0 = max(self.preview_meta["x0"], min(start[0], end[0]))
+        world_x1 = min(self.preview_meta["x1"], max(start[0], end[0]))
+        world_z0 = max(self.preview_meta["z0"], min(start[2], end[2]))
+        world_z1 = min(self.preview_meta["z1"], max(start[2], end[2]))
+        self.canvas.create_rectangle(
+            ox + ((world_x0 - self.preview_meta["x0"]) / step) * self._zoom,
+            oy + ((world_z0 - self.preview_meta["z0"]) / step) * self._zoom,
+            ox + ((world_x1 + 1 - self.preview_meta["x0"]) / step) * self._zoom,
+            oy + ((world_z1 + 1 - self.preview_meta["z0"]) / step) * self._zoom,
+            fill=common.ACCENT,
+            outline=common.ACCENT,
+            stipple="gray25",
+            width=2,
+            tags=("selection",),
+        )
+
+    def _apply(self):
+        if self.selection_world is None:
+            return
+        self.on_apply(*self.selection_world)
+        self.destroy()
+
+
 class ExtractionSubPanel(ttk.LabelFrame):
-    def __init__(self, master, title, area_kind, area_value):
-        super().__init__(master, text="", padding=6, style="Inset.TLabelframe")
+    def __init__(self, master, title, area_kind, area_value, show_extract_button=True):
+        super().__init__(master, text=title, padding=6, style="Inset.TLabelframe")
         self.area_kind = area_kind
         self.area_vars = {}
+        self.pick_buttons = {}
+        self.extract_button = None
         self.content = ttk.Frame(self, style="Card.TFrame")
 
         self.rowconfigure(0, weight=1)
@@ -246,58 +801,89 @@ class ExtractionSubPanel(ttk.LabelFrame):
         self.columnconfigure(0, weight=1)
         self.content.grid(row=1, column=0, sticky="ew")
 
-        if area_kind == "road":
-            self._build_road_area(area_value)
-        else:
-            self._build_build_area(area_value)
-        button_rowspan = 1 if area_kind == "road" else 2
-        self.extract_button = ActionButton(
-            self.content,
-            text="Extract",
-            icon_name="extract",
-            width=common.BUTTON_WIDTH + 2,
-        )
-        self.extract_button.grid(row=0, column=4, rowspan=button_rowspan, padx=(4, 0))
+        self._build_area(area_value)
+        if show_extract_button:
+            self.extract_button = ActionButton(
+                self.content,
+                text="Extract",
+                icon_name="extract",
+                width=common.BUTTON_WIDTH + 2,
+            )
+            self.extract_button.grid(row=0, column=5, padx=(4, 0))
 
         self.content.columnconfigure(1, weight=1)
         self.content.columnconfigure(3, weight=1)
 
-    def _build_xyz_row(self, row, label, start_key, end_key, start_value, end_value):
-        self.area_vars[start_key] = tk.StringVar(value=common.format_xyz(start_value))
-        self.area_vars[end_key] = tk.StringVar(value=common.format_xyz(end_value))
-        ttk.Label(self.content, text=label).grid(row=row, column=0, sticky="w", padx=(0, 6), pady=2)
-        ttk.Entry(self.content, textvariable=self.area_vars[start_key]).grid(row=row, column=1, sticky="ew", padx=(0, 6), pady=2)
-        ttk.Label(self.content, text="to").grid(row=row, column=2, sticky="w", padx=(0, 6), pady=2)
-        ttk.Entry(self.content, textvariable=self.area_vars[end_key]).grid(row=row, column=3, sticky="ew", padx=(0, 6), pady=2)
+    def _build_xyz_row(self, row, start_key, end_key, start_value, end_value, picker_key):
+        self.area_vars[start_key] = tk.StringVar(value=_format_extraction_xyz(start_value))
+        self.area_vars[end_key] = tk.StringVar(value=_format_extraction_xyz(end_value))
+        ttk.Label(self.content, text="From").grid(row=row, column=0, sticky="w", padx=(0, 6), pady=2)
+        ttk.Entry(self.content, textvariable=self.area_vars[start_key], state="readonly").grid(
+            row=row,
+            column=1,
+            sticky="ew",
+            padx=(0, 6),
+            pady=2,
+        )
+        ttk.Label(self.content, text="To").grid(row=row, column=2, sticky="w", padx=(0, 6), pady=2)
+        ttk.Entry(self.content, textvariable=self.area_vars[end_key], state="readonly").grid(
+            row=row,
+            column=3,
+            sticky="ew",
+            padx=(0, 6),
+            pady=2,
+        )
+        pick_button = ActionButton(self.content, text="Pick", width=common.BUTTON_WIDTH)
+        pick_button.grid(row=row, column=4, sticky="e", padx=(4, 0))
+        self.pick_buttons[picker_key] = pick_button
 
-    def _build_road_area(self, road_box):
-        start, end = common.region_to_xyz_pair(road_box)
-        self._build_xyz_row(0, "Road Assets", "road_start", "road_end", start, end)
+    def _build_area(self, area_value):
+        if self.area_kind == "road":
+            start, end = common.region_to_xyz_pair(area_value)
+            self._build_xyz_row(0, "road_start", "road_end", start, end, "road")
+            return
 
-    def _build_build_area(self, build_types):
-        house = common.first_build_region(build_types, 1)
-        landmark = common.first_build_region(build_types, 2)
-        house_start, house_end = common.region_to_xyz_pair(house)
-        landmark_start, landmark_end = common.region_to_xyz_pair(landmark)
-        self._build_xyz_row(0, "House Assets", "house_start", "house_end", house_start, house_end)
-        self._build_xyz_row(1, "Landmark Assets", "landmark_start", "landmark_end", landmark_start, landmark_end)
+        build_type = 1 if self.area_kind == "house" else 2
+        region = common.first_build_region(area_value, build_type)
+        start, end = common.region_to_xyz_pair(region)
+        self._build_xyz_row(0, f"{self.area_kind}_start", f"{self.area_kind}_end", start, end, self.area_kind)
 
     def area_env_value(self):
         if self.area_kind == "road":
             start = common.parse_xyz(self.area_vars["road_start"].get(), "Road cube start")
             end = common.parse_xyz(self.area_vars["road_end"].get(), "Road cube end")
-            return f"{start[0]},{end[0]},{start[2]},{end[2]},{start[1]},{end[1]}"
+            return common.BlockRegion.from_xyz_pair(start, end).to_env_value()
 
-        house_start = common.parse_xyz(self.area_vars["house_start"].get(), "House cube start")
-        house_end = common.parse_xyz(self.area_vars["house_end"].get(), "House cube end")
-        landmark_start = common.parse_xyz(self.area_vars["landmark_start"].get(), "Landmark cube start")
-        landmark_end = common.parse_xyz(self.area_vars["landmark_end"].get(), "Landmark cube end")
-        house = f"1,{house_start[0]},{house_end[0]},{house_start[2]},{house_end[2]},{house_start[1]},{house_end[1]}"
-        landmark = f"2,{landmark_start[0]},{landmark_end[0]},{landmark_start[2]},{landmark_end[2]},{landmark_start[1]},{landmark_end[1]}"
-        return f"{house};{landmark}"
+        start = common.parse_xyz(self.area_vars[f"{self.area_kind}_start"].get(), f"{self.area_kind.title()} cube start")
+        end = common.parse_xyz(self.area_vars[f"{self.area_kind}_end"].get(), f"{self.area_kind.title()} cube end")
+        build_type = 1 if self.area_kind == "house" else 2
+        return common.BuildRegion(build_type, common.BlockRegion.from_xyz_pair(start, end)).to_env_value()
 
     def set_extract_command(self, command):
-        self.extract_button.configure(command=command)
+        if self.extract_button is not None:
+            self.extract_button.configure(command=command)
+
+    def set_pick_command(self, key, command):
+        self.pick_buttons[key].configure(command=command)
+
+    def get_xyz_pair(self, key):
+        start_key, end_key = {
+            "road": ("road_start", "road_end"),
+            "house": ("house_start", "house_end"),
+            "landmark": ("landmark_start", "landmark_end"),
+        }[key]
+        start = common.parse_xyz(self.area_vars[start_key].get(), f"{key.title()} cube start")
+        end = common.parse_xyz(self.area_vars[end_key].get(), f"{key.title()} cube end")
+        return start, end
+
+    def set_xyz_pair(self, key, start, end):
+        start_key, end_key = {
+            "road": ("road_start", "road_end"),
+            "house": ("house_start", "house_end"),
+            "landmark": ("landmark_start", "landmark_end"),
+        }[key]
+        self.area_vars[start_key].set(_format_extraction_xyz(start))
+        self.area_vars[end_key].set(_format_extraction_xyz(end))
 
 
 class IntegerSlider(ttk.Frame):
@@ -543,8 +1129,8 @@ def build_shared_config_frame(
     for column in range(len(common.PREVIEW_CONFIG_GROUPS)):
         config_grid.columnconfigure(column, weight=1, uniform=uniform_name)
 
-    for group_col, (_group_title, names) in enumerate(common.PREVIEW_CONFIG_GROUPS):
-        group = ttk.LabelFrame(config_grid, text="", padding=6, style="Inset.TLabelframe")
+    for group_col, (group_title, names) in enumerate(common.PREVIEW_CONFIG_GROUPS):
+        group = ttk.LabelFrame(config_grid, text=group_title, padding=6, style="Inset.TLabelframe")
         group.grid(row=0, column=group_col, sticky="nsew", padx=(0 if group_col == 0 else 4, 0))
         group.columnconfigure(1, weight=1)
         for row, name in enumerate(names):

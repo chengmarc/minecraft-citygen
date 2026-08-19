@@ -17,7 +17,9 @@ from config.config_world import DATA_VERSION, ROAD_BOX
 from engine.anvil_world_reader import World
 from engine.schematic_writer import blockstate, sponge_schem_from_cells
 
-X0, X1, Z0, Z1, Y0, Y1 = ROAD_BOX.as_tuple()
+(START_XYZ, END_XYZ) = ROAD_BOX.as_tuple()
+X0, Y0, Z0 = START_XYZ
+X1, Y1, Z1 = END_XYZ
 OUT = ROADS_PROD_SCHEM
 MARKER = {"minecraft:yellow_wool", "minecraft:white_wool"}
 EXCLUDE = MARKER | {"minecraft:diamond_block"}
@@ -149,8 +151,15 @@ def build_schem(xmn, xmx, zmn, zmx, ymn, ymx):
     return schem, (width, height, length), len(palette)
 
 
+def remove_existing_schems():
+    for filename in os.listdir(OUT):
+        if filename.endswith(".schem"):
+            os.remove(os.path.join(OUT, filename))
+
+
 def run(*, logger=None, progress=None):
     os.makedirs(OUT, exist_ok=True)
+    remove_existing_schems()
     signs = read_signs()
     comps = components()
     if logger is not None:
@@ -182,6 +191,11 @@ def run(*, logger=None, progress=None):
         completed += 1
         if progress is not None:
             progress(completed, total, name)
+    if not results:
+        raise RuntimeError(
+            "Road extraction found no assets in the configured region. "
+            "Check the road bounds or the bundled default world content."
+        )
     for name, dims, pal in sorted(results):
         if logger is not None:
             logger(f"  {name:32} {dims[0]:2}x{dims[1]}x{dims[2]:2} (WxHxL)  palette={pal}")
