@@ -48,7 +48,10 @@ class CityTab(WeightedProgressMixin, ttk.Frame):
         if not os.path.isdir(CITY_PROD_SCHEM):
             messagebox.showerror("Output folder missing", CITY_PROD_SCHEM)
             return
-        os.startfile(CITY_PROD_SCHEM)
+        try:
+            common.open_in_file_manager(CITY_PROD_SCHEM)
+        except OSError as exc:
+            messagebox.showerror("Could not open output folder", str(exc))
 
     def _run_render(self):
         seed = self.seed_var.get().strip()

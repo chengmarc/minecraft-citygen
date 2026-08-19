@@ -3,6 +3,7 @@
 import os
 
 from config.models import BlockRegion, BuildRegion, VerticalRange
+from config.path_discovery import discover_default_save, region_dir_candidates, resolve_region_dir
 
 
 def _parse_int_tuple(value, expected_len):
@@ -19,13 +20,10 @@ def _parse_build_types(value):
 def _parse_block_region(value):
     return BlockRegion.from_values(_parse_int_tuple(value, 6))
 
-# Minecraft world (PrismLauncher save)
-SAVE = os.environ.get(
-    "MC_CITY_SAVE",
-    (r"C:/Users/NewAdmin/AppData/Roaming/PrismLauncher/instances/"
-     r"Keo optimized/minecraft/saves/Flat 64 2.0"),
-)
-REGION_DIR = SAVE + "/dimensions/minecraft/overworld/region"
+# Minecraft world save folder. Override with MC_CITY_SAVE when needed.
+SAVE = os.environ.get("MC_CITY_SAVE") or discover_default_save()
+REGION_DIR_CANDIDATES = tuple(region_dir_candidates(SAVE))
+REGION_DIR = resolve_region_dir(SAVE)
 
 DATA_VERSION = 4790
 

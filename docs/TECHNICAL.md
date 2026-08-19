@@ -227,7 +227,7 @@ Type `1`:
 
 Type `1` convention example:
 
-![Type 1 convention](demo/type1.png)
+![Type 1 convention](type1.png)
 
 Type `2`:
 
@@ -238,7 +238,7 @@ Type `2`:
 
 Type `2` convention example:
 
-![Type 2 convention](demo/type2.png)
+![Type 2 convention](type2.png)
 
 ### Sign Metadata Inside Build Boundaries
 

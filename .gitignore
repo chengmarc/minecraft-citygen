@@ -1,5 +1,8 @@
 __pycache__/
 **/__pycache__/
+*.egg-info/
+build/
+dist/
 
 # Generated simulation artifacts
 artifacts/roads/simulation/*.png

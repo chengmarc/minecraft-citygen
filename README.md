@@ -1,15 +1,15 @@
 # CityGen v0.5 - Minecraft City Generator
 
 <p align="center">
-  <img src="gui/icons/app-icon.png" alt="CityGen v0.5 app icon" width="180">
+  <img src="src/gui/icons/app-icon.png" alt="CityGen v0.5 app icon" width="180">
 </p>
 
 **Build a full Minecraft city from your own roads and buildings in minutes.**
 
 This project turns a small handcrafted asset set into a complete city layout, preview, and paste-ready in-game result. It is designed for creators who want large-scale city generation without giving up the look and feel of their own Minecraft builds.
 
-![Isometric city render 2](demo/isometric2.png)
-![Isometric city render](demo/isometric.png)
+![Isometric city render 2](docs/isometric2.png)
+![Isometric city render](docs/isometric.png)
 
 ## What It Is
 
@@ -28,13 +28,79 @@ It is not a generic block spammer. The goal is to let you define the visual lang
 
 The generated city can be brought back into Minecraft as a real build result:
 
-![In-game city result](demo/ingame.png)
+![In-game city result](docs/ingame.png)
 
 ### Desktop Workflow
 
 The app includes extraction tools, previews, and a generation UI built for iteration:
 
-![Desktop UI and extracted builds](demo/ui.png)
+![Desktop UI and extracted builds](docs/ui.png)
+
+## Setup
+
+Install the project into a fresh Python environment:
+
+```bash
+python -m pip install -e .
+```
+
+Then run the environment check:
+
+```bash
+citygen-doctor
+```
+
+Or start the desktop app directly:
+
+```bash
+citygen
+```
+
+If you prefer not to install entry points, these still work:
+
+```bash
+python src/config/doctor.py
+pythonw application.pyw
+```
+
+## Windows Releases
+
+The default Windows release artifact is:
+
+- `dist/release/CityGen-setup.exe`
+
+Release process docs:
+
+- [CHANGELOG.md](docs/CHANGELOG.md)
+- [RELEASING.md](docs/RELEASING.md)
+
+Build prerequisites:
+
+```bash
+python -m pip install .[build]
+```
+
+The installer build includes CPU `numba` acceleration for faster isometric renders. CUDA is not required.
+
+Build command:
+
+```bash
+python scripts/build_windows_release.py --clean
+```
+
+If you explicitly want extra deliverables for testing, opt in:
+
+```bash
+python scripts/build_windows_release.py --clean --include-portable --include-standalone
+```
+
+## First-Run Notes
+
+- `tkinter` must be available in your Python install because the desktop app uses Tk.
+- extraction requires a local Minecraft Java world save; set `MC_CITY_SAVE` or paste the path into the Extraction tab
+- the app now auto-detects common Minecraft save and WorldEdit directories when possible
+- if no WorldEdit schematics folder is detected, final `.schem` exports fall back to `artifacts/worldedit`
+- optional speedup: install `numba` with `python -m pip install .[speed]`
 
 ## Why It’s Different
 
@@ -52,4 +118,4 @@ The app includes extraction tools, previews, and a generation UI built for itera
 
 ## For Technical Details
 
-Refer to [technical.md](technical.md)
+Refer to [TECHNICAL.md](docs/TECHNICAL.md)

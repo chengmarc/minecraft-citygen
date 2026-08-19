@@ -67,6 +67,97 @@ def cells_to_grid(cells):
     return W, H, L, inv, grid
 
 
+def _draw_triangle_py(img, depth, p0x, p0y, p0d, p1x, p1y, p1d, p2x, p2y, p2d, r, g, b):
+    h, w, _ = img.shape
+    min_x = max(0, int(np.floor(min(p0x, p1x, p2x))))
+    max_x = min(w - 1, int(np.ceil(max(p0x, p1x, p2x))))
+    min_y = max(0, int(np.floor(min(p0y, p1y, p2y))))
+    max_y = min(h - 1, int(np.ceil(max(p0y, p1y, p2y))))
+    den = (p1y - p2y) * (p0x - p2x) + (p2x - p1x) * (p0y - p2y)
+    if den == 0.0:
+        return
+    for py_i in range(min_y, max_y + 1):
+        py = py_i + 0.5
+        for px_i in range(min_x, max_x + 1):
+            px = px_i + 0.5
+            a = ((p1y - p2y) * (px - p2x) + (p2x - p1x) * (py - p2y)) / den
+            b0 = ((p2y - p0y) * (px - p2x) + (p0x - p2x) * (py - p2y)) / den
+            c = 1.0 - a - b0
+            if a >= -0.0001 and b0 >= -0.0001 and c >= -0.0001:
+                d = a * p0d + b0 * p1d + c * p2d
+                if d > depth[py_i, px_i]:
+                    depth[py_i, px_i] = d
+                    img[py_i, px_i, 0] = r
+                    img[py_i, px_i, 1] = g
+                    img[py_i, px_i, 2] = b
+                    img[py_i, px_i, 3] = 255
+
+
+def _draw_quad_py(img, depth, xs, ys, ds, r, g, b):
+    _draw_triangle_py(img, depth, xs[0], ys[0], ds[0], xs[1], ys[1], ds[1],
+                      xs[2], ys[2], ds[2], r, g, b)
+    _draw_triangle_py(img, depth, xs[0], ys[0], ds[0], xs[2], ys[2], ds[2],
+                      xs[3], ys[3], ds[3], r, g, b)
+
+
+def _raster_visible_iso_py(grid, solid, colors, img, depth, tile_w, tile_h, block_h, ox, oy):
+    H, L, W = grid.shape
+    xs = np.empty(4, dtype=np.float32)
+    ys = np.empty(4, dtype=np.float32)
+    ds = np.empty(4, dtype=np.float32)
+    for y in range(H):
+        for z in range(L):
+            for x in range(W):
+                idx = grid[y, z, x]
+                if not solid[idx]:
+                    continue
+                r0 = colors[idx, 0]
+                g0 = colors[idx, 1]
+                b0 = colors[idx, 2]
+
+                if y + 1 == H or not solid[grid[y + 1, z, x]]:
+                    r = min(255, int(r0 * 1.06))
+                    g = min(255, int(g0 * 1.06))
+                    b = min(255, int(b0 * 1.06))
+                    px, py = (x - z) * (tile_w // 2) + ox, (x + z) * (tile_h // 2) - (y + 1) * block_h + oy
+                    px1, py1 = ((x + 1) - z) * (tile_w // 2) + ox, ((x + 1) + z) * (tile_h // 2) - (y + 1) * block_h + oy
+                    px2, py2 = ((x + 1) - (z + 1)) * (tile_w // 2) + ox, ((x + 1) + (z + 1)) * (tile_h // 2) - (y + 1) * block_h + oy
+                    px3, py3 = (x - (z + 1)) * (tile_w // 2) + ox, (x + (z + 1)) * (tile_h // 2) - (y + 1) * block_h + oy
+                    xs[0], ys[0], ds[0] = px, py, x + z + y + 1
+                    xs[1], ys[1], ds[1] = px1, py1, x + 1 + z + y + 1
+                    xs[2], ys[2], ds[2] = px2, py2, x + 1 + z + 1 + y + 1
+                    xs[3], ys[3], ds[3] = px3, py3, x + z + 1 + y + 1
+                    _draw_quad_py(img, depth, xs, ys, ds, r, g, b)
+
+                if z + 1 == L or not solid[grid[y, z + 1, x]]:
+                    r = int(r0 * 0.72)
+                    g = int(g0 * 0.72)
+                    b = int(b0 * 0.72)
+                    px, py = (x - (z + 1)) * (tile_w // 2) + ox, (x + (z + 1)) * (tile_h // 2) - (y + 1) * block_h + oy
+                    px1, py1 = ((x + 1) - (z + 1)) * (tile_w // 2) + ox, ((x + 1) + (z + 1)) * (tile_h // 2) - (y + 1) * block_h + oy
+                    px2, py2 = ((x + 1) - (z + 1)) * (tile_w // 2) + ox, ((x + 1) + (z + 1)) * (tile_h // 2) - y * block_h + oy
+                    px3, py3 = (x - (z + 1)) * (tile_w // 2) + ox, (x + (z + 1)) * (tile_h // 2) - y * block_h + oy
+                    xs[0], ys[0], ds[0] = px, py, x + z + 1 + y + 1
+                    xs[1], ys[1], ds[1] = px1, py1, x + 1 + z + 1 + y + 1
+                    xs[2], ys[2], ds[2] = px2, py2, x + 1 + z + 1 + y
+                    xs[3], ys[3], ds[3] = px3, py3, x + z + 1 + y
+                    _draw_quad_py(img, depth, xs, ys, ds, r, g, b)
+
+                if x + 1 == W or not solid[grid[y, z, x + 1]]:
+                    r = int(r0 * 0.84)
+                    g = int(g0 * 0.84)
+                    b = int(b0 * 0.84)
+                    px, py = ((x + 1) - z) * (tile_w // 2) + ox, ((x + 1) + z) * (tile_h // 2) - (y + 1) * block_h + oy
+                    px1, py1 = ((x + 1) - (z + 1)) * (tile_w // 2) + ox, ((x + 1) + (z + 1)) * (tile_h // 2) - (y + 1) * block_h + oy
+                    px2, py2 = ((x + 1) - (z + 1)) * (tile_w // 2) + ox, ((x + 1) + (z + 1)) * (tile_h // 2) - y * block_h + oy
+                    px3, py3 = ((x + 1) - z) * (tile_w // 2) + ox, ((x + 1) + z) * (tile_h // 2) - y * block_h + oy
+                    xs[0], ys[0], ds[0] = px, py, x + 1 + z + y + 1
+                    xs[1], ys[1], ds[1] = px1, py1, x + 1 + z + 1 + y + 1
+                    xs[2], ys[2], ds[2] = px2, py2, x + 1 + z + 1 + y
+                    xs[3], ys[3], ds[3] = px3, py3, x + 1 + z + y
+                    _draw_quad_py(img, depth, xs, ys, ds, r, g, b)
+
+
 if njit is not None:
     @njit(cache=True)
     def _draw_triangle(img, depth, p0x, p0y, p0d, p1x, p1y, p1d, p2x, p2y, p2d, r, g, b):
@@ -160,6 +251,10 @@ if njit is not None:
                         xs[2], ys[2], ds[2] = px2, py2, x + 1 + z + 1 + y
                         xs[3], ys[3], ds[3] = px3, py3, x + 1 + z + y
                         _draw_quad(img, depth, xs, ys, ds, r, g, b)
+else:
+    _draw_triangle = _draw_triangle_py
+    _draw_quad = _draw_quad_py
+    _raster_visible_iso = _raster_visible_iso_py
 
 
 def _palette_arrays(inv):
@@ -173,8 +268,6 @@ def _palette_arrays(inv):
 
 
 def render_grid_visible_iso(grid, inv, tile_w=4, tile_h=2, block_h=3, margin=MARGIN):
-    if njit is None:
-        raise RuntimeError("visible-surface isometric rendering requires numba")
     H, L, W = grid.shape
     solid, colors = _palette_arrays(inv)
     hw = tile_w // 2

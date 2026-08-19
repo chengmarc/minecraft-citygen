@@ -3,11 +3,14 @@
 from __future__ import annotations
 
 import os
+import subprocess
+import sys
 import tkinter as tk
 import tkinter.font as tkfont
 
 from config import config_algo
 from config.config_algo import DEFAULT_SEED
+from config.config_path import GUI, ROOT
 from config.models import BlockRegion, BuildRegion
 from config.config_path import BUILDS_PROD, CITY_PROD, CITY_PROD_SCHEM, CITY_SIM, GRID_SIM, ROADS_PROD
 
@@ -18,8 +21,8 @@ except ImportError:  # pragma: no cover
     ImageDraw = None
     ImageTk = None
 
-ROOT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-ICON_DIR = os.path.join(ROOT_DIR, "gui", "icons")
+ROOT_DIR = ROOT
+ICON_DIR = os.path.join(GUI, "icons")
 APP_ICON_PATH = os.path.join(ICON_DIR, "app-icon.png")
 ROAD_CONTACT_SHEET = os.path.join(ROADS_PROD, "_contact_sheet.png")
 BUILD_CONTACT_SHEET = os.path.join(BUILDS_PROD, "_contact_sheet.png")
@@ -329,3 +332,12 @@ def validate_seed(seed):
         int(seed)
     except ValueError as exc:
         raise ValueError("Seed must be an integer.") from exc
+
+
+def open_in_file_manager(path):
+    target = os.path.abspath(path)
+    if sys.platform.startswith("win"):
+        os.startfile(target)
+        return
+    command = ["open", target] if sys.platform == "darwin" else ["xdg-open", target]
+    subprocess.Popen(command)

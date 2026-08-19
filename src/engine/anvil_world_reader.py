@@ -6,17 +6,28 @@ does not depend on anvil-parser's (outdated) block decoder.
 import struct, zlib, gzip, io, os
 import nbtlib
 
-from config.config_world import REGION_DIR, ROAD_BOX
+from config.config_world import REGION_DIR, REGION_DIR_CANDIDATES, ROAD_BOX, SAVE
 from engine.isometric_renderer import block_color, is_air
 
 GRASS = block_color("minecraft:grass_block", (110, 170, 90))
 
 
 class World:
-    def __init__(self, region_dir=REGION_DIR):
+    def __init__(self, region_dir=REGION_DIR, save_path=SAVE):
         self.region_dir = region_dir
+        self.save_path = save_path
         self._chunks = {}          # (cx,cz) -> chunk nbt (or None)
         self._sections = {}        # (cx,cz,sy) -> (palette, decoded index array or None)
+        if not os.path.isdir(self.region_dir):
+            checked = REGION_DIR_CANDIDATES or ((self.region_dir,) if self.region_dir else ())
+            checked_paths = "\n".join(f"- {path}" for path in checked) or "- <save>/region"
+            raise FileNotFoundError(
+                "Minecraft world region directory not found.\n"
+                f"Configured save: {self.save_path or '<not set>'}\n"
+                "Checked:\n"
+                f"{checked_paths}\n"
+                "Set MC_CITY_SAVE to your world folder or paste it into the Extraction tab."
+            )
 
     def _region_path(self, cx, cz):
         return f"{self.region_dir}/r.{cx >> 5}.{cz >> 5}.mca"

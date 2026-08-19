@@ -2,11 +2,12 @@
 
 from __future__ import annotations
 
-from gui.app import main
-from gui.bootstrap import configure_tcl_tk
+import sys
+from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).resolve().parent / "src"))
 
-configure_tcl_tk()
+from gui.launcher import main
 
 
 if __name__ == "__main__":
