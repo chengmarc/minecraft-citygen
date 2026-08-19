@@ -2,9 +2,9 @@
 
 Default output:
 - dist/release/CityGen-setup.exe
+- dist/release/CityGen-portable-windows.zip
 
 Optional outputs:
-- dist/release/CityGen-portable-windows.zip
 - dist/release/CityGen.exe
 """
 
@@ -241,11 +241,6 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
     parser.add_argument("--clean", action="store_true", help="remove prior build outputs before building")
     parser.add_argument(
-        "--include-portable",
-        action="store_true",
-        help="also publish the portable zip to dist/release",
-    )
-    parser.add_argument(
         "--include-standalone",
         action="store_true",
         help="also publish the standalone CityGen.exe to dist/release",
@@ -264,19 +259,18 @@ def main() -> int:
     icon_path = build_icon()
     app_dir = build_portable(icon_path)
     installer_path = build_installer(version, app_dir)
-    zip_path = build_zip(app_dir) if args.include_portable else None
+    zip_path = build_zip(app_dir)
     exe_path = build_onefile(icon_path) if args.include_standalone else None
     prune_release_artifacts(
         keep_installer=True,
-        keep_zip=args.include_portable,
+        keep_zip=True,
         keep_exe=args.include_standalone,
     )
 
     print()
     print("Built artifacts:")
     print(f"- {installer_path}")
-    if zip_path is not None:
-        print(f"- {zip_path}")
+    print(f"- {zip_path}")
     if exe_path is not None:
         print(f"- {exe_path}")
     return 0

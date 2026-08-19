@@ -1,24 +1,11 @@
 __pycache__/
 **/__pycache__/
+.pytest_cache/
 *.egg-info/
+
 build/
 dist/
-citygen_saved_config.json
+artifacts/
+
 src/config/config_citygen.json
-
-# Generated simulation artifacts
-artifacts/roads/simulation/*.png
-artifacts/builds/simulation/*.png
-artifacts/grid/simulation/seed_*_preview.png
-artifacts/city/simulation/seed_*.png
-
-# Generated production artifacts
-artifacts/roads/production/*.png
-artifacts/roads/production/*.schem
-artifacts/builds/production/*.png
-artifacts/builds/production/*.schem
-artifacts/builds/production/buildings.json
-artifacts/grid/production/*_render.png
-artifacts/grid/production/seed_*.schem
-artifacts/city/production/*.png
-artifacts/city/production/seed_*.schem
+application_startup_error.log

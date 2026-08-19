@@ -68,7 +68,7 @@ Inno Setup must be installed so `ISCC.exe` is available. The current build scrip
 These are for testing only and should not be the default public deliverables:
 
 ```bash
-python packaging/build_windows_release.py --clean --include-portable --include-standalone
+python packaging/build_windows_release.py --clean --include-standalone
 ```
 
 This can additionally produce:

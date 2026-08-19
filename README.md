@@ -91,7 +91,7 @@ python packaging/build_windows_release.py --clean
 If you explicitly want extra deliverables for testing, opt in:
 
 ```bash
-python packaging/build_windows_release.py --clean --include-portable --include-standalone
+python packaging/build_windows_release.py --clean --include-standalone
 ```
 
 ## First-Run Notes
