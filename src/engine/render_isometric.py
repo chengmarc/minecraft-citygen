@@ -267,7 +267,7 @@ def font(size):
     for name in ("arialbd.ttf", "arial.ttf"):
         try:
             return ImageFont.truetype(name, size)
-        except Exception:
+        except OSError:
             pass
     return ImageFont.load_default()
 

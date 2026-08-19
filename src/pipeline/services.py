@@ -5,23 +5,27 @@ from __future__ import annotations
 import importlib
 
 from pipeline.runtime import configured_environment
+from pipeline.stages import stage_module
 
-ROADS_SIMULATION = "pipeline.01_roads_simulation"
-ROADS_EXTRACT = "pipeline.01_roads_extract"
-ROADS_RENDER = "pipeline.01_roads_render"
-BUILDS_SIMULATION = "pipeline.02_builds_simulation"
-BUILDS_EXTRACT = "pipeline.02_builds_extract"
-BUILDS_RENDER = "pipeline.02_builds_render"
-GRID_SIMULATION = "pipeline.03_grid_simulation"
-GRID_CONSTRUCT = "pipeline.03_grid_construct"
-GRID_RENDER = "pipeline.03_grid_render"
-CITY_SIMULATION = "pipeline.04_city_simulation"
-CITY_CONSTRUCT = "pipeline.04_city_construct"
-CITY_RENDER = "pipeline.04_city_render"
+ROADS_SIMULATION = stage_module("roads_simulation")
+ROADS_EXTRACT = stage_module("roads_extract")
+ROADS_RENDER = stage_module("roads_render")
+BUILDS_SIMULATION = stage_module("builds_simulation")
+BUILDS_EXTRACT = stage_module("builds_extract")
+BUILDS_RENDER = stage_module("builds_render")
+GRID_SIMULATION = stage_module("grid_simulation")
+CITY_SIMULATION = stage_module("city_simulation")
+CITY_CONSTRUCT = stage_module("city_construct")
+CITY_RENDER = stage_module("city_render")
+
+_PROGRESS_STAGE_LABELS = {
+    "extract": "Extracting",
+    "render": "Rendering",
+}
 
 
-def _stage_module(name):
-    return importlib.import_module(name)
+def _load_stage_runner(stage_key):
+    return importlib.import_module(stage_module(stage_key)).run
 
 
 def _coerce_int(value, name):
@@ -36,81 +40,82 @@ def call_with_env(fn, *, env_overrides=None, **kwargs):
         return fn(**kwargs)
 
 
+def _run_stage(stage_key, *, env_overrides=None, **kwargs):
+    return call_with_env(_load_stage_runner(stage_key), env_overrides=env_overrides, **kwargs)
+
+
+def _run_seeded_stage(stage_key, seed, fine, *, env_overrides=None, logger=None):
+    return _run_stage(
+        stage_key,
+        env_overrides=env_overrides,
+        seed=_coerce_int(seed, "Seed"),
+        fine=_coerce_int(fine, "Fine"),
+        logger=logger,
+    )
+
+
+def _progress_adapter(progress, stage_key):
+    if progress is None:
+        return None
+    label = _PROGRESS_STAGE_LABELS[stage_key.rsplit("_", 1)[-1]]
+    return lambda completed, total, detail: progress(label, completed, total, detail)
+
+
+def _run_extraction_pipeline(extract_stage, render_stage, *, env_overrides=None, logger=None, progress=None):
+    extract_result = _run_stage(
+        extract_stage,
+        env_overrides=env_overrides,
+        logger=logger,
+        progress=_progress_adapter(progress, extract_stage),
+    )
+    render_result = _run_stage(
+        render_stage,
+        env_overrides=env_overrides,
+        logger=logger,
+        progress=_progress_adapter(progress, render_stage),
+    )
+    return {"extract": extract_result, "render": render_result}
+
+
 def run_roads_simulation_stage(*, env_overrides=None, logger=None):
-    return call_with_env(_stage_module(ROADS_SIMULATION).run, env_overrides=env_overrides, logger=logger)
+    return _run_stage("roads_simulation", env_overrides=env_overrides, logger=logger)
 
 
 def run_builds_simulation_stage(*, env_overrides=None, logger=None):
-    return call_with_env(_stage_module(BUILDS_SIMULATION).run, env_overrides=env_overrides, logger=logger)
+    return _run_stage("builds_simulation", env_overrides=env_overrides, logger=logger)
 
 
 def run_grid_simulation_stage(seed, fine, *, env_overrides=None, logger=None):
-    return call_with_env(
-        _stage_module(GRID_SIMULATION).run,
-        env_overrides=env_overrides,
-        seed=_coerce_int(seed, "Seed"),
-        fine=_coerce_int(fine, "Fine"),
-        logger=logger,
-    )
+    return _run_seeded_stage("grid_simulation", seed, fine, env_overrides=env_overrides, logger=logger)
 
 
 def run_city_simulation_stage(seed, fine, *, env_overrides=None, logger=None):
-    return call_with_env(
-        _stage_module(CITY_SIMULATION).run,
-        env_overrides=env_overrides,
-        seed=_coerce_int(seed, "Seed"),
-        fine=_coerce_int(fine, "Fine"),
-        logger=logger,
-    )
+    return _run_seeded_stage("city_simulation", seed, fine, env_overrides=env_overrides, logger=logger)
 
 
 def run_city_construct_stage(seed, fine, *, env_overrides=None, logger=None):
-    return call_with_env(
-        _stage_module(CITY_CONSTRUCT).run,
-        env_overrides=env_overrides,
-        seed=_coerce_int(seed, "Seed"),
-        fine=_coerce_int(fine, "Fine"),
-        logger=logger,
-    )
+    return _run_seeded_stage("city_construct", seed, fine, env_overrides=env_overrides, logger=logger)
 
 
 def run_city_render_stage(*, env_overrides=None, logger=None):
-    return call_with_env(_stage_module(CITY_RENDER).run, env_overrides=env_overrides, logger=logger)
-
-
-def run_preview_pipeline(seed, fine, *, env_overrides=None, logger=None):
-    roads_result = run_roads_simulation_stage(env_overrides=env_overrides, logger=logger)
-    builds_result = run_builds_simulation_stage(env_overrides=env_overrides, logger=logger)
-    grid_result = run_grid_simulation_stage(seed, fine, env_overrides=env_overrides, logger=logger)
-    city_result = run_city_simulation_stage(seed, fine, env_overrides=env_overrides, logger=logger)
-    return {"roads": roads_result, "builds": builds_result, "grid": grid_result, "city": city_result}
-
-
-def run_render_pipeline(seed, fine, *, env_overrides=None, logger=None):
-    construct_result = run_city_construct_stage(seed, fine, env_overrides=env_overrides, logger=logger)
-    render_result = run_city_render_stage(env_overrides=env_overrides, logger=logger)
-    return {"construct": construct_result, "render": render_result}
+    return _run_stage("city_render", env_overrides=env_overrides, logger=logger)
 
 
 def run_road_extraction_pipeline(*, env_overrides=None, logger=None, progress=None):
-    extract_progress = None if progress is None else (
-        lambda completed, total, label: progress("Extracting", completed, total, label)
+    return _run_extraction_pipeline(
+        "roads_extract",
+        "roads_render",
+        env_overrides=env_overrides,
+        logger=logger,
+        progress=progress,
     )
-    render_progress = None if progress is None else (
-        lambda completed, total, label: progress("Rendering", completed, total, label)
-    )
-    extract_result = call_with_env(_stage_module(ROADS_EXTRACT).run, env_overrides=env_overrides, logger=logger, progress=extract_progress)
-    render_result = call_with_env(_stage_module(ROADS_RENDER).run, env_overrides=env_overrides, logger=logger, progress=render_progress)
-    return {"extract": extract_result, "render": render_result}
 
 
 def run_build_extraction_pipeline(*, env_overrides=None, logger=None, progress=None):
-    extract_progress = None if progress is None else (
-        lambda completed, total, label: progress("Extracting", completed, total, label)
+    return _run_extraction_pipeline(
+        "builds_extract",
+        "builds_render",
+        env_overrides=env_overrides,
+        logger=logger,
+        progress=progress,
     )
-    render_progress = None if progress is None else (
-        lambda completed, total, label: progress("Rendering", completed, total, label)
-    )
-    extract_result = call_with_env(_stage_module(BUILDS_EXTRACT).run, env_overrides=env_overrides, logger=logger, progress=extract_progress)
-    render_result = call_with_env(_stage_module(BUILDS_RENDER).run, env_overrides=env_overrides, logger=logger, progress=render_progress)
-    return {"extract": extract_result, "render": render_result}

@@ -15,12 +15,15 @@ GRASS = block_color("minecraft:grass_block", (110, 170, 90))
 REGION_FILE_PATTERN = re.compile(r"^r\.(-?\d+)\.(-?\d+)\.mca$")
 
 
-def region_world_bounds(region_dir):
-    coords = []
+def _region_coords(region_dir):
     for path in Path(region_dir).glob("r.*.*.mca"):
         match = REGION_FILE_PATTERN.match(path.name)
         if match is not None:
-            coords.append((int(match.group(1)), int(match.group(2))))
+            yield int(match.group(1)), int(match.group(2))
+
+
+def region_world_bounds(region_dir):
+    coords = list(_region_coords(region_dir))
     if not coords:
         raise FileNotFoundError(f"No Minecraft region files were found in {region_dir}")
 

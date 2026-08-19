@@ -3,6 +3,8 @@
 Uses only the region container + the section block_states palette/data, so it
 does not depend on anvil-parser's (outdated) block decoder.
 """
+from __future__ import annotations
+
 import gzip
 import io
 import os
@@ -11,7 +13,35 @@ import zlib
 
 import nbtlib
 
-from config.config_world import REGION_DIR, REGION_DIR_CANDIDATES, ROAD_BOX, SAVE
+from config.path_discovery import region_dir_candidates
+from config.config_world import REGION_DIR, REGION_DIR_CANDIDATES, SAVE
+
+
+def _checked_region_paths(region_dir, save_path, fallback_candidates):
+    checked = []
+    if region_dir:
+        checked.append(region_dir)
+    for candidate in region_dir_candidates(save_path):
+        if candidate not in checked:
+            checked.append(candidate)
+    if not checked:
+        checked.extend(fallback_candidates)
+    elif region_dir == REGION_DIR and save_path == SAVE:
+        for candidate in fallback_candidates:
+            if candidate not in checked:
+                checked.append(candidate)
+    return tuple(checked)
+
+
+def _missing_region_dir_message(save_path, checked_paths):
+    checked_lines = "\n".join(f"- {path}" for path in checked_paths) or "- <save>/region"
+    return (
+        "Minecraft world region directory not found.\n"
+        f"Configured save: {save_path or '<not set>'}\n"
+        "Checked:\n"
+        f"{checked_lines}\n"
+        "Set MC_CITY_SAVE to your world folder or paste it into the Extraction tab."
+    )
 
 
 class World:
@@ -21,18 +51,40 @@ class World:
         self._chunks = {}          # (cx,cz) -> chunk nbt (or None)
         self._sections = {}        # (cx,cz,sy) -> (palette, decoded index array or None)
         if not os.path.isdir(self.region_dir):
-            checked = REGION_DIR_CANDIDATES or ((self.region_dir,) if self.region_dir else ())
-            checked_paths = "\n".join(f"- {path}" for path in checked) or "- <save>/region"
-            raise FileNotFoundError(
-                "Minecraft world region directory not found.\n"
-                f"Configured save: {self.save_path or '<not set>'}\n"
-                "Checked:\n"
-                f"{checked_paths}\n"
-                "Set MC_CITY_SAVE to your world folder or paste it into the Extraction tab."
-            )
+            checked = _checked_region_paths(self.region_dir, self.save_path, REGION_DIR_CANDIDATES)
+            raise FileNotFoundError(_missing_region_dir_message(self.save_path, checked))
 
     def _region_path(self, cx, cz):
         return f"{self.region_dir}/r.{cx >> 5}.{cz >> 5}.mca"
+
+    @staticmethod
+    def _decode_chunk_payload(raw, compression):
+        decompressors = {
+            1: gzip.decompress,
+            2: zlib.decompress,
+            3: lambda data: data,
+        }
+        try:
+            return decompressors[compression](raw)
+        except KeyError as exc:
+            raise ValueError(f"Unsupported Anvil compression type: {compression}") from exc
+
+    @staticmethod
+    def _decode_palette_indexes(data, palette_size):
+        longs = [int(value) & 0xFFFFFFFFFFFFFFFF for value in data]
+        bits = max(4, (palette_size - 1).bit_length())
+        per_long = 64 // bits
+        mask = (1 << bits) - 1
+        indexes = [0] * 4096
+        for i in range(4096):
+            long_index, offset = divmod(i, per_long)
+            indexes[i] = (longs[long_index] >> (offset * bits)) & mask
+        return indexes
+
+    @staticmethod
+    def _block_properties(entry):
+        props = entry.get("Properties")
+        return {str(key): str(props[key]) for key in props} if props else None
 
     def _load_chunk(self, cx, cz):
         if (cx, cz) in self._chunks:
@@ -50,7 +102,7 @@ class World:
                     length = struct.unpack(">I", f.read(4))[0]
                     comp = f.read(1)[0]
                     raw = f.read(length - 1)
-                    dec = {1: gzip.decompress, 2: zlib.decompress, 3: lambda b: b}[comp](raw)
+                    dec = self._decode_chunk_payload(raw, comp)
                     chunk = nbtlib.File.parse(io.BytesIO(dec))
         self._chunks[(cx, cz)] = chunk
         return chunk
@@ -72,15 +124,7 @@ class World:
                     if data is None:
                         result = (palette, None)      # uniform section
                     else:
-                        longs = [int(v) & 0xFFFFFFFFFFFFFFFF for v in data]
-                        bits = max(4, (len(palette) - 1).bit_length())
-                        per = 64 // bits
-                        mask = (1 << bits) - 1
-                        idx = [0] * 4096
-                        for i in range(4096):
-                            li, off = divmod(i, per)
-                            idx[i] = (longs[li] >> (off * bits)) & mask
-                        result = (palette, idx)
+                        result = (palette, self._decode_palette_indexes(data, len(palette)))
                     break
         self._sections[key] = result
         return result
@@ -93,5 +137,4 @@ class World:
             return ("minecraft:air", None)
         v = 0 if idx is None else idx[(y & 15) * 256 + (z & 15) * 16 + (x & 15)]
         entry = palette[v]
-        props = entry.get("Properties")
-        return (str(entry["Name"]), {str(k): str(props[k]) for k in props} if props else None)
+        return str(entry["Name"]), self._block_properties(entry)

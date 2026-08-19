@@ -29,6 +29,12 @@ class ConfigPathTests(unittest.TestCase):
                         os.path.normpath(str(local_appdata / config_path.APP_NAME)),
                     )
 
+    def test_user_data_root_honors_explicit_override(self):
+        with tempfile.TemporaryDirectory() as tempdir:
+            override = Path(tempdir) / "CityGenData"
+            with mock.patch.dict(os.environ, {"MC_CITY_APP_ROOT": str(override)}, clear=False):
+                self.assertEqual(config_path._user_data_root(), os.path.normpath(str(override)))
+
     def test_frozen_app_root_prefers_writable_executable_dir(self):
         with tempfile.TemporaryDirectory() as tempdir:
             executable = Path(tempdir) / "CityGen.exe"

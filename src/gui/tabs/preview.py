@@ -94,16 +94,6 @@ class PreviewTab(WeightedProgressMixin, ttk.Frame):
             return
         self.winfo_toplevel().set_saved_config_section("preview", self._current_config_state())
 
-    def _apply_config_state(self, config):
-        if not config:
-            return
-        self._suspend_auto_save = True
-        try:
-            self.seed_var.set(str(config.get("seed", DEFAULT_SEED)))
-            common.apply_config_vars(self.config_vars, config.get("algo"))
-        finally:
-            self._suspend_auto_save = False
-
     def _sync_preview_viewers(self, source, state, reason):
         target = self.city_viewer if source is self.grid_viewer else self.grid_viewer
         if target.image_path is None:
@@ -122,10 +112,10 @@ class PreviewTab(WeightedProgressMixin, ttk.Frame):
             return
 
         tasks = [
-            ("pipeline.01_roads_simulation", common.PREVIEW_PROGRESS_WEIGHTS[0][1], lambda: services.run_roads_simulation_stage(env_overrides=env)),
-            ("pipeline.02_builds_simulation", common.PREVIEW_PROGRESS_WEIGHTS[1][1], lambda: services.run_builds_simulation_stage(env_overrides=env)),
-            ("pipeline.03_grid_simulation", common.PREVIEW_PROGRESS_WEIGHTS[2][1], lambda: services.run_grid_simulation_stage(seed, fine, env_overrides=env)),
-            ("pipeline.04_city_simulation", common.PREVIEW_PROGRESS_WEIGHTS[3][1], lambda: services.run_city_simulation_stage(seed, fine, env_overrides=env)),
+            (services.ROADS_SIMULATION, common.PREVIEW_PROGRESS_WEIGHTS[0][1], lambda: services.run_roads_simulation_stage(env_overrides=env)),
+            (services.BUILDS_SIMULATION, common.PREVIEW_PROGRESS_WEIGHTS[1][1], lambda: services.run_builds_simulation_stage(env_overrides=env)),
+            (services.GRID_SIMULATION, common.PREVIEW_PROGRESS_WEIGHTS[2][1], lambda: services.run_grid_simulation_stage(seed, fine, env_overrides=env)),
+            (services.CITY_SIMULATION, common.PREVIEW_PROGRESS_WEIGHTS[3][1], lambda: services.run_city_simulation_stage(seed, fine, env_overrides=env)),
         ]
         run_weighted_tasks_async(
             self,

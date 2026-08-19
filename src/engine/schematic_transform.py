@@ -1,18 +1,23 @@
 """Shared schematic tile transforms."""
 
+from __future__ import annotations
+
+from dataclasses import dataclass
+
+
 FACING_CW = {"north": "east", "east": "south", "south": "west", "west": "north"}
 CONN_SRC = {"east": "north", "south": "east", "west": "south", "north": "west"}
 
 
+@dataclass(frozen=True, slots=True)
 class Tile:
-    def __init__(self, width, height, length, cells):
-        self.W = width
-        self.H = height
-        self.L = length
-        self.cells = cells
+    W: int
+    H: int
+    L: int
+    cells: list[list[list[str]]]
 
 
-def rot_state(state, k):
+def rot_state(state: str, k: int) -> str:
     k %= 4
     if k == 0 or "[" not in state:
         return state
@@ -35,7 +40,7 @@ def rot_state(state, k):
     return base + "[" + ",".join(f"{key}={props[key]}" for key in sorted(props)) + "]"
 
 
-def rot_tile(tile, k):
+def rot_tile(tile: Tile, k: int) -> Tile:
     for _ in range(k % 4):
         width, length = tile.W, tile.L
         new = [[[None] * length for _ in range(width)] for _ in range(tile.H)]

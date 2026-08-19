@@ -8,29 +8,9 @@ import sys
 import threading
 from contextlib import contextmanager
 
-PIPELINE_LOCK = threading.RLock()
+from pipeline.stages import RELOAD_ORDER
 
-RELOAD_ORDER = [
-    "config.config_algo",
-    "config.config_world",
-    "engine.road_network",
-    "engine.city_layout",
-    "engine.road_schematic",
-    "engine.building_schematic",
-    "engine.anvil_world_reader",
-    "pipeline.01_roads_simulation",
-    "pipeline.02_builds_simulation",
-    "pipeline.03_grid_simulation",
-    "pipeline.04_city_simulation",
-    "pipeline.01_roads_extract",
-    "pipeline.01_roads_render",
-    "pipeline.02_builds_extract",
-    "pipeline.02_builds_render",
-    "pipeline.03_grid_construct",
-    "pipeline.03_grid_render",
-    "pipeline.04_city_construct",
-    "pipeline.04_city_render",
-]
+PIPELINE_LOCK = threading.RLock()
 
 
 def reload_pipeline_modules():

@@ -4,52 +4,53 @@ from __future__ import annotations
 
 import os
 import sys
+from pathlib import Path
 
 APP_NAME = "CityGen"
-SOURCE_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-PROJECT_ROOT = os.path.dirname(SOURCE_ROOT)
+SOURCE_ROOT = str(Path(__file__).resolve().parents[1])
 APPDATA = os.environ.get("APPDATA", os.path.join(os.path.expanduser("~"), "AppData", "Roaming"))
+_REQUIRED_PACKAGE_DIRS = ("config", "engine", "gui", "pipeline")
+_REPO_MARKERS = (".git", "application.pyw", os.path.join("docs", "TECHNICAL.md"))
+
+
+def _norm(path: os.PathLike[str] | str) -> str:
+    return os.path.normpath(str(path))
 
 
 def _resource_root() -> str:
     base = getattr(sys, "_MEIPASS", None)
     if base:
-        return os.path.normpath(base)
-    return SOURCE_ROOT
+        return _norm(base)
+    return _norm(SOURCE_ROOT)
 
 
 def _repo_checkout_root(path: str) -> str:
-    required_dirs = ("config", "engine", "gui", "pipeline")
-    if not all(os.path.isdir(os.path.join(path, name)) for name in required_dirs):
+    package_root = Path(path).resolve()
+    if not all((package_root / name).is_dir() for name in _REQUIRED_PACKAGE_DIRS):
         return ""
-    markers = (".git", "application.pyw", os.path.join("docs", "TECHNICAL.md"))
-    if any(os.path.exists(os.path.join(path, marker)) for marker in markers):
-        return os.path.normpath(path)
-    parent = os.path.dirname(path)
-    if any(os.path.exists(os.path.join(parent, marker)) for marker in markers):
-        return os.path.normpath(parent)
+    if any((package_root / marker).exists() for marker in _REPO_MARKERS):
+        return _norm(package_root)
+    parent = package_root.parent
+    if any((parent / marker).exists() for marker in _REPO_MARKERS):
+        return _norm(parent)
     return ""
-
-
-def _is_repo_checkout(path: str) -> bool:
-    return bool(_repo_checkout_root(path))
 
 
 def _user_data_root() -> str:
     override = os.environ.get("MC_CITY_APP_ROOT")
     if override:
-        return os.path.normpath(override)
+        return _norm(override)
     local_appdata = os.environ.get("LOCALAPPDATA")
     if local_appdata:
-        return os.path.normpath(os.path.join(local_appdata, APP_NAME))
-    return os.path.normpath(os.path.join(APPDATA, APP_NAME))
+        return _norm(Path(local_appdata) / APP_NAME)
+    return _norm(Path(APPDATA) / APP_NAME)
 
 
 def _frozen_app_root(executable: str | None = None) -> str:
     executable = executable or sys.executable
-    exe_root = os.path.dirname(os.path.abspath(executable))
+    exe_root = Path(executable).resolve().parent
     if os.access(exe_root, os.W_OK):
-        return os.path.normpath(exe_root)
+        return _norm(exe_root)
     return _user_data_root()
 
 

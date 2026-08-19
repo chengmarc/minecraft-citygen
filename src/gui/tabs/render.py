@@ -79,16 +79,6 @@ class CityTab(WeightedProgressMixin, ttk.Frame):
             return
         self.winfo_toplevel().set_saved_config_section("render", self._current_config_state())
 
-    def _apply_config_state(self, config):
-        if not config:
-            return
-        self._suspend_auto_save = True
-        try:
-            self.seed_var.set(str(config.get("seed", DEFAULT_SEED)))
-            common.apply_config_vars(self.config_vars, config.get("algo"))
-        finally:
-            self._suspend_auto_save = False
-
     def _open_output_folder(self):
         if not os.path.isdir(CITY_PROD_SCHEM):
             messagebox.showerror("Output folder missing", CITY_PROD_SCHEM)
@@ -110,8 +100,8 @@ class CityTab(WeightedProgressMixin, ttk.Frame):
             return
 
         tasks = [
-            ("pipeline.04_city_construct", common.RENDER_PROGRESS_WEIGHTS[0][1], lambda: services.run_city_construct_stage(seed, fine, env_overrides=env)),
-            ("pipeline.04_city_render", common.RENDER_PROGRESS_WEIGHTS[1][1], lambda: services.run_city_render_stage(env_overrides=env)),
+            (services.CITY_CONSTRUCT, common.RENDER_PROGRESS_WEIGHTS[0][1], lambda: services.run_city_construct_stage(seed, fine, env_overrides=env)),
+            (services.CITY_RENDER, common.RENDER_PROGRESS_WEIGHTS[1][1], lambda: services.run_city_render_stage(env_overrides=env)),
         ]
         run_weighted_tasks_async(
             self,
