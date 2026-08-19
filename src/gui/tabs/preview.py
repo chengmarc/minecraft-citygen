@@ -45,8 +45,6 @@ class PreviewTab(WeightedProgressMixin, ttk.Frame):
             smooth_zoom=True,
         )
         self.city_viewer.grid(row=0, column=1, sticky="nsew", padx=(4, 0))
-        self.grid_viewer.set_view_change_callback(self._sync_preview_viewers)
-        self.city_viewer.set_view_change_callback(self._sync_preview_viewers)
 
         self.config_frame = ttk.Frame(self, padding=12)
         self.config_frame.grid(row=1, column=0, sticky="ew", pady=(8, 0))
@@ -94,12 +92,6 @@ class PreviewTab(WeightedProgressMixin, ttk.Frame):
             return
         self.winfo_toplevel().set_saved_config_section("preview", self._current_config_state())
 
-    def _sync_preview_viewers(self, source, state, reason):
-        target = self.city_viewer if source is self.grid_viewer else self.grid_viewer
-        if target.image_path is None:
-            return
-        target._apply_view_state(state)
-
     def _run_preview(self):
         seed = self.seed_var.get().strip()
         try:
@@ -125,10 +117,9 @@ class PreviewTab(WeightedProgressMixin, ttk.Frame):
             "Preview failed",
             "Preview failed",
             "Preview complete",
-            lambda: self._load_synced_previews(seed),
+            lambda: self._load_previews(seed),
         )
 
-    def _load_synced_previews(self, seed):
+    def _load_previews(self, seed):
         self.grid_viewer.load_image(common.grid_preview_path(seed))
         self.city_viewer.load_image(common.city_preview_path(seed))
-        self.city_viewer.sync_view_from(self.grid_viewer)

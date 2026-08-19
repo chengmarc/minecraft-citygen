@@ -16,6 +16,8 @@ Image = common.Image
 ImageTk = common.ImageTk
 CHUNK_SIZE = 16
 MAX_FULL_RENDER_PIXELS = 3_500_000
+PAN_SETTLE_MS = 90
+ZOOM_SETTLE_MS = 500
 
 
 def _format_extraction_xyz(pos):
@@ -34,6 +36,16 @@ def _action_bootstyle(label, icon_name):
     return "secondary"
 
 
+def _viewer_resample(*, fast_zoom, smooth_zoom, zoom, interactive):
+    if fast_zoom:
+        return Image.Resampling.NEAREST
+    if smooth_zoom:
+        if interactive and zoom >= 1:
+            return Image.Resampling.NEAREST
+        return Image.Resampling.BILINEAR
+    return Image.Resampling.NEAREST if zoom >= 1 else Image.Resampling.BILINEAR
+
+
 class ImageViewer(ttk.Frame):
     def __init__(
         self,
@@ -49,14 +61,14 @@ class ImageViewer(ttk.Frame):
         self.title = title
         self.image_path = None
         self._source_image = None
+        self._display_image = None
         self._photo = None
         self._zoom = 1.0
         self._image_id = None
         self._message_id = None
         self._has_title = bool(title and show_title)
         self._layout_after_id = None
-        self._view_change_callback = None
-        self._suspend_view_notifications = False
+        self._refine_after_id = None
         self._fast_zoom = fast_zoom
         self._smooth_zoom = smooth_zoom
         self._zoom_pyramid = None
@@ -88,7 +100,9 @@ class ImageViewer(ttk.Frame):
         self.show_message(initial_message)
 
     def show_message(self, message):
+        self._cancel_refined_render()
         self._source_image = None
+        self._display_image = None
         self._photo = None
         self._image_id = None
         self._zoom_pyramid = None
@@ -107,16 +121,8 @@ class ImageViewer(ttk.Frame):
         )
         self.canvas.configure(scrollregion=(0, 0, 420, 420))
 
-    def set_view_change_callback(self, callback):
-        self._view_change_callback = callback
-
-    def sync_view_from(self, other):
-        state = other._current_view_state()
-        if state is None:
-            return
-        self._apply_view_state(state)
-
     def load_image(self, image_path):
+        self._cancel_refined_render()
         self.image_path = image_path
         self.canvas.delete("all")
         self._image_id = None
@@ -130,7 +136,6 @@ class ImageViewer(ttk.Frame):
             self._view_origin = (0.0, 0.0)
             self._virtual_size = (self._photo.width(), self._photo.height())
             self.canvas.configure(scrollregion=(0, 0, self._photo.width(), self._photo.height()))
-            self._notify_view_changed("load")
             return
 
         self._source_image = Image.open(image_path).convert("RGBA")
@@ -160,7 +165,6 @@ class ImageViewer(ttk.Frame):
         self._view_origin = (x, y)
         self._refresh_display_image()
         self._update_scrollregion()
-        self._notify_view_changed("layout")
 
     def _initial_zoom(self):
         if not self._source_image:
@@ -169,7 +173,7 @@ class ImageViewer(ttk.Frame):
         longest_edge = max(self._source_image.width, self._source_image.height)
         return max(canvas_size / longest_edge, 0.05)
 
-    def _render_image(self, center=False, anchor=None, notify=True):
+    def _render_image(self, center=False, anchor=None, interactive=False):
         if not self._source_image:
             return
         width = max(1, int(self._source_image.width * self._zoom))
@@ -186,10 +190,25 @@ class ImageViewer(ttk.Frame):
 
         self._view_origin = (x, y)
         self._virtual_size = (width, height)
-        self._refresh_display_image()
+        self._refresh_display_image(interactive=interactive)
         self._update_scrollregion()
-        if notify:
-            self._notify_view_changed("zoom")
+
+    def _cancel_refined_render(self):
+        if self._refine_after_id is not None:
+            self.after_cancel(self._refine_after_id)
+            self._refine_after_id = None
+
+    def _schedule_refined_render(self, delay_ms):
+        if not self._smooth_zoom or self._source_image is None:
+            return
+        self._cancel_refined_render()
+        self._refine_after_id = self.after(delay_ms, self._run_refined_render)
+
+    def _run_refined_render(self):
+        self._refine_after_id = None
+        if self._source_image is None:
+            return
+        self._refresh_display_image(interactive=False)
 
     def _update_scrollregion(self):
         if self._image_id is None:
@@ -220,10 +239,24 @@ class ImageViewer(ttk.Frame):
         if not self._source_image or self._image_id is None:
             return "break"
         x0, y0 = self._view_origin
-        source_x = (canvas_x - x0) / self._zoom
-        source_y = (canvas_y - y0) / self._zoom
-        self._zoom = min(max(self._zoom * factor, 0.05), 8.0)
-        self._render_image(anchor=(canvas_x, canvas_y, source_x, source_y))
+        old_zoom = self._zoom
+        source_x = (canvas_x - x0) / old_zoom
+        source_y = (canvas_y - y0) / old_zoom
+        self._zoom = min(max(old_zoom * factor, 0.05), 8.0)
+        actual_factor = self._zoom / old_zoom
+        width = max(1, int(self._source_image.width * self._zoom))
+        height = max(1, int(self._source_image.height * self._zoom))
+        self._view_origin = (
+            canvas_x - source_x * self._zoom,
+            canvas_y - source_y * self._zoom,
+        )
+        self._virtual_size = (width, height)
+        if actual_factor > 1.0 and self._display_image is not None and Image is not None and ImageTk is not None:
+            self._render_interactive_zoom_preview(canvas_x, canvas_y, actual_factor)
+        else:
+            self._refresh_display_image(interactive=True)
+        self._update_scrollregion()
+        self._schedule_refined_render(ZOOM_SETTLE_MS)
         return "break"
 
     def _start_pan(self, event):
@@ -232,46 +265,8 @@ class ImageViewer(ttk.Frame):
     def _pan(self, event):
         self.canvas.scan_dragto(event.x, event.y, gain=1)
         if self._use_viewport_rendering(*self._virtual_size):
-            self._refresh_display_image()
-        self._notify_view_changed("pan")
-
-    def _current_view_state(self):
-        if self._image_id is None:
-            return None
-        return {
-            "zoom": self._zoom,
-            "coords": self._view_origin,
-            "xview": self.canvas.xview()[0],
-            "yview": self.canvas.yview()[0],
-        }
-
-    def _apply_view_state(self, state):
-        if self._image_id is None:
-            return
-        self._suspend_view_notifications = True
-        try:
-            zoom_changed = abs(self._zoom - state["zoom"]) > 1e-9
-            self._view_origin = tuple(state["coords"])
-            if self._source_image is not None and zoom_changed:
-                self._zoom = state["zoom"]
-                self._render_image(notify=False)
-            else:
-                self._zoom = state["zoom"]
-                self._refresh_display_image()
-            self._update_scrollregion()
-            self.canvas.xview_moveto(state["xview"])
-            self.canvas.yview_moveto(state["yview"])
-            if self._use_viewport_rendering(*self._virtual_size):
-                self._refresh_display_image()
-        finally:
-            self._suspend_view_notifications = False
-
-    def _notify_view_changed(self, reason):
-        if self._suspend_view_notifications or self._view_change_callback is None:
-            return
-        state = self._current_view_state()
-        if state is not None:
-            self._view_change_callback(self, state, reason)
+            self._refresh_display_image(interactive=True)
+            self._schedule_refined_render(PAN_SETTLE_MS)
 
     def _build_zoom_pyramid(self):
         if self._source_image is None:
@@ -301,30 +296,46 @@ class ImageViewer(ttk.Frame):
     def _use_viewport_rendering(self, width, height):
         return self._smooth_zoom and width * height > MAX_FULL_RENDER_PIXELS
 
-    def _refresh_display_image(self):
+    def _render_interactive_zoom_preview(self, canvas_x, canvas_y, factor):
+        prev_left, prev_top = self.canvas.coords(self._image_id)
+        prev_width, prev_height = self._display_image.size
+        next_width = max(1, int(round(prev_width * factor)))
+        next_height = max(1, int(round(prev_height * factor)))
+        preview = self._display_image.resize((next_width, next_height), Image.Resampling.NEAREST)
+        self._photo = ImageTk.PhotoImage(preview)
+        self._display_image = preview
+        self.canvas.itemconfigure(self._image_id, image=self._photo)
+        self.canvas.coords(
+            self._image_id,
+            canvas_x - (canvas_x - prev_left) * factor,
+            canvas_y - (canvas_y - prev_top) * factor,
+        )
+
+    def _refresh_display_image(self, interactive=False):
         if self._source_image is None:
             return
         width, height = self._virtual_size
         if self._use_viewport_rendering(width, height):
-            self._render_viewport_image()
+            self._render_viewport_image(interactive=interactive)
             return
 
         _source_scale, source_image = self._select_zoom_source(self._zoom)
-        if self._fast_zoom:
-            resample = Image.Resampling.NEAREST
-        elif self._smooth_zoom:
-            resample = Image.Resampling.BILINEAR
-        else:
-            resample = Image.Resampling.NEAREST if self._zoom >= 1 else Image.Resampling.BILINEAR
+        resample = _viewer_resample(
+            fast_zoom=self._fast_zoom,
+            smooth_zoom=self._smooth_zoom,
+            zoom=self._zoom,
+            interactive=interactive,
+        )
         image = source_image.resize((width, height), resample)
         self._photo = ImageTk.PhotoImage(image)
+        self._display_image = image
         if self._image_id is None:
             self._image_id = self.canvas.create_image(0, 0, anchor="nw", image=self._photo)
         else:
             self.canvas.itemconfigure(self._image_id, image=self._photo)
         self.canvas.coords(self._image_id, *self._view_origin)
 
-    def _render_viewport_image(self):
+    def _render_viewport_image(self, interactive=False):
         source_scale, source_image = self._select_zoom_source(self._zoom)
         origin_x, origin_y = self._view_origin
         width, height = self._virtual_size
@@ -341,6 +352,7 @@ class ImageViewer(ttk.Frame):
         if right <= left or bottom <= top:
             image = Image.new("RGBA", (1, 1), (0, 0, 0, 0))
             self._photo = ImageTk.PhotoImage(image)
+            self._display_image = image
             if self._image_id is None:
                 self._image_id = self.canvas.create_image(origin_x, origin_y, anchor="nw", image=self._photo)
             else:
@@ -356,9 +368,18 @@ class ImageViewer(ttk.Frame):
         target_width = max(1, int(round(right - left)))
         target_height = max(1, int(round(bottom - top)))
         if crop.size != (target_width, target_height):
-            crop = crop.resize((target_width, target_height), Image.Resampling.BILINEAR)
+            crop = crop.resize(
+                (target_width, target_height),
+                _viewer_resample(
+                    fast_zoom=self._fast_zoom,
+                    smooth_zoom=self._smooth_zoom,
+                    zoom=self._zoom,
+                    interactive=interactive,
+                ),
+            )
 
         self._photo = ImageTk.PhotoImage(crop)
+        self._display_image = crop
         if self._image_id is None:
             self._image_id = self.canvas.create_image(left, top, anchor="nw", image=self._photo)
         else:
