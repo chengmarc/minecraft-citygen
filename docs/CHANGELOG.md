@@ -6,6 +6,27 @@ The format is based on Keep a Changelog, and versions should match the release v
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-08-20
+
+This is an internal refactor and maintenance release. There are no intended
+changes to generated output: the city constructor was verified to produce
+byte-identical results (decoded) against the previous implementation.
+
+### Changed
+
+- reorganized the monolithic GUI widgets module into focused submodules (image viewer, region-selector dialog, buttons/sliders, tooltip, progress, extraction panel, config frame) and extracted a shared pan/zoom base for the two viewers
+- decomposed the city constructor into named stages and renamed terse identifiers, including the `Tile` dimension fields, for readability
+- standardized path construction on `pathlib`, applied `from __future__ import annotations` uniformly, replaced initial-only aliased imports with explicit names, and unified the logger call contract to a single string
+- replaced the mutable theme module globals with a single theme object
+- made the per-user data directory platform-aware (macOS and Linux conventions) instead of Windows-only
+- added upper version bounds to declared dependencies
+- documented the pipeline environment-override and module-reload invariant
+
+### Fixed
+
+- narrowed overly broad exception handlers that could mask real failures, while keeping the intended top-level and worker error boundaries
+- corrected stale file references and machine-specific absolute links in `docs/TECHNICAL.md`
+
 ## [0.1.0] - 2026-08-19
 
 ### Added
