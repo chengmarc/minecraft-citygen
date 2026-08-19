@@ -24,4 +24,12 @@ base_tcl = Path(sys.base_prefix) / "tcl"
 datas = [
     *_collect_tree(base_tcl / "tcl8.6", "_tcl_data"),
     *_collect_tree(base_tcl / "tk8.6", "_tk_data"),
+    # The Tcl 8.x "module" packages (msgcat, http, tcltest, ...) ship as
+    # ".tm" files under "tcl8/", a sibling of "tcl8.6/" -- not inside it.
+    # ttkbootstrap's localization requires msgcat (>= 1.6, for ::msgcat::mcmset),
+    # so this tree must be bundled or startup fails with
+    # 'invalid command name "::msgcat::mcmset"'. Tcl resolves the module path
+    # relative to the interpreter library, i.e. "[file dirname $tcl_library]/tcl8",
+    # so it must sit at the bundle root as "tcl8" (a sibling of "_tcl_data").
+    *_collect_tree(base_tcl / "tcl8", "tcl8"),
 ]

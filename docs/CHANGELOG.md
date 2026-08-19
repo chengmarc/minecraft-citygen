@@ -6,6 +6,15 @@ The format is based on Keep a Changelog, and versions should match the release v
 
 ## [Unreleased]
 
+## [0.2.1] - 2026-08-20
+
+This is a hot-fix release for the Windows installer build. There are no changes
+to application code or generated output.
+
+### Fixed
+
+- fixed the frozen Windows build failing to start with `invalid command name "::msgcat::mcmset"`: the PyInstaller Tcl/Tk hook now bundles the Tcl 8.x module tree (`tcl8/`), which contains `msgcat` and other `.tm` packages that ship alongside — not inside — the `tcl8.6/` script directory. `ttkbootstrap`'s localization requires msgcat 1.6+ at startup.
+
 ## [0.2.0] - 2026-08-20
 
 This is an internal refactor and maintenance release. There are no intended
