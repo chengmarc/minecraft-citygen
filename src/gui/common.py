@@ -25,6 +25,7 @@ except ImportError:  # pragma: no cover
 
 ROOT_DIR = ROOT
 ICON_DIR = os.path.join(GUI, "icons")
+CONFIG_DIR = os.path.join(ROOT_DIR, "src", "config")
 APP_ICON_PATH = os.path.join(ICON_DIR, "app-icon.png")
 ROAD_CONTACT_SHEET = os.path.join(ROADS_PROD, "_contact_sheet.png")
 BUILD_CONTACT_SHEET = os.path.join(BUILDS_PROD, "_contact_sheet.png")
@@ -43,7 +44,8 @@ APP_WIDTH = 1024
 APP_HEIGHT = 768
 UI_RADIUS = 4
 STARTUP_ERROR_LOG = os.path.join(ROOT_DIR, "application_startup_error.log")
-SAVED_GUI_CONFIG_PATH = os.path.join(ROOT_DIR, "citygen_saved_config.json")
+LEGACY_SAVED_GUI_CONFIG_PATH = os.path.join(ROOT_DIR, "citygen_saved_config.json")
+SAVED_GUI_CONFIG_PATH = os.path.join(CONFIG_DIR, "config_citygen.json")
 UI_FONT_FAMILY = "SF Pro Text"
 UI_FONT_FALLBACKS = ("Segoe UI Variable", "Segoe UI", "Inter", "Arial")
 
@@ -369,6 +371,12 @@ def default_extraction_tab_config():
 
 
 def load_saved_gui_config():
+    if not os.path.exists(SAVED_GUI_CONFIG_PATH) and os.path.exists(LEGACY_SAVED_GUI_CONFIG_PATH):
+        try:
+            os.makedirs(os.path.dirname(SAVED_GUI_CONFIG_PATH), exist_ok=True)
+            os.replace(LEGACY_SAVED_GUI_CONFIG_PATH, SAVED_GUI_CONFIG_PATH)
+        except OSError:
+            pass
     if not os.path.exists(SAVED_GUI_CONFIG_PATH):
         return {}
     try:
@@ -380,6 +388,7 @@ def load_saved_gui_config():
 
 
 def save_saved_gui_config(config):
+    os.makedirs(os.path.dirname(SAVED_GUI_CONFIG_PATH), exist_ok=True)
     with open(SAVED_GUI_CONFIG_PATH, "w", encoding="utf-8") as fh:
         json.dump(config, fh, indent=2)
 
