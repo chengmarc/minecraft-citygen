@@ -28,6 +28,10 @@ The generated city can be brought back into Minecraft as a real build result:
 
 ![In-game city result 2](docs/ingame2.png)
 
+![In-game city result 3](docs/ingame3.png)
+
+![In-game city result 4](docs/ingame4.png)
+
 ## Built-in Assets
 
 These buildings come with the app by default:
