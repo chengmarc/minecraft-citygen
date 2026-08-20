@@ -5,8 +5,8 @@
 </p>
 <div align="center">
   <h3>
-    Download <a href="https://github.com/CDS-SP/minecraft-citygen/releases">Windows Installer (.exe)</a> or 
-    <a href="https://github.com/CDS-SP/minecraft-citygen/releases">Compressed Portable (.zip)</a>
+    Download <a href="https://github.com/CDS-SP/minecraft-citygen/releases/download/v0.4.1/CityGen-setup.exe">Windows Installer (.exe)</a> or 
+    <a href="https://github.com/CDS-SP/minecraft-citygen/releases/download/v0.4.1/CityGen-portable-windows.zip">Compressed Portable (.zip)</a>
   </h3>
 </div>
 
