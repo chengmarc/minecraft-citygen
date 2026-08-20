@@ -27,6 +27,7 @@ if __package__ in (None, ""):
 
 from config.config_algo import CELL
 from config.config_path import ROADS_SIM
+from config.config_render import CITY_GROUND_FILL_RGBA
 
 SMALL_PAD = 1
 BIG_PAD = 2
@@ -194,10 +195,39 @@ TILES = {
 }
 
 
+# Top-down fill props: a smooth-stone cell (matching the ground fill) with a
+# tree drawn inside. Variants mirror the in-world species of the extracted fill
+# schematics (15 = spruce, 16 = birch, 17 = oak).
+FILL_TILES = {
+    "15_fill_1x1_A": (46, 96, 52),     # spruce -- dark green
+    "16_fill_1x1_B": (122, 165, 86),   # birch  -- light green
+    "17_fill_1x1_C": (86, 130, 60),    # oak    -- mid green
+}
+TRUNK = (99, 71, 45)
+
+
+def _shade(rgb, delta):
+    return tuple(max(0, min(255, c + delta)) for c in rgb)
+
+
+def make_fill_tile(canopy):
+    """A 9x9 smooth-stone cell with a round top-down tree canopy in its centre."""
+    img = Image.new("RGBA", (CELL, CELL))
+    d = ImageDraw.Draw(img)
+    d.rectangle([0, 0, CELL - 1, CELL - 1], fill=CITY_GROUND_FILL_RGBA)
+    cx, cy = CELL // 2, CELL // 2
+    r = CELL // 2 - 1                       # leave a 1px smooth-stone border ring
+    d.ellipse([cx - r, cy - r, cx + r, cy + r], fill=canopy, outline=_shade(canopy, -34))
+    d.point((cx - 1, cy - 1), fill=_shade(canopy, 28))   # highlight
+    d.point((cx + 1, cy + 1), fill=_shade(canopy, -24))  # shadow
+    d.point((cx, cy), fill=TRUNK)                          # trunk
+    return img
+
+
 def run(*, logger=None, progress=None):
     os.makedirs(OUT, exist_ok=True)
     imgs = {}
-    total = len(TILES)
+    total = len(TILES) + len(FILL_TILES)
     for index, (name, (w, h, conns)) in enumerate(TILES.items(), start=1):
         img = make_tile(w, h, conns)
         path = os.path.join(OUT, name + ".png")
@@ -207,6 +237,16 @@ def run(*, logger=None, progress=None):
             logger(f"saved {name}.png ({w}x{h})")
         if progress is not None:
             progress(index, total, name)
+
+    for offset, (name, canopy) in enumerate(FILL_TILES.items()):
+        img = make_fill_tile(canopy)
+        path = os.path.join(OUT, name + ".png")
+        img.save(path)
+        imgs[name] = img
+        if logger is not None:
+            logger(f"saved {name}.png ({CELL}x{CELL})")
+        if progress is not None:
+            progress(len(TILES) + offset + 1, total, name)
 
     cols = 5
     zoom = 8

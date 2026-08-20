@@ -14,8 +14,9 @@ ISO_MARGIN = 16
 CONTACT_SHEET_BG = (30, 30, 34, 255)
 UNKNOWN_BLOCK_RGBA = (255, 0, 255)
 
-CITY_GROUND_FILL_BLOCK = "minecraft:smooth_stone"
+CITY_GROUND_FILL_BLOCK = "minecraft:smooth_stone_slab[type=bottom]"
 CITY_GROUND_FILL_RGBA = (159, 159, 159, 255)
+CITY_ANCHOR_BLOCK = "minecraft:smooth_stone"   # solid block for the origin anchor column
 CITY_GROUND_Y = 1
 
 BUILD_PREVIEW_COLORS = {

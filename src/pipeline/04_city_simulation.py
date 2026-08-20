@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import glob
 import os
 import random
 import sys
@@ -14,7 +15,7 @@ if __package__ in (None, ""):
     sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from config.config_algo import DEFAULT_SEED, FINE as DEFAULT_FINE
-from config.config_path import BUILDS_SIM, CITY_SIM
+from config.config_path import BUILDS_SIM, CITY_SIM, ROADS_SIM
 from config.config_render import CITY_GROUND_FILL_RGBA
 from engine.city_layout import (
     FACE_K,
@@ -26,6 +27,7 @@ from engine.city_layout import (
     validate_placements,
 )
 from engine.road_network import CELL, compose, gen_networks, load_assets, make_size, rot_img
+from engine.road_schematic import FILL_TOKEN
 
 BUILDS = BUILDS_SIM
 _FONTS = {}
@@ -88,8 +90,31 @@ def fill_lots(road_cells, size):
     return canvas
 
 
-def render(net, placements, out, preview):
+def load_fill_assets():
+    """Top-down fill-prop tiles produced by `pipeline.01_roads_simulation`."""
+    paths = sorted(glob.glob(os.path.join(ROADS_SIM, f"*{FILL_TOKEN}*.png")))
+    return [Image.open(path).convert("RGBA") for path in paths]
+
+
+def place_fill_props(canvas, road_cells, occupied, size, fillers, rng):
+    """Paste a random fill prop into every empty non-road, non-building cell.
+
+    Mirrors production: building cells are skipped (a building sits there), the
+    same seeded RNG order is used so the preview matches the built city.
+    """
+    for fy in range(size.fine):
+        for fx in range(size.fine):
+            if (fx, fy) in road_cells or (fx, fy) in occupied:
+                continue
+            tile = rot_img(rng.choice(fillers), rng.randint(0, 3))
+            canvas.alpha_composite(tile, (fx * CELL, fy * CELL))
+
+
+def render(net, placements, out, preview, fillers=None, rng=None):
     canvas = fill_lots(net["road_cells"], net["size"])
+    if fillers:
+        occupied = {cell for placement in placements for cell in placement.rect.cells()}
+        place_fill_props(canvas, net["road_cells"], occupied, net["size"], fillers, rng)
     canvas.alpha_composite(compose(net, load_assets()))
     cache = {}
     for placement in placements:
@@ -135,7 +160,9 @@ def run(*, seed=DEFAULT_SEED, fine=DEFAULT_FINE, preview=0, out=None, logger=Non
         by_type[placement.building.type] += 1
     if logger is not None:
         logger(f"lots={len(lots)}  builds placed={len(placements)}  (type 1={by_type[1]}, type 2={by_type[2]})")
-    width, height = render(net, placements, out, preview)
+    fillers = load_fill_assets()
+    filler_rng = random.Random(seed * 7 + 3)
+    width, height = render(net, placements, out, preview, fillers, filler_rng)
     if logger is not None:
         logger(f"saved {out} ({width}x{height})")
     return {"output_path": out, "image_size": (width, height), "placements": len(placements)}

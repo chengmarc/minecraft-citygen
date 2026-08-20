@@ -16,7 +16,7 @@ if __package__ in (None, ""):
 
 from config.config_algo import DEFAULT_SEED, FINE as DEFAULT_FINE
 from config.config_path import BUILD_CATALOG, CITY_PROD, GRID_PROD
-from config.config_render import CITY_GROUND_FILL_BLOCK, CITY_GROUND_Y
+from config.config_render import CITY_ANCHOR_BLOCK, CITY_GROUND_FILL_BLOCK, CITY_GROUND_Y
 from config.config_world import DATA_VERSION
 from engine.building_schematic import assemble
 from engine.city_layout import (
@@ -31,6 +31,7 @@ from engine.city_layout import (
 )
 from engine.road_network import CELL, gen_networks, make_size
 from engine.road_schematic import build as build_road_grid
+from engine.road_schematic import load_fillers
 from engine.schematic_reader import decode_schem
 from engine.schematic_transform import rot_tile
 from engine.schematic_writer import write_sponge_schem_grid
@@ -119,42 +120,57 @@ def _compose_grid(road_grid, road_palette, road_span, road_height, road_y0, out_
 
     build_mask = np.zeros((out_span, out_span), dtype=bool)
     for tile, px, pz, y0 in instances:
-        for y in range(tile.height):
-            gy = y0 + y
-            if not (0 <= gy < max_height):
-                continue
-            for z in range(tile.length):
-                gz = pz + z
-                if not (0 <= gz < out_span):
-                    continue
-                row = tile.cells[y][z]
-                for x in range(tile.width):
-                    state = row[x]
-                    if state.startswith("minecraft:air"):
-                        continue
-                    gx = px + x
-                    if not (0 <= gx < out_span):
-                        continue
-                    build_mask[gz, gx] = True
-                    idx = master_palette.get(state)
-                    if idx is None:
-                        idx = master_palette[state] = len(master_palette)
-                    grid[gy, gz, gx] = idx
+        _blit_tile(grid, master_palette, tile, px, pz, y0, build_mask)
     return grid, master_palette, build_mask
 
 
-def _ensure_fill_index(master_palette):
-    fill_idx = master_palette.get(CITY_GROUND_FILL_BLOCK)
-    if fill_idx is None:
-        fill_idx = master_palette[CITY_GROUND_FILL_BLOCK] = len(master_palette)
-    return fill_idx
+def _blit_tile(grid, master_palette, tile, px, pz, y0, build_mask=None):
+    """Blit a tile's non-air cells into the master grid at (px, y0, pz).
+
+    Palette states are interned into ``master_palette`` on demand; when a
+    ``build_mask`` is given, every written column is marked occupied.
+    """
+    max_height, span_z, span_x = grid.shape
+    for y in range(tile.height):
+        gy = y0 + y
+        if not (0 <= gy < max_height):
+            continue
+        for z in range(tile.length):
+            gz = pz + z
+            if not (0 <= gz < span_z):
+                continue
+            row = tile.cells[y][z]
+            for x in range(tile.width):
+                state = row[x]
+                if state.startswith("minecraft:air"):
+                    continue
+                gx = px + x
+                if not (0 <= gx < span_x):
+                    continue
+                if build_mask is not None:
+                    build_mask[gz, gx] = True
+                idx = master_palette.get(state)
+                if idx is None:
+                    idx = master_palette[state] = len(master_palette)
+                grid[gy, gz, gx] = idx
 
 
-def _apply_ground_fill(grid, fill_idx, build_mask, road_cells, size, city_ground_y):
-    """Fill empty non-road lot cells on the ground plane with the configured block."""
+def _palette_index(master_palette, state):
+    idx = master_palette.get(state)
+    if idx is None:
+        idx = master_palette[state] = len(master_palette)
+    return idx
+
+
+def _apply_ground_fill(grid, fill_idx, build_mask, road_cells, size, city_ground_y, skip_cells=frozenset()):
+    """Fill empty non-road lot cells on the ground plane with the configured block.
+
+    ``skip_cells`` are lot cells already covered by a fill prop (which carries its
+    own ground), so the flat fill must not poke a block up through them.
+    """
     for fy in range(size.fine):
         for fx in range(size.fine):
-            if (fx, fy) in road_cells:
+            if (fx, fy) in road_cells or (fx, fy) in skip_cells:
                 continue
             z0 = PLAYER_ANCHOR_MARGIN + fy * BLOCKS_PER_CELL
             z1 = PLAYER_ANCHOR_MARGIN + (fy + 1) * BLOCKS_PER_CELL
@@ -163,6 +179,30 @@ def _apply_ground_fill(grid, fill_idx, build_mask, road_cells, size, city_ground
             area = grid[city_ground_y, z0:z1, x0:x1]
             mask = (area == 0) & ~build_mask[z0:z1, x0:x1]
             area[mask] = fill_idx
+
+
+def _place_fillers(grid, master_palette, build_mask, road_cells, size, city_ground_y, fillers, rng):
+    """Drop a random, randomly-rotated fill prop (tree) into each empty lot cell.
+
+    Each prop is a self-contained 9x9 asset carrying its own ground, seated with
+    its base on the lot ground plane. Cells touched by a building are skipped so
+    nothing collides with a footprint. Returns the set of (fx, fy) cells filled
+    so the flat ground fill can leave them alone.
+    """
+    seat_y = city_ground_y - BUILD_SNAP_DROP    # seat on the lot surface, like a building
+    placed = set()
+    for fy in range(size.fine):
+        for fx in range(size.fine):
+            if (fx, fy) in road_cells:
+                continue
+            z0 = PLAYER_ANCHOR_MARGIN + fy * BLOCKS_PER_CELL
+            x0 = PLAYER_ANCHOR_MARGIN + fx * BLOCKS_PER_CELL
+            if build_mask[z0:z0 + BLOCKS_PER_CELL, x0:x0 + BLOCKS_PER_CELL].any():
+                continue
+            tile = rot_tile(rng.choice(fillers), rng.randint(0, 3))
+            _blit_tile(grid, master_palette, tile, x0, z0, seat_y)
+            placed.add((fx, fy))
+    return placed
 
 
 def run(*, seed=DEFAULT_SEED, fine=None, out=None, no_ground_fill=False, logger=None):
@@ -180,20 +220,32 @@ def run(*, seed=DEFAULT_SEED, fine=None, out=None, no_ground_fill=False, logger=
     road_y0 = city_ground_y - CITY_GROUND_Y
     out_span = road_span + PLAYER_ANCHOR_MARGIN
     instances, building_top = _assemble_instances(seed, placements, catalog_meta, city_ground_y)
-    max_height = max(road_y0 + road_height, building_top)
+
+    fillers = [] if no_ground_fill else load_fillers()
+    filler_top = city_ground_y - BUILD_SNAP_DROP + max((tile.height for tile in fillers), default=0)
+    max_height = max(road_y0 + road_height, building_top, filler_top)
 
     road_cells = network["road_cells"]
     grid, master_palette, build_mask = _compose_grid(
         road_grid, road_palette, road_span, road_height, road_y0, out_span, max_height, instances
     )
-    fill_idx = _ensure_fill_index(master_palette)
+    fill_idx = _palette_index(master_palette, CITY_GROUND_FILL_BLOCK)
+    tree_cells = set()
     if not no_ground_fill:
-        _apply_ground_fill(grid, fill_idx, build_mask, road_cells, size, city_ground_y)
+        if fillers:
+            filler_rng = random.Random(seed * 7 + 3)
+            tree_cells = _place_fillers(
+                grid, master_palette, build_mask, road_cells, size, city_ground_y, fillers, filler_rng
+            )
+        _apply_ground_fill(grid, fill_idx, build_mask, road_cells, size, city_ground_y, tree_cells)
+    filler_count = len(tree_cells)
+    anchor_idx = _palette_index(master_palette, CITY_ANCHOR_BLOCK)
     for y in range(city_ground_y + 1):
-        grid[y, 0, 0] = fill_idx
+        grid[y, 0, 0] = anchor_idx
 
     summary = (
         f"seed={seed}, fine={fine}: roads={tile_count} tiles, buildings={len(instances)}, "
+        f"fillers={filler_count} ({len(fillers)} kinds), "
         f"grid {out_span}x{max_height}x{out_span}, palette={len(master_palette)}"
     )
     if logger is not None:
@@ -221,7 +273,7 @@ def main():
     ap.add_argument(
         "--no-ground-fill",
         action="store_true",
-        help="leave empty non-road lot cells as air instead of filling with the configured ground block",
+        help="leave empty non-road lot cells as air instead of filling them with ground + fill props",
     )
     args = ap.parse_args()
     run(seed=args.seed, fine=args.fine, out=args.out, no_ground_fill=args.no_ground_fill, logger=print)

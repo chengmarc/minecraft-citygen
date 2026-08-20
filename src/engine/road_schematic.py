@@ -26,17 +26,35 @@ from engine.schematic_writer import sponge_schem_from_grid
 ROADS_SCHEM = ROADS_PROD
 BLOCKS_PER_FINE_CELL = CELL
 
+# Fill props (e.g. 15_fill_1x1_A) share the road region and marker convention but
+# are not road-network tiles: they fill empty lot cells in the city, so they are
+# kept out of the road-grid tile set and loaded separately.
+FILL_TOKEN = "fill"
+
+
+def _tile_from_schem(path):
+    cells = decode_schem_cells(path)
+    height, length, width = len(cells), len(cells[0]), len(cells[0][0])
+    return Tile(width, height, length, cells)
+
 
 def load_tiles():
     tiles = {}
     for path in glob.glob(os.path.join(ROADS_SCHEM, "*.schem")):
         name = os.path.basename(path)
-        if not name[:2].isdigit():
+        if not name[:2].isdigit() or FILL_TOKEN in name:
             continue
-        cells = decode_schem_cells(path)
-        height, length, width = len(cells), len(cells[0]), len(cells[0][0])
-        tiles[name[:2]] = Tile(width, height, length, cells)
+        tiles[name[:2]] = _tile_from_schem(path)
     return tiles
+
+
+def load_fillers():
+    """Load the fill-prop tiles (self-contained, ground-seated cell fillers)."""
+    return [
+        _tile_from_schem(path)
+        for path in sorted(glob.glob(os.path.join(ROADS_SCHEM, "*.schem")))
+        if FILL_TOKEN in os.path.basename(path)
+    ]
 
 
 def tile_port_dirs(tile):

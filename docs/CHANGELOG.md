@@ -6,6 +6,39 @@ The format is based on Keep a Changelog, and versions should match the release v
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-08-21
+
+This release fills the empty space between roads and buildings with scatter props
+(trees in the bundled world) and unifies road extraction with the building
+marker convention.
+
+### Added
+
+- fill props: a set of self-contained one-cell (9x9) assets that carry their own
+  ground and are dropped into every empty non-road lot cell of the generated
+  city, chosen at random and randomly rotated (the bundled world ships three
+  trees: `15_fill_1x1_A`/`B`/`C`)
+- the top-down simulation preview draws matching fill-prop tiles into the same
+  empty cells with the same seed, so the preview lines up with the built city
+- `engine/marker_extract.py`: the shared wool-boundary + gold/diamond/emerald
+  cuboid extraction now used by both the road/fill and building extractors
+
+### Changed
+
+- road extraction now uses the exact same marker convention and geometry pass as
+  buildings (author road tiles like a type-1 build: wool boundary +
+  gold/diamond/emerald + a name sign); the bespoke surface-scan / wool-strip /
+  Y-extent road detection is gone
+- the default empty-lot ground fill is now `smooth_stone_slab[type=bottom]`
+  instead of a full `smooth_stone` block
+
+### Fixed
+
+- tall road and fill assets are no longer truncated to the `ROAD_BOX` Y span —
+  the marker cuboid (gold→diamond) is captured in full
+- fill props seat flush with the lot surface instead of hovering one block above
+  it, and the flat ground fill no longer pokes a block up through a prop's cell
+
 ## [0.3.5] - 2026-08-20
 
 This release overhauls the extraction region selector's world preview.

@@ -135,33 +135,36 @@ CityGen depends on explicit marker conventions inside the Minecraft source world
 
 ## Road Extraction Convention
 
-Road extraction is implemented in [pipeline/01_roads_extract.py](../src/pipeline/01_roads_extract.py).
+Road extraction is implemented in [pipeline/01_roads_extract.py](../src/pipeline/01_roads_extract.py) and shares its geometry pass with builds via [engine/marker_extract.py](../src/engine/marker_extract.py). Road tiles, fill props, and buildings all use the **same** marker convention, so there is no bespoke road-detection logic.
 
 Region:
 
 - roads are scanned inside `ROAD_BOX` from [config/config_world.py](../src/config/config_world.py)
 
-Markers:
+Markers (identical to the build convention below):
 
-- `yellow_wool` and `white_wool` are treated as road marker blocks
-- `diamond_block` is excluded from the final extracted schematic
+- a **wool** rectangle bounds each asset; connected wool components separate assets
+- one `gold_block` + one `diamond_block` mark two opposite corners of the extracted cuboid
+- exactly one `emerald_block` marks ground level
+- marker blocks and signs are blanked to air in the saved schematic
 
 How road pieces are found:
 
-- the extractor scans the configured road region for connected non-air top-down components
-- each connected component is treated as one road asset candidate
-- a sign inside the component provides the exported asset name
-
-How marker cleanup works:
-
-- if 40% or more of an outer edge is made of `yellow_wool` / `white_wool`, that edge is treated as a marker border and trimmed away
-- signs, marker wool, and `diamond_block` are removed from the saved schematic
+- `detect_assets(..., expected_components=1)` resolves each wool-bounded component into a single cuboid (roads are single-solid assets, like a type-`1` build)
+- a sign inside the component's boundary provides the exported asset name (e.g. `02_big_2x2_I`)
 
 Practical implication:
 
-- road pieces should be visually isolated as separate connected components
-- their names come from signs
-- their marker border should be built from white/yellow wool if you want automatic trimming
+- author road tiles exactly like a type-`1` build (wool boundary + gold/diamond/emerald), and name them with a sign
+- because markers define the cuboid directly, a tile taller than `ROAD_BOX`'s Y span is still captured in full (markers are searched over `BUILD_MARKER_Y_RANGE`, not the box height)
+
+### Fill Props (empty-space filling)
+
+Fill props are authored in the road region alongside the road tiles, with the same marker convention, and are named `15_fill_1x1_A`, `16_fill_1x1_B`, `17_fill_1x1_C` (the `fill` token in the name is what distinguishes them). Each is a self-contained 9x9 (one fine cell) asset that carries its own ground — in the bundled world these are trees.
+
+- [engine/road_schematic.py](../src/engine/road_schematic.py) keeps them out of `load_tiles()` (so they are never placed as road-network tiles) and exposes them via `load_fillers()`
+- [pipeline/04_city_construct.py](../src/pipeline/04_city_construct.py) drops a randomly chosen, randomly rotated fill prop into every fully-empty non-road lot cell, seated on the lot ground plane; cells touched by a building keep the flat ground fill (`smooth_stone_slab`), and prop cells are excluded from that fill so nothing pokes through the prop's own ground
+- [pipeline/04_city_simulation.py](../src/pipeline/04_city_simulation.py) mirrors this in the top-down preview using the matching `*_fill_*` PNGs drawn by `pipeline.01_roads_simulation`, with the same seed so the preview lines up with the built city
 
 ## Build Extraction Convention
 
