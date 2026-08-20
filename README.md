@@ -16,8 +16,9 @@
 
 This project turns a small handcrafted asset set into a complete city layout, preview, and paste-ready in-game result. It is designed for creators who want large-scale city generation without giving up the look and feel of their own Minecraft builds.
 
+![Isometric city render 1](docs/isometric1.png)
+
 ![Isometric city render 2](docs/isometric2.png)
-![Isometric city render](docs/isometric.png)
 
 ## In-Game Result
 
@@ -26,6 +27,12 @@ The generated city can be brought back into Minecraft as a real build result:
 ![In-game city result 1](docs/ingame1.png)
 
 ![In-game city result 2](docs/ingame2.png)
+
+## Built-in Assets
+
+These are buildings come with the app by default:
+
+![Built-in Assets](docs/assets.png)
 
 ## Desktop Workflow
 
