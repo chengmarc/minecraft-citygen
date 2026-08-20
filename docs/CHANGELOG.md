@@ -6,6 +6,34 @@ The format is based on Keep a Changelog, and versions should match the release v
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-08-20
+
+This release follows up the Tkinter-to-Qt migration with a structural cleanup of
+the GUI layer and surrounding tooling.
+
+### Changed
+
+- split the monolithic `gui/qt_app.py` into focused modules (`theme`, `workers`, `widgets`, `region_dialog`, `tabs`, `app`) and flattened the Qt image-viewer factory into module-level classes with a direct PySide6 import
+- gave `QtImageViewer` a public overlay API so the region-selector dialog no longer reaches into private members
+- replaced string-matched error handling with typed `SeedError`/`ConfigError`, and the hand-rolled argument loop with `argparse` (adds `--help` and a real `--no-custom-theme` flag)
+- centralized the brand palette and the label-to-value selector mapping, and made the button-icon helper idempotent
+- moved `clear_cache.py` into `tools/` and expanded it to also clear `build/`, `dist/`, `*.egg-info/`, `.pytest_cache/`, and the startup error log
+- deduplicated `numba` across the `speed`/`build` dependency extras
+
+### Removed
+
+- removed the WorldEdit auto-copy step and the `MC_CITY_WORLDEDIT_SCHEM` override; the final city schematic is still written to `artifacts/city/production/` as a WorldEdit-ready `.schem`
+- deleted dead code left over from the Tkinter era (unused arguments, duplicated helpers, stale flags, and unreachable region/format branches)
+
+### Fixed
+
+- replaced the deprecated `QFontDatabase()` instance call with the static form
+- corrected stale “Tkinter” references in entry-point docstrings and comments
+
+### Added
+
+- headless GUI unit tests covering argument parsing, style configuration, and widget value round-trips
+
 ## [0.2.1] - 2026-08-20
 
 This is a hot-fix release for the Windows installer build. There are no changes

@@ -6,7 +6,6 @@ import argparse
 import json
 import os
 import random
-import shutil
 import sys
 from pathlib import Path
 
@@ -16,7 +15,7 @@ if __package__ in (None, ""):
     sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from config.config_algo import DEFAULT_SEED, FINE as DEFAULT_FINE
-from config.config_path import BUILD_CATALOG, CITY_PROD, GRID_PROD, WORLDEDIT_SCHEM
+from config.config_path import BUILD_CATALOG, CITY_PROD, GRID_PROD
 from config.config_render import CITY_GROUND_FILL_BLOCK, CITY_GROUND_Y
 from config.config_world import DATA_VERSION
 from engine.building_schematic import assemble
@@ -39,13 +38,6 @@ from engine.schematic_writer import write_sponge_schem_grid
 BLOCKS_PER_CELL = CELL
 BUILD_SNAP_DROP = 1
 PLAYER_ANCHOR_MARGIN = 1
-
-
-def copy_city_to_worldedit(path, seed):
-    os.makedirs(WORLDEDIT_SCHEM, exist_ok=True)
-    dst = os.path.join(WORLDEDIT_SCHEM, f"seed_{seed}_city.schem")
-    shutil.copy2(path, dst)
-    return dst
 
 
 def _resolve_fine(seed, fine):
@@ -209,21 +201,8 @@ def run(*, seed=DEFAULT_SEED, fine=None, out=None, no_ground_fill=False, logger=
     write_sponge_schem_grid(grid, master_palette, out, DATA_VERSION, offset=(0, -(city_ground_y + 1), 0))
     if logger is not None:
         logger(f"saved {out}")
-    copied = None
-    copy_error = None
-    try:
-        copied = copy_city_to_worldedit(out, seed)
-    except OSError as exc:
-        copy_error = str(exc)
-        if logger is not None:
-            logger(f"warning: could not copy to WorldEdit schematics folder: {copy_error}")
-    else:
-        if logger is not None:
-            logger(f"copied {copied}")
     return {
         "output_path": out,
-        "copied_path": copied,
-        "copy_error": copy_error,
         "building_count": len(instances),
         "summary": summary,
     }

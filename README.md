@@ -23,7 +23,9 @@ This project turns a small handcrafted asset set into a complete city layout, pr
 
 The generated city can be brought back into Minecraft as a real build result:
 
-![In-game city result](docs/ingame.png)
+![In-game city result 1](docs/ingame1.png)
+
+![In-game city result 2](docs/ingame2.png)
 
 ## Desktop Workflow
 

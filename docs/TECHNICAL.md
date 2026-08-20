@@ -485,7 +485,6 @@ The constructor:
 - places roads and buildings into one master 3D grid
 - optionally fills non-road ground cells
 - writes the result as Sponge schematic
-- copies the finished city schematic into the configured WorldEdit folder
 
 Important details:
 
@@ -553,7 +552,7 @@ Typical outputs:
 - `artifacts/city/production/seed_<n>.schem`
 - `artifacts/*/*/*.png` preview and render images
 
-The final city schematic is also copied into the configured WorldEdit schematic directory.
+The final city schematic in `artifacts/city/production/` is a Sponge `.schem` ready to import with WorldEdit.
 
 ## Render Color Palette Maintenance
 

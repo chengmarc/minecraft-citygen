@@ -116,7 +116,59 @@ def test_average_block_color_falls_back_to_texture_average(monkeypatch):
     monkeypatch.setattr(extractor, "collect_texture_paths", lambda block_name: ["plant_texture"])
     monkeypatch.setattr(extractor, "average_texture_color", lambda texture_paths: (12, 34, 56))
 
-    assert extractor.average_block_color("short_grass") == (12, 34, 56)
+    # "stone" is not biome-tinted, so the fallback average is returned unchanged.
+    assert extractor.average_block_color("stone") == (12, 34, 56)
+
+
+def test_average_block_color_tints_biome_block_in_fallback(monkeypatch):
+    extractor = object.__new__(MinecraftTopColorExtractor)
+
+    monkeypatch.setattr(extractor, "collect_faces", lambda block_name: [])
+    monkeypatch.setattr(extractor, "collect_texture_paths", lambda block_name: ["leaf_texture"])
+    monkeypatch.setattr(extractor, "average_texture_color", lambda texture_paths: (200, 200, 200))
+
+    expected = MODULE._apply_tint((200, 200, 200), MODULE.FOLIAGE_TINT)
+    assert extractor.average_block_color("oak_leaves") == expected
+
+
+def test_average_block_color_tints_only_faces_with_tintindex(monkeypatch):
+    extractor = object.__new__(MinecraftTopColorExtractor)
+    full_cube_top = MODULE.Face(
+        texture_path="leaf_texture",
+        x1=0, x2=16, z1=0, z2=16, y=16,
+        uv=(0, 0, 16, 16), rotation=0, order=0, tinted=True,
+    )
+    monkeypatch.setattr(extractor, "collect_faces", lambda block_name: [full_cube_top])
+    solid = Image.new("RGBA", (16, 16), (150, 150, 150, 255))
+    monkeypatch.setattr(extractor, "load_texture", lambda texture_path: (solid, solid.size))
+
+    expected = MODULE._apply_tint((150, 150, 150), MODULE.FOLIAGE_TINT)
+    assert extractor.average_block_color("oak_leaves") == expected
+
+    # An identical block whose face carries no tintindex is left untinted.
+    plain_top = MODULE.Face(
+        texture_path="leaf_texture",
+        x1=0, x2=16, z1=0, z2=16, y=16,
+        uv=(0, 0, 16, 16), rotation=0, order=0, tinted=False,
+    )
+    monkeypatch.setattr(extractor, "collect_faces", lambda block_name: [plain_top])
+    assert extractor.average_block_color("oak_leaves") == (150, 150, 150)
+
+
+def test_average_block_color_skips_tint_for_coloured_texture(monkeypatch):
+    # A tintindex face whose texture is already saturated (not a grayscale mask)
+    # must be left alone, even for a block in a tinted category.
+    extractor = object.__new__(MinecraftTopColorExtractor)
+    tinted_top = MODULE.Face(
+        texture_path="leaf_texture",
+        x1=0, x2=16, z1=0, z2=16, y=16,
+        uv=(0, 0, 16, 16), rotation=0, order=0, tinted=True,
+    )
+    monkeypatch.setattr(extractor, "collect_faces", lambda block_name: [tinted_top])
+    coloured = Image.new("RGBA", (16, 16), (210, 120, 150, 255))
+    monkeypatch.setattr(extractor, "load_texture", lambda texture_path: (coloured, coloured.size))
+
+    assert extractor.average_block_color("oak_leaves") == (210, 120, 150)
 
 
 def test_average_texture_color_ignores_transparent_pixels():

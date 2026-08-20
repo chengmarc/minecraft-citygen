@@ -13,6 +13,15 @@ from config.config_path import BUILDS_PROD, CITY_PROD, CITY_SIM, GRID_SIM, GUI, 
 from config.config_world import BUILD_TYPES, ROAD_BOX, SAVE
 from config.models import BlockRegion, BuildRegion
 
+
+class SeedError(ValueError):
+    """Raised when the seed field does not hold a valid integer."""
+
+
+class ConfigError(ValueError):
+    """Raised when an algorithm/city config value is invalid."""
+
+
 ROOT_DIR = ROOT
 ICON_DIR = os.path.join(GUI, "icons")
 CONFIG_DIR = os.path.join(ROOT_DIR, "src", "config")
@@ -106,26 +115,6 @@ def city_render_path(seed):
     return os.path.join(CITY_PROD, f"seed_{seed}.png")
 
 
-def format_box(box):
-    if isinstance(box, BlockRegion):
-        return box.to_env_value()
-    if isinstance(box, BuildRegion):
-        return box.to_env_value()
-    if len(box) == 6:
-        return BlockRegion.from_values(box).to_env_value()
-    if len(box) in {2, 3, 7} and isinstance(box[0], int):
-        return BuildRegion.from_values(box).to_env_value()
-    if len(box) == 2 and all(hasattr(part, "__len__") and len(part) == 3 for part in box):
-        return f"({tuple(box[0])}, {tuple(box[1])})"
-    if len(box) in {2, 3}:
-        return str(tuple(box))
-    return ", ".join(str(value) for value in box)
-
-
-def format_build_types(build_types):
-    return "; ".join(format_box(build_type) for build_type in build_types)
-
-
 def format_xyz(pos):
     return ", ".join(str(value) for value in pos)
 
@@ -148,11 +137,7 @@ def region_to_xyz_pair(region):
         return region.bounds.as_xyz_pair()
     if isinstance(region, BlockRegion):
         return region.as_xyz_pair()
-    if len(region) == 2 and all(hasattr(part, "__len__") and len(part) == 3 for part in region):
-        return BlockRegion.from_values(region).as_xyz_pair()
-    if len(region) == 6:
-        return BlockRegion.from_values(region).as_xyz_pair()
-    return BuildRegion.from_values(region).bounds.as_xyz_pair()
+    raise TypeError(f"Unsupported region type: {type(region).__name__}")
 
 
 def first_build_region(build_types, build_type):
@@ -163,18 +148,40 @@ def first_build_region(build_types, build_type):
     return BuildRegion(build_type, BlockRegion(0, 0, 0, 0, 64, 64))
 
 
+# Config values the header row exposes as labelled selectors rather than raw
+# integers. Maps config name -> (label->value options, human-facing name).
+SELECTOR_OPTIONS = {
+    "FINE": (CANVAS_SIZE_OPTIONS, "City Size"),
+    "GAP_MIXED": (CLEARANCE_OPTIONS, "Grid Density"),
+}
+
+
+def selector_value(name, label):
+    """Resolve a selector label (e.g. 'Small') to its numeric config value."""
+    options, human = SELECTOR_OPTIONS[name]
+    try:
+        return options[label]
+    except KeyError as exc:
+        raise ConfigError(f"{human} must be one of the selector values.") from exc
+
+
+def selector_label(name, value):
+    """Resolve a numeric config value back to its selector label, or None."""
+    options, _human = SELECTOR_OPTIONS[name]
+    for label, numeric in options.items():
+        if str(value) == numeric:
+            return label
+    return None
+
+
 def config_default(name):
     value = getattr(config_algo, name)
     if isinstance(value, set):
         return ", ".join(sorted(value))
-    if name == "FINE":
-        for label, numeric in CANVAS_SIZE_OPTIONS.items():
-            if str(value) == numeric:
-                return label
-    if name == "GAP_MIXED":
-        for label, numeric in CLEARANCE_OPTIONS.items():
-            if str(value) == numeric:
-                return label
+    if name in SELECTOR_OPTIONS:
+        label = selector_label(name, value)
+        if label is not None:
+            return label
     return str(value)
 
 
@@ -206,20 +213,12 @@ def build_algo_env_from_values(config_values):
         if name == "BANNED_BUILDINGS":
             env[f"MC_CITY_{name}"] = value
             continue
-        if name == "FINE":
-            try:
-                value = CANVAS_SIZE_OPTIONS[value]
-            except KeyError as exc:
-                raise ValueError("City Size must be one of the selector values.") from exc
-        if name == "GAP_MIXED":
-            try:
-                value = CLEARANCE_OPTIONS[value]
-            except KeyError as exc:
-                raise ValueError("Grid Density must be one of the selector values.") from exc
+        if name in SELECTOR_OPTIONS:
+            value = selector_value(name, value)
         try:
             int(value)
         except ValueError as exc:
-            raise ValueError(f"{name} must be an integer.") from exc
+            raise ConfigError(f"{name} must be an integer.") from exc
         env[f"MC_CITY_{name}"] = value
     return env
 
@@ -277,7 +276,7 @@ def validate_seed(seed):
     try:
         int(seed)
     except ValueError as exc:
-        raise ValueError("Seed must be an integer.") from exc
+        raise SeedError("Seed must be an integer.") from exc
 
 
 def open_in_file_manager(path):

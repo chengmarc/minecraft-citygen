@@ -6,7 +6,7 @@ from gui import common, launcher
 
 class QtViewerLaunchTests(unittest.TestCase):
     def test_launcher_routes_default_to_qt_app(self):
-        with mock.patch("gui.qt_app.main", return_value=23) as qt_main:
+        with mock.patch("gui.app.main", return_value=23) as qt_main:
             result = launcher.main([])
 
         self.assertEqual(result, 23)

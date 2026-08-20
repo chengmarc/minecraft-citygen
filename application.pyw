@@ -1,4 +1,4 @@
-"""Tkinter GUI entry point for the city-generation pipeline."""
+"""Qt GUI entry point for the city-generation pipeline."""
 
 from __future__ import annotations
 

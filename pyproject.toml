@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "minecraft-city-generator"
-version = "0.2.1"
+version = "0.3.0"
 description = "Procedural Minecraft city generation pipelines."
 readme = "README.md"
 requires-python = ">=3.10"
@@ -20,8 +20,8 @@ speed = [
     "numba>=0.59,<1",
 ]
 build = [
+    "minecraft-city-generator[speed]",
     "pyinstaller>=6.10,<8",
-    "numba>=0.59,<1",
 ]
 
 [project.gui-scripts]

@@ -1,11 +1,20 @@
-"""Clear generated artifacts and Python cache directories."""
+"""Clear generated artifacts, build outputs, and Python cache directories.
+
+Run from anywhere: ``python tools/clear_cache.py``. Everything removed lives
+inside the repository and is regenerated on the next run/build, so this is safe
+to invoke at any time.
+"""
 
 from __future__ import annotations
 
 import glob
 import os
 import shutil
+import sys
 from pathlib import Path
+
+if __package__ in (None, ""):
+    sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
 from config.config_path import (
     BUILD_CATALOG,
@@ -15,16 +24,15 @@ from config.config_path import (
     CITY_SIM,
     GRID_PROD,
     GRID_SIM,
+    ROADS_PROD,
     ROADS_SIM,
     ROOT,
-    ROADS_PROD,
-    WORLDEDIT_SCHEM,
 )
-
 
 REPO_ROOT = Path(ROOT).resolve()
 
-REPO_GLOBS = [
+# Generated pipeline artifacts (previews, renders, schematics, catalog).
+ARTIFACT_GLOBS = [
     os.path.join(ROADS_SIM, "*.png"),
     os.path.join(ROADS_PROD, "*.png"),
     os.path.join(ROADS_PROD, "*.schem"),
@@ -40,25 +48,20 @@ REPO_GLOBS = [
     os.path.join(CITY_PROD, "seed_*.schem"),
 ]
 
-LEGACY_REPO_GLOBS = [
-    os.path.join(ROOT, "pipeline", "01_roads_simulation", "*.png"),
-    os.path.join(ROOT, "pipeline", "01_roads_production", "*.png"),
-    os.path.join(ROOT, "pipeline", "01_roads_production", "schematics", "*.schem"),
-    os.path.join(ROOT, "pipeline", "02_builds_simulation", "*.png"),
-    os.path.join(ROOT, "pipeline", "02_builds_production", "*.png"),
-    os.path.join(ROOT, "pipeline", "02_builds_production", "schematics", "*.schem"),
-    os.path.join(ROOT, "pipeline", "02_builds_production", "schematics", "buildings.json"),
-    os.path.join(ROOT, "pipeline", "03_grid_simulation", "seed_*_preview.png"),
-    os.path.join(ROOT, "pipeline", "03_grid_production", "*_render.png"),
-    os.path.join(ROOT, "pipeline", "03_grid_production", "schematics", "seed_*.schem"),
-    os.path.join(ROOT, "pipeline", "04_city_simulation", "seed_*.png"),
-    os.path.join(ROOT, "pipeline", "04_city_production", "seed_*.png"),
-    os.path.join(ROOT, "pipeline", "04_city_production", "schematics", "seed_*.schem"),
+# Build / packaging / test outputs that regenerate on the next build or test run.
+BUILD_OUTPUT_DIRS = [
+    REPO_ROOT / "build",
+    REPO_ROOT / "dist",
+    REPO_ROOT / ".pytest_cache",
+]
+BUILD_OUTPUT_FILE_GLOBS = [
+    str(REPO_ROOT / "src" / "*.egg-info"),
+    str(REPO_ROOT / "application_startup_error.log"),
 ]
 
-EXTERNAL_GLOBS = [
-    os.path.join(WORLDEDIT_SCHEM, "seed_*_city.schem"),
-]
+
+def _within_repo(path: Path) -> bool:
+    return REPO_ROOT in (path, *path.parents)
 
 
 def _remove_matches(pattern: str, removed: list[str]) -> None:
@@ -71,16 +74,12 @@ def _remove_matches(pattern: str, removed: list[str]) -> None:
 def purge_artifacts(verbose: bool = False) -> list[str]:
     removed: list[str] = []
     repo_root = os.path.normcase(str(REPO_ROOT))
-
-    for pattern in [*REPO_GLOBS, *LEGACY_REPO_GLOBS]:
+    for pattern in ARTIFACT_GLOBS:
         abs_pattern = os.path.abspath(pattern)
         pattern_dir = os.path.normcase(os.path.abspath(os.path.dirname(abs_pattern)))
         if not pattern_dir.startswith(repo_root):
             raise RuntimeError(f"Refusing to purge outside repo: {pattern}")
         _remove_matches(abs_pattern, removed)
-
-    for pattern in EXTERNAL_GLOBS:
-        _remove_matches(os.path.abspath(pattern), removed)
 
     if verbose:
         for path in removed:
@@ -89,11 +88,38 @@ def purge_artifacts(verbose: bool = False) -> list[str]:
     return removed
 
 
+def clear_build_outputs(verbose: bool = False) -> list[Path]:
+    removed: list[Path] = []
+    for directory in BUILD_OUTPUT_DIRS:
+        resolved = directory.resolve()
+        if not _within_repo(resolved):
+            raise RuntimeError(f"refusing to remove outside repo: {resolved}")
+        if resolved.is_dir():
+            shutil.rmtree(resolved)
+            removed.append(resolved)
+    for pattern in BUILD_OUTPUT_FILE_GLOBS:
+        for match in glob.glob(pattern):
+            path = Path(match).resolve()
+            if not _within_repo(path):
+                raise RuntimeError(f"refusing to remove outside repo: {path}")
+            if path.is_dir():
+                shutil.rmtree(path)
+            else:
+                path.unlink()
+            removed.append(path)
+
+    if verbose:
+        for path in removed:
+            print(f"removed {path}")
+        print(f"removed {len(removed)} build output(s)")
+    return removed
+
+
 def clear_pycache(verbose: bool = False) -> list[Path]:
     removed: list[Path] = []
     for path in sorted(REPO_ROOT.rglob("__pycache__"), key=lambda p: len(p.parts), reverse=True):
         resolved = path.resolve()
-        if REPO_ROOT not in (resolved, *resolved.parents):
+        if not _within_repo(resolved):
             raise RuntimeError(f"refusing to remove outside repo: {resolved}")
         shutil.rmtree(resolved)
         removed.append(resolved)
@@ -107,6 +133,7 @@ def clear_pycache(verbose: bool = False) -> list[Path]:
 
 def clear_cache(verbose: bool = False) -> None:
     purge_artifacts(verbose=verbose)
+    clear_build_outputs(verbose=verbose)
     clear_pycache(verbose=verbose)
 
 

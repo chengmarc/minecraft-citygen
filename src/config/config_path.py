@@ -100,6 +100,4 @@ BUILD_CATALOG = str(Path(BUILDS_PROD) / "buildings.json")
 CITY_SIM = _artifact_dir("city", "simulation")
 CITY_PROD = _artifact_dir("city", "production")
 
-WORLDEDIT_SCHEM = _norm(os.environ.get("MC_CITY_WORLDEDIT_SCHEM") or _artifact_dir("worldedit"))
-
 COLOR_RENDER_CSV = str(Path(ENGINE) / "color_render.csv")

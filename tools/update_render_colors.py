@@ -27,6 +27,67 @@ DEFAULT_OUTPUT = ROOT / "src" / "engine" / "color_render.csv"
 VERSION_MANIFEST_URL = "https://piston-meta.mojang.com/mc/game/version_manifest_v2.json"
 HTTP_TIMEOUT_SECONDS = 120
 
+# Blocks whose textures ship grayscale and are coloured at render time via a
+# model `tintindex` (biome/foliage/grass/water colour). We bake a representative
+# tint so the palette isn't gray. Tinting is multiplicative: out = tex * tint/255.
+FOLIAGE_TINT = (119, 171, 47)   # #77AB2F, plains foliage
+GRASS_TINT = (145, 189, 89)     # #91BD59, plains grass
+WATER_TINT = (63, 118, 228)     # #3F76E4, default water
+EVERGREEN_TINT = (97, 153, 97)  # #619961, spruce leaves (biome-independent)
+BIRCH_TINT = (128, 167, 85)     # #80A755, birch leaves (biome-independent)
+LILY_PAD_TINT = (32, 128, 48)   # #208030, lily pad (biome-independent)
+
+# Leaves the game colours with the biome foliage map. Birch and spruce use their
+# own constants; cherry/azalea/pale_oak ship pre-coloured textures and are NOT
+# listed here even though their models declare a `tintindex`.
+_FOLIAGE_LEAVES = {
+    "oak_leaves", "jungle_leaves", "acacia_leaves", "dark_oak_leaves", "mangrove_leaves",
+}
+_GRASS_TINTED_BLOCKS = {
+    "grass_block", "grass", "short_grass", "tall_grass", "fern", "large_fern",
+    "potted_fern", "sugar_cane",
+}
+_WATER_TINTED_BLOCKS = {"water", "water_cauldron", "bubble_column"}
+
+# Max channel spread for a texture to count as grayscale (colormap-tintable).
+_GRAYSCALE_TOLERANCE = 16
+
+
+def _tint_for_block(block_name: str) -> tuple[int, int, int] | None:
+    """Representative tint colour for a block, or None if it is not tinted.
+
+    Only applied to grayscale, `tintindex`-carrying faces (see `_is_grayish`),
+    so blocks that ship pre-coloured textures are never affected.
+    """
+    if block_name == "spruce_leaves":
+        return EVERGREEN_TINT
+    if block_name == "birch_leaves":
+        return BIRCH_TINT
+    if block_name == "lily_pad":
+        return LILY_PAD_TINT
+    if block_name in _FOLIAGE_LEAVES or block_name == "vine":
+        return FOLIAGE_TINT
+    if block_name in _GRASS_TINTED_BLOCKS:
+        return GRASS_TINT
+    if block_name in _WATER_TINTED_BLOCKS:
+        return WATER_TINT
+    return None
+
+
+def _is_grayish(rgb: tuple[int, int, int], tolerance: int = _GRAYSCALE_TOLERANCE) -> bool:
+    return max(rgb) - min(rgb) <= tolerance
+
+
+def _apply_tint(rgb: tuple[int, int, int], tint: tuple[int, int, int]) -> tuple[int, int, int]:
+    return tuple(round(channel * shade / 255) for channel, shade in zip(rgb, tint))
+
+
+def _average(pixels: list[tuple[int, int, int]]) -> tuple[int, int, int] | None:
+    if not pixels:
+        return None
+    count = len(pixels)
+    return tuple(round(sum(pixel[i] for pixel in pixels) / count) for i in range(3))
+
 
 @dataclass(frozen=True)
 class Face:
@@ -39,6 +100,7 @@ class Face:
     uv: tuple[float, float, float, float]
     rotation: int
     order: int
+    tinted: bool
 
 
 class MinecraftTopColorExtractor:
@@ -177,6 +239,7 @@ class MinecraftTopColorExtractor:
                         uv=tuple(face.get("uv", self.default_up_uv(element))),
                         rotation=int(face.get("rotation", 0)) % 360,
                         order=order,
+                        tinted=int(face.get("tintindex", -1)) >= 0,
                     )
                 )
                 order += 1
@@ -268,7 +331,8 @@ class MinecraftTopColorExtractor:
 
     def average_block_color(self, block_name: str) -> tuple[int, int, int] | None:
         faces = self.collect_faces(block_name)
-        pixels: list[tuple[int, int, int]] = []
+        tint = _tint_for_block(block_name)
+        samples: list[tuple[tuple[int, int, int], bool]] = []
         if faces:
             for pz in range(16):
                 for px in range(16):
@@ -276,14 +340,24 @@ class MinecraftTopColorExtractor:
                         rgba = self.sample_face(face, px, pz)
                         if rgba is None or rgba[3] == 0:
                             continue
-                        pixels.append(rgba[:3])
+                        samples.append((rgba[:3], face.tinted))
                         break
 
-        if pixels:
-            count = len(pixels)
-            return tuple(round(sum(channel[i] for channel in pixels) / count) for i in range(3))
+        if samples:
+            # Only tint if the tintindex-carrying faces are grayscale, i.e. a
+            # colormap mask. Blocks with pre-coloured textures are left as-is.
+            tinted_avg = _average([rgb for rgb, tinted in samples if tinted])
+            apply_tint = tint is not None and tinted_avg is not None and _is_grayish(tinted_avg)
+            pixels = [
+                _apply_tint(rgb, tint) if (tinted and apply_tint) else rgb
+                for rgb, tinted in samples
+            ]
+            return _average(pixels)
 
-        return self.average_texture_color(self.collect_texture_paths(block_name))
+        fallback = self.average_texture_color(self.collect_texture_paths(block_name))
+        if fallback is not None and tint is not None and _is_grayish(fallback):
+            fallback = _apply_tint(fallback, tint)
+        return fallback
 
     def extract(self) -> list[tuple[str, int, int, int]]:
         rows: list[tuple[str, int, int, int]] = []

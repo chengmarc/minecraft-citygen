@@ -42,7 +42,6 @@ python packaging/build_windows_release.py --clean
 9. Confirm output behavior:
 
 - generated files land in the expected `artifacts/` folders
-- WorldEdit export copy behavior is correct
 - no unexpected dependency prompts appear at runtime
 
 10. Tag the release in git after the installer has been verified.

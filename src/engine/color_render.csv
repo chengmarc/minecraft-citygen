@@ -4,7 +4,7 @@ minecraft:acacia_door,165,94,59
 minecraft:acacia_fence,167,90,50
 minecraft:acacia_fence_gate,164,89,50
 minecraft:acacia_hanging_sign,171,91,59
-minecraft:acacia_leaves,149,149,149
+minecraft:acacia_leaves,70,100,27
 minecraft:acacia_log,151,89,55
 minecraft:acacia_planks,168,90,50
 minecraft:acacia_pressure_plate,169,91,50
@@ -68,7 +68,7 @@ minecraft:birch_door,214,202,160
 minecraft:birch_fence,191,174,121
 minecraft:birch_fence_gate,187,171,119
 minecraft:birch_hanging_sign,195,173,115
-minecraft:birch_leaves,131,129,130
+minecraft:birch_leaves,65,84,43
 minecraft:birch_log,193,179,135
 minecraft:birch_planks,192,175,121
 minecraft:birch_pressure_plate,194,176,122
@@ -143,7 +143,7 @@ minecraft:brown_stained_glass_pane,98,74,48
 minecraft:brown_terracotta,77,51,36
 minecraft:brown_wall_banner,162,131,79
 minecraft:brown_wool,114,72,41
-minecraft:bubble_column,177,177,177
+minecraft:bubble_column,44,82,158
 minecraft:bubble_coral,161,24,160
 minecraft:bubble_coral_block,165,26,162
 minecraft:bubble_coral_fan,162,34,161
@@ -300,7 +300,7 @@ minecraft:dark_oak_door,75,50,25
 minecraft:dark_oak_fence,66,43,20
 minecraft:dark_oak_fence_gate,63,41,19
 minecraft:dark_oak_hanging_sign,70,55,35
-minecraft:dark_oak_leaves,151,151,151
+minecraft:dark_oak_leaves,70,101,28
 minecraft:dark_oak_log,68,45,22
 minecraft:dark_oak_planks,67,43,20
 minecraft:dark_oak_pressure_plate,67,44,20
@@ -402,7 +402,7 @@ minecraft:exposed_cut_copper_slab,155,122,101
 minecraft:exposed_cut_copper_stairs,155,122,101
 minecraft:exposed_lightning_rod,186,131,118
 minecraft:farmland,143,103,71
-minecraft:fern,124,125,124
+minecraft:fern,71,93,43
 minecraft:fire,213,142,53
 minecraft:fire_coral,167,38,47
 minecraft:fire_coral_block,164,35,47
@@ -429,7 +429,7 @@ minecraft:granite,149,103,86
 minecraft:granite_slab,149,103,86
 minecraft:granite_stairs,149,103,86
 minecraft:granite_wall,148,103,86
-minecraft:grass_block,147,147,147
+minecraft:grass_block,84,109,51
 minecraft:gravel,132,127,127
 minecraft:gray_banner,162,131,79
 minecraft:gray_bed,95,110,114
@@ -494,7 +494,7 @@ minecraft:jungle_door,161,116,82
 minecraft:jungle_fence,159,114,80
 minecraft:jungle_fence_gate,151,108,77
 minecraft:jungle_hanging_sign,166,131,81
-minecraft:jungle_leaves,157,154,144
+minecraft:jungle_leaves,73,104,27
 minecraft:jungle_log,150,109,71
 minecraft:jungle_planks,160,115,81
 minecraft:jungle_pressure_plate,162,116,82
@@ -514,7 +514,7 @@ minecraft:lantern,67,74,93
 minecraft:lapis_block,31,67,140
 minecraft:lapis_ore,107,118,141
 minecraft:large_amethyst_bud,161,126,203
-minecraft:large_fern,132,132,132
+minecraft:large_fern,75,98,46
 minecraft:lava,217,105,26
 minecraft:lava_cauldron,153,87,46
 minecraft:leaf_litter,171,171,171
@@ -553,7 +553,7 @@ minecraft:light_weighted_pressure_plate,252,220,68
 minecraft:lightning_rod,213,122,94
 minecraft:lilac,137,124,127
 minecraft:lily_of_the_valley,123,175,95
-minecraft:lily_pad,134,134,134
+minecraft:lily_pad,17,67,25
 minecraft:lime_banner,162,131,79
 minecraft:lime_bed,121,194,27
 minecraft:lime_candle,94,174,20
@@ -590,7 +590,7 @@ minecraft:mangrove_door,113,48,47
 minecraft:mangrove_fence,118,54,49
 minecraft:mangrove_fence_gate,116,52,45
 minecraft:mangrove_hanging_sign,120,56,48
-minecraft:mangrove_leaves,130,129,129
+minecraft:mangrove_leaves,61,86,24
 minecraft:mangrove_log,103,49,42
 minecraft:mangrove_planks,118,54,49
 minecraft:mangrove_pressure_plate,118,55,49
@@ -645,7 +645,7 @@ minecraft:oak_door,140,109,64
 minecraft:oak_fence,160,129,78
 minecraft:oak_fence_gate,153,122,73
 minecraft:oak_hanging_sign,170,138,81
-minecraft:oak_leaves,144,144,144
+minecraft:oak_leaves,67,97,27
 minecraft:oak_log,151,122,73
 minecraft:oak_planks,162,131,79
 minecraft:oak_pressure_plate,164,133,80
@@ -920,7 +920,7 @@ minecraft:sea_lantern,172,200,191
 minecraft:sea_pickle,92,97,35
 minecraft:seagrass,51,126,9
 minecraft:short_dry_grass,187,159,108
-minecraft:short_grass,146,145,146
+minecraft:short_grass,83,107,51
 minecraft:shroomlight,241,147,71
 minecraft:shulker_box,139,97,139
 minecraft:skeleton_skull,81,62,51
@@ -960,7 +960,7 @@ minecraft:spruce_door,106,80,49
 minecraft:spruce_fence,114,84,48
 minecraft:spruce_fence_gate,110,81,45
 minecraft:spruce_hanging_sign,116,90,52
-minecraft:spruce_leaves,126,126,126
+minecraft:spruce_leaves,48,76,48
 minecraft:spruce_log,109,80,47
 minecraft:spruce_planks,115,85,49
 minecraft:spruce_pressure_plate,116,86,49
@@ -1024,7 +1024,7 @@ minecraft:suspicious_gravel,130,125,124
 minecraft:suspicious_sand,218,204,159
 minecraft:sweet_berry_bush,43,90,56
 minecraft:tall_dry_grass,197,172,123
-minecraft:tall_grass,128,128,128
+minecraft:tall_grass,73,95,45
 minecraft:tall_seagrass,46,118,4
 minecraft:target,226,170,158
 minecraft:terracotta,152,94,68
@@ -1056,7 +1056,7 @@ minecraft:twisting_vines,20,143,124
 minecraft:twisting_vines_plant,20,136,122
 minecraft:vault,55,70,79
 minecraft:verdant_froglight,229,244,228
-minecraft:vine,116,116,116
+minecraft:vine,54,78,21
 minecraft:wall_torch,255,199,128
 minecraft:warped_button,42,105,100
 minecraft:warped_door,44,123,117
@@ -1078,8 +1078,8 @@ minecraft:warped_trapdoor,47,120,112
 minecraft:warped_wall_hanging_sign,60,132,135
 minecraft:warped_wall_sign,45,108,100
 minecraft:warped_wart_block,23,120,121
-minecraft:water,177,177,177
-minecraft:water_cauldron,130,130,131
+minecraft:water,44,82,158
+minecraft:water_cauldron,56,77,120
 minecraft:waxed_chiseled_copper,184,101,74
 minecraft:waxed_copper_bars,156,81,55
 minecraft:waxed_copper_block,192,108,80
