@@ -48,14 +48,14 @@ REGION_DIR = resolve_region_dir(SAVE)
 DATA_VERSION = 4790
 
 # Road assets region in world ((x_a, y_a, z_a), (x_b, y_b, z_b))
-ROAD_REGION = BlockRegion.from_xyz_pair((0, 65, 0), (-100, 75, 150))
+ROAD_REGION = BlockRegion.from_xyz_pair((-80, 65, -256), (-17, 75, -145))
 ROAD_BOX = _env_block_region("MC_CITY_ROAD_BOX", ROAD_REGION)
 
 # Built assets region in world (type, (x_a, y_a, z_a), (x_b, y_b, z_b))
 # y0/y1 is retained as catalog metadata; marker blocks define extracted geometry.
 
-BUILD_TYPE1_REGION = BuildRegion(1, BlockRegion.from_xyz_pair((0, 64, 0), (-300, 65, -300)))
-BUILD_TYPE2_REGION = BuildRegion(2, BlockRegion.from_xyz_pair((0, 64, 0), (300, 65, -300)))
+BUILD_TYPE1_REGION = BuildRegion(1, BlockRegion.from_xyz_pair((-272, 64, -144), (-1, 65, -1)))
+BUILD_TYPE2_REGION = BuildRegion(2, BlockRegion.from_xyz_pair((0, 64, -256), (383, 65, -1)))
 
 BUILD_MARKER_Y_RANGE = VerticalRange(60, 230)
 BUILD_TYPES = _env_build_regions("MC_CITY_BUILD_TYPES", (BUILD_TYPE1_REGION, BUILD_TYPE2_REGION))

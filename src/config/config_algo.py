@@ -17,7 +17,7 @@ def _env_set(name, default):
 
 
 CELL = _env_int("CELL", 9)              # simulation pixels and production blocks per fine cell
-FINE = _env_int("FINE", 120)            # default fine grid edge (FINE x FINE cells); drivers may override
+FINE = _env_int("FINE", 80)            # default fine grid edge (FINE x FINE cells); drivers may override
 DEFAULT_SEED = _env_int("DEFAULT_SEED", 4)
 
 # forced gap between parallel lines
@@ -35,7 +35,7 @@ N_SMALL_CORNERS = _env_int("N_SMALL_CORNERS", 8)
 N_BIG_TEES = _env_int("N_BIG_TEES", 6)
 N_SMALL_TEES = _env_int("N_SMALL_TEES", 8)
 
-BANNED_BUILDINGS = _env_set("BANNED_BUILDINGS", {"026", "030"})  # building IDs to skip during placement
+BANNED_BUILDINGS = _env_set("BANNED_BUILDINGS", {"001", "002"})  # building IDs to skip during placement
 
 TYPE2_TOP_FIT_CHOICES = _env_int("TYPE2_TOP_FIT_CHOICES", 3)
 TYPE1_TOP_FIT_CHOICES = _env_int("TYPE1_TOP_FIT_CHOICES", 7)
