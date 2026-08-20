@@ -30,7 +30,7 @@ The generated city can be brought back into Minecraft as a real build result:
 
 ## Built-in Assets
 
-These are buildings come with the app by default:
+These buildings come with the app by default:
 
 ![Built-in Assets](docs/assets.png)
 
