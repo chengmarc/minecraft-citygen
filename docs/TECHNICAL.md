@@ -555,6 +555,32 @@ Typical outputs:
 
 The final city schematic is also copied into the configured WorldEdit schematic directory.
 
+## Render Color Palette Maintenance
+
+The isometric renderer loads block colors from:
+
+- `src/engine/color_render.csv`
+
+That CSV is the only renderer palette asset that ships in the package. The generator
+used to refresh it is a repo maintenance script and is not part of the runtime app.
+
+Refresh workflow:
+
+```bash
+python tools/update_render_colors.py
+```
+
+Notes:
+
+- the script always downloads a Minecraft client JAR before regenerating the CSV
+- if `--version` is omitted, the script resolves Mojang's latest release from the live version manifest
+- downloaded client JARs are stored under `tools/` as `minecraft-client-<version>.jar`
+- the script overwrites `src/engine/color_render.csv` by default
+- it is intended for infrequent manual updates when the target Minecraft version changes
+- CSV rows are written with namespaced block ids such as `minecraft:stone`
+- packaging already includes only the CSV, via setuptools package data and the PyInstaller release script
+- the downloaded JAR is a repo-local maintenance input and should not be committed
+
 ## Running the System
 
 GUI entry point:

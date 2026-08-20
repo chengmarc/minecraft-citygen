@@ -9,10 +9,10 @@ description = "Procedural Minecraft city generation pipelines."
 readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [
-    "Pillow>=10.0,<13",
     "numpy>=1.26,<3",
     "nbtlib>=2.0.4,<3",
-    "ttkbootstrap>=2.2,<3",
+    "PySide6>=6.7,<7",
+    "Pillow>=10.0,<13",
 ]
 
 [project.optional-dependencies]

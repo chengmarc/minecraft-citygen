@@ -27,7 +27,6 @@ DIST_ROOT = ROOT / "dist"
 PORTABLE_DIST = DIST_ROOT / "portable"
 ONEFILE_DIST = DIST_ROOT / "onefile"
 RELEASE_DIST = DIST_ROOT / "release"
-HOOKS_DIR = ROOT / "packaging" / "pyinstaller_hooks"
 APP_NAME = "CityGen"
 ZIP_BASENAME = "CityGen-portable-windows"
 ZIP_PATH = RELEASE_DIST / f"{ZIP_BASENAME}.zip"
@@ -54,21 +53,7 @@ def run(command: list[str], *, cwd: Path | None = None) -> None:
 
 
 def build_environment() -> dict[str, str]:
-    env = os.environ.copy()
-    tcl_root = Path(sys.base_prefix) / "tcl"
-    dll_root = Path(sys.base_prefix) / "DLLs"
-    tcl_library = tcl_root / "tcl8.6"
-    tk_library = tcl_root / "tk8.6"
-    if dll_root.is_dir():
-        env["PATH"] = str(dll_root) + os.pathsep + env.get("PATH", "")
-    if (tcl_library / "init.tcl").is_file():
-        env["TCL_LIBRARY"] = str(tcl_library).replace("\\", "/")
-    if (tk_library / "tk.tcl").is_file():
-        env["TK_LIBRARY"] = str(tk_library).replace("\\", "/")
-    if tcl_root.is_dir():
-        roots = [str(tcl_library).replace("\\", "/"), str(tcl_root).replace("\\", "/")]
-        env["TCLLIBPATH"] = " ".join("{" + root + "}" for root in roots)
-    return env
+    return os.environ.copy()
 
 
 def ensure_pyinstaller() -> None:
@@ -115,20 +100,14 @@ def base_pyinstaller_command(*, onefile: bool, icon_path: Path | None) -> list[s
         str(BUILD_ROOT / ("onefile" if onefile else "portable")),
         "--specpath",
         str(BUILD_ROOT / "spec"),
-        "--additional-hooks-dir",
-        str(HOOKS_DIR),
         "--paths",
         str(SRC_ROOT),
         "--collect-submodules",
         "pipeline",
-        "--collect-submodules",
-        "tkinter",
-        "--collect-data",
-        "ttkbootstrap",
         "--hidden-import",
-        "tkinter",
+        "gui.qt_app",
         "--hidden-import",
-        "_tkinter",
+        "gui.qt_viewer",
         "--add-data",
         data_arg(SRC_ROOT / "gui" / "icons", "gui/icons"),
         "--add-data",

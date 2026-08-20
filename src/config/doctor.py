@@ -39,7 +39,7 @@ def main() -> int:
 
     missing = False
     print("Dependencies")
-    for module_name in ("PIL", "numpy", "nbtlib", "tkinter"):
+    for module_name in ("PIL", "numpy", "nbtlib", "PySide6"):
         found, status = _module_status(module_name)
         print(f"- {module_name}: {status}")
         missing = missing or not found

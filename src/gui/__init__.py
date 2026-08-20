@@ -1,2 +1,1 @@
-"""Tk GUI package for the city-generation application."""
-
+"""Qt GUI package for the city-generation application."""

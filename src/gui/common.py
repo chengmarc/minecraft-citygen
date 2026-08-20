@@ -1,4 +1,4 @@
-"""Shared GUI constants and non-widget helpers."""
+"""Shared Qt-era GUI constants and non-widget helpers."""
 
 from __future__ import annotations
 
@@ -6,22 +6,12 @@ import json
 import os
 import subprocess
 import sys
-import tkinter as tk
-import tkinter.font as tkfont
 
 from config import config_algo
 from config.config_algo import DEFAULT_SEED
-from config.config_path import GUI, ROOT
+from config.config_path import BUILDS_PROD, CITY_PROD, CITY_SIM, GRID_SIM, GUI, ROOT, ROADS_PROD
 from config.config_world import BUILD_TYPES, ROAD_BOX, SAVE
 from config.models import BlockRegion, BuildRegion
-from config.config_path import BUILDS_PROD, CITY_PROD, CITY_SIM, GRID_SIM, ROADS_PROD
-
-try:
-    from PIL import Image, ImageDraw, ImageTk
-except ImportError:  # pragma: no cover
-    Image = None
-    ImageDraw = None
-    ImageTk = None
 
 ROOT_DIR = ROOT
 ICON_DIR = os.path.join(GUI, "icons")
@@ -30,43 +20,11 @@ APP_ICON_PATH = os.path.join(ICON_DIR, "app-icon.png")
 ROAD_CONTACT_SHEET = os.path.join(ROADS_PROD, "_contact_sheet.png")
 BUILD_CONTACT_SHEET = os.path.join(BUILDS_PROD, "_contact_sheet.png")
 
-class Theme:
-    """Mutable UI palette; fields are refreshed whenever a ttkbootstrap style is applied."""
-
-    def __init__(self):
-        self.APP_BG = "#f6f7fb"
-        self.BORDER = "#cbd3df"
-        self.TEXT = "#1d2733"
-        self.ACCENT = "#0d6efd"
-        self.CANVAS_BG = "#ffffff"
-        self.CANVAS_TEXT = "#1d2733"
-        self.TICK = "#aab4c3"
-        self.TOOLTIP_BG = "#1d2733"
-        self.TOOLTIP_TEXT = "#ffffff"
-
-    def apply(self, *, app_bg, border, text, accent, canvas_bg, canvas_text, tick, tooltip_bg, tooltip_text):
-        self.APP_BG = app_bg
-        self.BORDER = border
-        self.TEXT = text
-        self.ACCENT = accent
-        self.CANVAS_BG = canvas_bg
-        self.CANVAS_TEXT = canvas_text
-        self.TICK = tick
-        self.TOOLTIP_BG = tooltip_bg
-        self.TOOLTIP_TEXT = tooltip_text
-
-
-theme = Theme()
-
-BUTTON_WIDTH = 8
-GUI_THEME = "litera"
-APP_WIDTH = 1600
-APP_HEIGHT = 900
+APP_WIDTH = 1366
+APP_HEIGHT = 768
 STARTUP_ERROR_LOG = os.path.join(ROOT_DIR, "application_startup_error.log")
 LEGACY_SAVED_GUI_CONFIG_PATH = os.path.join(ROOT_DIR, "citygen_saved_config.json")
 SAVED_GUI_CONFIG_PATH = os.path.join(CONFIG_DIR, "config_citygen.json")
-UI_FONT_FAMILY = "SF Pro Text"
-UI_FONT_FALLBACKS = ("Segoe UI Variable", "Segoe UI", "Inter", "Arial")
 
 PREVIEW_CONFIGS = [
     ("FINE", "City Size", "Fine-cell width and height of the generated map."),
@@ -87,8 +45,8 @@ PREVIEW_CONFIGS = [
 PREVIEW_CONFIG_LOOKUP = {name: (label, description) for name, label, description in PREVIEW_CONFIGS}
 
 PREVIEW_CONFIG_GROUPS = [
-    ("Spacing & Padding", ["GAP_BIG", "PAD_BIG", "GAP_SMALL", "PAD_SMALL"]),
-    ("Corners & Tees", ["N_BIG_CORNERS", "N_BIG_TEES", "N_SMALL_CORNERS", "N_SMALL_TEES"]),
+    ("Spacing and Padding", ["GAP_BIG", "PAD_BIG", "GAP_SMALL", "PAD_SMALL"]),
+    ("Corners and Tees", ["N_BIG_CORNERS", "N_BIG_TEES", "N_SMALL_CORNERS", "N_SMALL_TEES"]),
     ("Building Placement", ["BANNED_BUILDINGS", "TYPE1_TOP_FIT_CHOICES", "TYPE2_TOP_FIT_CHOICES", "TYPE2_SAME_COARSE_SPAN"]),
 ]
 
@@ -134,118 +92,6 @@ RENDER_PROGRESS_WEIGHTS = [
 
 SCRIPT_PROGRESS_HEADROOM = 0.88
 SCRIPT_PROGRESS_TICK_MS = 120
-_ICON_CACHE = {}
-_ICON_COLOR_CACHE = {}
-
-
-def resolve_color(widget, color, fallback):
-    try:
-        source = color or fallback
-        r, g, b = widget.winfo_rgb(source)
-        return f"#{r // 256:02x}{g // 256:02x}{b // 256:02x}"
-    except tk.TclError:
-        return fallback
-
-
-def blend(hex_a, hex_b, ratio):
-    ratio = max(0.0, min(1.0, float(ratio)))
-    a = tuple(int(hex_a[i:i + 2], 16) for i in (1, 3, 5))
-    b = tuple(int(hex_b[i:i + 2], 16) for i in (1, 3, 5))
-    mixed = tuple(round(av + (bv - av) * ratio) for av, bv in zip(a, b))
-    return f"#{mixed[0]:02x}{mixed[1]:02x}{mixed[2]:02x}"
-
-
-def rounded_image(width, height, radius, fill, outline=None, outline_width=1):
-    img = Image.new("RGBA", (width, height), (0, 0, 0, 0))
-    draw = ImageDraw.Draw(img)
-    inset = max(outline_width / 2, 0)
-    draw.rounded_rectangle(
-        (inset, inset, width - 1 - inset, height - 1 - inset),
-        radius=radius,
-        fill=fill,
-        outline=outline,
-        width=outline_width,
-    )
-    return img
-
-
-def replace_layout_element(layout, source, target):
-    replaced = []
-    for name, options in layout:
-        new_options = dict(options)
-        children = new_options.get("children")
-        if children:
-            new_options["children"] = replace_layout_element(children, source, target)
-        replaced.append((target if name == source else name, new_options))
-    return replaced
-
-
-def pick_ui_font(root):
-    try:
-        installed = set(tkfont.families(root))
-    except tk.TclError:
-        installed = set()
-    for family in (UI_FONT_FAMILY, *UI_FONT_FALLBACKS):
-        if family in installed:
-            return family
-    return "TkDefaultFont"
-
-
-def ui_font(family, size, *styles):
-    return (family, size, *styles)
-
-
-def load_icon(name, size=16):
-    cache_key = (name, int(size))
-    if cache_key in _ICON_CACHE:
-        return _ICON_CACHE[cache_key]
-    if Image is None or ImageTk is None:
-        return None
-
-    icon_path = os.path.join(ICON_DIR, f"{name}.png")
-    if not os.path.exists(icon_path):
-        return None
-
-    try:
-        image = Image.open(icon_path).convert("RGBA")
-        image = image.resize((int(size), int(size)), Image.Resampling.LANCZOS)
-        photo = ImageTk.PhotoImage(image)
-    except (OSError, tk.TclError):
-        return None
-
-    _ICON_CACHE[cache_key] = photo
-    return photo
-
-
-def icon_text_color(name):
-    if name in _ICON_COLOR_CACHE:
-        return _ICON_COLOR_CACHE[name]
-    if Image is None:
-        return theme.TEXT
-
-    icon_path = os.path.join(ICON_DIR, f"{name}.png")
-    if not os.path.exists(icon_path):
-        return theme.TEXT
-
-    try:
-        image = Image.open(icon_path).convert("RGBA")
-        samples = [
-            (r, g, b, a)
-            for (r, g, b, a) in image.getdata()
-            if a > 0
-        ]
-        if not samples:
-            return theme.TEXT
-        total_alpha = sum(a for _r, _g, _b, a in samples)
-        red = round(sum(r * a for r, _g, _b, a in samples) / total_alpha)
-        green = round(sum(g * a for _r, g, _b, a in samples) / total_alpha)
-        blue = round(sum(b * a for _r, _g, b, a in samples) / total_alpha)
-        color = f"#{red:02x}{green:02x}{blue:02x}"
-    except (OSError, ValueError):
-        return theme.TEXT
-
-    _ICON_COLOR_CACHE[name] = color
-    return color
 
 
 def grid_preview_path(seed):
@@ -336,31 +182,46 @@ def algo_defaults_snapshot():
     return {name: config_default(name) for name, _label, _description in PREVIEW_CONFIGS}
 
 
-def create_config_vars(initial=None):
+def create_config_values(initial=None):
     values = algo_defaults_snapshot()
     if initial:
         for name in values:
             if name in initial:
                 values[name] = str(initial[name])
+    return values
+
+
+def snapshot_config_values(config_values):
     return {
-        name: tk.StringVar(value=values[name])
+        name: str(config_values[name]).strip()
         for name, _label, _description in PREVIEW_CONFIGS
     }
 
 
-def snapshot_config_vars(config_vars):
-    return {
-        name: config_vars[name].get()
-        for name, _label, _description in PREVIEW_CONFIGS
-    }
-
-
-def apply_config_vars(config_vars, values):
-    if not values:
-        return
+def build_algo_env_from_values(config_values):
+    normalized = snapshot_config_values(config_values)
+    env = os.environ.copy()
     for name, _label, _description in PREVIEW_CONFIGS:
-        if name in values:
-            config_vars[name].set(str(values[name]))
+        value = normalized[name]
+        if name == "BANNED_BUILDINGS":
+            env[f"MC_CITY_{name}"] = value
+            continue
+        if name == "FINE":
+            try:
+                value = CANVAS_SIZE_OPTIONS[value]
+            except KeyError as exc:
+                raise ValueError("City Size must be one of the selector values.") from exc
+        if name == "GAP_MIXED":
+            try:
+                value = CLEARANCE_OPTIONS[value]
+            except KeyError as exc:
+                raise ValueError("Grid Density must be one of the selector values.") from exc
+        try:
+            int(value)
+        except ValueError as exc:
+            raise ValueError(f"{name} must be an integer.") from exc
+        env[f"MC_CITY_{name}"] = value
+    return env
 
 
 def default_algo_tab_config():
@@ -410,31 +271,6 @@ def save_saved_gui_config(config):
     os.makedirs(os.path.dirname(SAVED_GUI_CONFIG_PATH), exist_ok=True)
     with open(SAVED_GUI_CONFIG_PATH, "w", encoding="utf-8") as fh:
         json.dump(config, fh, indent=2)
-
-
-def build_algo_env(config_vars):
-    env = os.environ.copy()
-    for name, _label, _description in PREVIEW_CONFIGS:
-        value = config_vars[name].get().strip()
-        if name == "BANNED_BUILDINGS":
-            env[f"MC_CITY_{name}"] = value
-            continue
-        if name == "FINE":
-            try:
-                value = CANVAS_SIZE_OPTIONS[value]
-            except KeyError as exc:
-                raise ValueError("City Size must be one of the selector values.") from exc
-        if name == "GAP_MIXED":
-            try:
-                value = CLEARANCE_OPTIONS[value]
-            except KeyError as exc:
-                raise ValueError("Grid Density must be one of the selector values.") from exc
-        try:
-            int(value)
-        except ValueError as exc:
-            raise ValueError(f"{name} must be an integer.") from exc
-        env[f"MC_CITY_{name}"] = value
-    return env
 
 
 def validate_seed(seed):

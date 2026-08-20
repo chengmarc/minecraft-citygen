@@ -8,15 +8,16 @@ from pathlib import Path
 if __package__ in (None, ""):
     sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from gui.bootstrap import configure_tcl_tk
 
+def main(argv: list[str] | None = None) -> int:
+    args = list(sys.argv[1:] if argv is None else argv)
+    if args[:1] == ["--qt-app"]:
+        args = args[1:]
 
-def main() -> None:
-    configure_tcl_tk()
-    from gui.app import main as run_app
+    from gui.qt_app import main as run_qt_app
 
-    run_app()
+    return run_qt_app(args)
 
 
 if __name__ == "__main__":
-    main()
+    raise SystemExit(main())
