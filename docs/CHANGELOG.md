@@ -6,6 +6,25 @@ The format is based on Keep a Changelog, and versions should match the release v
 
 ## [Unreleased]
 
+## [0.3.5] - 2026-08-20
+
+This release overhauls the extraction region selector's world preview.
+
+### Changed
+
+- the region-selector preview is now a true top-down surface map (topmost block per column) built from each chunk's `WORLD_SURFACE` heightmap, instead of a thin altitude slice tied to the selection's Y bounds
+- it renders one pixel per block (full resolution); ungenerated columns show a neutral background instead of fake grass
+- removed the drop shadows from the region-selector dialog buttons (the extraction "Pick" button keeps its shadow)
+
+### Performance
+
+- region `.mca` files are read once and cached, so all chunks in a region share a single read
+- per-chunk colour mapping is vectorized with NumPy; larger worlds are point-sampled from the same heightmaps
+
+### Added
+
+- `World.surface_heightmap` and `World.top_solid_block` in the Anvil reader, with tests
+
 ## [0.3.0] - 2026-08-20
 
 This release follows up the Tkinter-to-Qt migration with a structural cleanup of

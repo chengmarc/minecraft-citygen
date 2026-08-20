@@ -9,7 +9,7 @@ from PySide6 import QtCore, QtGui, QtWidgets
 from engine.render_topdown import render_topdown_preview
 
 from gui.qt_viewer import QtImageViewer
-from gui.theme import ACCENT_RGB, style_button
+from gui.theme import ACCENT_RGB
 from gui.workers import RegionPreviewSignals
 
 CHUNK_SIZE = 16
@@ -42,10 +42,6 @@ class RegionSelectorDialog(QtWidgets.QDialog):
 
         actions = QtWidgets.QDialogButtonBox(QtWidgets.QDialogButtonBox.Cancel, parent=self)
         self.apply_button = actions.addButton("Use Selection", QtWidgets.QDialogButtonBox.AcceptRole)
-        style_button(self.apply_button)
-        cancel_button = actions.button(QtWidgets.QDialogButtonBox.Cancel)
-        if cancel_button is not None:
-            style_button(cancel_button)
         self.apply_button.setEnabled(False)
         actions.rejected.connect(self.reject)
         self.apply_button.clicked.connect(self._apply)
@@ -61,11 +57,7 @@ class RegionSelectorDialog(QtWidgets.QDialog):
 
         def worker():
             try:
-                image, meta = render_topdown_preview(
-                    self.save_path,
-                    min(self.start_xyz[1], self.end_xyz[1]),
-                    max(self.start_xyz[1], self.end_xyz[1]),
-                )
+                image, meta = render_topdown_preview(self.save_path)
             except Exception as exc:  # boundary: surface any preview-load failure in the dialog
                 signals.failed.emit(str(exc).strip() or "Failed to load world preview.")
                 return

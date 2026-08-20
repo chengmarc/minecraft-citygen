@@ -50,12 +50,26 @@ class World:
         self.save_path = save_path
         self._chunks = {}          # (cx,cz) -> chunk nbt (or None)
         self._sections = {}        # (cx,cz,sy) -> (palette, decoded index array or None)
+        self._regions = {}         # (rx,rz) -> region file bytes (or None if absent)
         if not os.path.isdir(self.region_dir):
             checked = _checked_region_paths(self.region_dir, self.save_path, REGION_DIR_CANDIDATES)
             raise FileNotFoundError(_missing_region_dir_message(self.save_path, checked))
 
     def _region_path(self, cx, cz):
         return f"{self.region_dir}/r.{cx >> 5}.{cz >> 5}.mca"
+
+    def _region_bytes(self, rx, rz):
+        """Return the whole .mca file bytes for a region (cached), or None."""
+        key = (rx, rz)
+        if key in self._regions:
+            return self._regions[key]
+        path = f"{self.region_dir}/r.{rx}.{rz}.mca"
+        data = None
+        if os.path.exists(path):
+            with open(path, "rb") as f:
+                data = f.read()
+        self._regions[key] = data
+        return data
 
     @staticmethod
     def _decode_chunk_payload(raw, compression):
@@ -90,21 +104,18 @@ class World:
         """Return the parsed chunk NBT at chunk coords (cx, cz), or None if absent."""
         if (cx, cz) in self._chunks:
             return self._chunks[(cx, cz)]
-        path = self._region_path(cx, cz)
+        data = self._region_bytes(cx >> 5, cz >> 5)
         chunk = None
-        if os.path.exists(path):
-            with open(path, "rb") as f:
-                header = f.read(4096)
-                loc = (cx & 31) + (cz & 31) * 32
-                entry = struct.unpack_from(">I", header, loc * 4)[0]
-                offset = entry >> 8
-                if offset:
-                    f.seek(offset * 4096)
-                    length = struct.unpack(">I", f.read(4))[0]
-                    comp = f.read(1)[0]
-                    raw = f.read(length - 1)
-                    dec = self._decode_chunk_payload(raw, comp)
-                    chunk = nbtlib.File.parse(io.BytesIO(dec))
+        if data is not None and len(data) >= 4096:
+            loc = (cx & 31) + (cz & 31) * 32
+            offset = struct.unpack_from(">I", data, loc * 4)[0] >> 8
+            if offset:
+                pos = offset * 4096
+                length = struct.unpack_from(">I", data, pos)[0]
+                comp = data[pos + 4]
+                raw = data[pos + 5:pos + 4 + length]
+                dec = self._decode_chunk_payload(raw, comp)
+                chunk = nbtlib.File.parse(io.BytesIO(dec))
         self._chunks[(cx, cz)] = chunk
         return chunk
 
@@ -130,6 +141,8 @@ class World:
         self._sections[key] = result
         return result
 
+    _AIR_BLOCKS = frozenset({"minecraft:air", "minecraft:cave_air", "minecraft:void_air"})
+
     def block(self, x, y, z):
         """Return (name, properties_dict_or_None) or ('minecraft:air', None)."""
         cx, cz, sy = x >> 4, z >> 4, y >> 4
@@ -139,3 +152,62 @@ class World:
         v = 0 if idx is None else idx[(y & 15) * 256 + (z & 15) * 16 + (x & 15)]
         entry = palette[v]
         return str(entry["Name"]), self._block_properties(entry)
+
+    def surface_heightmap(self, cx, cz):
+        """Return (heights, min_y) for the chunk's WORLD_SURFACE heightmap.
+
+        ``heights`` is a 256-entry list indexed ``(z & 15) * 16 + (x & 15)`` giving
+        the world Y of each column's highest non-air block (``None`` for an empty
+        column). Returns ``(None, 0)`` when the chunk or heightmap is absent. This
+        is how map tools stay fast: one array read replaces a per-column scan.
+        """
+        chunk = self.load_chunk(cx, cz)
+        if chunk is None:
+            return None, 0
+        heightmaps = chunk.get("Heightmaps")
+        section_ys = [int(s["Y"]) for s in chunk.get("sections", [])]
+        if heightmaps is None or not section_ys:
+            return None, 0
+        data = heightmaps.get("WORLD_SURFACE")
+        if data is None:
+            return None, 0
+        min_y = min(section_ys) * 16
+        longs = [int(value) & 0xFFFFFFFFFFFFFFFF for value in data]
+        per_long = -(-256 // len(longs))          # ceil: derive packing from length
+        bits = 64 // per_long
+        mask = (1 << bits) - 1
+        heights = [None] * 256
+        for i in range(256):
+            long_index, offset = divmod(i, per_long)
+            value = (longs[long_index] >> (offset * bits)) & mask
+            if value:
+                heights[i] = min_y + value - 1     # highest non-air block
+        return heights, min_y
+
+    def top_solid_block(self, x, z):
+        """Return (name, y, properties) of the highest non-air block in the column.
+
+        Scans the full column from the top populated section downward, skipping
+        empty/absent sections so it stays fast over a whole world. Returns None
+        when the chunk is absent or the column holds no solid block.
+        """
+        cx, cz = x >> 4, z >> 4
+        chunk = self.load_chunk(cx, cz)
+        if chunk is None:
+            return None
+        section_ys = [int(s["Y"]) for s in chunk.get("sections", [])]
+        if not section_ys:
+            return None
+        lx, lz = x & 15, z & 15
+        for sy in range(max(section_ys), min(section_ys) - 1, -1):
+            palette, idx = self._section(cx, cz, sy)
+            if palette is None:
+                continue
+            for yy in range(15, -1, -1):
+                v = 0 if idx is None else idx[yy * 256 + lz * 16 + lx]
+                entry = palette[v]
+                name = str(entry["Name"])
+                if name in self._AIR_BLOCKS:
+                    continue
+                return name, (sy << 4) + yy, self._block_properties(entry)
+        return None
