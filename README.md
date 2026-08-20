@@ -3,11 +3,14 @@
 <p align="center">
   <img src="src/gui/icons/app-icon.png" alt="CityGen app icon" width="180">
 </p>
+<div align="center">
+  <h3>
+    Download <a href="https://github.com/CDS-SP/minecraft-citygen/releases">Windows Installer (.exe)</a> or 
+    <a href="https://github.com/CDS-SP/minecraft-citygen/releases">Compressed Portable (.zip)</a>
+  </h3>
+</div>
 
-## Windows Releases
-
-- Download **Installer (.exe)** from [here](https://github.com/CDS-SP/minecraft-citygen/releases))
-- Download **Portable (.zip)** from [here](https://github.com/CDS-SP/minecraft-citygen/releases))
+## Introduction
 
 **Build a full Minecraft city from your own roads and buildings in minutes.**
 
