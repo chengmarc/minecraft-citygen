@@ -6,6 +6,10 @@ import nbtlib
 import numpy as np
 
 
+def _load_schem(path):
+    return nbtlib.load(path)["Schematic"]
+
+
 def _varints(raw):
     raw = [b & 0xFF for b in raw]
     vals, i = [], 0
@@ -37,7 +41,7 @@ def _varints_array(raw, palette_size):
 
 
 def decode_schem(path):
-    schem = nbtlib.load(path)["Schematic"]
+    schem = _load_schem(path)
     width, height, length = int(schem["Width"]), int(schem["Height"]), int(schem["Length"])
     src = schem["Blocks"] if "Blocks" in schem else schem
     inv = {int(value): key for key, value in src["Palette"].items()}
@@ -47,6 +51,14 @@ def decode_schem(path):
     if len(vals) != expected:
         raise ValueError(f"{path}: decoded {len(vals)} blocks, expected {expected}")
     return width, height, length, inv, vals
+
+
+def decode_schem_offset(path):
+    schem = _load_schem(path)
+    if "Offset" not in schem:
+        return (0, 0, 0)
+    offset = schem["Offset"]
+    return tuple(int(offset[i]) for i in range(3))
 
 
 def decode_schem_cells(path):

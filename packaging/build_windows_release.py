@@ -53,7 +53,11 @@ def run(command: list[str], *, cwd: Path | None = None) -> None:
 
 
 def build_environment() -> dict[str, str]:
-    return os.environ.copy()
+    env = os.environ.copy()
+    existing = env.get("PYTHONPATH")
+    src_path = str(SRC_ROOT)
+    env["PYTHONPATH"] = src_path if not existing else os.pathsep.join((src_path, existing))
+    return env
 
 
 def ensure_pyinstaller() -> None:

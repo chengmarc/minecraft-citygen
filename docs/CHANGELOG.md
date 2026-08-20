@@ -6,6 +6,32 @@ The format is based on Keep a Changelog, and versions should match the release v
 
 ## [Unreleased]
 
+## [0.4.1] - 2026-08-20
+
+This is a patch release for the extracted-asset ground offset refactor. Building
+placement already read the authored `ground_offset`; this release extends that
+same offset path to roads and fill props so every marker-authored asset seats
+from extracted metadata instead of assuming a hard-coded flush origin.
+
+### Changed
+
+- road and fill schematics now persist their authored ground offset in the
+  Sponge `Offset` field during extraction
+- the road-grid build preserves that shared road offset when exporting the
+  combined grid schematic
+
+### Fixed
+
+- city construction no longer hard-codes `0` as the seating offset for roads
+  and trees; both now read the extracted asset offset
+- rotated fill props retain their authored ground offset instead of dropping
+  back to a flush placement assumption
+
+### Upgrade notes
+
+- re-run road extraction before rebuilding grid or city outputs, otherwise
+  previously exported road/fill schematics will still carry the old zero offset
+
 ## [0.4.0] - 2026-08-21
 
 This release fills the empty space between roads and buildings with scatter props

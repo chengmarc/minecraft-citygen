@@ -19,7 +19,7 @@ from engine.road_network import (
     make_size,
     rot_ports,
 )
-from engine.schematic_reader import decode_schem_cells
+from engine.schematic_reader import decode_schem_cells, decode_schem_offset
 from engine.schematic_transform import Tile, rot_tile
 from engine.schematic_writer import sponge_schem_from_grid
 
@@ -35,7 +35,8 @@ FILL_TOKEN = "fill"
 def _tile_from_schem(path):
     cells = decode_schem_cells(path)
     height, length, width = len(cells), len(cells[0]), len(cells[0][0])
-    return Tile(width, height, length, cells)
+    _x, y, _z = decode_schem_offset(path)
+    return Tile(width, height, length, cells, ground_offset=max(0, -y))
 
 
 def load_tiles():
@@ -107,6 +108,10 @@ def build(fine, seed):
     size = make_size(fine)
     net = gen_networks(seed, size=size)
     tiles = load_tiles()
+    road_ground_offsets = {tile.ground_offset for tile in tiles.values()}
+    if len(road_ground_offsets) > 1:
+        raise ValueError(f"road assets disagree on ground offsets: {sorted(road_ground_offsets)}")
+    road_ground_offset = next(iter(road_ground_offsets), 0)
     offsets = schem_offsets(tiles)
     span = size.span
     max_height = max(tile.height for tile in tiles.values())
@@ -135,9 +140,9 @@ def build(fine, seed):
                         idx = palette[state] = len(palette)
                     grid[y, bz + z, bx + x] = idx
         count += 1
-    return grid, palette, (span, max_height, span), count
+    return grid, palette, (span, max_height, span), count, road_ground_offset
 
 
-def to_schem(grid, palette, dims):
+def to_schem(grid, palette, dims, ground_offset=0):
     _width, _height, _length = dims
-    return sponge_schem_from_grid(grid, palette, DATA_VERSION)
+    return sponge_schem_from_grid(grid, palette, DATA_VERSION, offset=(0, -ground_offset, 0))

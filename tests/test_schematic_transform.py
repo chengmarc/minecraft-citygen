@@ -33,6 +33,13 @@ class SchematicTransformTests(unittest.TestCase):
         self.assertEqual(rotated.cells[0][0][2], "a")
         self.assertEqual(rotated.cells[0][1][0], "minecraft:oak_stairs[facing=east]")
 
+    def test_rot_tile_preserves_ground_offset(self):
+        tile = Tile(1, 1, 1, [[["a"]]], ground_offset=3)
+
+        rotated = rot_tile(tile, 1)
+
+        self.assertEqual(rotated.ground_offset, 3)
+
 
 if __name__ == "__main__":
     unittest.main()

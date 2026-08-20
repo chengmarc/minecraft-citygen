@@ -8,8 +8,10 @@ from unittest import mock
 roads_extract = importlib.import_module("pipeline.01_roads_extract")
 
 
-def _component(boundary, cuboid):
-    return types.SimpleNamespace(boundary=boundary, cuboids=[cuboid])
+def _component(boundary, cuboid, *, ground_y=None):
+    if ground_y is None:
+        ground_y = cuboid[2]
+    return types.SimpleNamespace(boundary=boundary, cuboids=[cuboid], ground_y=ground_y)
 
 
 class RoadsExtractTests(unittest.TestCase):
@@ -19,7 +21,7 @@ class RoadsExtractTests(unittest.TestCase):
             stale = out_dir / "stale.schem"
             stale.write_text("old", encoding="utf-8")
 
-            component = _component((0, 2, 0, 2), (0, 2, 65, 70, 0, 2))
+            component = _component((0, 2, 0, 2), (0, 2, 65, 70, 0, 2), ground_y=67)
             cells = [[["minecraft:stone"]]]
 
             with mock.patch.object(roads_extract, "OUT", str(out_dir)), \
@@ -35,6 +37,7 @@ class RoadsExtractTests(unittest.TestCase):
             self.assertEqual(result["items"], ["fresh"])
             write_schem.assert_called_once()
             self.assertEqual(write_schem.call_args.args[1], str(out_dir / "fresh.schem"))
+            self.assertEqual(write_schem.call_args.kwargs["offset"], (0, -2, 0))
 
     def test_run_skips_components_without_a_matching_sign(self):
         with tempfile.TemporaryDirectory() as tempdir:

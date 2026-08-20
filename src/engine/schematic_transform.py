@@ -15,6 +15,7 @@ class Tile:
     height: int
     length: int
     cells: list[list[list[str]]]
+    ground_offset: int = 0
 
 
 def rot_state(state: str, k: int) -> str:
@@ -48,5 +49,5 @@ def rot_tile(tile: Tile, k: int) -> Tile:
             for z in range(length):
                 for x in range(width):
                     new[y][x][length - 1 - z] = rot_state(tile.cells[y][z][x], 1)
-        tile = Tile(length, tile.height, width, new)
+        tile = Tile(length, tile.height, width, new, tile.ground_offset)
     return tile

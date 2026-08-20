@@ -85,7 +85,17 @@ def _city_ground_y(placements, catalog_meta):
     return CITY_GROUND_Y + max_below_ground + BUILD_SNAP_DROP
 
 
-def _assemble_instances(seed, placements, catalog_meta, city_ground_y):
+def _seat_y(ground_y, ground_offset):
+    """Bottom row of a marker asset: its emerald marker seats on the ground plane.
+
+    Every asset authored with the gold/diamond/emerald convention (roads,
+    buildings, trees) seats the same way -- the emerald marks ground level, so
+    the asset's bottom sits ``ground_offset`` rows below it.
+    """
+    return ground_y - ground_offset
+
+
+def _assemble_instances(seed, placements, catalog_meta, ground_y):
     """Rotate and position each placed building; return (instances, tallest building top)."""
     height_rng = random.Random(seed * 7 + 2)
     instances = []
@@ -98,7 +108,7 @@ def _assemble_instances(seed, placements, catalog_meta, city_ground_y):
         px, pz = placement_origin(placement.rect, placement.facing, tile.width, tile.length, BLOCKS_PER_CELL)
         px += PLAYER_ANCHOR_MARGIN
         pz += PLAYER_ANCHOR_MARGIN
-        y0 = city_ground_y - int(entry.get("ground_offset", CITY_GROUND_Y)) - BUILD_SNAP_DROP
+        y0 = _seat_y(ground_y, int(entry.get("ground_offset", CITY_GROUND_Y)))
         instances.append((tile, px, pz, y0))
         building_top = max(building_top, y0 + tile.height)
     return instances, building_top
@@ -181,15 +191,14 @@ def _apply_ground_fill(grid, fill_idx, build_mask, road_cells, size, city_ground
             area[mask] = fill_idx
 
 
-def _place_fillers(grid, master_palette, build_mask, road_cells, size, city_ground_y, fillers, rng):
+def _place_fillers(grid, master_palette, build_mask, road_cells, size, ground_y, fillers, rng):
     """Drop a random, randomly-rotated fill prop (tree) into each empty lot cell.
 
-    Each prop is a self-contained 9x9 asset carrying its own ground, seated with
-    its base on the lot ground plane. Cells touched by a building are skipped so
-    nothing collides with a footprint. Returns the set of (fx, fy) cells filled
-    so the flat ground fill can leave them alone.
+    Each prop is a self-contained 9x9 asset carrying its own ground, seated on the
+    ground plane like any other marker asset. Cells touched by a building are
+    skipped so nothing collides with a footprint. Returns the set of (fx, fy)
+    cells filled so the flat ground fill can leave them alone.
     """
-    seat_y = city_ground_y - BUILD_SNAP_DROP    # seat on the lot surface, like a building
     placed = set()
     for fy in range(size.fine):
         for fx in range(size.fine):
@@ -200,7 +209,7 @@ def _place_fillers(grid, master_palette, build_mask, road_cells, size, city_grou
             if build_mask[z0:z0 + BLOCKS_PER_CELL, x0:x0 + BLOCKS_PER_CELL].any():
                 continue
             tile = rot_tile(rng.choice(fillers), rng.randint(0, 3))
-            _blit_tile(grid, master_palette, tile, x0, z0, seat_y)
+            _blit_tile(grid, master_palette, tile, x0, z0, _seat_y(ground_y, tile.ground_offset))
             placed.add((fx, fy))
     return placed
 
@@ -210,19 +219,24 @@ def run(*, seed=DEFAULT_SEED, fine=None, out=None, no_ground_fill=False, logger=
     fine = _resolve_fine(seed, fine)
 
     size = make_size(fine)
-    road_grid, road_palette, (road_span, road_height, _), tile_count = build_road_grid(fine, seed)
+    road_grid, road_palette, (road_span, road_height, _), tile_count, road_ground_offset = build_road_grid(fine, seed)
     network = gen_networks(seed, size=size)
     with open(BUILD_CATALOG, encoding="utf-8") as fh:
         catalog_meta = json.load(fh)
 
     placements = _plan_placements(seed, network, size)
     city_ground_y = _city_ground_y(placements, catalog_meta)
-    road_y0 = city_ground_y - CITY_GROUND_Y
+    # `ground_y` is the single plane every marker asset seats on (emerald = ground
+    # level). Roads, buildings, and trees all resolve to `_seat_y(ground_y, offset)`.
+    # The flat ground-fill slab is the lone exception, capping empty lots one row
+    # above at `city_ground_y`.
+    ground_y = city_ground_y - BUILD_SNAP_DROP
+    road_y0 = _seat_y(ground_y, road_ground_offset)
     out_span = road_span + PLAYER_ANCHOR_MARGIN
-    instances, building_top = _assemble_instances(seed, placements, catalog_meta, city_ground_y)
+    instances, building_top = _assemble_instances(seed, placements, catalog_meta, ground_y)
 
     fillers = [] if no_ground_fill else load_fillers()
-    filler_top = city_ground_y - BUILD_SNAP_DROP + max((tile.height for tile in fillers), default=0)
+    filler_top = max((_seat_y(ground_y, tile.ground_offset) + tile.height for tile in fillers), default=0)
     max_height = max(road_y0 + road_height, building_top, filler_top)
 
     road_cells = network["road_cells"]
@@ -235,7 +249,7 @@ def run(*, seed=DEFAULT_SEED, fine=None, out=None, no_ground_fill=False, logger=
         if fillers:
             filler_rng = random.Random(seed * 7 + 3)
             tree_cells = _place_fillers(
-                grid, master_palette, build_mask, road_cells, size, city_ground_y, fillers, filler_rng
+                grid, master_palette, build_mask, road_cells, size, ground_y, fillers, filler_rng
             )
         _apply_ground_fill(grid, fill_idx, build_mask, road_cells, size, city_ground_y, tree_cells)
     filler_count = len(tree_cells)

@@ -85,7 +85,13 @@ def run(*, logger=None, progress=None):
             continue
         cells = extract_cuboid(get_world(), comp.cuboids[0])
         height, length, width = len(cells), len(cells[0]), len(cells[0][0])
-        write_sponge_schem_cells(cells, os.path.join(OUT, name + ".schem"), DATA_VERSION)
+        ground_offset = comp.ground_y - comp.cuboids[0][2]
+        write_sponge_schem_cells(
+            cells,
+            os.path.join(OUT, name + ".schem"),
+            DATA_VERSION,
+            offset=(0, -ground_offset, 0),
+        )
         if logger is not None:
             logger(f"extracted {name}")
         results.append((name, (width, height, length)))
