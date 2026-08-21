@@ -9,6 +9,7 @@ from PySide6 import QtCore, QtWidgets
 
 from config.config_path import CITY_PROD
 from config.config_world import SAVE
+from config.path_discovery import has_region_files
 from pipeline import services
 
 from gui import common
@@ -113,7 +114,7 @@ class RenderTab(QtWidgets.QWidget, WeightedTaskMixin):
             self._run_render,
             state,
             action_icon_name="render.png",
-            extra_actions=[("Output", self._open_output_folder, "folder.png")],
+            extra_actions=[("Output Folder", self._open_output_folder, "folder.png")],
             parent=self,
         )
         self.controls.connect_change_handler(self._save_state)
@@ -208,6 +209,7 @@ class ExtractionTab(QtWidgets.QWidget, ProgressMixin):
         self._current_stage = (None, None)
         self._progress_stage_total = 1.0
         state = owner.get_saved_config_section("extraction") or common.default_extraction_tab_config()
+        common.clear_preview_cache()
 
         layout = QtWidgets.QVBoxLayout(self)
         layout.setSpacing(0)
@@ -232,6 +234,15 @@ class ExtractionTab(QtWidgets.QWidget, ProgressMixin):
         self.world_edit = QtWidgets.QLineEdit(str(state.get("world_path", SAVE)), self)
         self.world_edit.setFixedWidth(360)
         header.addWidget(self.world_edit)
+        self.browse_button = QtWidgets.QPushButton("Browse...", self)
+        self.browse_button.clicked.connect(self._browse_world)
+        header.addWidget(self.browse_button)
+        header.addSpacing(12)
+        header.addWidget(QtWidgets.QLabel("World Version"))
+        self.detected_version_edit = QtWidgets.QLineEdit(self)
+        self.detected_version_edit.setReadOnly(True)
+        self.detected_version_edit.setPlaceholderText("—")
+        header.addWidget(self.detected_version_edit)
         header.addSpacing(12)
         header.addWidget(QtWidgets.QLabel("Target Version"))
         self.version_combo = QtWidgets.QComboBox(self)
@@ -275,6 +286,7 @@ class ExtractionTab(QtWidgets.QWidget, ProgressMixin):
         shell_layout.addWidget(self.version_warning)
 
         self.world_edit.textChanged.connect(self._save_state)
+        self.world_edit.textChanged.connect(self._refresh_detected_version)
         self.world_edit.textChanged.connect(self._refresh_version_warning)
         self.version_combo.currentIndexChanged.connect(self._save_state)
         self.version_combo.currentIndexChanged.connect(self._refresh_version_warning)
@@ -290,6 +302,7 @@ class ExtractionTab(QtWidgets.QWidget, ProgressMixin):
         self.progress_bar.setRange(0, PROGRESS_BAR_SCALE)
         layout.addWidget(self.progress_bar)
 
+        self._refresh_detected_version()
         self._refresh_version_warning()
 
     def _save_state(self):
@@ -306,6 +319,25 @@ class ExtractionTab(QtWidgets.QWidget, ProgressMixin):
     def _current_compat_report(self):
         choice = self.version_combo.currentData() or common.AUTO_VERSION
         return common.target_version_report(self.world_edit.text().strip(), choice, self._asset_block_ids)
+
+    def _refresh_detected_version(self):
+        path = self.world_edit.text().strip()
+        version = common.detect_world_data_version(path) if path else None
+        text = common.release_name_for(version) if version is not None else ""
+        self.detected_version_edit.setText(text)
+        fm = self.detected_version_edit.fontMetrics()
+        measure = text if text else self.detected_version_edit.placeholderText()
+        self.detected_version_edit.setFixedWidth(fm.horizontalAdvance(measure) + 20)
+        self._rebuild_version_combo(version)
+
+    def _rebuild_version_combo(self, min_data_version):
+        current = self.version_combo.currentData()
+        self.version_combo.blockSignals(True)
+        self.version_combo.clear()
+        for label, value in common.version_selector_items(min_data_version):
+            self.version_combo.addItem(label, value)
+        self._select_version(current or common.AUTO_VERSION)
+        self.version_combo.blockSignals(False)
 
     def _refresh_version_warning(self):
         """Update the inline label to show what the chosen target can't represent."""
@@ -342,6 +374,24 @@ class ExtractionTab(QtWidgets.QWidget, ProgressMixin):
             "house": {"start": list(house_start), "end": list(house_end)},
             "landmark": {"start": list(landmark_start), "end": list(landmark_end)},
         }
+
+    def _browse_world(self):
+        folder = QtWidgets.QFileDialog.getExistingDirectory(
+            self, "Select Minecraft World Folder", self.world_edit.text().strip() or ""
+        )
+        if not folder:
+            return
+        if not has_region_files(folder):
+            QtWidgets.QMessageBox.warning(
+                self, "Not a Minecraft world",
+                f"No region files (.mca) were found in:\n{folder}\n\n"
+                "Please select a valid Minecraft world folder.",
+            )
+            return
+        self.world_edit.setText(folder)
+        common.clear_pipeline_artifacts()
+        self.road_viewer.set_message("Click Extract to scan road assets and render the contact sheet.")
+        self.build_viewer.set_message("Click Extract to scan build assets and render the contact sheet.")
 
     def _open_region_selector(self, group, key, title):
         save_path = self.world_edit.text().strip()

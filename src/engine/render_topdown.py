@@ -42,13 +42,15 @@ def region_world_bounds(region_dir):
     )
 
 
-def render_topdown_preview(save_path, *, max_size=2048):
+def render_topdown_preview(save_path, *, max_size=2048, on_progress=None):
     """Render a true top-down surface map from the WORLD_SURFACE heightmaps.
 
     Renders one pixel per block (block-by-block) for worlds up to ``max_size``
     across; larger worlds are point-sampled so the image stays bounded. Colours
     come from each column's highest non-air block. Region bounds are region-file
     aligned (multiples of 512), so chunks always tile the image edge-to-edge.
+
+    ``on_progress(completed, total)`` is called after each chunk row if provided.
     """
     from PIL import Image
 
@@ -60,9 +62,9 @@ def render_topdown_preview(save_path, *, max_size=2048):
     step = max(1, math.ceil(max(span_x, span_z) / max_size))
 
     if step == 1:
-        image_array = _render_full_resolution(world, x0, x1, z0, z1, span_x, span_z)
+        image_array = _render_full_resolution(world, x0, x1, z0, z1, span_x, span_z, on_progress=on_progress)
     else:
-        image_array = _render_downsampled(world, x0, x1, z0, z1, step)
+        image_array = _render_downsampled(world, x0, x1, z0, z1, step, on_progress=on_progress)
 
     image = Image.fromarray(image_array, "RGB")
     return image, {"x0": x0, "x1": x1, "z0": z0, "z1": z1, "step": step}
@@ -95,24 +97,31 @@ def _chunk_tile(world, cx, cz, heights):
     return tile.reshape(16, 16, 3)
 
 
-def _render_full_resolution(world, x0, x1, z0, z1, span_x, span_z):
+def _render_full_resolution(world, x0, x1, z0, z1, span_x, span_z, on_progress=None):
     """One pixel per block, pasting a vectorized tile for each chunk."""
     image = np.empty((span_z, span_x, 3), dtype=np.uint8)
     image[:] = BACKGROUND
-    for cz in range(z0 >> 4, (z1 >> 4) + 1):
+    cz_values = range(z0 >> 4, (z1 >> 4) + 1)
+    cx_values = range(x0 >> 4, (x1 >> 4) + 1)
+    total = len(cz_values) * len(cx_values)
+    done = 0
+    for cz in cz_values:
         row = (cz << 4) - z0
-        for cx in range(x0 >> 4, (x1 >> 4) + 1):
-            heights, _min_y = world.surface_heightmap(cx, cz)
+        for cx in cx_values:
+            heights, _min_y = world.compute_surface_heights(cx, cz)
+            done += 1
             if heights is None:
                 continue
             tile = _chunk_tile(world, cx, cz, heights)
             if tile is not None:
                 col = (cx << 4) - x0
                 image[row:row + 16, col:col + 16] = tile
+        if on_progress is not None:
+            on_progress(done, total)
     return image
 
 
-def _render_downsampled(world, x0, x1, z0, z1, step):
+def _render_downsampled(world, x0, x1, z0, z1, step, on_progress=None):
     """One heightmap sample per output cell, for worlds larger than the cap."""
     width = math.ceil((x1 - x0 + 1) / step)
     height = math.ceil((z1 - z0 + 1) / step)
@@ -125,7 +134,7 @@ def _render_downsampled(world, x0, x1, z0, z1, step):
             wx = min(x1, x0 + ix * step + step // 2)
             key = (wx >> 4, wz >> 4)
             if key not in heightmap_cache:
-                heightmap_cache[key] = world.surface_heightmap(*key)[0]
+                heightmap_cache[key] = world.compute_surface_heights(*key)[0]
             heights = heightmap_cache[key]
             if heights is None:
                 continue
@@ -133,4 +142,6 @@ def _render_downsampled(world, x0, x1, z0, z1, step):
             if y is not None:
                 name, _props = world.block(wx, y, wz)
                 image[iz, ix] = block_color(name)
+        if on_progress is not None:
+            on_progress(iz + 1, height)
     return image

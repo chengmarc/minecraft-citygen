@@ -12,6 +12,7 @@ import os
 import struct
 import zlib
 
+import numpy as np
 import nbtlib
 
 from config.path_discovery import region_dir_candidates
@@ -86,15 +87,13 @@ class World:
 
     @staticmethod
     def _decode_palette_indexes(data, palette_size):
-        longs = [int(value) & 0xFFFFFFFFFFFFFFFF for value in data]
+        longs = np.asarray(data, dtype=np.int64).view(np.uint64)
         bits = max(4, (palette_size - 1).bit_length())
         per_long = 64 // bits
-        mask = (1 << bits) - 1
-        indexes = [0] * 4096
-        for i in range(4096):
-            long_index, offset = divmod(i, per_long)
-            indexes[i] = (longs[long_index] >> (offset * bits)) & mask
-        return indexes
+        mask = np.uint64((1 << bits) - 1)
+        i = np.arange(4096, dtype=np.intp)
+        shifts = (i % per_long * bits).astype(np.uint64)
+        return (longs[i // per_long] >> shifts & mask).tolist()
 
     @staticmethod
     def _block_properties(entry):
@@ -172,18 +171,69 @@ class World:
         data = heightmaps.get("WORLD_SURFACE")
         if data is None:
             return None, 0
-        min_y = min(section_ys) * 16
-        longs = [int(value) & 0xFFFFFFFFFFFFFFFF for value in data]
-        per_long = -(-256 // len(longs))          # ceil: derive packing from length
+        # The WORLD_SURFACE heightmap is encoded relative to the dimension's
+        # minimum build height (-64 for 1.18+ overworld, section Y = -4), not
+        # the chunk's lowest section. Clamp to -4 to skip spurious void sections
+        # (e.g. Y=-5) that appear below the world floor in some generated worlds.
+        min_y = max(min(section_ys), -4) * 16
+        longs = np.asarray(data, dtype=np.int64).view(np.uint64)
+        n = 256
+        per_long = -(-n // len(longs))  # ceil: derive packing from longs count
         bits = 64 // per_long
-        mask = (1 << bits) - 1
-        heights = [None] * 256
-        for i in range(256):
-            long_index, offset = divmod(i, per_long)
-            value = (longs[long_index] >> (offset * bits)) & mask
-            if value:
-                heights[i] = min_y + value - 1     # highest non-air block
+        mask = np.uint64((1 << bits) - 1)
+        i = np.arange(n, dtype=np.intp)
+        shifts = (i % per_long * bits).astype(np.uint64)
+        values = (longs[i // per_long] >> shifts & mask).tolist()
+        heights = [None if v == 0 else min_y + v - 1 for v in values]
         return heights, min_y
+
+    def compute_surface_heights(self, cx, cz):
+        """Scan the actual column tops -- correct even when the stored WORLD_SURFACE
+        heightmap is stale (e.g. after a WorldEdit paste).
+
+        Same return contract as ``surface_heightmap``: (heights, min_y) where
+        ``heights`` is a 256-entry list indexed ``(z&15)*16 + (x&15)`` giving the
+        world-Y of each column's highest non-air block, or None for empty columns.
+        """
+        chunk = self.load_chunk(cx, cz)
+        if chunk is None:
+            return None, 0
+        sections = chunk.get("sections", [])
+        if not sections:
+            return None, 0
+        section_ys = [int(s["Y"]) for s in sections]
+        min_y = min(section_ys) * 16
+
+        # heights[col] = world-Y of topmost non-air block; -1 means not yet found.
+        heights = np.full(256, -1, dtype=np.int32)
+        settled = np.zeros(256, dtype=bool)
+
+        for sy in range(max(section_ys), min(section_ys) - 1, -1):
+            if settled.all():
+                break
+            palette, idx = self._section(cx, cz, sy)
+            if palette is None:
+                continue
+            is_air = np.array([str(e["Name"]) in self._AIR_BLOCKS for e in palette], dtype=bool)
+            if idx is None:
+                # uniform section -- all 4096 positions share palette[0]
+                if not is_air[0]:
+                    heights[~settled] = (sy << 4) + 15
+                    settled[:] = True
+                continue
+            # idx layout: y_local * 256 + z_local * 16 + x_local  (same as block())
+            idx_arr = np.asarray(idx, dtype=np.int32).reshape(16, 256)  # [y_local, col]
+            for yy in range(15, -1, -1):
+                remaining = ~settled
+                if not remaining.any():
+                    break
+                solid = remaining & ~is_air[idx_arr[yy]]
+                if solid.any():
+                    heights[solid] = (sy << 4) + yy
+                    settled |= solid
+
+        result = [int(heights[i]) if settled[i] else None for i in range(256)]
+        return result, min_y
 
     def top_solid_block(self, x, z):
         """Return (name, y, properties) of the highest non-air block in the column.

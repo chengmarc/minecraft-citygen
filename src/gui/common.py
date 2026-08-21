@@ -12,7 +12,10 @@ import nbtlib
 
 from config import config_algo
 from config.config_algo import DEFAULT_SEED
-from config.config_path import BUILDS_PROD, CITY_PROD, CITY_SIM, GRID_SIM, GUI, ROOT, ROADS_PROD
+from config.config_path import (
+    ARTIFACTS, BUILDS_PROD, BUILDS_SIM, CITY_PROD, CITY_SIM,
+    GRID_PROD, GRID_SIM, GUI, ROOT, ROADS_PROD, ROADS_SIM,
+)
 from config.config_world import BUILD_TYPES, ROAD_BOX, SAVE
 from config.models import BlockRegion, BuildRegion
 from config.version_compat import (
@@ -266,10 +269,16 @@ def default_extraction_tab_config():
 AUTO_VERSION = "auto"
 
 
-def version_selector_items():
-    """(label, value) pairs for the target-version dropdown, newest first."""
-    items = [("Auto (match world)", AUTO_VERSION)]
-    items.extend((name, name) for name, _ in reversed(RELEASES))
+def version_selector_items(min_data_version=None):
+    """(label, value) pairs for the target-version dropdown, newest first.
+
+    If min_data_version is given, only versions at or above it are included.
+    """
+    items = [("Auto", AUTO_VERSION)]
+    items.extend(
+        (name, name) for name, ver in reversed(RELEASES)
+        if min_data_version is None or ver >= min_data_version
+    )
     return items
 
 
@@ -381,3 +390,32 @@ def open_in_file_manager(path):
         return
     command = ["open", target] if sys.platform == "darwin" else ["xdg-open", target]
     subprocess.Popen(command)
+
+
+def _remove_file(path):
+    try:
+        os.remove(path)
+    except OSError:
+        pass
+
+
+def _clear_dir(directory):
+    if os.path.isdir(directory):
+        for path in glob.glob(os.path.join(directory, "*")):
+            _remove_file(path)
+
+
+def clear_preview_cache():
+    """Delete all cached world top-down preview images (artifacts/world_preview/)."""
+    _clear_dir(os.path.join(ARTIFACTS, "world_preview"))
+
+
+def clear_pipeline_artifacts():
+    """Delete all pipeline artifacts, keeping only final city .schem and .png outputs."""
+    clear_preview_cache()
+    for directory in (ROADS_SIM, ROADS_PROD, BUILDS_SIM, BUILDS_PROD, GRID_SIM, GRID_PROD, CITY_SIM):
+        _clear_dir(directory)
+    if os.path.isdir(CITY_PROD):
+        for path in glob.glob(os.path.join(CITY_PROD, "*")):
+            if not path.endswith((".schem", ".png")):
+                _remove_file(path)

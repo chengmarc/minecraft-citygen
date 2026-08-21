@@ -22,6 +22,7 @@ class WorkerSignals(QtCore.QObject):
 class RegionPreviewSignals(QtCore.QObject):
     loaded = QtCore.Signal(object, object)
     failed = QtCore.Signal(str)
+    progress = QtCore.Signal(int, int)  # (completed, total)
 
 
 class ProgressMixin:

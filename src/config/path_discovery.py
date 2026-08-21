@@ -29,6 +29,14 @@ def is_world_save(save_path: os.PathLike[str] | str | None) -> bool:
     return any(os.path.isdir(candidate) for candidate in region_dir_candidates(save_path))
 
 
+def has_region_files(save_path: os.PathLike[str] | str | None) -> bool:
+    """Return True when save_path contains at least one .mca region file."""
+    region_dir = resolve_region_dir(save_path)
+    if not region_dir or not os.path.isdir(region_dir):
+        return False
+    return any(Path(region_dir).glob("r.*.*.mca"))
+
+
 def resolve_region_dir(save_path: os.PathLike[str] | str | None) -> str:
     candidates = region_dir_candidates(save_path)
     for candidate in candidates:
