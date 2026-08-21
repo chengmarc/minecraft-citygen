@@ -16,16 +16,72 @@ Declared project metadata currently lives in [pyproject.toml](../pyproject.toml)
 
 ### Minecraft / Schematic Assumptions
 
-- Source world format: Minecraft Java Edition region/chunk data
+- Source world format: Minecraft Java Edition region/chunk data (1.18+ Anvil layout)
 - Output schematic format: Sponge `.schem`
-- Configured schematic `DATA_VERSION`: `4790` in [config/config_world.py](../src/config/config_world.py)
+- Schematic `DATA_VERSION`: resolved at run time (see Version Compatibility below), not hard-coded
 - Intended downstream tool: WorldEdit-compatible schematic workflow
 
 Important note:
 
 - this project is configured around the Java Edition world/schematic pipeline used by the repo
 - it is not a Bedrock pipeline
-- the code uses the configured `DATA_VERSION` directly rather than presenting a friendly Minecraft marketing version in the codebase
+- the source-world reader targets the 1.18+ chunk format; older worlds are not supported
+
+### Version Compatibility
+
+The pipeline copies block strings straight from the source world into the output
+schematic, so block *content* is version-transparent. Two things are not:
+
+- the `DataVersion` stamped on the schematic — WorldEdit upgrades an older
+  schematic forward into a newer world but cannot downgrade a newer one
+- whether every block used actually *exists* in the target version
+
+Both are handled by [config/version_compat.py](../src/config/version_compat.py):
+
+- `DATA_VERSION` resolves from `MC_CITY_DATA_VERSION` (explicit target), else the
+  source world's own `level.dat` `DataVersion`, else a fallback
+- the Extraction tab's **Target Version** dropdown picks the output target
+  (`Auto` matches the source world); it flows to both extraction and render
+- extraction and city construction compute the assets' true minimum compatible
+  version from the actual block palette and warn when the chosen target is older
+  than some block requires (that block would leave a hole on paste)
+
+The supported floor is Minecraft 1.18. Two data tables drive the checks:
+
+- `RELEASES` — release name ↔ DataVersion
+- the block-id → minimum-version map
+
+`version_compat.py` loads these from generated JSON shipped as package data
+(`src/config/mc_versions.json`, `src/config/block_versions.json`). These files
+are authoritative and required — the module raises at import if they are missing
+or unreadable, pointing to the refresh command below. There is no in-code
+fallback table.
+
+Because the registry comes from the vanilla data generator, a block is dated to
+when it first entered the *block registry*, which can precede its survival
+release (blocks registered behind an experimental datapack, e.g. the 1.20 set in
+1.19.4). That is the correct signal for "will this paste": WorldEdit keys off the
+registry, not the marketing version.
+
+Refresh workflow:
+
+```bash
+python tools/update_block_versions.py
+```
+
+Notes:
+
+- downloads every Java Edition release server JAR from 1.18 upward (cached under
+  `tools/`, git-ignored), reads each jar's `DataVersion` from its bundled
+  `version.json`, and runs the vanilla data generator (`--reports`) to dump the
+  full block registry per version
+- diffing the registries in DataVersion order yields the first version each block
+  appears in (this is how e.g. the 1.20.3 `grass` → `short_grass` rename is
+  captured automatically)
+- requires a Java runtime new enough for the newest jar scanned (1.20.5+ needs
+  Java 21); versions whose generator fails are skipped with a warning so a
+  partial-but-valid table is still written
+- the generated JSON files are packaged as `config` package data
 
 ### Environment Assumptions
 
@@ -561,9 +617,9 @@ The final city schematic in `artifacts/city/production/` is a Sponge `.schem` re
 
 The isometric renderer loads block colors from:
 
-- `src/engine/color_render.csv`
+- `src/config/color_render.csv`
 
-That CSV is the only renderer palette asset that ships in the package. The generator
+That CSV is the renderer palette asset that ships in the package. The generator
 used to refresh it is a repo maintenance script and is not part of the runtime app.
 
 Refresh workflow:
@@ -577,7 +633,7 @@ Notes:
 - the script always downloads a Minecraft client JAR before regenerating the CSV
 - if `--version` is omitted, the script resolves Mojang's latest release from the live version manifest
 - downloaded client JARs are stored under `tools/` as `minecraft-client-<version>.jar`
-- the script overwrites `src/engine/color_render.csv` by default
+- the script overwrites `src/config/color_render.csv` by default
 - it is intended for infrequent manual updates when the target Minecraft version changes
 - CSV rows are written with namespaced block ids such as `minecraft:stone`
 - packaging already includes only the CSV, via setuptools package data and the PyInstaller release script

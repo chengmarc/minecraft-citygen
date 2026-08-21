@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 """Regenerate the renderer block-color lookup CSV from a downloaded Minecraft client JAR.
 
-This is a maintenance script. The app still ships only ``src/engine/color_render.csv``;
+This is a maintenance script. The app still ships only ``src/config/color_render.csv``;
 the generator itself is not part of the packaged runtime.
 """
 
@@ -23,7 +23,7 @@ from PIL import Image
 
 ROOT = Path(__file__).resolve().parents[1]
 TOOLS_DIR = ROOT / "tools"
-DEFAULT_OUTPUT = ROOT / "src" / "engine" / "color_render.csv"
+DEFAULT_OUTPUT = ROOT / "src" / "config" / "color_render.csv"
 VERSION_MANIFEST_URL = "https://piston-meta.mojang.com/mc/game/version_manifest_v2.json"
 HTTP_TIMEOUT_SECONDS = 120
 
@@ -440,7 +440,7 @@ def write_csv(rows: list[tuple[str, int, int, int]], output_path: Path) -> None:
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
-        description="Download a Minecraft client JAR and regenerate src/engine/color_render.csv."
+        description="Download a Minecraft client JAR and regenerate src/config/color_render.csv."
     )
     parser.add_argument(
         "--version",

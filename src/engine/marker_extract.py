@@ -172,8 +172,14 @@ def parse_range(text, labels):
     return None
 
 
-def extract_cuboid(world, cuboid):
-    """Read a cuboid into schem cells, blanking marker blocks and signs to air."""
+def extract_cuboid(world, cuboid, *, force_persistent_leaves=False):
+    """Read a cuboid into schem cells, blanking marker blocks and signs to air.
+
+    ``force_persistent_leaves`` rewrites grown leaves (``persistent=false``) to
+    ``persistent=true`` so they do not decay after a paste: non-persistent leaves
+    whose logs fall out of range vanish over ticks, degrading the build (cherry
+    canopies are the usual casualty).
+    """
     x0, x1, y0, y1, z0, z1 = cuboid
     cells = []
     for y in range(y0, y1 + 1):
@@ -185,6 +191,9 @@ def extract_cuboid(world, cuboid):
                 base = name.split(":")[1]
                 if base in MARKER_BLOCKS or "sign" in base:
                     name, props = "minecraft:air", None
+                elif force_persistent_leaves and base.endswith("leaves") \
+                        and props and props.get("persistent") == "false":
+                    props = {**props, "persistent": "true"}
                 row.append(blockstate(name, props))
             layer.append(row)
         cells.append(layer)

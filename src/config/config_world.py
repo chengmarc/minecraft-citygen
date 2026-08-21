@@ -8,6 +8,11 @@ import os
 from config.config_path import DEFAULT_WORLD
 from config.models import BlockRegion, BuildRegion, VerticalRange
 from config.path_discovery import region_dir_candidates, resolve_region_dir
+from config.version_compat import (
+    FALLBACK_DATA_VERSION,
+    SUPPORTED_FLOOR,
+    detect_world_data_version,
+)
 
 
 def _parse_tuple_like(value: str):
@@ -45,7 +50,19 @@ SAVE = _env_value("MC_CITY_SAVE", DEFAULT_WORLD)
 REGION_DIR_CANDIDATES = tuple(region_dir_candidates(SAVE))
 REGION_DIR = resolve_region_dir(SAVE)
 
-DATA_VERSION = 4790
+# Schematic DataVersion (the version WorldEdit assumes when pasting). Resolves
+# to the explicit target override, else the source world's own version, else a
+# sane fallback, clamped up to the hard floor. See config/version_compat.py.
+def _resolve_data_version() -> int:
+    raw = os.environ.get("MC_CITY_DATA_VERSION")
+    if raw and raw.strip():
+        return max(int(raw.strip()), SUPPORTED_FLOOR)
+    detected = detect_world_data_version(SAVE)
+    resolved = detected if detected is not None else FALLBACK_DATA_VERSION
+    return max(resolved, SUPPORTED_FLOOR)
+
+
+DATA_VERSION = _resolve_data_version()
 
 # Road assets region in world ((x_a, y_a, z_a), (x_b, y_b, z_b))
 ROAD_REGION = BlockRegion.from_xyz_pair((-80, 65, -256), (-17, 75, -145))

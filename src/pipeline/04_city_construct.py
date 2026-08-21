@@ -18,6 +18,7 @@ from config.config_algo import DEFAULT_SEED, FINE as DEFAULT_FINE
 from config.config_path import BUILD_CATALOG, CITY_PROD, GRID_PROD
 from config.config_render import CITY_ANCHOR_BLOCK, CITY_GROUND_FILL_BLOCK, CITY_GROUND_Y
 from config.config_world import DATA_VERSION
+from config.version_compat import compatibility_report
 from engine.building_schematic import assemble
 from engine.city_layout import (
     FACE_K,
@@ -264,6 +265,8 @@ def run(*, seed=DEFAULT_SEED, fine=None, out=None, no_ground_fill=False, logger=
     )
     if logger is not None:
         logger(summary)
+    if logger is not None:
+        _log_version_compat(master_palette.keys(), DATA_VERSION, logger)
     write_sponge_schem_grid(grid, master_palette, out, DATA_VERSION, offset=(0, -(city_ground_y + 1), 0))
     if logger is not None:
         logger(f"saved {out}")
@@ -272,6 +275,28 @@ def run(*, seed=DEFAULT_SEED, fine=None, out=None, no_ground_fill=False, logger=
         "building_count": len(instances),
         "summary": summary,
     }
+
+
+def _log_version_compat(states, data_version, logger):
+    """Warn if the stamped DataVersion is older than some block actually needs.
+
+    A schematic pasted into a world older than a block's introduction version
+    leaves holes (the block does not exist there), so surface the real floor.
+    """
+    report = compatibility_report(states, data_version)
+    if report["ok"]:
+        logger(
+            f"version: stamped {report['target_release']}; "
+            f"pastes cleanly into {report['floor_release']} and newer"
+        )
+        return
+    blocks = ", ".join(item["block"] for item in report["offending"][:8])
+    more = "" if len(report["offending"]) <= 8 else f" (+{len(report['offending']) - 8} more)"
+    logger(
+        f"WARNING: target {report['target_release']} is older than these assets require. "
+        f"This city needs {report['floor_release']} or newer. "
+        f"Pasting into {report['target_release']} will leave holes for: {blocks}{more}"
+    )
 
 
 def main():

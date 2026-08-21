@@ -76,6 +76,7 @@ def _app_root() -> str:
 
 RESOURCE_ROOT = _resource_root()
 ROOT = _app_root()
+CONFIG = str(Path(RESOURCE_ROOT) / "config")
 ENGINE = str(Path(RESOURCE_ROOT) / "engine")
 PIPELINE = str(Path(RESOURCE_ROOT) / "pipeline")
 GUI = str(Path(RESOURCE_ROOT) / "gui")
@@ -100,4 +101,4 @@ BUILD_CATALOG = str(Path(BUILDS_PROD) / "buildings.json")
 CITY_SIM = _artifact_dir("city", "simulation")
 CITY_PROD = _artifact_dir("city", "production")
 
-COLOR_RENDER_CSV = str(Path(ENGINE) / "color_render.csv")
+COLOR_RENDER_CSV = str(Path(CONFIG) / "color_render.csv")

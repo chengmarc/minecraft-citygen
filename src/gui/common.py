@@ -2,16 +2,28 @@
 
 from __future__ import annotations
 
+import glob
 import json
 import os
 import subprocess
 import sys
+
+import nbtlib
 
 from config import config_algo
 from config.config_algo import DEFAULT_SEED
 from config.config_path import BUILDS_PROD, CITY_PROD, CITY_SIM, GRID_SIM, GUI, ROOT, ROADS_PROD
 from config.config_world import BUILD_TYPES, ROAD_BOX, SAVE
 from config.models import BlockRegion, BuildRegion
+from config.version_compat import (
+    FALLBACK_DATA_VERSION,
+    RELEASES,
+    SUPPORTED_FLOOR,
+    compatibility_report,
+    data_version_for,
+    detect_world_data_version,
+    release_name_for,
+)
 
 
 class SeedError(ValueError):
@@ -243,10 +255,93 @@ def default_extraction_tab_config():
     landmark_start, landmark_end = region_to_xyz_pair(first_build_region(BUILD_TYPES, 2))
     return {
         "world_path": SAVE,
+        "target_version": AUTO_VERSION,
         "road": _serialize_xyz_pair(road_start, road_end),
         "house": _serialize_xyz_pair(house_start, house_end),
         "landmark": _serialize_xyz_pair(landmark_start, landmark_end),
     }
+
+
+# Sentinel stored in config when the target version tracks the source world.
+AUTO_VERSION = "auto"
+
+
+def version_selector_items():
+    """(label, value) pairs for the target-version dropdown, newest first."""
+    items = [("Auto (match world)", AUTO_VERSION)]
+    items.extend((name, name) for name, _ in reversed(RELEASES))
+    return items
+
+
+def resolve_target_data_version(world_path, choice):
+    """Resolve a stored version choice to a concrete DataVersion int.
+
+    ``auto`` detects the source world's own version (fallback if unreadable);
+    any other value is a known release name.
+    """
+    if choice and choice != AUTO_VERSION:
+        known = data_version_for(choice)
+        if known is not None:
+            return known
+    detected = detect_world_data_version(world_path)
+    resolved = detected if detected is not None else FALLBACK_DATA_VERSION
+    # Never target below the hard floor, even if the source world is older.
+    return max(resolved, SUPPORTED_FLOOR)
+
+
+def target_version_env(world_path, choice):
+    """Env fragment pinning MC_CITY_DATA_VERSION for a stage run.
+
+    Always explicit (even in auto mode) so stages that do not set MC_CITY_SAVE
+    still stamp the intended version instead of re-detecting the wrong world.
+    """
+    return {"MC_CITY_DATA_VERSION": str(resolve_target_data_version(world_path, choice))}
+
+
+def target_version_summary(world_path, choice):
+    """Short human label for the resolved target, e.g. 'Auto -> 1.19.4'."""
+    resolved = resolve_target_data_version(world_path, choice)
+    name = release_name_for(resolved)
+    return f"Auto -> {name}" if choice == AUTO_VERSION else name
+
+
+def _schem_palette_states(path):
+    """Block-state strings in a Sponge .schem palette, or () if unreadable."""
+    try:
+        root = nbtlib.load(path)
+    except (OSError, ValueError, KeyError):
+        return ()
+    schem = root.get("Schematic", root)
+    blocks = schem.get("Blocks")
+    palette = blocks.get("Palette") if blocks is not None else schem.get("Palette")
+    return tuple(str(key) for key in palette) if palette else ()
+
+
+def extracted_asset_block_ids():
+    """Union of block states across every extracted road/build .schem on disk.
+
+    This is the true output palette the final city is assembled from, so it is
+    the authoritative input for version-compatibility warnings. Returns an empty
+    set when nothing has been extracted yet.
+    """
+    states = set()
+    for base in (ROADS_PROD, BUILDS_PROD):
+        for path in glob.glob(os.path.join(base, "*.schem")):
+            states.update(_schem_palette_states(path))
+    return states
+
+
+def target_version_report(world_path, choice, block_states):
+    """Compatibility report for these blocks against the chosen target version."""
+    target = resolve_target_data_version(world_path, choice)
+    return compatibility_report(block_states, target)
+
+
+def format_compat_details(report):
+    """One line per unsupported block: 'minecraft:pale_oak_shelf  (needs 1.21.9)'."""
+    return "\n".join(
+        f"{item['block']}  (needs {item['min_release']})" for item in report["offending"]
+    )
 
 
 def load_saved_gui_config():

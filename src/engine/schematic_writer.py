@@ -8,6 +8,15 @@ import nbtlib
 import numpy as np
 from nbtlib import ByteArray, Compound, Int, IntArray, List, Short
 
+from config.version_compat import downgrade_block
+
+# The Sponge Schematic v3 container first appears in WorldEdit 7.3.0, which only
+# runs on Minecraft 1.20+. WorldEdit 7.2.x (shipping with 1.19.x and earlier)
+# reads only v2 and rejects a v3 file outright -- even when its DataVersion is a
+# valid older version. So the *container* version has to track the target, not
+# just the block content: emit v2 below 1.20, v3 at or above it.
+SPONGE_V3_MIN_DATA_VERSION = 3463  # Minecraft 1.20
+
 
 def blockstate(name, props):
     if not props:
@@ -48,8 +57,14 @@ def encode_varint_array(flat):
 def _schem_file(width, height, length, palette, data, data_version, offset=None):
     if offset is None:
         offset = (0, 0, 0)
+    offset_tag = IntArray([int(offset[0]), int(offset[1]), int(offset[2])])
+    palette_tag = Compound({key: Int(value) for key, value in palette.items()})
+    if data_version < SPONGE_V3_MIN_DATA_VERSION:
+        return _schem_file_v2(
+            width, height, length, palette_tag, data, data_version, offset_tag
+        )
     blocks = Compound({
-        "Palette": Compound({key: Int(value) for key, value in palette.items()}),
+        "Palette": palette_tag,
         "Data": ByteArray(data),
         "BlockEntities": List[Compound]([]),
     })
@@ -59,11 +74,37 @@ def _schem_file(width, height, length, palette, data, data_version, offset=None)
         "Width": Short(width),
         "Height": Short(height),
         "Length": Short(length),
-        "Offset": IntArray([int(offset[0]), int(offset[1]), int(offset[2])]),
+        "Offset": offset_tag,
         "Blocks": blocks,
         "Metadata": Compound({}),
     })
     return nbtlib.File({"Schematic": schem})
+
+
+def _schem_file_v2(width, height, length, palette_tag, data, data_version, offset_tag):
+    """Sponge Schematic v2 container (WorldEdit 7.2.x / Minecraft 1.19 and older).
+
+    Unlike v3, the fields live directly under a root tag named ``Schematic``
+    (not nested under a ``Blocks`` compound), block data is stored as
+    ``BlockData`` rather than ``Blocks.Data``, and the palette carries a
+    ``PaletteMax`` count.
+    """
+    schem = Compound({
+        "Version": Int(2),
+        "DataVersion": Int(data_version),
+        "Width": Short(width),
+        "Height": Short(height),
+        "Length": Short(length),
+        "Offset": offset_tag,
+        "PaletteMax": Int(len(palette_tag)),
+        "Palette": palette_tag,
+        "BlockData": ByteArray(data),
+        "BlockEntities": List[Compound]([]),
+        "Metadata": Compound({}),
+    })
+    file = nbtlib.File(schem)
+    file.root_name = "Schematic"
+    return file
 
 
 def sponge_schem_from_cells(cells, data_version, offset=None):
@@ -72,7 +113,7 @@ def sponge_schem_from_cells(cells, data_version, offset=None):
     for y in range(height):
         for z in range(length):
             for x in range(width):
-                state = cells[y][z][x]
+                state = downgrade_block(cells[y][z][x], data_version)
                 if state not in palette:
                     palette[state] = len(palette)
                 data.extend(encode_varint_scalar(palette[state]))
@@ -81,7 +122,20 @@ def sponge_schem_from_cells(cells, data_version, offset=None):
     return file, palette
 
 
+def _downgrade_grid_palette(grid, palette, data_version):
+    """Apply block renames to a grid's palette, remapping indices (collision-safe)."""
+    inverse = {index: state for state, index in palette.items()}
+    new_palette, remap = {}, np.empty(len(palette), dtype=np.int64)
+    for old_index in range(len(palette)):
+        state = downgrade_block(inverse[old_index], data_version)
+        remap[old_index] = new_palette.setdefault(state, len(new_palette))
+    if new_palette == palette:
+        return grid, palette
+    return remap[grid], new_palette
+
+
 def sponge_schem_from_grid(grid, palette, data_version, offset=None):
+    grid, palette = _downgrade_grid_palette(grid, palette, data_version)
     height, length, width = grid.shape
     data = encode_varint_array(grid.reshape(-1))
     return _schem_file(width, height, length, palette, data, data_version, offset=offset)

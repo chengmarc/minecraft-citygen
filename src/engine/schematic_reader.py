@@ -7,7 +7,12 @@ import numpy as np
 
 
 def _load_schem(path):
-    return nbtlib.load(path)["Schematic"]
+    # v3 nests everything under a "Schematic" key; v2 (written for pre-1.20
+    # targets) keeps the fields at the root -- the root tag is *named*
+    # Schematic but has no such child. decode_schem already handles the
+    # BlockData/Blocks.Data layout split beneath this.
+    root = nbtlib.load(path)
+    return root["Schematic"] if "Schematic" in root else root
 
 
 def _varints(raw):

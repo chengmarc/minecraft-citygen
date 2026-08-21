@@ -23,7 +23,7 @@ write_csv = MODULE.write_csv
 
 def test_default_output_points_to_packaged_csv():
     assert ROOT == Path(__file__).resolve().parents[1]
-    assert DEFAULT_OUTPUT == ROOT / "src" / "engine" / "color_render.csv"
+    assert DEFAULT_OUTPUT == ROOT / "src" / "config" / "color_render.csv"
     assert TOOLS_DIR == ROOT / "tools"
 
 
