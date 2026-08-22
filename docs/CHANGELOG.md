@@ -20,6 +20,10 @@ The format is based on Keep a Changelog, and versions should match the release v
   markers live outside the extracted cuboid, so in-cuboid signs are real content
 - both extractors now force grown leaves to `persistent=true` so exported
   canopies (cherry especially) do not decay after a paste
+- the render palette now colours the pre-rename `minecraft:grass` and
+  `minecraft:chain` ids (present in older-world exports) by aliasing them to
+  `short_grass`/`iron_chain`; `update_render_colors.py` re-adds these aliases on
+  regeneration
 - committed to forward-only version compatibility: the export target is always
   the source world's version or newer, so WorldEdit's forward upgrade covers
   every block and no backward-compat machinery is needed

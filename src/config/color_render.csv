@@ -164,6 +164,7 @@ minecraft:carved_pumpkin,198,119,24
 minecraft:cauldron,57,56,59
 minecraft:cave_vines,90,109,41
 minecraft:cave_vines_plant,88,102,38
+minecraft:chain,51,58,74
 minecraft:chain_command_block,131,161,148
 minecraft:cherry_button,225,178,172
 minecraft:cherry_door,225,174,167
@@ -429,6 +430,7 @@ minecraft:granite,149,103,86
 minecraft:granite_slab,149,103,86
 minecraft:granite_stairs,149,103,86
 minecraft:granite_wall,148,103,86
+minecraft:grass,83,107,51
 minecraft:grass_block,84,109,51
 minecraft:gravel,132,127,127
 minecraft:gray_banner,162,131,79

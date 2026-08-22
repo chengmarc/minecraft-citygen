@@ -27,6 +27,17 @@ DEFAULT_OUTPUT = ROOT / "src" / "config" / "color_render.csv"
 VERSION_MANIFEST_URL = "https://piston-meta.mojang.com/mc/game/version_manifest_v2.json"
 HTTP_TIMEOUT_SECONDS = 120
 
+# Historical block ids that were renamed in later versions. The generator scans a
+# single (modern) client JAR, which no longer carries the old ids -- but CityGen
+# copies block strings verbatim from the *source* world, so an export from an
+# older world still contains e.g. `minecraft:grass` (now `short_grass`). We emit
+# an alias row for each, reusing the current block's colour, so the renderer
+# colours them instead of falling back to the unknown-block magenta.
+RENAMED_ALIASES = {
+    "minecraft:grass": "minecraft:short_grass",   # renamed in 1.20.3
+    "minecraft:chain": "minecraft:iron_chain",    # renamed in 1.21.9
+}
+
 # Blocks whose textures ship grayscale and are coloured at render time via a
 # model `tintindex` (biome/foliage/grass/water colour). We bake a representative
 # tint so the palette isn't gray. Tinting is multiplicative: out = tex * tint/255.
@@ -430,6 +441,22 @@ def download_client_jar(version: str | None) -> tuple[str, Path]:
     return version_id, jar_path
 
 
+def apply_renamed_aliases(
+    rows: list[tuple[str, int, int, int]]
+) -> list[tuple[str, int, int, int]]:
+    """Add colour rows for historical (renamed) block ids, reusing the current
+    block's colour, and return the palette sorted by block name.
+
+    Only adds an alias when the old id is absent and the current id is present, so
+    it is a no-op on a jar old enough to still ship the original id.
+    """
+    by_name = {name: (r, g, b) for name, r, g, b in rows}
+    for old_id, new_id in RENAMED_ALIASES.items():
+        if old_id not in by_name and new_id in by_name:
+            by_name[old_id] = by_name[new_id]
+    return [(name, *rgb) for name, rgb in sorted(by_name.items())]
+
+
 def write_csv(rows: list[tuple[str, int, int, int]], output_path: Path) -> None:
     output_path.parent.mkdir(parents=True, exist_ok=True)
     with output_path.open("w", newline="", encoding="utf-8") as fh:
@@ -461,7 +488,7 @@ def main() -> int:
     version_id, jar_path = download_client_jar(args.version)
 
     extractor = MinecraftTopColorExtractor(jar_path)
-    rows = extractor.extract()
+    rows = apply_renamed_aliases(extractor.extract())
     write_csv(rows, output_path)
     print(f"downloaded {version_id} client JAR to {jar_path}")
     print(f"wrote {len(rows)} rows to {output_path}")

@@ -171,6 +171,32 @@ def test_average_block_color_skips_tint_for_coloured_texture(monkeypatch):
     assert extractor.average_block_color("oak_leaves") == (210, 120, 150)
 
 
+def test_apply_renamed_aliases_adds_old_ids_from_current_colours():
+    rows = [
+        ("minecraft:stone", 1, 2, 3),
+        ("minecraft:short_grass", 83, 107, 51),
+        ("minecraft:iron_chain", 51, 58, 74),
+    ]
+    by_name = {name: (r, g, b) for name, r, g, b in MODULE.apply_renamed_aliases(rows)}
+    # Old ids inherit the current block's colour...
+    assert by_name["minecraft:grass"] == (83, 107, 51)
+    assert by_name["minecraft:chain"] == (51, 58, 74)
+    # ...and the current ids are still present.
+    assert by_name["minecraft:short_grass"] == (83, 107, 51)
+
+
+def test_apply_renamed_aliases_is_sorted_and_noop_when_old_id_present():
+    rows = [
+        ("minecraft:short_grass", 83, 107, 51),
+        ("minecraft:grass", 9, 9, 9),  # already present -> not overwritten
+        ("minecraft:apple", 1, 1, 1),
+    ]
+    result = MODULE.apply_renamed_aliases(rows)
+    assert [name for name, *_ in result] == sorted(name for name, *_ in result)
+    by_name = {name: (r, g, b) for name, r, g, b in result}
+    assert by_name["minecraft:grass"] == (9, 9, 9)
+
+
 def test_average_texture_color_ignores_transparent_pixels():
     extractor = object.__new__(MinecraftTopColorExtractor)
     image = Image.new("RGBA", (2, 1))
