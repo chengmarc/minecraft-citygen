@@ -12,6 +12,8 @@ import os
 import sys
 from pathlib import Path
 
+from config.env import env_raw
+
 APP_NAME = "CityGen"
 SOURCE_ROOT = str(Path(__file__).resolve().parents[1])
 _REQUIRED_PACKAGE_DIRS = ("config", "engine", "gui", "pipeline")
@@ -43,7 +45,7 @@ def _repo_checkout_root(path: str) -> str:
 
 def _user_data_root() -> str:
     """Per-user writable data dir, following each platform's convention."""
-    override = os.environ.get("MC_CITY_APP_ROOT")
+    override = env_raw("APP_ROOT")
     if override:
         return _norm(override)
     home = Path.home()

@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import argparse
 import json
 import os
 import random
@@ -17,6 +16,7 @@ if __package__ in (None, ""):
 from config.config_path import BUILD_CATALOG, BUILDS_SIM
 from config.config_render import BUILD_PREVIEW_COLORS, CONTACT_SHEET_BG
 from engine.city_layout import catalog_type
+from pipeline.stages import noop, run_stage_cli
 
 CATALOG = BUILD_CATALOG
 
@@ -120,6 +120,8 @@ def write_contact(images):
 
 
 def run(*, key=None, logger=None, progress=None):
+    logger = logger or noop
+    progress = progress or noop
     catalog = json.load(open(CATALOG))
     keys = [key] if key else sorted(catalog)
     os.makedirs(BUILDS_SIM, exist_ok=True)
@@ -133,25 +135,15 @@ def run(*, key=None, logger=None, progress=None):
         out = os.path.join(BUILDS_SIM, f"{build_key}.png")
         im.save(out)
         images.append((build_key, im))
-        if logger is not None:
-            logger(f"saved {out} ({im.width}x{im.height})")
-        if progress is not None:
-            progress(index, total, build_key)
+        logger(f"saved {out} ({im.width}x{im.height})")
+        progress(index, total, build_key)
 
     contact = None
     if not key:
         contact = write_contact(images)
-        if logger is not None:
-            logger(f"rendered {len(images)} pseudo builds -> {contact}")
+        logger(f"rendered {len(images)} pseudo builds -> {contact}")
     return {"count": len(images), "contact_sheet": contact}
 
 
-def main():
-    ap = argparse.ArgumentParser()
-    ap.add_argument("--key", default=None, help="render one catalog key, e.g. 001")
-    args = ap.parse_args()
-    run(key=args.key, logger=print)
-
-
 if __name__ == "__main__":
-    main()
+    run_stage_cli(run, "key")

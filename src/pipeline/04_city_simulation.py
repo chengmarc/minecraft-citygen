@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import argparse
 import glob
 import os
 import random
@@ -28,6 +27,7 @@ from engine.city_layout import (
 )
 from engine.road_network import CELL, compose, gen_networks, load_assets, make_size, rot_img
 from engine.road_schematic import FILL_TOKEN
+from pipeline.stages import noop, run_stage_cli
 
 BUILDS = BUILDS_SIM
 _FONTS = {}
@@ -131,6 +131,7 @@ def render(net, placements, out, preview, fillers=None, rng=None):
 
 
 def run(*, seed=DEFAULT_SEED, fine=DEFAULT_FINE, preview=0, out=None, logger=None):
+    logger = logger or noop
     out = out or os.path.join(CITY_SIM, f"seed_{seed}.png")
     os.makedirs(os.path.dirname(out), exist_ok=True)
 
@@ -158,25 +159,13 @@ def run(*, seed=DEFAULT_SEED, fine=DEFAULT_FINE, preview=0, out=None, logger=Non
     by_type = {1: 0, 2: 0}
     for placement in placements:
         by_type[placement.building.type] += 1
-    if logger is not None:
-        logger(f"lots={len(lots)}  builds placed={len(placements)}  (type 1={by_type[1]}, type 2={by_type[2]})")
+    logger(f"lots={len(lots)}  builds placed={len(placements)}  (type 1={by_type[1]}, type 2={by_type[2]})")
     fillers = load_fill_assets()
     filler_rng = random.Random(seed * 7 + 3)
     width, height = render(net, placements, out, preview, fillers, filler_rng)
-    if logger is not None:
-        logger(f"saved {out} ({width}x{height})")
+    logger(f"saved {out} ({width}x{height})")
     return {"output_path": out, "image_size": (width, height), "placements": len(placements)}
 
 
-def main():
-    ap = argparse.ArgumentParser()
-    ap.add_argument("--seed", type=int, default=DEFAULT_SEED)
-    ap.add_argument("--fine", type=int, default=DEFAULT_FINE, help="fine grid edge in cells (even)")
-    ap.add_argument("--preview", type=int, default=0, help="edge of preview png (0 = full res)")
-    ap.add_argument("--out", default=None, help="default: ./seed_<seed>.png")
-    args = ap.parse_args()
-    run(seed=args.seed, fine=args.fine, preview=args.preview, out=args.out, logger=print)
-
-
 if __name__ == "__main__":
-    main()
+    run_stage_cli(run, "seed", "fine", "preview", "out")

@@ -13,11 +13,14 @@ if __package__ in (None, ""):
 from config.config_path import GRID_PROD
 from config.config_render import FULL_SCHEM_ISO_BLOCK_H, FULL_SCHEM_ISO_TILE_H, FULL_SCHEM_ISO_TILE_W
 from engine.render_isometric import render_schem_visible_iso
+from pipeline.stages import noop, run_stage_cli
 
 SCHEM = GRID_PROD
 
 
 def run(*, logger=None, progress=None):
+    logger = logger or noop
+    progress = progress or noop
     os.makedirs(GRID_PROD, exist_ok=True)
     outputs = []
     paths = sorted(glob.glob(os.path.join(SCHEM, "*.schem")))
@@ -33,16 +36,10 @@ def run(*, logger=None, progress=None):
         out = os.path.join(GRID_PROD, name + "_render.png")
         im.save(out)
         outputs.append(out)
-        if logger is not None:
-            logger(f"saved {out} ({im.width}x{im.height})")
-        if progress is not None:
-            progress(index, total, name)
+        logger(f"saved {out} ({im.width}x{im.height})")
+        progress(index, total, name)
     return {"count": len(outputs), "outputs": outputs}
 
 
-def main():
-    run(logger=print)
-
-
 if __name__ == "__main__":
-    main()
+    run_stage_cli(run)

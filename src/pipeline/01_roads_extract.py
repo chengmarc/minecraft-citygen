@@ -21,6 +21,7 @@ from config.config_world import BUILD_MARKER_Y_RANGE, DATA_VERSION, REFERENCE_GR
 from engine.anvil_world_reader import World
 from engine.marker_extract import detect_assets, extract_cuboid, ground_shift, iter_signs
 from engine.schematic_writer import write_sponge_schem_cells
+from pipeline.stages import noop, run_stage_cli
 
 (START_XYZ, END_XYZ) = ROAD_BOX.as_tuple()
 X0, Y0, Z0 = START_XYZ
@@ -58,42 +59,38 @@ def remove_existing_schems():
 
 
 def run(*, logger=None, progress=None):
+    logger = logger or noop
+    progress = progress or noop
     os.makedirs(OUT, exist_ok=True)
     remove_existing_schems()
     total_scan_chunks = (
         ((max(X0, X1) >> 4) - (min(X0, X1) >> 4) + 1) *
         ((max(Z0, Z1) >> 4) - (min(Z0, Z1) >> 4) + 1)
     )
-    if progress is not None:
-        progress(0, total_scan_chunks, "Scanning road region...")
+    progress(0, total_scan_chunks, "Scanning road region...")
 
     names = read_names()
     delta = ground_shift(get_world(), X0, X1, Z0, Z1, REFERENCE_GROUND_Y)
     m_lo, m_hi = BUILD_MARKER_Y_RANGE.as_tuple()
 
     def on_scan(done, total):
-        if progress is not None:
-            progress(done, total, "Scanning road region...")
+        progress(done, total, "Scanning road region...")
 
     components, skipped = detect_assets(
         get_world(), X0, X1, Z0, Z1, Y0 + delta, Y1 + delta, 1, (m_lo + delta, m_hi + delta),
         on_progress=on_scan,
     )
-    if logger is not None:
-        logger(f"source ground shift {delta:+d}; {len(names)} signs, {len(components)} marker components")
+    logger(f"source ground shift {delta:+d}; {len(names)} signs, {len(components)} marker components")
     for xmn, zmn, reason in skipped:
-        if logger is not None:
-            logger(f"  !! boundary at x={xmn} z={zmn}: {reason} -- SKIPPED")
+        logger(f"  !! boundary at x={xmn} z={zmn}: {reason} -- SKIPPED")
 
     results = []
     total = len(components)
     for index, comp in enumerate(components, start=1):
         name = name_for(comp.boundary, names)
         if name is None:
-            if logger is not None:
-                logger(f"  !! no sign for boundary {comp.boundary}")
-            if progress is not None:
-                progress(index, total, None)
+            logger(f"  !! no sign for boundary {comp.boundary}")
+            progress(index, total, None)
             continue
         cells, block_entities = extract_cuboid(get_world(), comp.cuboids[0], force_persistent_leaves=True)
         height, length, width = len(cells), len(cells[0]), len(cells[0][0])
@@ -105,11 +102,9 @@ def run(*, logger=None, progress=None):
             offset=(0, -ground_offset, 0),
             block_entities=block_entities,
         )
-        if logger is not None:
-            logger(f"extracted {name}")
+        logger(f"extracted {name}")
         results.append((name, (width, height, length)))
-        if progress is not None:
-            progress(index, total, name)
+        progress(index, total, name)
 
     if not results:
         raise RuntimeError(
@@ -117,16 +112,10 @@ def run(*, logger=None, progress=None):
             "Check the road bounds or the bundled default world content."
         )
     for name, dims in sorted(results):
-        if logger is not None:
-            logger(f"  {name:32} {dims[0]:2}x{dims[1]}x{dims[2]:2} (WxHxL)")
-    if logger is not None:
-        logger(f"saved {len(results)} schematics to {OUT}")
+        logger(f"  {name:32} {dims[0]:2}x{dims[1]}x{dims[2]:2} (WxHxL)")
+    logger(f"saved {len(results)} schematics to {OUT}")
     return {"count": len(results), "output_dir": OUT, "items": [name for name, _dims in results]}
 
 
-def main():
-    run(logger=print)
-
-
 if __name__ == "__main__":
-    main()
+    run_stage_cli(run)

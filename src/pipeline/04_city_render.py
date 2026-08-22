@@ -13,16 +13,19 @@ if __package__ in (None, ""):
 from config.config_path import CITY_PROD
 from config.config_render import FULL_SCHEM_ISO_BLOCK_H, FULL_SCHEM_ISO_TILE_H, FULL_SCHEM_ISO_TILE_W
 from engine.render_isometric import render_schem_visible_iso
+from pipeline.stages import noop, run_stage_cli
 
 SCHEM = CITY_PROD
 
 
 def run(*, logger=None, progress=None):
+    logger = logger or noop
+    progress = progress or noop
     os.makedirs(CITY_PROD, exist_ok=True)
     outputs = []
     paths = sorted(glob.glob(os.path.join(SCHEM, "*.schem")))
     total = len(paths)
-    if progress is not None and total > 0:
+    if total > 0:
         progress(0, total, "Rendering city schematic")
     for index, path in enumerate(paths, start=1):
         name = os.path.splitext(os.path.basename(path))[0]
@@ -35,16 +38,10 @@ def run(*, logger=None, progress=None):
         out = os.path.join(CITY_PROD, name + ".png")
         im.save(out)
         outputs.append(out)
-        if logger is not None:
-            logger(f"saved {out} ({im.width}x{im.height})")
-        if progress is not None:
-            progress(index, total, name)
+        logger(f"saved {out} ({im.width}x{im.height})")
+        progress(index, total, name)
     return {"count": len(outputs), "outputs": outputs}
 
 
-def main():
-    run(logger=print)
-
-
 if __name__ == "__main__":
-    main()
+    run_stage_cli(run)

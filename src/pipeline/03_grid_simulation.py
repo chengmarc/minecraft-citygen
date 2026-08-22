@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import argparse
 import os
 import sys
 from pathlib import Path
@@ -15,33 +14,24 @@ if __package__ in (None, ""):
 from config.config_algo import DEFAULT_SEED, FINE as DEFAULT_FINE
 from config.config_path import GRID_SIM
 from engine.road_network import compose, gen_networks, load_assets, make_size
+from pipeline.stages import noop, run_stage_cli
 
 
 def run(*, seed=DEFAULT_SEED, fine=DEFAULT_FINE, preview=0, logger=None):
+    logger = logger or noop
     size = make_size(fine, even=True)
     net = gen_networks(seed, size=size)
-    if logger is not None:
-        logger(f"big rows={sorted(net['big_rows'])} cols={sorted(net['big_cols'])}")
-        logger(f"small rows={sorted(net['small_rows'])} cols={sorted(net['small_cols'])}")
+    logger(f"big rows={sorted(net['big_rows'])} cols={sorted(net['big_cols'])}")
+    logger(f"small rows={sorted(net['small_rows'])} cols={sorted(net['small_cols'])}")
     grid = compose(net, load_assets())
     if preview:
         grid = grid.resize((preview, preview), Image.Resampling.NEAREST)
     out = os.path.join(GRID_SIM, f"seed_{seed}_preview.png")
     os.makedirs(GRID_SIM, exist_ok=True)
     grid.save(out)
-    if logger is not None:
-        logger(f"saved {out} {grid.size}")
+    logger(f"saved {out} {grid.size}")
     return {"output_path": out, "image_size": grid.size}
 
 
-def main():
-    ap = argparse.ArgumentParser()
-    ap.add_argument("--seed", type=int, default=DEFAULT_SEED)
-    ap.add_argument("--fine", type=int, default=DEFAULT_FINE, help="fine grid edge in cells (even)")
-    ap.add_argument("--preview", type=int, default=0, help="edge of the preview png (0 = full res)")
-    args = ap.parse_args()
-    run(seed=args.seed, fine=args.fine, preview=args.preview, logger=print)
-
-
 if __name__ == "__main__":
-    main()
+    run_stage_cli(run, "seed", "fine", "preview")

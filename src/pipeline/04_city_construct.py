@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import argparse
 import json
 import os
 import random
@@ -35,6 +34,7 @@ from engine.road_schematic import load_fillers
 from engine.schematic_reader import decode_schem
 from engine.schematic_transform import rot_tile, translate_block_entities
 from engine.schematic_writer import write_sponge_schem_grid
+from pipeline.stages import noop, run_stage_cli
 
 BLOCKS_PER_CELL = CELL
 BUILD_SNAP_DROP = 1
@@ -243,9 +243,11 @@ def _place_fillers(grid, master_palette, build_mask, road_cells, size, ground_y,
 
 
 def run(*, seed=DEFAULT_SEED, fine=None, out=None, no_ground_fill=False, logger=None, progress=None):
+    logger = logger or noop
+    progress = progress or noop
+
     def _step(n, label):
-        if progress is not None:
-            progress(n, 8, label)
+        progress(n, 8, label)
 
     out = out or os.path.join(CITY_PROD, f"seed_{seed}.schem")
     fine = _resolve_fine(seed, fine)
@@ -309,16 +311,14 @@ def run(*, seed=DEFAULT_SEED, fine=None, out=None, no_ground_fill=False, logger=
         f"grid {out_span}x{max_height}x{out_span}, palette={len(master_palette)}, "
         f"block_entities={len(block_entities)}"
     )
-    if logger is not None:
-        logger(summary)
+    logger(summary)
     write_sponge_schem_grid(
         grid, master_palette, out, DATA_VERSION,
         offset=(0, -(city_ground_y + 1), 0),
         block_entities=block_entities,
     )
     _step(8, "Schematic saved")
-    if logger is not None:
-        logger(f"saved {out}")
+    logger(f"saved {out}")
     return {
         "output_path": out,
         "building_count": len(instances),
@@ -326,24 +326,5 @@ def run(*, seed=DEFAULT_SEED, fine=None, out=None, no_ground_fill=False, logger=
     }
 
 
-def main():
-    ap = argparse.ArgumentParser()
-    ap.add_argument("--seed", type=int, default=DEFAULT_SEED)
-    ap.add_argument(
-        "--fine",
-        type=int,
-        default=None,
-        help="fine grid edge in cells; default: match the generated grid schematic for this seed when present",
-    )
-    ap.add_argument("--out", default=None, help="default: ./seed_<seed>.schem")
-    ap.add_argument(
-        "--no-ground-fill",
-        action="store_true",
-        help="leave empty non-road lot cells as air instead of filling them with ground + fill props",
-    )
-    args = ap.parse_args()
-    run(seed=args.seed, fine=args.fine, out=args.out, no_ground_fill=args.no_ground_fill, logger=print)
-
-
 if __name__ == "__main__":
-    main()
+    run_stage_cli(run, "seed", "fine", "out", "no_ground_fill")

@@ -16,6 +16,7 @@ from config.config_world import BUILD_MARKER_Y_RANGE, BUILD_TYPES, DATA_VERSION,
 from engine.anvil_world_reader import World
 from engine.marker_extract import detect_assets, extract_cuboid, ground_shift, iter_signs, parse_range
 from engine.schematic_writer import write_sponge_schem_cells
+from pipeline.stages import noop, run_stage_cli
 
 CATALOG = BUILD_CATALOG
 
@@ -66,6 +67,8 @@ def remove_existing_schems():
 
 
 def run(*, logger=None, progress=None):
+    logger = logger or noop
+    progress = progress or noop
     os.makedirs(BUILDS_PROD, exist_ok=True)
     remove_existing_schems()
 
@@ -77,8 +80,7 @@ def run(*, logger=None, progress=None):
     total_scan_chunks = sum(chunk_counts)
     scan_offsets = [sum(chunk_counts[:i]) for i in range(len(chunk_counts))]
 
-    if progress is not None:
-        progress(0, total_scan_chunks, "Scanning build regions...")
+    progress(0, total_scan_chunks, "Scanning build regions...")
     builds = []
     for i, (build_type, start_xyz, end_xyz) in enumerate(region_data):
         xa, y0, za = start_xyz
@@ -86,16 +88,13 @@ def run(*, logger=None, progress=None):
         offset = scan_offsets[i]
 
         def on_scan(done, _total, _offset=offset):
-            if progress is not None:
-                progress(_offset + done, total_scan_chunks, "Scanning build regions...")
+            progress(_offset + done, total_scan_chunks, "Scanning build regions...")
 
         detected, skipped = detect_builds(build_type, xa, xb, za, zb, y0, y1, on_scan_progress=on_scan)
         builds.extend(detected)
-        if logger is not None:
-            logger(f"type {build_type} region: {len(detected)} builds from wool boundaries")
+        logger(f"type {build_type} region: {len(detected)} builds from wool boundaries")
         for xmn, zmn, reason in skipped:
-            if logger is not None:
-                logger(f"  !! boundary at x={xmn} z={zmn}: {reason} -- SKIPPED")
+            logger(f"  !! boundary at x={xmn} z={zmn}: {reason} -- SKIPPED")
 
     catalog = {}
     total = len(builds)
@@ -118,14 +117,11 @@ def run(*, logger=None, progress=None):
                 write_schem(cells, bes, os.path.join(BUILDS_PROD, f"{key}_{name}.schem"))
                 entry["pieces"][name] = cuboid[3] - cuboid[2] + 1
         catalog[key] = entry
-        if logger is not None:
-            logger(f"extracted {key}")
-        if progress is not None:
-            progress(i + 1, total, key)
+        logger(f"extracted {key}")
+        progress(i + 1, total, key)
 
     json.dump(catalog, open(CATALOG, "w"), indent=2)
-    if logger is not None:
-        logger(f"wrote {len(catalog)} builds to {CATALOG}")
+    logger(f"wrote {len(catalog)} builds to {CATALOG}")
     return {
         "count": len(catalog),
         "catalog_path": CATALOG,
@@ -133,9 +129,5 @@ def run(*, logger=None, progress=None):
     }
 
 
-def main():
-    run(logger=print)
-
-
 if __name__ == "__main__":
-    main()
+    run_stage_cli(run)

@@ -28,6 +28,7 @@ if __package__ in (None, ""):
 from config.config_algo import CELL
 from config.config_path import ROADS_SIM
 from config.config_render import CITY_GROUND_FILL_RGBA
+from pipeline.stages import noop, run_stage_cli
 
 SMALL_PAD = 1
 BIG_PAD = 2
@@ -225,6 +226,8 @@ def make_fill_tile(canopy):
 
 
 def run(*, logger=None, progress=None):
+    logger = logger or noop
+    progress = progress or noop
     os.makedirs(OUT, exist_ok=True)
     imgs = {}
     total = len(TILES) + len(FILL_TILES)
@@ -233,20 +236,16 @@ def run(*, logger=None, progress=None):
         path = os.path.join(OUT, name + ".png")
         img.save(path)
         imgs[name] = img
-        if logger is not None:
-            logger(f"saved {name}.png ({w}x{h})")
-        if progress is not None:
-            progress(index, total, name)
+        logger(f"saved {name}.png ({w}x{h})")
+        progress(index, total, name)
 
     for offset, (name, canopy) in enumerate(FILL_TILES.items()):
         img = make_fill_tile(canopy)
         path = os.path.join(OUT, name + ".png")
         img.save(path)
         imgs[name] = img
-        if logger is not None:
-            logger(f"saved {name}.png ({CELL}x{CELL})")
-        if progress is not None:
-            progress(len(TILES) + offset + 1, total, name)
+        logger(f"saved {name}.png ({CELL}x{CELL})")
+        progress(len(TILES) + offset + 1, total, name)
 
     cols = 5
     zoom = 8
@@ -270,14 +269,9 @@ def run(*, logger=None, progress=None):
         sheet.alpha_composite(preview, (x, y + label_h))
     contact_sheet = os.path.join(OUT, "_contact_sheet.png")
     sheet.save(contact_sheet)
-    if logger is not None:
-        logger("saved _contact_sheet.png")
+    logger("saved _contact_sheet.png")
     return {"count": total, "contact_sheet": contact_sheet}
 
 
-def main():
-    run(logger=print)
-
-
 if __name__ == "__main__":
-    main()
+    run_stage_cli(run)
