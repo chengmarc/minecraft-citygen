@@ -17,9 +17,9 @@ if __package__ in (None, ""):
     sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from config.config_path import ROADS_PROD
-from config.config_world import BUILD_MARKER_Y_RANGE, DATA_VERSION, ROAD_BOX
+from config.config_world import BUILD_MARKER_Y_RANGE, DATA_VERSION, REFERENCE_GROUND_Y, ROAD_BOX
 from engine.anvil_world_reader import World
-from engine.marker_extract import detect_assets, extract_cuboid, iter_signs
+from engine.marker_extract import detect_assets, extract_cuboid, ground_shift, iter_signs
 from engine.schematic_writer import write_sponge_schem_cells
 
 (START_XYZ, END_XYZ) = ROAD_BOX.as_tuple()
@@ -60,15 +60,27 @@ def remove_existing_schems():
 def run(*, logger=None, progress=None):
     os.makedirs(OUT, exist_ok=True)
     remove_existing_schems()
+    total_scan_chunks = (
+        ((max(X0, X1) >> 4) - (min(X0, X1) >> 4) + 1) *
+        ((max(Z0, Z1) >> 4) - (min(Z0, Z1) >> 4) + 1)
+    )
     if progress is not None:
-        progress(0, 1, "Scanning road region...")
+        progress(0, total_scan_chunks, "Scanning road region...")
 
     names = read_names()
+    delta = ground_shift(get_world(), X0, X1, Z0, Z1, REFERENCE_GROUND_Y)
+    m_lo, m_hi = BUILD_MARKER_Y_RANGE.as_tuple()
+
+    def on_scan(done, total):
+        if progress is not None:
+            progress(done, total, "Scanning road region...")
+
     components, skipped = detect_assets(
-        get_world(), X0, X1, Z0, Z1, Y0, Y1, 1, BUILD_MARKER_Y_RANGE.as_tuple()
+        get_world(), X0, X1, Z0, Z1, Y0 + delta, Y1 + delta, 1, (m_lo + delta, m_hi + delta),
+        on_progress=on_scan,
     )
     if logger is not None:
-        logger(f"{len(names)} signs, {len(components)} marker components")
+        logger(f"source ground shift {delta:+d}; {len(names)} signs, {len(components)} marker components")
     for xmn, zmn, reason in skipped:
         if logger is not None:
             logger(f"  !! boundary at x={xmn} z={zmn}: {reason} -- SKIPPED")

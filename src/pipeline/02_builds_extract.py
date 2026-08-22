@@ -12,10 +12,10 @@ if __package__ in (None, ""):
     sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from config.config_path import BUILD_CATALOG, BUILDS_PROD
-from config.config_world import BUILD_MARKER_Y_RANGE, BUILD_TYPES, DATA_VERSION
+from config.config_world import BUILD_MARKER_Y_RANGE, BUILD_TYPES, DATA_VERSION, REFERENCE_GROUND_Y
 from config.version_compat import compatibility_report
 from engine.anvil_world_reader import World
-from engine.marker_extract import detect_assets, extract_cuboid, iter_signs, parse_range
+from engine.marker_extract import detect_assets, extract_cuboid, ground_shift, iter_signs, parse_range
 from engine.schematic_writer import write_sponge_schem_cells
 
 CATALOG = BUILD_CATALOG
@@ -26,11 +26,14 @@ def get_world():
     return World()
 
 
-def detect_builds(build_type, x_a, x_b, z_a, z_b, y0, y1):
+def detect_builds(build_type, x_a, x_b, z_a, z_b, y0, y1, *, on_scan_progress=None):
     """Wrap the shared marker extraction with the per-type component count."""
     expected_components = 1 if build_type == 1 else 3
+    delta = ground_shift(get_world(), x_a, x_b, z_a, z_b, REFERENCE_GROUND_Y)
+    m_lo, m_hi = BUILD_MARKER_Y_RANGE.as_tuple()
     components, skipped = detect_assets(
-        get_world(), x_a, x_b, z_a, z_b, y0, y1, expected_components, BUILD_MARKER_Y_RANGE.as_tuple()
+        get_world(), x_a, x_b, z_a, z_b, y0 + delta, y1 + delta, expected_components, (m_lo + delta, m_hi + delta),
+        on_progress=on_scan_progress,
     )
     builds = [
         (build_type, c.origin, c.size, c.cuboids, c.ground_y, c.boundary)
@@ -69,15 +72,27 @@ def run(*, logger=None, progress=None):
     os.makedirs(BUILDS_PROD, exist_ok=True)
     remove_existing_schems()
 
+    region_data = [(r.build_type, *r.bounds.as_tuple()) for r in BUILD_TYPES]
+    chunk_counts = [
+        ((max(xa, xb) >> 4) - (min(xa, xb) >> 4) + 1) * ((max(za, zb) >> 4) - (min(za, zb) >> 4) + 1)
+        for _, (xa, _y0, za), (xb, _y1, zb) in region_data
+    ]
+    total_scan_chunks = sum(chunk_counts)
+    scan_offsets = [sum(chunk_counts[:i]) for i in range(len(chunk_counts))]
+
     if progress is not None:
-        progress(0, 1, "Scanning build regions...")
+        progress(0, total_scan_chunks, "Scanning build regions...")
     builds = []
-    for region in BUILD_TYPES:
-        build_type = region.build_type
-        (start_xyz, end_xyz) = region.bounds.as_tuple()
+    for i, (build_type, start_xyz, end_xyz) in enumerate(region_data):
         xa, y0, za = start_xyz
         xb, y1, zb = end_xyz
-        detected, skipped = detect_builds(build_type, xa, xb, za, zb, y0, y1)
+        offset = scan_offsets[i]
+
+        def on_scan(done, _total, _offset=offset):
+            if progress is not None:
+                progress(_offset + done, total_scan_chunks, "Scanning build regions...")
+
+        detected, skipped = detect_builds(build_type, xa, xb, za, zb, y0, y1, on_scan_progress=on_scan)
         builds.extend(detected)
         if logger is not None:
             logger(f"type {build_type} region: {len(detected)} builds from wool boundaries")

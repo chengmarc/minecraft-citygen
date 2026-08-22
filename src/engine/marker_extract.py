@@ -16,7 +16,7 @@ from __future__ import annotations
 
 import json
 import re
-from collections import deque
+from collections import Counter, deque
 from dataclasses import dataclass
 
 from engine.schematic_writer import blockstate
@@ -37,14 +37,28 @@ def block_base(world, x, y, z):
     return world.block(x, y, z)[0].split(":")[1]
 
 
-def wool_boundary_components(world, x_a, x_b, z_a, z_b, y0, y1):
+def wool_boundary_components(world, x_a, x_b, z_a, z_b, y0, y1, *, on_progress=None):
     xlo, xhi = min(x_a, x_b), max(x_a, x_b)
     zlo, zhi = min(z_a, z_b), max(z_a, z_b)
+    cx_lo, cx_hi = xlo >> 4, xhi >> 4
+    cz_lo, cz_hi = zlo >> 4, zhi >> 4
+    total_chunks = (cx_hi - cx_lo + 1) * (cz_hi - cz_lo + 1)
+    chunks_done = 0
     occ = set()
-    for x in range(xlo, xhi + 1):
-        for z in range(zlo, zhi + 1):
-            if any(block_base(world, x, y, z).endswith("wool") for y in range(y0, y1 + 1)):
-                occ.add((x, z))
+    for cx in range(cx_lo, cx_hi + 1):
+        x_start = max(xlo, cx << 4)
+        x_end = min(xhi, (cx << 4) + 15)
+        for cz in range(cz_lo, cz_hi + 1):
+            z_start = max(zlo, cz << 4)
+            z_end = min(zhi, (cz << 4) + 15)
+            if not world.is_chunk_empty(cx, cz):
+                for x in range(x_start, x_end + 1):
+                    for z in range(z_start, z_end + 1):
+                        if any(block_base(world, x, y, z).endswith("wool") for y in range(y0, y1 + 1)):
+                            occ.add((x, z))
+            chunks_done += 1
+            if on_progress is not None:
+                on_progress(chunks_done, total_chunks)
 
     seen, components = set(), []
     for start in occ:
@@ -93,7 +107,7 @@ def component_cuboids(golds, diamonds):
     return sorted(cuboids, key=lambda bb: (bb[2], bb[4], bb[0]))
 
 
-def detect_assets(world, x_a, x_b, z_a, z_b, y0, y1, expected_components, marker_y_range):
+def detect_assets(world, x_a, x_b, z_a, z_b, y0, y1, expected_components, marker_y_range, *, on_progress=None):
     """Resolve every wool-bounded asset in the box into its marker cuboids.
 
     ``expected_components`` is 1 for a single solid (type-1 build, road, fill)
@@ -102,7 +116,7 @@ def detect_assets(world, x_a, x_b, z_a, z_b, y0, y1, expected_components, marker
     top corner rises above ``y1`` are still captured.
     """
     components, skipped = [], []
-    for xmn, xmx, zmn, zmx in wool_boundary_components(world, x_a, x_b, z_a, z_b, y0, y1):
+    for xmn, xmx, zmn, zmx in wool_boundary_components(world, x_a, x_b, z_a, z_b, y0, y1, on_progress=on_progress):
         markers = markers_in_bounds(world, xmn, xmx, zmn, zmx, marker_y_range)
         emeralds = markers["emerald_block"]
         try:
@@ -129,19 +143,31 @@ def detect_assets(world, x_a, x_b, z_a, z_b, y0, y1, expected_components, marker
     return components, skipped
 
 
+def _sign_line(raw):
+    """Display text of one sign line, across the JSON, component, and plain forms."""
+    text = str(raw)
+    try:
+        parsed = json.loads(text)
+    except (ValueError, TypeError):
+        return text
+    if isinstance(parsed, dict):
+        return str(parsed.get("text", ""))
+    if isinstance(parsed, str):
+        return parsed
+    return text
+
+
 def sign_text(be):
     parts = []
+    # Legacy (pre-1.20 / the 1.19.4 source world) single-sided signs: Text1..Text4.
+    for i in range(1, 5):
+        if f"Text{i}" in be:
+            parts.append(_sign_line(be[f"Text{i}"]))
+    # Modern (1.20+) two-sided signs: front_text/back_text message lists.
     for side in ("front_text", "back_text"):
         for message in be.get(side, {}).get("messages", []):
-            text = str(message)
-            try:
-                parsed = json.loads(text)
-                text = parsed.get("text", text) if isinstance(parsed, dict) else text
-            except (ValueError, TypeError):
-                pass
-            if text:
-                parts.append(text)
-    return " ".join(parts)
+            parts.append(_sign_line(message))
+    return " ".join(part for part in parts if part)
 
 
 def iter_signs(world, x_a, x_b, z_a, z_b):
@@ -170,6 +196,56 @@ def parse_range(text, labels):
             hi = int(match.group(2)) if match.group(2) else lo
             return [min(lo, hi), max(lo, hi)]
     return None
+
+
+def detect_source_ground_y(world, x_a, x_b, z_a, z_b):
+    """Modal top-solid-block Y over the region -- the source world's ground plane.
+
+    Assets are authored on a flat terrain surface, so the most common column top
+    is that surface. Iterates chunks in the region and calls top_solid_blocks()
+    once per chunk, independent of the stored heightmap (which WorldEdit leaves
+    stale after a paste). Returns None when the region has no solid columns.
+
+    This is the *source* ground (where assets are authored), distinct from the
+    emerald marker's per-asset ``ground_y`` and the generated ``city_ground_y``.
+    """
+    xlo, xhi = min(x_a, x_b), max(x_a, x_b)
+    zlo, zhi = min(z_a, z_b), max(z_a, z_b)
+    cx_range = range(xlo >> 4, (xhi >> 4) + 1)
+    cz_range = range(zlo >> 4, (zhi >> 4) + 1)
+    tops = Counter()
+    for cx in cx_range:
+        for cz in cz_range:
+            if world.is_chunk_empty(cx, cz):
+                continue
+            entries = world.top_solid_blocks(cx, cz)
+            for col, entry in enumerate(entries):
+                if entry is None:
+                    continue
+                bx = (cx << 4) + (col & 15)
+                bz = (cz << 4) + (col >> 4)
+                if xlo <= bx <= xhi and zlo <= bz <= zhi:
+                    tops[entry[1]] += 1
+    if not tops:
+        return None
+    # Assets (roads, builds) rise *above* the terrain, so the ground plane is the
+    # lowest broadly-present surface -- not the mode, which in a road- or
+    # build-dense region is the asset top. A level counts as ground when it
+    # covers a meaningful share of columns, which filters stray holes/outliers.
+    threshold = max(3, sum(tops.values()) // 20)  # ~5% of sampled columns
+    common = [y for y, count in tops.items() if count >= threshold]
+    return min(common) if common else tops.most_common(1)[0][0]
+
+
+def ground_shift(world, x_a, x_b, z_a, z_b, reference_ground_y):
+    """Y offset from ``reference_ground_y`` to this region's detected source ground.
+
+    Added to the wool/marker search windows so extraction follows the world's
+    actual ground plane. Returns 0 when the ground can't be detected, preserving
+    the configured absolute windows.
+    """
+    ground = detect_source_ground_y(world, x_a, x_b, z_a, z_b)
+    return 0 if ground is None else ground - reference_ground_y
 
 
 def extract_cuboid(world, cuboid, *, force_persistent_leaves=False):

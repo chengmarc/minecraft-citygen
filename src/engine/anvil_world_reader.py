@@ -235,6 +235,58 @@ class World:
         result = [int(heights[i]) if settled[i] else None for i in range(256)]
         return result, min_y
 
+    def is_chunk_empty(self, cx, cz):
+        """Return True when the chunk is absent from the region file."""
+        return self.load_chunk(cx, cz) is None
+
+    def top_solid_blocks(self, cx, cz):
+        """Return the highest non-air block for all 256 columns in a chunk.
+
+        Returns a list of 256 entries indexed by ``z_local * 16 + x_local``.
+        Each entry is ``(name, world_y)`` or ``None`` for empty columns.
+        """
+        chunk = self.load_chunk(cx, cz)
+        if chunk is None:
+            return [None] * 256
+        section_ys = sorted([int(s["Y"]) for s in chunk.get("sections", [])], reverse=True)
+        if not section_ys:
+            return [None] * 256
+
+        result = [None] * 256
+        settled = np.zeros(256, dtype=bool)
+
+        for sy in section_ys:
+            if settled.all():
+                break
+            palette, idx = self._section(cx, cz, sy)
+            if palette is None:
+                continue
+            names = [str(e["Name"]) for e in palette]
+            if all(n in self._AIR_BLOCKS for n in names):
+                continue
+            is_air = np.array([n in self._AIR_BLOCKS for n in names], dtype=bool)
+
+            if idx is None:
+                world_y = (sy << 4) + 15
+                for col in np.where(~settled)[0]:
+                    result[col] = (names[0], world_y)
+                settled[:] = True
+                continue
+
+            idx_arr = np.array(idx, dtype=np.int32).reshape(16, 256)
+            for yy in range(15, -1, -1):
+                if settled.all():
+                    break
+                col_idx = idx_arr[yy]
+                solid = ~settled & ~is_air[col_idx]
+                if solid.any():
+                    world_y = (sy << 4) + yy
+                    for col in np.where(solid)[0]:
+                        result[col] = (names[col_idx[col]], world_y)
+                    settled |= solid
+
+        return result
+
     def top_solid_block(self, x, z):
         """Return (name, y, properties) of the highest non-air block in the column.
 
@@ -253,6 +305,8 @@ class World:
         for sy in range(max(section_ys), min(section_ys) - 1, -1):
             palette, idx = self._section(cx, cz, sy)
             if palette is None:
+                continue
+            if all(str(e["Name"]) in self._AIR_BLOCKS for e in palette):
                 continue
             for yy in range(15, -1, -1):
                 v = 0 if idx is None else idx[yy * 256 + lz * 16 + lx]

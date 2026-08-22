@@ -160,6 +160,23 @@ class AlgoControlsWidget(QtWidgets.QWidget):
             "algo": self.algo_values(),
         }
 
+    def set_state(self, state):
+        """Apply state to all widgets without emitting change signals."""
+        algo = common.create_config_values(state.get("algo"))
+        self.seed_edit.blockSignals(True)
+        self.seed_edit.setText(str(state.get("seed", DEFAULT_SEED)))
+        self.seed_edit.blockSignals(False)
+        for name, widget in self.widgets.items():
+            widget.blockSignals(True)
+            value = algo.get(name, "")
+            if isinstance(widget, QtWidgets.QLineEdit):
+                widget.setText(str(value))
+            elif isinstance(widget, QtWidgets.QComboBox):
+                widget.setCurrentText(str(value))
+            else:
+                widget.setValue(int(value))
+            widget.blockSignals(False)
+
 
 class ExtractionAreaGroup(QtWidgets.QGroupBox):
     def __init__(self, title, area_kind, region, parent=None):

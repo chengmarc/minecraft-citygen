@@ -26,6 +26,7 @@ class RoadsExtractTests(unittest.TestCase):
 
             with mock.patch.object(roads_extract, "OUT", str(out_dir)), \
                  mock.patch.object(roads_extract, "get_world", return_value=mock.Mock()), \
+                 mock.patch.object(roads_extract, "ground_shift", return_value=0), \
                  mock.patch.object(roads_extract, "read_names", return_value=[(1, 1, "fresh")]), \
                  mock.patch.object(roads_extract, "detect_assets", return_value=([component], [])), \
                  mock.patch.object(roads_extract, "extract_cuboid", return_value=cells), \
@@ -46,6 +47,7 @@ class RoadsExtractTests(unittest.TestCase):
 
             with mock.patch.object(roads_extract, "OUT", str(out_dir)), \
                  mock.patch.object(roads_extract, "get_world", return_value=mock.Mock()), \
+                 mock.patch.object(roads_extract, "ground_shift", return_value=0), \
                  mock.patch.object(roads_extract, "read_names", return_value=[(1, 1, "fresh")]), \
                  mock.patch.object(roads_extract, "detect_assets", return_value=([component], [])), \
                  mock.patch.object(roads_extract, "extract_cuboid", return_value=[[["minecraft:stone"]]]), \
@@ -62,6 +64,7 @@ class RoadsExtractTests(unittest.TestCase):
 
             with mock.patch.object(roads_extract, "OUT", str(out_dir)), \
                  mock.patch.object(roads_extract, "get_world", return_value=mock.Mock()), \
+                 mock.patch.object(roads_extract, "ground_shift", return_value=0), \
                  mock.patch.object(roads_extract, "read_names", return_value=[]), \
                  mock.patch.object(roads_extract, "detect_assets", return_value=([], [])):
                 with self.assertRaisesRegex(RuntimeError, "found no assets"):

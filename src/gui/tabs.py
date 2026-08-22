@@ -20,15 +20,17 @@ from gui.widgets import AlgoControlsWidget, ExtractionAreaGroup
 from gui.workers import ProgressMixin, WeightedTaskMixin, WorkerSignals
 
 PROGRESS_BAR_SCALE = 1000
-BUILD_SCAN_HEADROOM = 0.96
 
 
 class PreviewTab(QtWidgets.QWidget, WeightedTaskMixin):
     def __init__(self, owner):
         super().__init__(owner)
         self.owner = owner
+        self._peer = None
         self._init_progress_mixin()
-        state = owner.get_saved_config_section("preview") or common.default_algo_tab_config()
+        state = (owner.get_saved_config_section("algo")
+                 or owner.get_saved_config_section("preview")
+                 or common.default_algo_tab_config())
 
         layout = QtWidgets.QVBoxLayout(self)
         layout.setSpacing(0)
@@ -58,8 +60,14 @@ class PreviewTab(QtWidgets.QWidget, WeightedTaskMixin):
         self.progress_bar.setRange(0, 100)
         layout.addWidget(self.progress_bar)
 
+    def set_peer(self, peer):
+        self._peer = peer
+
     def _save_state(self):
-        self.owner.set_saved_config_section("preview", self.controls.current_state())
+        state = self.controls.current_state()
+        self.owner.set_saved_config_section("algo", state)
+        if self._peer is not None:
+            self._peer.controls.set_state(state)
 
     def _run_preview(self):
         seed = self.controls.seed_edit.text().strip()
@@ -100,8 +108,11 @@ class RenderTab(QtWidgets.QWidget, WeightedTaskMixin):
     def __init__(self, owner):
         super().__init__(owner)
         self.owner = owner
+        self._peer = None
         self._init_progress_mixin()
-        state = owner.get_saved_config_section("render") or common.default_algo_tab_config()
+        state = (owner.get_saved_config_section("algo")
+                 or owner.get_saved_config_section("render")
+                 or common.default_algo_tab_config())
 
         layout = QtWidgets.QVBoxLayout(self)
         layout.setSpacing(0)
@@ -127,8 +138,14 @@ class RenderTab(QtWidgets.QWidget, WeightedTaskMixin):
         self.progress_bar.setRange(0, 100)
         layout.addWidget(self.progress_bar)
 
+    def set_peer(self, peer):
+        self._peer = peer
+
     def _save_state(self):
-        self.owner.set_saved_config_section("render", self.controls.current_state())
+        state = self.controls.current_state()
+        self.owner.set_saved_config_section("algo", state)
+        if self._peer is not None:
+            self._peer.controls.set_state(state)
 
     def _target_version_env(self):
         """Stamp the final city schematic with the version chosen on the Extraction tab."""
@@ -445,12 +462,11 @@ class ExtractionTab(QtWidgets.QWidget, ProgressMixin):
             self._current_stage = (stage, total)
             self._start_determinate(total)
         if self._is_indeterminate_start(completed, total):
-            headroom = BUILD_SCAN_HEADROOM if (label or "").startswith("Scanning build") else common.SCRIPT_PROGRESS_HEADROOM
-            self._begin_soft_progress(label or stage, headroom=headroom)
+            self._begin_soft_progress(label or stage, headroom=common.SCRIPT_PROGRESS_HEADROOM)
             return
         self._cancel_progress_animation()
         self._set_progress_fraction(completed)
-        if label and total == 1:
+        if label:
             self.set_status(label)
         else:
             self.set_status(f"{stage} {int(completed)}/{int(total)}")

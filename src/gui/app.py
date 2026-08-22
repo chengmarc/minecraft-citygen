@@ -25,10 +25,15 @@ class CityGeneratorQtApp(QtWidgets.QMainWindow):
 
         self._saved_gui_config = common.load_saved_gui_config()
 
+        preview_tab = PreviewTab(self)
+        render_tab = RenderTab(self)
+        preview_tab.set_peer(render_tab)
+        render_tab.set_peer(preview_tab)
+
         tabs = QtWidgets.QTabWidget(self)
         tabs.addTab(ExtractionTab(self), "Extraction")
-        tabs.addTab(PreviewTab(self), "Preview")
-        tabs.addTab(RenderTab(self), "Render")
+        tabs.addTab(preview_tab, "Preview")
+        tabs.addTab(render_tab, "Render")
         self.setCentralWidget(tabs)
 
     def get_saved_config_section(self, section):

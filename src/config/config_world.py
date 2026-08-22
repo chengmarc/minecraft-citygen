@@ -76,3 +76,10 @@ BUILD_TYPE2_REGION = BuildRegion(2, BlockRegion.from_xyz_pair((0, 64, -256), (38
 
 BUILD_MARKER_Y_RANGE = VerticalRange(60, 230)
 BUILD_TYPES = _env_build_regions("MC_CITY_BUILD_TYPES", (BUILD_TYPE1_REGION, BUILD_TYPE2_REGION))
+
+# Source-world ground plane (grass level) the extraction Y windows above are
+# authored against. Each stage detects the actual source ground at run time and
+# shifts its wool/marker search windows by the difference, so a source world
+# seated at any Y works. Distinct from the emerald marker's per-asset ground_y
+# and the generated city_ground_y. See engine/marker_extract.detect_source_ground_y.
+REFERENCE_GROUND_Y = 63
