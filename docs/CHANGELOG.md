@@ -6,6 +6,44 @@ The format is based on Keep a Changelog, and versions should match the release v
 
 ## [Unreleased]
 
+### Added
+
+- block entities are now preserved through extraction and city assembly: signs
+  (text), banners, chests/barrels (contents), beds, furnaces, skulls, etc. keep
+  their NBT in the output schematic instead of pasting as empty blocks. Positions
+  follow their blocks through rotation, stacking, and composition, and the NBT is
+  upgraded forward by WorldEdit's DataFixer like block ids (source-stamped)
+
+### Changed
+
+- extraction no longer blanks signs to air; the gold/diamond/emerald authoring
+  markers live outside the extracted cuboid, so in-cuboid signs are real content
+- both extractors now force grown leaves to `persistent=true` so exported
+  canopies (cherry especially) do not decay after a paste
+- committed to forward-only version compatibility: the export target is always
+  the source world's version or newer, so WorldEdit's forward upgrade covers
+  every block and no backward-compat machinery is needed
+- output schematics are now always stamped with the **source** world's
+  `DataVersion` so WorldEdit's DataFixer upgrades them forward on paste; the
+  Target Version selector is informational only and no longer changes the stamp
+
+### Fixed
+
+- picking a target version newer than the source no longer stamps the schematic
+  with that newer version (which skipped the DataFixer and holed out blocks
+  renamed since the source, e.g. `grass` → `short_grass`)
+
+### Removed
+
+- the block-rename/downgrade path (`downgrade_block`, `BLOCK_RENAMES`), the
+  per-block minimum-version map, and the `compatibility_report` "missing block"
+  warnings across the GUI and pipeline — all unreachable under forward-only
+  targeting
+- `src/config/block_versions.json` and the block-registry half of the refresh
+  tool; `tools/update_block_versions.py` is now `tools/update_mc_versions.py`,
+  a release-table scrape that no longer needs a Java runtime or the vanilla
+  data generator
+
 ## [0.4.1] - 2026-08-20
 
 This is a patch release for the extracted-asset ground offset refactor. Building

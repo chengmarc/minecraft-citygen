@@ -18,7 +18,6 @@ from config.config_algo import DEFAULT_SEED, FINE as DEFAULT_FINE
 from config.config_path import BUILD_CATALOG, CITY_PROD, GRID_PROD
 from config.config_render import CITY_ANCHOR_BLOCK, CITY_GROUND_FILL_BLOCK, CITY_GROUND_Y
 from config.config_world import DATA_VERSION
-from config.version_compat import compatibility_report
 from engine.building_schematic import assemble
 from engine.city_layout import (
     FACE_K,
@@ -34,7 +33,7 @@ from engine.road_network import CELL, gen_networks, make_size
 from engine.road_schematic import build as build_road_grid
 from engine.road_schematic import load_fillers
 from engine.schematic_reader import decode_schem
-from engine.schematic_transform import rot_tile
+from engine.schematic_transform import rot_tile, translate_block_entities
 from engine.schematic_writer import write_sponge_schem_grid
 
 BLOCKS_PER_CELL = CELL
@@ -115,8 +114,13 @@ def _assemble_instances(seed, placements, catalog_meta, ground_y):
     return instances, building_top
 
 
-def _compose_grid(road_grid, road_palette, road_span, road_height, road_y0, out_span, max_height, instances):
-    """Blit the road grid and every building instance into one master voxel grid."""
+def _compose_grid(road_grid, road_palette, road_span, road_height, road_y0, out_span, max_height, instances, road_block_entities):
+    """Blit the road grid and every building instance into one master voxel grid.
+
+    Returns the grid, its palette, the footprint mask, and every block entity
+    repositioned into master-grid coordinates (roads shifted by the road seat and
+    anchor margin; each building by its placement origin).
+    """
     master_palette = {"minecraft:air": 0}
     for state in road_palette:
         master_palette.setdefault(state, len(master_palette))
@@ -129,10 +133,14 @@ def _compose_grid(road_grid, road_palette, road_span, road_height, road_y0, out_
         PLAYER_ANCHOR_MARGIN:PLAYER_ANCHOR_MARGIN + road_span,
     ] = remap[road_grid]
 
+    block_entities = translate_block_entities(
+        road_block_entities, PLAYER_ANCHOR_MARGIN, road_y0, PLAYER_ANCHOR_MARGIN
+    )
     build_mask = np.zeros((out_span, out_span), dtype=bool)
     for tile, px, pz, y0 in instances:
         _blit_tile(grid, master_palette, tile, px, pz, y0, build_mask)
-    return grid, master_palette, build_mask
+        block_entities += translate_block_entities(tile.block_entities, px, y0, pz)
+    return grid, master_palette, build_mask, block_entities
 
 
 def _blit_tile(grid, master_palette, tile, px, pz, y0, build_mask=None):
@@ -173,6 +181,21 @@ def _palette_index(master_palette, state):
     return idx
 
 
+def _finalize_block_entities(block_entities, grid_shape):
+    """Drop out-of-bounds entities and collapse duplicates on a cell (last wins).
+
+    A schematic must not carry a block entity outside its bounds or two on the
+    same position (WorldEdit rejects the latter). Blits already clip blocks to the
+    grid; this applies the same clipping and one-per-cell rule to the entities.
+    """
+    max_height, span_z, span_x = grid_shape
+    by_pos = {}
+    for be in block_entities:
+        if 0 <= be.y < max_height and 0 <= be.z < span_z and 0 <= be.x < span_x:
+            by_pos[(be.x, be.y, be.z)] = be
+    return list(by_pos.values())
+
+
 def _apply_ground_fill(grid, fill_idx, build_mask, road_cells, size, city_ground_y, skip_cells=frozenset()):
     """Fill empty non-road lot cells on the ground plane with the configured block.
 
@@ -198,9 +221,11 @@ def _place_fillers(grid, master_palette, build_mask, road_cells, size, ground_y,
     Each prop is a self-contained 9x9 asset carrying its own ground, seated on the
     ground plane like any other marker asset. Cells touched by a building are
     skipped so nothing collides with a footprint. Returns the set of (fx, fy)
-    cells filled so the flat ground fill can leave them alone.
+    cells filled (so the flat ground fill can leave them alone) and the block
+    entities the placed props contribute, in master-grid coordinates.
     """
     placed = set()
+    block_entities = []
     for fy in range(size.fine):
         for fx in range(size.fine):
             if (fx, fy) in road_cells:
@@ -210,21 +235,33 @@ def _place_fillers(grid, master_palette, build_mask, road_cells, size, ground_y,
             if build_mask[z0:z0 + BLOCKS_PER_CELL, x0:x0 + BLOCKS_PER_CELL].any():
                 continue
             tile = rot_tile(rng.choice(fillers), rng.randint(0, 3))
-            _blit_tile(grid, master_palette, tile, x0, z0, _seat_y(ground_y, tile.ground_offset))
+            y0 = _seat_y(ground_y, tile.ground_offset)
+            _blit_tile(grid, master_palette, tile, x0, z0, y0)
+            block_entities += translate_block_entities(tile.block_entities, x0, y0, z0)
             placed.add((fx, fy))
-    return placed
+    return placed, block_entities
 
 
-def run(*, seed=DEFAULT_SEED, fine=None, out=None, no_ground_fill=False, logger=None):
+def run(*, seed=DEFAULT_SEED, fine=None, out=None, no_ground_fill=False, logger=None, progress=None):
+    def _step(n, label):
+        if progress is not None:
+            progress(n, 8, label)
+
     out = out or os.path.join(CITY_PROD, f"seed_{seed}.schem")
     fine = _resolve_fine(seed, fine)
-
     size = make_size(fine)
-    road_grid, road_palette, (road_span, road_height, _), tile_count, road_ground_offset = build_road_grid(fine, seed)
+
+    _step(0, "Building road grid")
+    road_grid, road_palette, (road_span, road_height, _), tile_count, road_ground_offset, road_block_entities = build_road_grid(fine, seed)
+
+    _step(1, "Generating road network")
     network = gen_networks(seed, size=size)
+
+    _step(2, "Loading building catalog")
     with open(BUILD_CATALOG, encoding="utf-8") as fh:
         catalog_meta = json.load(fh)
 
+    _step(3, "Planning placements")
     placements = _plan_placements(seed, network, size)
     city_ground_y = _city_ground_y(placements, catalog_meta)
     # `ground_y` is the single plane every marker asset seats on (emerald = ground
@@ -234,40 +271,52 @@ def run(*, seed=DEFAULT_SEED, fine=None, out=None, no_ground_fill=False, logger=
     ground_y = city_ground_y - BUILD_SNAP_DROP
     road_y0 = _seat_y(ground_y, road_ground_offset)
     out_span = road_span + PLAYER_ANCHOR_MARGIN
+
+    _step(4, "Assembling building instances")
     instances, building_top = _assemble_instances(seed, placements, catalog_meta, ground_y)
 
+    _step(5, "Composing voxel grid")
     fillers = [] if no_ground_fill else load_fillers()
     filler_top = max((_seat_y(ground_y, tile.ground_offset) + tile.height for tile in fillers), default=0)
     max_height = max(road_y0 + road_height, building_top, filler_top)
-
     road_cells = network["road_cells"]
-    grid, master_palette, build_mask = _compose_grid(
-        road_grid, road_palette, road_span, road_height, road_y0, out_span, max_height, instances
+    grid, master_palette, build_mask, block_entities = _compose_grid(
+        road_grid, road_palette, road_span, road_height, road_y0, out_span, max_height, instances, road_block_entities
     )
+
+    _step(6, "Placing trees and filling lots")
     fill_idx = _palette_index(master_palette, CITY_GROUND_FILL_BLOCK)
     tree_cells = set()
     if not no_ground_fill:
         if fillers:
             filler_rng = random.Random(seed * 7 + 3)
-            tree_cells = _place_fillers(
+            tree_cells, filler_block_entities = _place_fillers(
                 grid, master_palette, build_mask, road_cells, size, ground_y, fillers, filler_rng
             )
+            block_entities += filler_block_entities
         _apply_ground_fill(grid, fill_idx, build_mask, road_cells, size, city_ground_y, tree_cells)
+
+    _step(7, "Writing schematic")
     filler_count = len(tree_cells)
     anchor_idx = _palette_index(master_palette, CITY_ANCHOR_BLOCK)
     for y in range(city_ground_y + 1):
         grid[y, 0, 0] = anchor_idx
 
+    block_entities = _finalize_block_entities(block_entities, grid.shape)
     summary = (
         f"seed={seed}, fine={fine}: roads={tile_count} tiles, buildings={len(instances)}, "
         f"fillers={filler_count} ({len(fillers)} kinds), "
-        f"grid {out_span}x{max_height}x{out_span}, palette={len(master_palette)}"
+        f"grid {out_span}x{max_height}x{out_span}, palette={len(master_palette)}, "
+        f"block_entities={len(block_entities)}"
     )
     if logger is not None:
         logger(summary)
-    if logger is not None:
-        _log_version_compat(master_palette.keys(), DATA_VERSION, logger)
-    write_sponge_schem_grid(grid, master_palette, out, DATA_VERSION, offset=(0, -(city_ground_y + 1), 0))
+    write_sponge_schem_grid(
+        grid, master_palette, out, DATA_VERSION,
+        offset=(0, -(city_ground_y + 1), 0),
+        block_entities=block_entities,
+    )
+    _step(8, "Schematic saved")
     if logger is not None:
         logger(f"saved {out}")
     return {
@@ -275,28 +324,6 @@ def run(*, seed=DEFAULT_SEED, fine=None, out=None, no_ground_fill=False, logger=
         "building_count": len(instances),
         "summary": summary,
     }
-
-
-def _log_version_compat(states, data_version, logger):
-    """Warn if the stamped DataVersion is older than some block actually needs.
-
-    A schematic pasted into a world older than a block's introduction version
-    leaves holes (the block does not exist there), so surface the real floor.
-    """
-    report = compatibility_report(states, data_version)
-    if report["ok"]:
-        logger(
-            f"version: stamped {report['target_release']}; "
-            f"pastes cleanly into {report['floor_release']} and newer"
-        )
-        return
-    blocks = ", ".join(item["block"] for item in report["offending"][:8])
-    more = "" if len(report["offending"]) <= 8 else f" (+{len(report['offending']) - 8} more)"
-    logger(
-        f"WARNING: target {report['target_release']} is older than these assets require. "
-        f"This city needs {report['floor_release']} or newer. "
-        f"Pasting into {report['target_release']} will leave holes for: {blocks}{more}"
-    )
 
 
 def main():

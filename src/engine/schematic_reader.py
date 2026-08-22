@@ -4,6 +4,9 @@ from __future__ import annotations
 
 import nbtlib
 import numpy as np
+from nbtlib import Compound
+
+from engine.schematic_transform import BlockEntity
 
 
 def _load_schem(path):
@@ -64,6 +67,31 @@ def decode_schem_offset(path):
         return (0, 0, 0)
     offset = schem["Offset"]
     return tuple(int(offset[i]) for i in range(3))
+
+
+def decode_schem_block_entities(path):
+    """Block entities in a Sponge .schem as BlockEntity records (local coords).
+
+    Handles both containers: v3 nests entries under ``Blocks.BlockEntities`` with
+    the payload in a ``Data`` compound; v2 keeps ``BlockEntities`` at the root with
+    the payload inline. Returns an empty list when the schematic has none.
+    """
+    schem = _load_schem(path)
+    container = schem["Blocks"] if "Blocks" in schem else schem
+    entries = container.get("BlockEntities")
+    if not entries:
+        return []
+    result = []
+    for entry in entries:
+        pos = entry["Pos"]
+        if "Data" in entry:
+            data = entry["Data"]
+        else:
+            data = Compound({k: v for k, v in entry.items() if k not in ("Id", "Pos")})
+        result.append(
+            BlockEntity(int(pos[0]), int(pos[1]), int(pos[2]), str(entry["Id"]), data)
+        )
+    return result
 
 
 def decode_schem_cells(path):

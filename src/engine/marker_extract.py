@@ -19,9 +19,14 @@ import re
 from collections import Counter, deque
 from dataclasses import dataclass
 
+from nbtlib import Compound
+
+from engine.schematic_transform import BlockEntity
 from engine.schematic_writer import blockstate
 
 MARKER_BLOCKS = {"gold_block", "diamond_block", "emerald_block"}
+# Chunk block-entity keys that describe position/identity rather than payload.
+_BE_META_KEYS = ("id", "x", "y", "z", "keepPacked")
 
 
 @dataclass(frozen=True)
@@ -248,8 +253,41 @@ def ground_shift(world, x_a, x_b, z_a, z_b, reference_ground_y):
     return 0 if ground is None else ground - reference_ground_y
 
 
+def _cuboid_block_entities(world, cuboid):
+    """BlockEntity records inside the cuboid, positioned relative to its origin.
+
+    Signs, chests, banners, etc. carry their NBT (text, contents, patterns)
+    verbatim; only their coordinates are made local. The gold/diamond/emerald
+    markers live outside the extracted cuboid, so nothing here needs filtering.
+    """
+    x0, x1, y0, y1, z0, z1 = cuboid
+    result = []
+    for cx in range(x0 >> 4, (x1 >> 4) + 1):
+        for cz in range(z0 >> 4, (z1 >> 4) + 1):
+            chunk = world.load_chunk(cx, cz)
+            if chunk is None:
+                continue
+            for be in chunk.get("block_entities", []):
+                bx, by, bz = int(be["x"]), int(be["y"]), int(be["z"])
+                if not (x0 <= bx <= x1 and y0 <= by <= y1 and z0 <= bz <= z1):
+                    continue
+                be_id = str(be.get("id", ""))
+                if not be_id:
+                    continue
+                if ":" not in be_id:
+                    be_id = f"minecraft:{be_id}"
+                data = Compound({k: v for k, v in be.items() if k not in _BE_META_KEYS})
+                result.append(BlockEntity(bx - x0, by - y0, bz - z0, be_id, data))
+    return result
+
+
 def extract_cuboid(world, cuboid, *, force_persistent_leaves=False):
-    """Read a cuboid into schem cells, blanking marker blocks and signs to air.
+    """Read a cuboid into (cells, block_entities), blanking marker blocks to air.
+
+    Marker blocks (gold/diamond/emerald) are blanked to air; signs and other
+    block-entity blocks are kept, and their NBT is carried out as BlockEntity
+    records (the authoring markers live outside the cuboid, so in-cuboid signs are
+    real content).
 
     ``force_persistent_leaves`` rewrites grown leaves (``persistent=false``) to
     ``persistent=true`` so they do not decay after a paste: non-persistent leaves
@@ -265,7 +303,7 @@ def extract_cuboid(world, cuboid, *, force_persistent_leaves=False):
             for x in range(x0, x1 + 1):
                 name, props = world.block(x, y, z)
                 base = name.split(":")[1]
-                if base in MARKER_BLOCKS or "sign" in base:
+                if base in MARKER_BLOCKS:
                     name, props = "minecraft:air", None
                 elif force_persistent_leaves and base.endswith("leaves") \
                         and props and props.get("persistent") == "false":
@@ -273,4 +311,4 @@ def extract_cuboid(world, cuboid, *, force_persistent_leaves=False):
                 row.append(blockstate(name, props))
             layer.append(row)
         cells.append(layer)
-    return cells
+    return cells, _cuboid_block_entities(world, cuboid)

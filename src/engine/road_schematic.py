@@ -19,8 +19,12 @@ from engine.road_network import (
     make_size,
     rot_ports,
 )
-from engine.schematic_reader import decode_schem_cells, decode_schem_offset
-from engine.schematic_transform import Tile, rot_tile
+from engine.schematic_reader import (
+    decode_schem_block_entities,
+    decode_schem_cells,
+    decode_schem_offset,
+)
+from engine.schematic_transform import Tile, rot_tile, translate_block_entities
 from engine.schematic_writer import sponge_schem_from_grid
 
 ROADS_SCHEM = ROADS_PROD
@@ -36,7 +40,11 @@ def _tile_from_schem(path):
     cells = decode_schem_cells(path)
     height, length, width = len(cells), len(cells[0]), len(cells[0][0])
     _x, y, _z = decode_schem_offset(path)
-    return Tile(width, height, length, cells, ground_offset=max(0, -y))
+    return Tile(
+        width, height, length, cells,
+        ground_offset=max(0, -y),
+        block_entities=tuple(decode_schem_block_entities(path)),
+    )
 
 
 def load_tiles():
@@ -118,6 +126,7 @@ def build(fine, seed):
     grid = np.zeros((max_height, span, span), dtype=np.int16)
     palette = {"minecraft:air": 0}
     rotated_cache = {}
+    block_entities = []
 
     count = 0
     for prefix, rotation, bx, bz in placements(net):
@@ -139,10 +148,13 @@ def build(fine, seed):
                     if idx is None:
                         idx = palette[state] = len(palette)
                     grid[y, bz + z, bx + x] = idx
+        block_entities += translate_block_entities(tile.block_entities, bx, 0, bz)
         count += 1
-    return grid, palette, (span, max_height, span), count, road_ground_offset
+    return grid, palette, (span, max_height, span), count, road_ground_offset, block_entities
 
 
-def to_schem(grid, palette, dims, ground_offset=0):
+def to_schem(grid, palette, dims, ground_offset=0, block_entities=None):
     _width, _height, _length = dims
-    return sponge_schem_from_grid(grid, palette, DATA_VERSION, offset=(0, -ground_offset, 0))
+    return sponge_schem_from_grid(
+        grid, palette, DATA_VERSION, offset=(0, -ground_offset, 0), block_entities=block_entities
+    )

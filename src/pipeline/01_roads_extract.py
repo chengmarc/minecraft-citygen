@@ -95,7 +95,7 @@ def run(*, logger=None, progress=None):
             if progress is not None:
                 progress(index, total, None)
             continue
-        cells = extract_cuboid(get_world(), comp.cuboids[0])
+        cells, block_entities = extract_cuboid(get_world(), comp.cuboids[0], force_persistent_leaves=True)
         height, length, width = len(cells), len(cells[0]), len(cells[0][0])
         ground_offset = comp.ground_y - comp.cuboids[0][2]
         write_sponge_schem_cells(
@@ -103,6 +103,7 @@ def run(*, logger=None, progress=None):
             os.path.join(OUT, name + ".schem"),
             DATA_VERSION,
             offset=(0, -ground_offset, 0),
+            block_entities=block_entities,
         )
         if logger is not None:
             logger(f"extracted {name}")

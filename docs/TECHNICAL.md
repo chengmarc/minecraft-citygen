@@ -30,58 +30,77 @@ Important note:
 ### Version Compatibility
 
 The pipeline copies block strings straight from the source world into the output
-schematic, so block *content* is version-transparent. Two things are not:
+schematic, so block *content* is version-transparent. The one thing that is not
+is the `DataVersion` stamped on the schematic: WorldEdit upgrades an older
+schematic forward into a newer world but cannot downgrade a newer one.
 
-- the `DataVersion` stamped on the schematic — WorldEdit upgrades an older
-  schematic forward into a newer world but cannot downgrade a newer one
-- whether every block used actually *exists* in the target version
+CityGen commits to **forward-only** compatibility. The export target is always
+the source world's own version or newer, so every block in the palette is
+guaranteed to exist in the target — WorldEdit handles the forward upgrade for
+free, and there is no downgrade or "missing block" computation to do.
 
-Both are handled by [config/version_compat.py](../src/config/version_compat.py):
+This is handled by [config/version_compat.py](../src/config/version_compat.py):
 
-- `DATA_VERSION` resolves from `MC_CITY_DATA_VERSION` (explicit target), else the
-  source world's own `level.dat` `DataVersion`, else a fallback
-- the Extraction tab's **Target Version** dropdown picks the output target
-  (`Auto` matches the source world); it flows to both extraction and render
-- extraction and city construction compute the assets' true minimum compatible
-  version from the actual block palette and warn when the chosen target is older
-  than some block requires (that block would leave a hole on paste)
+- outputs are **always stamped with the source world's `DataVersion`** (from its
+  `level.dat`, else a fallback, clamped up to the 1.19.4 hard floor). WorldEdit's
+  DataFixer then upgrades the schematic forward into whatever world you paste
+  into. Stamping any newer version would skip the fixer and hole out blocks
+  renamed since the source (e.g. `grass` → `short_grass`), so we never do it.
+- the Extraction tab's **Target Version** dropdown is informational — it records
+  the version you plan to paste into (source and newer) but does not change the
+  stamp. `DATA_VERSION` is pinned via `MC_CITY_DATA_VERSION` so construct/render,
+  which do not set `MC_CITY_SAVE`, stamp the source version rather than
+  re-detecting the default world.
 
-The supported floor is Minecraft 1.18. Two data tables drive the checks:
+The supported floor is Minecraft 1.19.4. One data table drives version
+resolution and labelling:
 
 - `RELEASES` — release name ↔ DataVersion
-- the block-id → minimum-version map
 
-`version_compat.py` loads these from generated JSON shipped as package data
-(`src/config/mc_versions.json`, `src/config/block_versions.json`). These files
-are authoritative and required — the module raises at import if they are missing
-or unreadable, pointing to the refresh command below. There is no in-code
-fallback table.
-
-Because the registry comes from the vanilla data generator, a block is dated to
-when it first entered the *block registry*, which can precede its survival
-release (blocks registered behind an experimental datapack, e.g. the 1.20 set in
-1.19.4). That is the correct signal for "will this paste": WorldEdit keys off the
-registry, not the marketing version.
+`version_compat.py` loads it from generated JSON shipped as package data
+(`src/config/mc_versions.json`). This file is authoritative and required — the
+module raises at import if it is missing or unreadable, pointing to the refresh
+command below. There is no in-code fallback table.
 
 Refresh workflow:
 
 ```bash
-python tools/update_block_versions.py
+python tools/update_mc_versions.py
 ```
 
 Notes:
 
 - downloads every Java Edition release server JAR from 1.18 upward (cached under
-  `tools/`, git-ignored), reads each jar's `DataVersion` from its bundled
-  `version.json`, and runs the vanilla data generator (`--reports`) to dump the
-  full block registry per version
-- diffing the registries in DataVersion order yields the first version each block
-  appears in (this is how e.g. the 1.20.3 `grass` → `short_grass` rename is
-  captured automatically)
-- requires a Java runtime new enough for the newest jar scanned (1.20.5+ needs
-  Java 21); versions whose generator fails are skipped with a warning so a
+  `tools/`, git-ignored) and reads each jar's `DataVersion` from its bundled
+  `version.json`
+- versions whose download fails are skipped with a warning so a
   partial-but-valid table is still written
-- the generated JSON files are packaged as `config` package data
+- the generated JSON file is packaged as `config` package data
+
+### Block Entities
+
+Signs, banners, chests, barrels, beds, furnaces, skulls, etc. carry their state
+in *block-entity NBT* (sign text, banner patterns, container contents), separate
+from the block id. The pipeline preserves that NBT end to end:
+
+- `marker_extract.extract_cuboid` returns `(cells, block_entities)`; each
+  `BlockEntity` (see [engine/schematic_transform.py](../src/engine/schematic_transform.py))
+  holds a local `(x, y, z)`, the id, and a `Data` compound copied verbatim. The
+  gold/diamond/emerald authoring markers live outside the extracted cuboid, so
+  in-cuboid signs are kept as real content (not blanked).
+- `schematic_writer` emits them into the Sponge `BlockEntities` list (inline for
+  the v2 container, nested under `Data` for v3); `schematic_reader.decode_schem_block_entities`
+  reads them back.
+- through assembly the positions ride along with their blocks: `rot_tile` rotates
+  a block entity to its cell's new coordinate (and `rot_state` turns the block's
+  own `facing`/`rotation`), `building_schematic.assemble` offsets stacked pieces,
+  and `04_city_construct` translates each into master-grid coordinates, clipping
+  to bounds and collapsing duplicates (one per cell).
+
+The NBT itself is carried unchanged and, like block ids, is upgraded forward by
+WorldEdit's DataFixer on paste because the schematic is stamped with the source
+version (e.g. a 1.19.4 sign's `Text1`–`Text4` becomes `front_text`/`back_text` in
+1.20+).
 
 ### Environment Assumptions
 

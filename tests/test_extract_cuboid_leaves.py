@@ -17,10 +17,14 @@ class _FakeWorld:
     def block(self, x, y, z):
         return self._name, (dict(self._props) if self._props else None)
 
+    def load_chunk(self, cx, cz):
+        return None  # no block entities in this fake
+
 
 def _single(world, *, force):
     # A 1x1x1 cuboid -> cells[0][0][0] is the one block state string.
-    return extract_cuboid(world, (0, 0, 0, 0, 0, 0), force_persistent_leaves=force)[0][0][0]
+    cells, _block_entities = extract_cuboid(world, (0, 0, 0, 0, 0, 0), force_persistent_leaves=force)
+    return cells[0][0][0]
 
 
 def test_grown_leaves_forced_persistent():

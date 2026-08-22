@@ -8,8 +8,6 @@ import os
 import subprocess
 import sys
 
-import nbtlib
-
 from config import config_algo
 from config.config_algo import DEFAULT_SEED
 from config.config_path import (
@@ -22,7 +20,6 @@ from config.version_compat import (
     FALLBACK_DATA_VERSION,
     RELEASES,
     SUPPORTED_FLOOR,
-    compatibility_report,
     data_version_for,
     detect_world_data_version,
     release_name_for,
@@ -109,10 +106,12 @@ PREVIEW_PROGRESS_WEIGHTS = [
     ("pipeline.03_grid_simulation", 30),
     ("pipeline.04_city_simulation", 35),
 ]
-RENDER_PROGRESS_WEIGHTS = [
-    ("pipeline.04_city_construct", 60),
-    ("pipeline.04_city_render", 40),
-]
+
+# Per-step weights for the render-tab progress bar.
+# Eight entries cover the eight city_construct work segments (steps 0→1 through 7→8).
+# RENDER_RENDER_WEIGHT covers the final isometric-render stage.
+RENDER_CONSTRUCT_WEIGHTS = [3, 4, 2, 8, 18, 12, 8, 8]   # sum = 63
+RENDER_RENDER_WEIGHT = 37
 
 SCRIPT_PROGRESS_HEADROOM = 0.88
 SCRIPT_PROGRESS_TICK_MS = 120
@@ -298,13 +297,25 @@ def resolve_target_data_version(world_path, choice):
     return max(resolved, SUPPORTED_FLOOR)
 
 
-def target_version_env(world_path, choice):
-    """Env fragment pinning MC_CITY_DATA_VERSION for a stage run.
+def source_stamp_data_version(world_path):
+    """DataVersion to stamp on outputs: the source world's own version.
 
-    Always explicit (even in auto mode) so stages that do not set MC_CITY_SAVE
-    still stamp the intended version instead of re-detecting the wrong world.
+    Forward-only compatibility means outputs are *always* stamped with the source
+    world's version (clamped to the hard floor) and left for WorldEdit's DataFixer
+    to upgrade forward on paste. Stamping any newer version would skip that fixer
+    and hole out blocks that were renamed since the source. The Target Version
+    selector is informational only and does not change this stamp.
     """
-    return {"MC_CITY_DATA_VERSION": str(resolve_target_data_version(world_path, choice))}
+    return resolve_target_data_version(world_path, AUTO_VERSION)
+
+
+def stamp_version_env(world_path):
+    """Env fragment pinning MC_CITY_DATA_VERSION to the source world's version.
+
+    Always explicit so stages that do not set MC_CITY_SAVE (construct, render)
+    stamp the source version instead of re-detecting the wrong (default) world.
+    """
+    return {"MC_CITY_DATA_VERSION": str(source_stamp_data_version(world_path))}
 
 
 def target_version_summary(world_path, choice):
@@ -312,45 +323,6 @@ def target_version_summary(world_path, choice):
     resolved = resolve_target_data_version(world_path, choice)
     name = release_name_for(resolved)
     return f"Auto -> {name}" if choice == AUTO_VERSION else name
-
-
-def _schem_palette_states(path):
-    """Block-state strings in a Sponge .schem palette, or () if unreadable."""
-    try:
-        root = nbtlib.load(path)
-    except (OSError, ValueError, KeyError):
-        return ()
-    schem = root.get("Schematic", root)
-    blocks = schem.get("Blocks")
-    palette = blocks.get("Palette") if blocks is not None else schem.get("Palette")
-    return tuple(str(key) for key in palette) if palette else ()
-
-
-def extracted_asset_block_ids():
-    """Union of block states across every extracted road/build .schem on disk.
-
-    This is the true output palette the final city is assembled from, so it is
-    the authoritative input for version-compatibility warnings. Returns an empty
-    set when nothing has been extracted yet.
-    """
-    states = set()
-    for base in (ROADS_PROD, BUILDS_PROD):
-        for path in glob.glob(os.path.join(base, "*.schem")):
-            states.update(_schem_palette_states(path))
-    return states
-
-
-def target_version_report(world_path, choice, block_states):
-    """Compatibility report for these blocks against the chosen target version."""
-    target = resolve_target_data_version(world_path, choice)
-    return compatibility_report(block_states, target)
-
-
-def format_compat_details(report):
-    """One line per unsupported block: 'minecraft:pale_oak_shelf  (needs 1.21.9)'."""
-    return "\n".join(
-        f"{item['block']}  (needs {item['min_release']})" for item in report["offending"]
-    )
 
 
 def load_saved_gui_config():

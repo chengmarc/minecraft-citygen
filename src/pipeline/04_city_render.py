@@ -22,6 +22,8 @@ def run(*, logger=None, progress=None):
     outputs = []
     paths = sorted(glob.glob(os.path.join(SCHEM, "*.schem")))
     total = len(paths)
+    if progress is not None and total > 0:
+        progress(0, total, "Rendering city schematic")
     for index, path in enumerate(paths, start=1):
         name = os.path.splitext(os.path.basename(path))[0]
         im = render_schem_visible_iso(

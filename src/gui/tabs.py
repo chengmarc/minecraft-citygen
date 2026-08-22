@@ -104,7 +104,7 @@ class PreviewTab(QtWidgets.QWidget, WeightedTaskMixin):
         self.city_viewer.load_image(common.city_preview_path(seed))
 
 
-class RenderTab(QtWidgets.QWidget, WeightedTaskMixin):
+class RenderTab(QtWidgets.QWidget, ProgressMixin):
     def __init__(self, owner):
         super().__init__(owner)
         self.owner = owner
@@ -135,7 +135,7 @@ class RenderTab(QtWidgets.QWidget, WeightedTaskMixin):
         self.status_label.setObjectName("statusLabel")
         layout.addWidget(self.status_label)
         self.progress_bar = QtWidgets.QProgressBar(self)
-        self.progress_bar.setRange(0, 100)
+        self.progress_bar.setRange(0, PROGRESS_BAR_SCALE)
         layout.addWidget(self.progress_bar)
 
     def set_peer(self, peer):
@@ -148,33 +148,18 @@ class RenderTab(QtWidgets.QWidget, WeightedTaskMixin):
             self._peer.controls.set_state(state)
 
     def _target_version_env(self):
-        """Stamp the final city schematic with the version chosen on the Extraction tab."""
-        world_path, choice = self._target_version_choice()
-        return common.target_version_env(world_path, choice)
+        """Stamp the final city schematic with the source world's version.
+
+        Forward-only: the schematic is stamped with the source version and
+        WorldEdit upgrades it forward on paste. The Target Version selector is
+        informational and does not affect the stamp.
+        """
+        world_path, _ = self._target_version_choice()
+        return common.stamp_version_env(world_path)
 
     def _target_version_choice(self):
         extraction = self.owner.get_saved_config_section("extraction") or {}
         return str(extraction.get("world_path", SAVE)), extraction.get("target_version", common.AUTO_VERSION)
-
-    def _confirm_target_compatibility(self):
-        """Warn before building a city that will hole out on paste. True to proceed."""
-        world_path, choice = self._target_version_choice()
-        report = common.target_version_report(world_path, choice, common.extracted_asset_block_ids())
-        if report["ok"]:
-            return True
-        box = QtWidgets.QMessageBox(self)
-        box.setIcon(QtWidgets.QMessageBox.Warning)
-        box.setWindowTitle("Blocks unsupported in target version")
-        box.setText(
-            f"The city will be stamped {report['target_release']}, but {len(report['offending'])} "
-            f"block(s) do not exist there and will drop to air (holes) on paste.\n\n"
-            f"Target {report['floor_release']} or newer on the Extraction tab for a clean paste.\n\n"
-            f"Build the city anyway?"
-        )
-        box.setDetailedText(common.format_compat_details(report))
-        box.setStandardButtons(QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No)
-        box.setDefaultButton(QtWidgets.QMessageBox.No)
-        return box.exec() == QtWidgets.QMessageBox.Yes
 
     def _open_output_folder(self):
         if not os.path.isdir(CITY_PROD):
@@ -184,6 +169,39 @@ class RenderTab(QtWidgets.QWidget, WeightedTaskMixin):
             common.open_in_file_manager(CITY_PROD)
         except OSError as exc:
             QtWidgets.QMessageBox.critical(self, "Could not open output folder", str(exc))
+
+    def _on_pipeline_progress(self, stage, completed, total, label):
+        n = int(completed)
+        c_weights = common.RENDER_CONSTRUCT_WEIGHTS
+        r_weight = common.RENDER_RENDER_WEIGHT
+        scale = float(sum(c_weights) + r_weight)
+
+        self._cancel_progress_animation()
+
+        if stage == "Constructing":
+            prefix = sum(c_weights[:n])
+            milestone = int(round(prefix / scale * PROGRESS_BAR_SCALE))
+            self.progress_bar.setValue(milestone)
+            if n < len(c_weights):
+                next_ms = int(round((prefix + c_weights[n]) / scale * PROGRESS_BAR_SCALE))
+                self._progress_soft_target = milestone + int(
+                    (next_ms - milestone) * common.SCRIPT_PROGRESS_HEADROOM
+                )
+                self._progress_timer.start(common.SCRIPT_PROGRESS_TICK_MS)
+        else:
+            c_bar = int(round(sum(c_weights) / scale * PROGRESS_BAR_SCALE))
+            t = float(total) if total > 0 else 1.0
+            r_span = PROGRESS_BAR_SCALE - c_bar
+            milestone = c_bar + int(round(n / t * r_span))
+            self.progress_bar.setValue(milestone)
+            if n < total:
+                next_ms = c_bar + int(round((n + 1) / t * r_span))
+                self._progress_soft_target = milestone + int(
+                    (next_ms - milestone) * common.SCRIPT_PROGRESS_HEADROOM
+                )
+                self._progress_timer.start(common.SCRIPT_PROGRESS_TICK_MS)
+
+        self.set_status(label or f"{stage} {n}/{int(total)}")
 
     def _run_render(self):
         seed = self.controls.seed_edit.text().strip()
@@ -198,24 +216,38 @@ class RenderTab(QtWidgets.QWidget, WeightedTaskMixin):
             QtWidgets.QMessageBox.critical(self, "Invalid city config", str(exc))
             return
 
-        if not self._confirm_target_compatibility():
-            return
         env.update(self._target_version_env())
 
-        tasks = [
-            (services.CITY_CONSTRUCT, common.RENDER_PROGRESS_WEIGHTS[0][1], lambda: services.run_city_construct_stage(seed, fine, env_overrides=env)),
-            (services.CITY_RENDER, common.RENDER_PROGRESS_WEIGHTS[1][1], lambda: services.run_city_render_stage(env_overrides=env)),
-        ]
-        self._run_weighted_tasks(
-            button=self.controls.action_button,
-            tasks=tasks,
-            start_status="Starting render...",
-            fail_title="Render failed",
-            fail_status="Render failed",
-            complete_status="Render complete",
-            on_success=lambda payload: self.city_viewer.load_image(common.city_render_path(payload)),
-            success_payload=seed,
-        )
+        self.controls.action_button.setEnabled(False)
+        self.set_status("Starting render...")
+        self.progress_bar.setRange(0, PROGRESS_BAR_SCALE)
+        self.progress_bar.setValue(0)
+
+        signals = WorkerSignals(self)
+        signals.pipeline_progress.connect(self._on_pipeline_progress)
+        signals.failed.connect(self._show_failure)
+        signals.success.connect(lambda payload: (
+            self.city_viewer.load_image(common.city_render_path(payload)),
+            self._finish_progress(),
+            self.set_status("Render complete"),
+        ))
+        signals.finished.connect(lambda: (self._stop_progress(), self.controls.action_button.setEnabled(True)))
+
+        def on_progress(stage, completed, total, label):
+            signals.pipeline_progress.emit(stage, float(completed), float(total), label or "")
+
+        def worker():
+            try:
+                services.run_city_construct_stage(seed, fine, env_overrides=env, progress=on_progress)
+                services.run_city_render_stage(env_overrides=env, progress=on_progress)
+            except Exception as exc:  # boundary: surface any background failure to the UI
+                signals.failed.emit("Render failed", str(exc).strip() or "Render failed", "Render failed")
+            else:
+                signals.success.emit(seed)
+            finally:
+                signals.finished.emit()
+
+        threading.Thread(target=worker, daemon=True).start()
 
 
 class ExtractionTab(QtWidgets.QWidget, ProgressMixin):
@@ -267,8 +299,10 @@ class ExtractionTab(QtWidgets.QWidget, ProgressMixin):
             self.version_combo.addItem(label, value)
         self._select_version(state.get("target_version", common.AUTO_VERSION))
         self.version_combo.setToolTip(
-            "Minecraft version the output schematic targets. 'Auto' matches the "
-            "source world. WorldEdit can paste into this version and newer."
+            "The Minecraft version you plan to paste into (informational). The "
+            "schematic is always stamped with the source world's version and "
+            "WorldEdit upgrades it forward on paste, so it works in the source "
+            "version and any newer one."
         )
         header.addWidget(self.version_combo)
         header.addStretch(1)
@@ -296,17 +330,9 @@ class ExtractionTab(QtWidgets.QWidget, ProgressMixin):
         for group in (self.road_group, self.house_group, self.landmark_group):
             groups.addWidget(group, 1)
 
-        self._asset_block_ids = common.extracted_asset_block_ids()
-        self.version_warning = QtWidgets.QLabel("", self)
-        self.version_warning.setObjectName("statusLabel")
-        self.version_warning.setWordWrap(True)
-        shell_layout.addWidget(self.version_warning)
-
         self.world_edit.textChanged.connect(self._save_state)
         self.world_edit.textChanged.connect(self._refresh_detected_version)
-        self.world_edit.textChanged.connect(self._refresh_version_warning)
         self.version_combo.currentIndexChanged.connect(self._save_state)
-        self.version_combo.currentIndexChanged.connect(self._refresh_version_warning)
         self.road_group.connect_change_handler(self._save_state)
         self.house_group.connect_change_handler(self._save_state)
         self.landmark_group.connect_change_handler(self._save_state)
@@ -320,7 +346,6 @@ class ExtractionTab(QtWidgets.QWidget, ProgressMixin):
         layout.addWidget(self.progress_bar)
 
         self._refresh_detected_version()
-        self._refresh_version_warning()
 
     def _save_state(self):
         try:
@@ -332,10 +357,6 @@ class ExtractionTab(QtWidgets.QWidget, ProgressMixin):
     def _select_version(self, value):
         index = self.version_combo.findData(value)
         self.version_combo.setCurrentIndex(index if index >= 0 else 0)
-
-    def _current_compat_report(self):
-        choice = self.version_combo.currentData() or common.AUTO_VERSION
-        return common.target_version_report(self.world_edit.text().strip(), choice, self._asset_block_ids)
 
     def _refresh_detected_version(self):
         path = self.world_edit.text().strip()
@@ -355,30 +376,6 @@ class ExtractionTab(QtWidgets.QWidget, ProgressMixin):
             self.version_combo.addItem(label, value)
         self._select_version(current or common.AUTO_VERSION)
         self.version_combo.blockSignals(False)
-
-    def _refresh_version_warning(self):
-        """Update the inline label to show what the chosen target can't represent."""
-        if not self._asset_block_ids:
-            self.version_warning.setText("Extract to check version compatibility.")
-            self.version_warning.setToolTip("")
-            return
-        report = self._current_compat_report()
-        if report["ok"]:
-            self.version_warning.setText(
-                f"✓ Target {report['target_release']}: all blocks supported "
-                f"(pastes into {report['floor_release']} and newer)."
-            )
-            self.version_warning.setToolTip("")
-            return
-        offending = report["offending"]
-        preview = ", ".join(item["block"].split(":")[-1] for item in offending[:4])
-        more = "" if len(offending) <= 4 else f", +{len(offending) - 4} more"
-        self.version_warning.setText(
-            f"⚠ Target {report['target_release']}: {len(offending)} block(s) do not exist there "
-            f"and will drop to air (holes) on paste — {preview}{more}. "
-            f"These assets need {report['floor_release']}+."
-        )
-        self.version_warning.setToolTip(common.format_compat_details(report))
 
     def _current_config_state(self):
         road_start, road_end = self.road_group.get_xyz_pair("Road")
@@ -479,7 +476,7 @@ class ExtractionTab(QtWidgets.QWidget, ProgressMixin):
             return
 
         env = {"MC_CITY_SAVE": state["world_path"].strip()}
-        env.update(common.target_version_env(state["world_path"].strip(), state["target_version"]))
+        env.update(common.stamp_version_env(state["world_path"].strip()))
         road_start, road_end = self.road_group.get_xyz_pair("Road")
         env["MC_CITY_ROAD_BOX"] = common.BlockRegion.from_xyz_pair(road_start, road_end).to_env_value()
         house_start, house_end = self.house_group.get_xyz_pair("House")
@@ -524,18 +521,3 @@ class ExtractionTab(QtWidgets.QWidget, ProgressMixin):
         self.build_viewer.load_image(self.build_viewer.image_path)
         self._finish_progress()
         self.set_status("Extract complete")
-        self._asset_block_ids = common.extracted_asset_block_ids()
-        self._refresh_version_warning()
-        report = self._current_compat_report()
-        if not report["ok"]:
-            box = QtWidgets.QMessageBox(self)
-            box.setIcon(QtWidgets.QMessageBox.Warning)
-            box.setWindowTitle("Blocks unsupported in target version")
-            box.setText(
-                f"{len(report['offending'])} block(s) used by these assets do not exist in "
-                f"{report['target_release']}. WorldEdit will drop them to air (leaving holes) "
-                f"when pasting into that version.\n\n"
-                f"For a clean paste, target {report['floor_release']} or newer."
-            )
-            box.setDetailedText(common.format_compat_details(report))
-            box.exec()

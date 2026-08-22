@@ -50,9 +50,12 @@ SAVE = _env_value("MC_CITY_SAVE", DEFAULT_WORLD)
 REGION_DIR_CANDIDATES = tuple(region_dir_candidates(SAVE))
 REGION_DIR = resolve_region_dir(SAVE)
 
-# Schematic DataVersion (the version WorldEdit assumes when pasting). Resolves
-# to the explicit target override, else the source world's own version, else a
-# sane fallback, clamped up to the hard floor. See config/version_compat.py.
+# Schematic DataVersion (the version WorldEdit assumes when pasting). Forward-only
+# compatibility: this is always the source world's own version, so WorldEdit's
+# DataFixer upgrades the schematic forward on paste. Resolves to the GUI-pinned
+# MC_CITY_DATA_VERSION (the source version, set explicitly because construct/render
+# do not set MC_CITY_SAVE), else the source world's detected version, else a sane
+# fallback; clamped up to the hard floor. See config/version_compat.py.
 def _resolve_data_version() -> int:
     raw = os.environ.get("MC_CITY_DATA_VERSION")
     if raw and raw.strip():

@@ -18,13 +18,13 @@ from engine.schematic_writer import save_sponge_schem
 
 def run(*, seed=DEFAULT_SEED, fine=DEFAULT_FINE, out=None, logger=None):
     out = out or os.path.join(GRID_PROD, f"seed_{seed}.schem")
-    grid, palette, dims, count, road_ground_offset = build(fine, seed)
+    grid, palette, dims, count, road_ground_offset, block_entities = build(fine, seed)
     if logger is not None:
         logger(
             f"seed {seed}, fine {fine}: placed {count} tiles, "
             f"dims {dims[0]}x{dims[1]}x{dims[2]} (WxHxL), palette {len(palette)}"
         )
-    save_sponge_schem(to_schem(grid, palette, dims, road_ground_offset), out)
+    save_sponge_schem(to_schem(grid, palette, dims, road_ground_offset, block_entities), out)
     if logger is not None:
         logger(f"saved {out}")
     return {"output_path": out, "tile_count": count, "dims": dims}

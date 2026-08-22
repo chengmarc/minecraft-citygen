@@ -29,7 +29,7 @@ class RoadsExtractTests(unittest.TestCase):
                  mock.patch.object(roads_extract, "ground_shift", return_value=0), \
                  mock.patch.object(roads_extract, "read_names", return_value=[(1, 1, "fresh")]), \
                  mock.patch.object(roads_extract, "detect_assets", return_value=([component], [])), \
-                 mock.patch.object(roads_extract, "extract_cuboid", return_value=cells), \
+                 mock.patch.object(roads_extract, "extract_cuboid", return_value=(cells, [])), \
                  mock.patch.object(roads_extract, "write_sponge_schem_cells") as write_schem:
                 result = roads_extract.run()
 
@@ -50,7 +50,7 @@ class RoadsExtractTests(unittest.TestCase):
                  mock.patch.object(roads_extract, "ground_shift", return_value=0), \
                  mock.patch.object(roads_extract, "read_names", return_value=[(1, 1, "fresh")]), \
                  mock.patch.object(roads_extract, "detect_assets", return_value=([component], [])), \
-                 mock.patch.object(roads_extract, "extract_cuboid", return_value=[[["minecraft:stone"]]]), \
+                 mock.patch.object(roads_extract, "extract_cuboid", return_value=([[["minecraft:stone"]]], [])), \
                  mock.patch.object(roads_extract, "write_sponge_schem_cells"):
                 # the only component has no sign inside its boundary -> nothing extracted
                 with self.assertRaisesRegex(RuntimeError, "found no assets"):

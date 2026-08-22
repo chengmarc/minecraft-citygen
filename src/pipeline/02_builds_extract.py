@@ -13,7 +13,6 @@ if __package__ in (None, ""):
 
 from config.config_path import BUILD_CATALOG, BUILDS_PROD
 from config.config_world import BUILD_MARKER_Y_RANGE, BUILD_TYPES, DATA_VERSION, REFERENCE_GROUND_Y
-from config.version_compat import compatibility_report
 from engine.anvil_world_reader import World
 from engine.marker_extract import detect_assets, extract_cuboid, ground_shift, iter_signs, parse_range
 from engine.schematic_writer import write_sponge_schem_cells
@@ -56,10 +55,8 @@ def catalog_signs(xmn, xmx, zmn, zmx):
     return stack_rng, appearance
 
 
-def write_schem(cells, path):
-    """Write a build piece and return the block states it contains."""
-    palette = write_sponge_schem_cells(cells, path, DATA_VERSION)
-    return palette.keys()
+def write_schem(cells, block_entities, path):
+    write_sponge_schem_cells(cells, path, DATA_VERSION, block_entities=block_entities)
 
 
 def remove_existing_schems():
@@ -101,7 +98,6 @@ def run(*, logger=None, progress=None):
                 logger(f"  !! boundary at x={xmn} z={zmn}: {reason} -- SKIPPED")
 
     catalog = {}
-    asset_blocks = set()
     total = len(builds)
     for i, (build_type, origin, size, cuboids, ground_y, boundary) in enumerate(builds):
         key = f"{i + 1:03d}"
@@ -111,13 +107,15 @@ def run(*, logger=None, progress=None):
         first_y0 = cuboids[0][2]
         entry = {"type": build_type, "size": size, "origin": origin, "ground_offset": ground_y - first_y0, "pieces": {}}
         if build_type == 1:
-            asset_blocks.update(write_schem(extract_cuboid(get_world(), cuboids[0]), os.path.join(BUILDS_PROD, f"{key}.schem")))
+            cells, bes = extract_cuboid(get_world(), cuboids[0], force_persistent_leaves=True)
+            write_schem(cells, bes, os.path.join(BUILDS_PROD, f"{key}.schem"))
             entry["pieces"]["whole"] = cuboids[0][3] - cuboids[0][2] + 1
         else:
             entry["stack"] = stack_rng if stack_rng is not None else [1, 1]
             entry["appearance"] = appearance if appearance is not None else [1, 1]
             for name, cuboid in zip(("bottom", "middle", "top"), cuboids):
-                asset_blocks.update(write_schem(extract_cuboid(get_world(), cuboid), os.path.join(BUILDS_PROD, f"{key}_{name}.schem")))
+                cells, bes = extract_cuboid(get_world(), cuboid, force_persistent_leaves=True)
+                write_schem(cells, bes, os.path.join(BUILDS_PROD, f"{key}_{name}.schem"))
                 entry["pieces"][name] = cuboid[3] - cuboid[2] + 1
         catalog[key] = entry
         if logger is not None:
@@ -126,26 +124,12 @@ def run(*, logger=None, progress=None):
             progress(i + 1, total, key)
 
     json.dump(catalog, open(CATALOG, "w"), indent=2)
-    compat = compatibility_report(asset_blocks, DATA_VERSION)
     if logger is not None:
         logger(f"wrote {len(catalog)} builds to {CATALOG}")
-        if compat["ok"]:
-            logger(
-                f"version: builds stamped {compat['target_release']}; "
-                f"paste cleanly into {compat['floor_release']} and newer"
-            )
-        else:
-            blocks = ", ".join(item["block"] for item in compat["offending"][:8])
-            logger(
-                f"WARNING: target {compat['target_release']} is older than these builds require "
-                f"(need {compat['floor_release']}+). Missing on paste: {blocks}"
-            )
     return {
         "count": len(catalog),
         "catalog_path": CATALOG,
         "items": sorted(catalog),
-        "min_data_version": compat["floor_data_version"],
-        "min_release": compat["floor_release"],
     }
 
 

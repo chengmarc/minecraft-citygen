@@ -19,6 +19,7 @@ CITY_CONSTRUCT = stage_module("city_construct")
 CITY_RENDER = stage_module("city_render")
 
 _PROGRESS_STAGE_LABELS = {
+    "construct": "Constructing",
     "extract": "Extracting",
     "render": "Rendering",
 }
@@ -93,12 +94,23 @@ def run_city_simulation_stage(seed, fine, *, env_overrides=None, logger=None):
     return _run_seeded_stage("city_simulation", seed, fine, env_overrides=env_overrides, logger=logger)
 
 
-def run_city_construct_stage(seed, fine, *, env_overrides=None, logger=None):
-    return _run_seeded_stage("city_construct", seed, fine, env_overrides=env_overrides, logger=logger)
+def run_city_construct_stage(seed, fine, *, env_overrides=None, logger=None, progress=None):
+    with configured_environment(env_overrides):
+        return _load_stage_runner("city_construct")(
+            seed=_coerce_int(seed, "Seed"),
+            fine=_coerce_int(fine, "Fine"),
+            logger=logger,
+            progress=_progress_adapter(progress, "city_construct"),
+        )
 
 
-def run_city_render_stage(*, env_overrides=None, logger=None):
-    return _run_stage("city_render", env_overrides=env_overrides, logger=logger)
+def run_city_render_stage(*, env_overrides=None, logger=None, progress=None):
+    return _run_stage(
+        "city_render",
+        env_overrides=env_overrides,
+        logger=logger,
+        progress=_progress_adapter(progress, "city_render"),
+    )
 
 
 def run_road_extraction_pipeline(*, env_overrides=None, logger=None, progress=None):
