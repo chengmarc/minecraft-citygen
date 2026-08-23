@@ -125,7 +125,7 @@ class RenderTab(QtWidgets.QWidget, ProgressMixin):
             self._run_render,
             state,
             action_icon_name="render.png",
-            extra_actions=[("Output Folder", self._open_output_folder, "folder.png")],
+            extra_actions=[("Copy City", self._open_output_folder, "folder.png")],
             parent=self,
         )
         self.controls.connect_change_handler(self._save_state)
