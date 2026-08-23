@@ -5,14 +5,15 @@ from __future__ import annotations
 import glob
 import json
 import os
+import shutil
 import subprocess
 import sys
 
 from config import algo
 from config.algo import DEFAULT_SEED
 from config.path import (
-    ARTIFACTS, BUILDS_PROD, BUILDS_SIM, CITY_PROD, CITY_SIM,
-    GRID_PROD, GRID_SIM, GUI, ROOT, ROADS_PROD, ROADS_SIM,
+    ARTIFACTS, BUILDS_PROD, CITY_PROD, CITY_SIM,
+    GRID_SIM, GUI, ROOT, ROADS_PROD, SAVES,
 )
 from config.world import BUILD_TYPES, ROAD_BOX, SAVE
 from config.models import BlockRegion, BuildRegion
@@ -398,11 +399,19 @@ def clear_preview_cache():
 
 
 def clear_pipeline_artifacts():
-    """Delete all pipeline artifacts, keeping only final city .schem and .png outputs."""
-    clear_preview_cache()
-    for directory in (ROADS_SIM, ROADS_PROD, BUILDS_SIM, BUILDS_PROD, GRID_SIM, GRID_PROD, CITY_SIM):
-        _clear_dir(directory)
-    if os.path.isdir(CITY_PROD):
-        for path in glob.glob(os.path.join(CITY_PROD, "*")):
-            if not path.endswith((".schem", ".png")):
-                _remove_file(path)
+    """Wipe every pipeline artifact but keep exported worlds (saves/).
+
+    Shared by app launch and switching worlds so both start from the same clean
+    slate; only the standalone worlds under saves/ survive.
+    """
+    if not os.path.isdir(ARTIFACTS):
+        return
+    keep = os.path.normpath(SAVES)
+    for entry in os.listdir(ARTIFACTS):
+        path = os.path.join(ARTIFACTS, entry)
+        if os.path.normpath(path) == keep:
+            continue
+        if os.path.isdir(path):
+            shutil.rmtree(path, ignore_errors=True)
+        else:
+            _remove_file(path)

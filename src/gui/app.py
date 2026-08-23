@@ -24,6 +24,7 @@ class CityGeneratorQtApp(QtWidgets.QMainWindow):
             self.setWindowIcon(QtGui.QIcon(common.APP_ICON_PATH))
 
         self._saved_gui_config = common.load_saved_gui_config()
+        common.clear_pipeline_artifacts()  # clean slate each launch; keeps exported worlds
 
         preview_tab = PreviewTab(self)
         generation_tab = GenerationTab(self)
