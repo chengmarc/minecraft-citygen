@@ -75,6 +75,38 @@ It is not a generic block spammer. The goal is to let you define the visual lang
 - technical builders who want structure without hand-placing every block
 - anyone who wants a city generator that still feels handcrafted
 
+## Marking Your Own Assets
+
+CityGen builds cities from structures you mark up inside your own Minecraft world,
+using a handful of marker blocks. Roads, buildings, and fillers all follow the
+**same** convention:
+
+- **Wool** — outline each asset with a wool rectangle. One connected wool shape is one asset.
+- **Gold + Diamond** — place a *gold block* and a *diamond block* at two opposite corners of the region you want captured.
+- **Emerald** — place exactly one *emerald block* at ground level so the tool knows where the ground is.
+- **Sign** — put a sign inside the asset to name it (and, for buildings, to set options).
+
+Marker blocks and signs are stripped from the exported result automatically — they
+never show up in your finished city.
+
+### Two Building Types
+
+**Type 1 — a single building.** One gold/diamond pair marks the whole build.
+Best for smaller, street-front buildings.
+
+![Type 1 convention](docs/type1.png)
+
+**Type 2 — a stackable building.** Three gold/diamond pairs mark a **bottom**, a
+**middle**, and a **top**. CityGen stacks copies of the middle to vary the height,
+so one build becomes many. Best for towers and landmarks.
+
+![Type 2 convention](docs/type2.png)
+
+You can tune a type-2 building with sign directives placed inside its boundary:
+
+- `stack: 3-7` — how many middle sections it may grow (min–max)
+- `appearance: 2-4` — how many times it should appear across a city (min–max)
+
 ## Supported Versions
 
 ![26.1](https://img.shields.io/badge/26.1-404040)
