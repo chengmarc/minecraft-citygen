@@ -62,7 +62,7 @@ def env_set(name: str, default) -> set[str]:
 APP_NAME = "CityGen"
 SOURCE_ROOT = str(Path(__file__).resolve().parents[1])
 _REQUIRED_PACKAGE_DIRS = ("config", "engine", "gui", "pipeline")
-_REPO_MARKERS = (".git", "application.pyw", "docs/TECHNICAL.md")
+_REPO_MARKERS = (".git", "application.pyw", "pyproject.toml")
 
 
 def _norm(path: os.PathLike[str] | str) -> str:

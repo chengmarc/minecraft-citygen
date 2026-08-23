@@ -21,7 +21,6 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 SRC_ROOT = ROOT / "src"
-DOCS_ROOT = ROOT / "docs"
 BUILD_ROOT = ROOT / "build" / "release"
 DIST_ROOT = ROOT / "dist"
 PORTABLE_DIST = DIST_ROOT / "portable"
@@ -37,7 +36,6 @@ ICON_ICO = BUILD_ROOT / "app-icon.ico"
 DEFAULT_WORLD_DIR = SRC_ROOT / "config" / "default_world"
 README_FILES = (
     (ROOT / "README.md", "README.md"),
-    (DOCS_ROOT / "TECHNICAL.md", "TECHNICAL.md"),
 )
 WINDOWS_DATA_SEP = ";"
 

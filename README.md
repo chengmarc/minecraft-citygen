@@ -106,4 +106,6 @@ CityGen requires **WorldEdit** to paste the generated schematics. [**Download it
 
 ## For Technical Details
 
-Refer to [TECHNICAL.md](docs/TECHNICAL.md)
+See the [source architecture overview](src/README.md) and its per-package guides
+([config](src/config/README.md), [engine](src/engine/README.md),
+[gui](src/gui/README.md), [pipeline](src/pipeline/README.md)).
