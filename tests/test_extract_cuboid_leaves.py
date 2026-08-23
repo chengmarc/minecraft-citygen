@@ -4,7 +4,7 @@ Grown leaves (persistent=false) decay after a paste unless a log stays in range;
 for a stable export we rewrite them to persistent=true. The transform must touch
 only leaves, only the persistent flag, and only when explicitly enabled.
 """
-from engine.marker_extract import extract_cuboid
+from engine.world.marker_extract import extract_cuboid
 
 
 class _FakeWorld:

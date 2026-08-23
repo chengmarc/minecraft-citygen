@@ -2,7 +2,7 @@ import unittest
 
 import numpy as np
 
-from engine.render_isometric import render_grid_visible_iso
+from engine.render.isometric import render_grid_visible_iso
 
 
 class IsometricRendererTests(unittest.TestCase):

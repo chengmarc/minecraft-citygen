@@ -16,7 +16,7 @@ if __package__ in (None, ""):
 from config.config_algo import DEFAULT_SEED, FINE as DEFAULT_FINE
 from config.config_path import BUILDS_SIM, CITY_SIM, ROADS_SIM
 from config.config_render import CITY_GROUND_FILL_RGBA
-from engine.city_layout import (
+from engine.core.city_layout import (
     FACE_K,
     PlacementRules,
     find_lots,
@@ -25,8 +25,8 @@ from engine.city_layout import (
     placement_origin,
     validate_placements,
 )
-from engine.road_network import CELL, compose, gen_networks, load_assets, make_size, rot_img
-from engine.road_schematic import FILL_TOKEN
+from engine.core.road_network import CELL, compose, gen_networks, load_assets, make_size, rot_img
+from engine.schematic.road import FILL_TOKEN
 from pipeline.stages import noop, run_stage_cli
 
 BUILDS = BUILDS_SIM

@@ -10,7 +10,7 @@ import numpy as np
 from config.config_algo import CELL
 from config.config_path import ROADS_PROD
 from config.config_world import DATA_VERSION
-from engine.road_network import (
+from engine.core.road_network import (
     BIG_TILES,
     MIXED_TILES,
     SMALL_TILES,
@@ -19,13 +19,13 @@ from engine.road_network import (
     make_size,
     rot_ports,
 )
-from engine.schematic_reader import (
+from engine.schematic.reader import (
     decode_schem_block_entities,
     decode_schem_cells,
     decode_schem_offset,
 )
-from engine.schematic_transform import Tile, rot_tile, translate_block_entities
-from engine.schematic_writer import sponge_schem_from_grid
+from engine.schematic.transform import Tile, rot_tile, translate_block_entities
+from engine.schematic.writer import sponge_schem_from_grid
 
 ROADS_SCHEM = ROADS_PROD
 BLOCKS_PER_FINE_CELL = CELL

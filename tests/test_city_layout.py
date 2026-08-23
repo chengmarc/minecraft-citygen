@@ -1,7 +1,7 @@
 import random
 import unittest
 
-from engine import city_layout as C
+from engine.core import city_layout as C
 
 
 class CityLayoutTests(unittest.TestCase):

@@ -1,5 +1,5 @@
 """sign_text reads both the legacy (1.19.4) and modern sign schemas."""
-from engine.marker_extract import sign_text
+from engine.world.marker_extract import sign_text
 
 
 def test_reads_legacy_text1_4():

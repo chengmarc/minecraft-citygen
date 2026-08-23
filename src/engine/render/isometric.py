@@ -8,8 +8,8 @@ from PIL import Image, ImageDraw, ImageFont
 from config.config_render import (CONTACT_SHEET_BG, ISO_MARGIN, ROAD_ASSET_ISO_BLOCK_H,
                                   ROAD_ASSET_ISO_TILE_H, ROAD_ASSET_ISO_TILE_W,
                                   UNKNOWN_BLOCK_RGBA)
-from engine.render_palette import block_color, is_air
-from engine.schematic_reader import decode_schem_array
+from engine.render.palette import block_color, is_air
+from engine.schematic.reader import decode_schem_array
 
 try:
     from numba import njit

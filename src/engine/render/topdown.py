@@ -9,8 +9,8 @@ from pathlib import Path
 import numpy as np
 
 from config.path_discovery import resolve_region_dir
-from engine.anvil_world_reader import World
-from engine.render_palette import block_color
+from engine.world.anvil_world_reader import World
+from engine.render.palette import block_color
 
 BACKGROUND = (36, 40, 48)
 REGION_FILE_PATTERN = re.compile(r"^r\.(-?\d+)\.(-?\d+)\.mca$")

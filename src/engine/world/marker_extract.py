@@ -21,8 +21,8 @@ from dataclasses import dataclass
 
 from nbtlib import Compound
 
-from engine.schematic_transform import BlockEntity
-from engine.schematic_writer import blockstate
+from engine.schematic.transform import BlockEntity
+from engine.schematic.writer import blockstate
 
 MARKER_BLOCKS = {"gold_block", "diamond_block", "emerald_block"}
 # Chunk block-entity keys that describe position/identity rather than payload.

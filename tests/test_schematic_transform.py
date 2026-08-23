@@ -1,6 +1,6 @@
 import unittest
 
-from engine.schematic_transform import Tile, rot_state, rot_tile
+from engine.schematic.transform import Tile, rot_state, rot_tile
 
 
 class SchematicTransformTests(unittest.TestCase):

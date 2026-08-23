@@ -168,10 +168,6 @@ def footprint(cx, cy, facing, fw, fd):
     return PlacementRect(cx, cy, fd, fw)
 
 
-def cells_of(x0, y0, cols, rows):
-    return [(x0 + i, y0 + j) for i in range(cols) for j in range(rows)]
-
-
 def coarse_cells_of_rect(rect):
     return rect.coarse_cells()
 

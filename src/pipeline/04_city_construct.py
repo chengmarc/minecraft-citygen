@@ -17,8 +17,8 @@ from config.config_algo import DEFAULT_SEED, FINE as DEFAULT_FINE
 from config.config_path import BUILD_CATALOG, CITY_PROD, GRID_PROD
 from config.config_render import CITY_ANCHOR_BLOCK, CITY_GROUND_FILL_BLOCK, CITY_GROUND_Y
 from config.config_world import DATA_VERSION
-from engine.building_schematic import assemble
-from engine.city_layout import (
+from engine.schematic.building import assemble
+from engine.core.city_layout import (
     FACE_K,
     PlacementRules,
     catalog_type,
@@ -28,12 +28,12 @@ from engine.city_layout import (
     placement_origin,
     validate_placements,
 )
-from engine.road_network import CELL, gen_networks, make_size
-from engine.road_schematic import build as build_road_grid
-from engine.road_schematic import load_fillers
-from engine.schematic_reader import decode_schem
-from engine.schematic_transform import rot_tile, translate_block_entities
-from engine.schematic_writer import write_sponge_schem_grid
+from engine.core.road_network import CELL, gen_networks, make_size
+from engine.schematic.road import build as build_road_grid
+from engine.schematic.road import load_fillers
+from engine.schematic.reader import decode_schem
+from engine.schematic.transform import rot_tile, translate_block_entities
+from engine.schematic.writer import write_sponge_schem_grid
 from pipeline.stages import noop, run_stage_cli
 
 BLOCKS_PER_CELL = CELL

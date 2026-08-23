@@ -57,9 +57,6 @@ class World:
             checked = _checked_region_paths(self.region_dir, self.save_path, REGION_DIR_CANDIDATES)
             raise FileNotFoundError(_missing_region_dir_message(self.save_path, checked))
 
-    def _region_path(self, cx, cz):
-        return f"{self.region_dir}/r.{cx >> 5}.{cz >> 5}.mca"
-
     def _region_bytes(self, rx, rz):
         """Return the whole .mca file bytes for a region (cached), or None."""
         key = (rx, rz)
@@ -186,54 +183,6 @@ class World:
         values = (longs[i // per_long] >> shifts & mask).tolist()
         heights = [None if v == 0 else min_y + v - 1 for v in values]
         return heights, min_y
-
-    def compute_surface_heights(self, cx, cz):
-        """Scan the actual column tops -- correct even when the stored WORLD_SURFACE
-        heightmap is stale (e.g. after a WorldEdit paste).
-
-        Same return contract as ``surface_heightmap``: (heights, min_y) where
-        ``heights`` is a 256-entry list indexed ``(z&15)*16 + (x&15)`` giving the
-        world-Y of each column's highest non-air block, or None for empty columns.
-        """
-        chunk = self.load_chunk(cx, cz)
-        if chunk is None:
-            return None, 0
-        sections = chunk.get("sections", [])
-        if not sections:
-            return None, 0
-        section_ys = [int(s["Y"]) for s in sections]
-        min_y = min(section_ys) * 16
-
-        # heights[col] = world-Y of topmost non-air block; -1 means not yet found.
-        heights = np.full(256, -1, dtype=np.int32)
-        settled = np.zeros(256, dtype=bool)
-
-        for sy in range(max(section_ys), min(section_ys) - 1, -1):
-            if settled.all():
-                break
-            palette, idx = self._section(cx, cz, sy)
-            if palette is None:
-                continue
-            is_air = np.array([str(e["Name"]) in self._AIR_BLOCKS for e in palette], dtype=bool)
-            if idx is None:
-                # uniform section -- all 4096 positions share palette[0]
-                if not is_air[0]:
-                    heights[~settled] = (sy << 4) + 15
-                    settled[:] = True
-                continue
-            # idx layout: y_local * 256 + z_local * 16 + x_local  (same as block())
-            idx_arr = np.asarray(idx, dtype=np.int32).reshape(16, 256)  # [y_local, col]
-            for yy in range(15, -1, -1):
-                remaining = ~settled
-                if not remaining.any():
-                    break
-                solid = remaining & ~is_air[idx_arr[yy]]
-                if solid.any():
-                    heights[solid] = (sy << 4) + yy
-                    settled |= solid
-
-        result = [int(heights[i]) if settled[i] else None for i in range(256)]
-        return result, min_y
 
     def is_chunk_empty(self, cx, cz):
         """Return True when the chunk is absent from the region file."""

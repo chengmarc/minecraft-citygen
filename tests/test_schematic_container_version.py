@@ -10,8 +10,8 @@ import tempfile
 import numpy as np
 
 from config import version_compat as vc
-from engine.schematic_reader import decode_schem_cells, decode_schem_offset
-from engine.schematic_writer import (
+from engine.schematic.reader import decode_schem_cells, decode_schem_offset
+from engine.schematic.writer import (
     SPONGE_V3_MIN_DATA_VERSION,
     sponge_schem_from_cells,
     sponge_schem_from_grid,

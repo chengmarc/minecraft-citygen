@@ -6,7 +6,7 @@ import nbtlib
 import numpy as np
 from nbtlib import Compound
 
-from engine.schematic_transform import BlockEntity
+from engine.schematic.transform import BlockEntity
 
 
 def _load_schem(path):

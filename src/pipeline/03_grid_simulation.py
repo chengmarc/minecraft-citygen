@@ -13,7 +13,7 @@ if __package__ in (None, ""):
 
 from config.config_algo import DEFAULT_SEED, FINE as DEFAULT_FINE
 from config.config_path import GRID_SIM
-from engine.road_network import compose, gen_networks, load_assets, make_size
+from engine.core.road_network import compose, gen_networks, load_assets, make_size
 from pipeline.stages import noop, run_stage_cli
 
 

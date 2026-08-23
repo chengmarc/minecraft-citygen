@@ -1,7 +1,7 @@
 import os
 import unittest
 
-from engine.anvil_world_reader import World
+from engine.world.anvil_world_reader import World
 
 
 class AnvilWorldReaderTests(unittest.TestCase):

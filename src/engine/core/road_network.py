@@ -3,7 +3,7 @@ Road grid library -- shared helper for the grid pipelines.
 
 Holds network generation, the tile catalogue, and 2D vector compositing used by
 `pipeline.03_grid_simulation` (sim) and `pipeline.03_grid_construct` (prod).
-Not a driver itself; import it, optionally call `set_size()`, then call
+Not a driver itself; import it, optionally call `make_size()`, then call
 `gen_networks()` / `compose()`.
 
 Overlay model (big 2x2, small 1x1, mixed 1x2). Two independent Manhattan
@@ -77,11 +77,6 @@ def make_size(fine, *, even=False):
 DEFAULT_SIZE = make_size(DEFAULT_FINE)
 
 
-def set_size(fine, *, even=False):
-    """Compatibility wrapper for callers migrating to `make_size()`."""
-    return make_size(fine, even=even)
-
-
 # ---------------------------------------------------------------- tile catalogue
 # Each entry maps a base connection set -> asset name. A connection is
 # (direction, size) with size "b" (big) or "s" (small). Any real orientation is
@@ -140,24 +135,11 @@ def _compile_tile_lookup(catalogue):
 BIG_TILE_LOOKUP = _compile_tile_lookup(BIG_TILES)
 SMALL_TILE_LOOKUP = _compile_tile_lookup(SMALL_TILES)
 MIXED_TILE_LOOKUP = _compile_tile_lookup(MIXED_TILES)
-_LOOKUP_BY_CATALOGUE = {
-    id(BIG_TILES): BIG_TILE_LOOKUP,
-    id(SMALL_TILES): SMALL_TILE_LOOKUP,
-    id(MIXED_TILES): MIXED_TILE_LOOKUP,
-}
 _LOOKUP_BY_LAYER = {
     "big": BIG_TILE_LOOKUP,
     "small": SMALL_TILE_LOOKUP,
     "mixed": MIXED_TILE_LOOKUP,
 }
-
-
-def choose_tile(catalogue, target):
-    """Return (asset name, clockwise rotations) for `target`, or None."""
-    lookup = _LOOKUP_BY_CATALOGUE.get(id(catalogue))
-    if lookup is None:
-        lookup = _compile_tile_lookup(catalogue)
-    return lookup.get(target)
 
 
 # ---------------------------------------------------------------- generation

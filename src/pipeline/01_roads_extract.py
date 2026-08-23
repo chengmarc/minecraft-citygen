@@ -18,9 +18,9 @@ if __package__ in (None, ""):
 
 from config.config_path import ROADS_PROD
 from config.config_world import BUILD_MARKER_Y_RANGE, DATA_VERSION, REFERENCE_GROUND_Y, ROAD_BOX
-from engine.anvil_world_reader import World
-from engine.marker_extract import detect_assets, extract_cuboid, ground_shift, iter_signs
-from engine.schematic_writer import write_sponge_schem_cells
+from engine.world.anvil_world_reader import World
+from engine.world.marker_extract import detect_assets, extract_cuboid, ground_shift, iter_signs
+from engine.schematic.writer import write_sponge_schem_cells
 from pipeline.stages import noop, run_stage_cli
 
 (START_XYZ, END_XYZ) = ROAD_BOX.as_tuple()

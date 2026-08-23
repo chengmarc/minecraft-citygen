@@ -4,7 +4,23 @@ Assets are authored on a flat terrain surface; detection recovers that surface
 Y (via a column scan, not the paste-stale heightmap) so extraction follows the
 ground plane wherever the source world is seated.
 """
-from engine.marker_extract import detect_source_ground_y, ground_shift
+from engine.world.marker_extract import detect_source_ground_y, ground_shift
+
+
+def _chunk_tops(surface_y):
+    """Build a 256-entry top_solid_blocks array from a ``(x, z) -> y`` callable.
+
+    Columns are indexed ``z_local * 16 + x_local`` and world coords are the
+    caller's absolute block positions -- matching the real World API.
+    """
+    def blocks(cx, cz):
+        entries = []
+        for col in range(256):
+            x = (cx << 4) + (col & 15)
+            z = (cz << 4) + (col >> 4)
+            entries.append(("minecraft:grass_block", surface_y(x, z)))
+        return entries
+    return blocks
 
 
 class _FakeWorld:
@@ -14,11 +30,12 @@ class _FakeWorld:
         self.ground_y = ground_y
         self.empty = empty
 
-    def top_solid_block(self, x, z):
-        if self.empty:
-            return None
-        raised = 8 if (x % 20 == 0 and z % 20 == 0) else 0
-        return "minecraft:grass_block", self.ground_y + raised, None
+    def is_chunk_empty(self, cx, cz):
+        return self.empty
+
+    def top_solid_blocks(self, cx, cz):
+        raised = lambda x, z: self.ground_y + (8 if (x % 20 == 0 and z % 20 == 0) else 0)
+        return _chunk_tops(raised)(cx, cz)
 
 
 class _RoadDenseWorld:
@@ -28,10 +45,13 @@ class _RoadDenseWorld:
         self.ground_y = ground_y
         self.road_y = road_y
 
-    def top_solid_block(self, x, z):
+    def is_chunk_empty(self, cx, cz):
+        return False
+
+    def top_solid_blocks(self, cx, cz):
         # ~1/3 of columns show bare ground, the rest the higher road surface.
-        y = self.ground_y if (x + z) % 3 == 0 else self.road_y
-        return "minecraft:grass_block", y, None
+        surface = lambda x, z: self.ground_y if (x + z) % 3 == 0 else self.road_y
+        return _chunk_tops(surface)(cx, cz)
 
 
 def test_detects_ground_plane():

@@ -1,6 +1,6 @@
 import unittest
 
-from engine import road_network as R
+from engine.core import road_network as R
 
 
 def snapshot(net):

@@ -11,8 +11,8 @@ if __package__ in (None, ""):
 
 from config.config_algo import DEFAULT_SEED, FINE as DEFAULT_FINE
 from config.config_path import GRID_PROD
-from engine.road_schematic import build, to_schem
-from engine.schematic_writer import save_sponge_schem
+from engine.schematic.road import build, to_schem
+from engine.schematic.writer import save_sponge_schem
 from pipeline.stages import noop, run_stage_cli
 
 

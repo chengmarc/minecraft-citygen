@@ -2,7 +2,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from engine.render_topdown import region_world_bounds
+from engine.render.topdown import region_world_bounds
 
 
 class WorldPreviewTests(unittest.TestCase):

@@ -4,15 +4,15 @@ import numpy as np
 import pytest
 from nbtlib import Compound, String
 
-from engine.schematic_reader import decode_schem_block_entities
-from engine.schematic_transform import (
+from engine.schematic.reader import decode_schem_block_entities
+from engine.schematic.transform import (
     BlockEntity,
     Tile,
     rot_state,
     rot_tile,
     translate_block_entities,
 )
-from engine.schematic_writer import write_sponge_schem_cells, write_sponge_schem_grid
+from engine.schematic.writer import write_sponge_schem_cells, write_sponge_schem_grid
 
 V2 = 3337   # 1.19.4 -> Sponge v2 container
 V3 = 3700   # >= 1.20 -> Sponge v3 container

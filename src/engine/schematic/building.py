@@ -6,9 +6,9 @@ import json
 import os
 
 from config.config_path import BUILD_CATALOG, BUILDS_PROD
-from engine.city_layout import catalog_type
-from engine.schematic_reader import decode_schem_block_entities, decode_schem_cells
-from engine.schematic_transform import Tile
+from engine.core.city_layout import catalog_type
+from engine.schematic.reader import decode_schem_block_entities, decode_schem_cells
+from engine.schematic.transform import Tile
 
 BUILDS = BUILDS_PROD
 META = None

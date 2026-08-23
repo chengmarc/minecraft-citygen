@@ -12,7 +12,7 @@ if __package__ in (None, ""):
 
 from config.config_path import CITY_PROD
 from config.config_render import FULL_SCHEM_ISO_BLOCK_H, FULL_SCHEM_ISO_TILE_H, FULL_SCHEM_ISO_TILE_W
-from engine.render_isometric import render_schem_visible_iso
+from engine.render.isometric import render_schem_visible_iso
 from pipeline.stages import noop, run_stage_cli
 
 SCHEM = CITY_PROD
