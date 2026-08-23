@@ -1,29 +1,20 @@
 # CityGen - Minecraft City Generator
 
-<p align="center">
-  <img src="src/gui/icons/app-icon.png" alt="CityGen app icon" width="180">
-</p>
 <div align="center">
+  <img src="src/gui/icons/app-icon.png" alt="CityGen app icon" width="180">
+  <br><br>
+  <img src="https://img.shields.io/badge/Minecraft-%E2%89%A5%201.20-4C9A2A?style=for-the-badge" alt="Minecraft >= 1.20">
+  <img src="https://img.shields.io/badge/WorldEdit-%E2%89%A5%207.3.0-1E88E5?style=for-the-badge" alt="WorldEdit >= 7.3.0">
   <h3>
     Download <a href="https://github.com/CDS-SP/minecraft-citygen/releases/download/v0.4.1/CityGen-setup.exe">Windows Installer (.exe)</a> or 
     <a href="https://github.com/CDS-SP/minecraft-citygen/releases/download/v0.4.1/CityGen-portable-windows.zip">Compressed Portable (.zip)</a>
   </h3>
+  <br>
 </div>
 
 **Build a full Minecraft city from your own roads and buildings in minutes.**
 
 This project turns a small handcrafted asset set into a complete city layout, preview, and paste-ready in-game result. It is designed for creators who want large-scale city generation without giving up the look and feel of their own Minecraft builds.
-
-## Supported Versions
-
-<p align="center">
-  <img src="https://img.shields.io/badge/Minecraft-%E2%89%A5%201.20-4C9A2A" alt="Minecraft >= 1.20">
-  <img src="https://img.shields.io/badge/WorldEdit-%E2%89%A5%207.3.0-1E88E5" alt="WorldEdit >= 7.3.0">
-</p>
-
-CityGen targets **Minecraft 1.20+** and requires **WorldEdit 7.3.0+** to paste the generated schematics: outputs use the Sponge v3 `.schem` container, which WorldEdit 7.3.0 (the first release for 1.20) introduced and earlier versions cannot read.
-
-> **Note:** WorldEdit 7.3.0's Minecraft coverage depends on the platform — the Bukkit build (Spigot/Paper) supports 1.20–1.20.4, while the Forge build supports 1.20.4 only. Match the WorldEdit build to your server platform and Minecraft version. Verified working on 1.20.4.
 
 ## Rendering Result
 
@@ -83,6 +74,35 @@ It is not a generic block spammer. The goal is to let you define the visual lang
 - world creators making urban maps faster
 - technical builders who want structure without hand-placing every block
 - anyone who wants a city generator that still feels handcrafted
+
+## Supported Versions
+
+![26.1](https://img.shields.io/badge/26.1-404040)
+![26.1.1](https://img.shields.io/badge/26.1.1-404040)
+![26.2](https://img.shields.io/badge/26.2-404040)
+
+![1.21](https://img.shields.io/badge/1.21-707070)
+![1.21.1](https://img.shields.io/badge/1.21.1-707070)
+![1.21.2](https://img.shields.io/badge/1.21.2-707070)
+![1.21.3](https://img.shields.io/badge/1.21.3-707070)
+![1.21.4](https://img.shields.io/badge/1.21.4-707070)
+![1.21.5](https://img.shields.io/badge/1.21.5-707070)
+![1.21.6](https://img.shields.io/badge/1.21.6-707070)
+![1.21.7](https://img.shields.io/badge/1.21.7-707070)
+![1.21.8](https://img.shields.io/badge/1.21.8-707070)
+![1.21.9](https://img.shields.io/badge/1.21.9-707070)
+![1.21.10](https://img.shields.io/badge/1.21.10-707070)
+![1.21.11](https://img.shields.io/badge/1.21.11-707070)
+
+![1.20](https://img.shields.io/badge/1.20-A0A0A0)
+![1.20.1](https://img.shields.io/badge/1.20.1-A0A0A0)
+![1.20.2](https://img.shields.io/badge/1.20.2-A0A0A0)
+![1.20.3](https://img.shields.io/badge/1.20.3-A0A0A0)
+![1.20.4](https://img.shields.io/badge/1.20.4-A0A0A0)
+![1.20.5](https://img.shields.io/badge/1.20.5-A0A0A0)
+![1.20.6](https://img.shields.io/badge/1.20.6-A0A0A0)
+
+CityGen requires **WorldEdit** to paste the generated schematics. [**Download it here**](https://www.curseforge.com/minecraft/mc-mods/worldedit)
 
 ## For Technical Details
 
