@@ -10,11 +10,20 @@
   </h3>
 </div>
 
-## Introduction
-
 **Build a full Minecraft city from your own roads and buildings in minutes.**
 
 This project turns a small handcrafted asset set into a complete city layout, preview, and paste-ready in-game result. It is designed for creators who want large-scale city generation without giving up the look and feel of their own Minecraft builds.
+
+## Supported Versions
+
+<p align="center">
+  <img src="https://img.shields.io/badge/Minecraft-%E2%89%A5%201.20-4C9A2A" alt="Minecraft >= 1.20">
+  <img src="https://img.shields.io/badge/WorldEdit-%E2%89%A5%207.3.0-1E88E5" alt="WorldEdit >= 7.3.0">
+</p>
+
+CityGen targets **Minecraft 1.20+** and requires **WorldEdit 7.3.0+** to paste the generated schematics: outputs use the Sponge v3 `.schem` container, which WorldEdit 7.3.0 (the first release for 1.20) introduced and earlier versions cannot read.
+
+## Rendering Result
 
 ![Isometric city render 1](docs/isometric1.png)
 

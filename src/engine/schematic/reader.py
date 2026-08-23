@@ -1,4 +1,10 @@
-"""Shared Sponge schematic reading helpers."""
+"""Shared Sponge v3 schematic reading helpers.
+
+CityGen only ever reads the v3 schematics it writes (the hard floor is 1.20, so
+every output uses the Sponge v3 container), so this reader assumes the v3 layout:
+fields nested under a ``Schematic`` key, blocks under ``Blocks`` with a ``Data``
+array, block entities carrying their NBT in a ``Data`` compound.
+"""
 
 from __future__ import annotations
 
@@ -10,12 +16,8 @@ from engine.schematic.transform import BlockEntity
 
 
 def _load_schem(path):
-    # v3 nests everything under a "Schematic" key; v2 (written for pre-1.20
-    # targets) keeps the fields at the root -- the root tag is *named*
-    # Schematic but has no such child. decode_schem already handles the
-    # BlockData/Blocks.Data layout split beneath this.
-    root = nbtlib.load(path)
-    return root["Schematic"] if "Schematic" in root else root
+    # v3 nests everything under a "Schematic" key.
+    return nbtlib.load(path)["Schematic"]
 
 
 def _varints(raw):
@@ -51,10 +53,9 @@ def _varints_array(raw, palette_size):
 def decode_schem(path):
     schem = _load_schem(path)
     width, height, length = int(schem["Width"]), int(schem["Height"]), int(schem["Length"])
-    src = schem["Blocks"] if "Blocks" in schem else schem
-    inv = {int(value): key for key, value in src["Palette"].items()}
-    raw = src["Data"] if "Data" in src else schem["BlockData"]
-    vals = _varints_array(raw, len(inv))
+    blocks = schem["Blocks"]
+    inv = {int(value): key for key, value in blocks["Palette"].items()}
+    vals = _varints_array(blocks["Data"], len(inv))
     expected = width * height * length
     if len(vals) != expected:
         raise ValueError(f"{path}: decoded {len(vals)} blocks, expected {expected}")
@@ -70,24 +71,19 @@ def decode_schem_offset(path):
 
 
 def decode_schem_block_entities(path):
-    """Block entities in a Sponge .schem as BlockEntity records (local coords).
+    """Block entities in a Sponge v3 .schem as BlockEntity records (local coords).
 
-    Handles both containers: v3 nests entries under ``Blocks.BlockEntities`` with
-    the payload in a ``Data`` compound; v2 keeps ``BlockEntities`` at the root with
-    the payload inline. Returns an empty list when the schematic has none.
+    Entries live under ``Blocks.BlockEntities``, each carrying its NBT payload in a
+    ``Data`` compound (absent when empty). Returns an empty list when the schematic
+    has none.
     """
-    schem = _load_schem(path)
-    container = schem["Blocks"] if "Blocks" in schem else schem
-    entries = container.get("BlockEntities")
+    entries = _load_schem(path)["Blocks"].get("BlockEntities")
     if not entries:
         return []
     result = []
     for entry in entries:
         pos = entry["Pos"]
-        if "Data" in entry:
-            data = entry["Data"]
-        else:
-            data = Compound({k: v for k, v in entry.items() if k not in ("Id", "Pos")})
+        data = entry["Data"] if "Data" in entry else Compound({})
         result.append(
             BlockEntity(int(pos[0]), int(pos[1]), int(pos[2]), str(entry["Id"]), data)
         )
