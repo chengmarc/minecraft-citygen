@@ -1,5 +1,5 @@
 """Minimal reader for modern Anvil worlds (the section block_states palette
-format, MC 1.18+; the bundled default_world is 1.19.4).
+format, MC 1.18+; the bundled default_world is 1.20).
 
 Uses only the region container + the section block_states palette/data, so it
 does not depend on anvil-parser's (outdated) block decoder.

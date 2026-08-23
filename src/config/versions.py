@@ -11,8 +11,8 @@ DataFixer does any upgrade on paste. So all this module needs to do is:
   (``RELEASE_NAMES`` / ``release_name_for``), and
 * record the minimum version CityGen supports (``HARD_FLOOR_DATA_VERSION``).
 
-The floor is 1.19.4 because the bundled assets contain 1.19.4 blocks (cherry
-wood, pink petals) and it is the oldest target the Sponge v2 container reaches.
+The floor is 1.20: the bundled source world is 1.20, and every output uses the
+Sponge v3 container (WorldEdit 7.3.0+, Minecraft 1.20+).
 """
 from __future__ import annotations
 
@@ -22,11 +22,10 @@ import nbtlib
 
 # Forward-only compatibility floor. Forward compat is free -- WorldEdit upgrades
 # an older schematic forward into a newer world -- but backward is impossible, so
-# every stamp is clamped up to this floor. 1.19.4 is where the two binding
-# constraints bottom out: the bundled assets need 1.19.4 blocks (cherry wood,
-# pink petals), and it is the newest version still served by the Sponge v2
-# container that pre-1.20 WorldEdit (7.2.x) can read.
-HARD_FLOOR_DATA_VERSION = 3337  # Minecraft 1.19.4
+# every stamp is clamped up to this floor. The floor is 1.20: the bundled source
+# world is 1.20, and outputs always use the Sponge v3 container, which pre-1.20
+# WorldEdit (7.2.x) cannot read anyway.
+HARD_FLOOR_DATA_VERSION = 3463  # Minecraft 1.20
 
 # DataVersion -> Minecraft release name, used only to label the detected source
 # world in the GUI. Hand-maintained (display only): add newer releases as they

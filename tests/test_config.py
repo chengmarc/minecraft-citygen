@@ -110,15 +110,15 @@ class AppRootTests(unittest.TestCase):
 
 class VersionTests(unittest.TestCase):
     def test_release_name_for_known_unknown_and_hard_floor(self):
-        self.assertEqual(vc.HARD_FLOOR_DATA_VERSION, 3337)
-        self.assertEqual(vc.release_name_for(3337), "1.19.4")
+        self.assertEqual(vc.HARD_FLOOR_DATA_VERSION, 3463)  # Minecraft 1.20
+        self.assertEqual(vc.release_name_for(3463), "1.20")
         self.assertEqual(vc.release_name_for(3465), "1.20.1")
         # Unmapped versions fall back to the raw DataVersion.
         self.assertEqual(vc.release_name_for(999999), "DataVersion 999999")
 
     def test_detect_world_data_version_reads_bundled_world_and_handles_absent(self):
         world = Path(__file__).resolve().parents[1] / "src" / "config" / "default_world"
-        self.assertEqual(vc.detect_world_data_version(str(world)), 3337)  # bundled world is 1.19.4
+        self.assertEqual(vc.detect_world_data_version(str(world)), 3463)  # bundled world is 1.20
 
         with tempfile.TemporaryDirectory() as tempdir:
             self.assertIsNone(vc.detect_world_data_version(tempdir))  # no level.dat

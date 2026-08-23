@@ -1,4 +1,9 @@
-"""Shared Sponge v2 schematic writing helpers."""
+"""Shared Sponge v3 schematic writing helpers.
+
+Every output uses the Sponge Schematic v3 container (WorldEdit 7.3.0+, Minecraft
+1.20+). The hard floor is 1.20 (see config/versions.py), so stamps never fall
+below the v3 window and the older v2 container is not emitted.
+"""
 
 from __future__ import annotations
 
@@ -7,13 +12,6 @@ import os
 import nbtlib
 import numpy as np
 from nbtlib import ByteArray, Compound, Int, IntArray, List, Short, String
-
-# The Sponge Schematic v3 container first appears in WorldEdit 7.3.0, which only
-# runs on Minecraft 1.20+. WorldEdit 7.2.x (shipping with 1.19.x and earlier)
-# reads only v2 and rejects a v3 file outright -- even when its DataVersion is a
-# valid older version. So the *container* version has to track the target, not
-# just the block content: emit v2 below 1.20, v3 at or above it.
-SPONGE_V3_MIN_DATA_VERSION = 3463  # Minecraft 1.20
 
 
 def blockstate(name, props):
@@ -52,24 +50,18 @@ def encode_varint_array(flat):
     return np.frombuffer(bytes(out), dtype=np.int8)
 
 
-def _block_entities_tag(block_entities, *, v3):
-    """Sponge ``BlockEntities`` list from BlockEntity records.
+def _block_entities_tag(block_entities):
+    """Sponge v3 ``BlockEntities`` list from BlockEntity records.
 
-    v3 nests the extra NBT under a ``Data`` compound; v2 stores it inline
-    alongside ``Id``/``Pos`` in the same compound.
+    The extra NBT is nested under a ``Data`` compound alongside ``Id``/``Pos``.
     """
     entries = []
     for be in block_entities or ():
         pos = IntArray([int(be.x), int(be.y), int(be.z)])
         data = Compound(be.data) if be.data else Compound({})
-        if v3:
-            entry = Compound({"Id": String(be.id), "Pos": pos})
-            if len(data):
-                entry["Data"] = data
-        else:
-            entry = Compound(data)
-            entry["Id"] = String(be.id)
-            entry["Pos"] = pos
+        entry = Compound({"Id": String(be.id), "Pos": pos})
+        if len(data):
+            entry["Data"] = data
         entries.append(entry)
     return List[Compound](entries)
 
@@ -79,14 +71,10 @@ def _schem_file(width, height, length, palette, data, data_version, offset=None,
         offset = (0, 0, 0)
     offset_tag = IntArray([int(offset[0]), int(offset[1]), int(offset[2])])
     palette_tag = Compound({key: Int(value) for key, value in palette.items()})
-    if data_version < SPONGE_V3_MIN_DATA_VERSION:
-        return _schem_file_v2(
-            width, height, length, palette_tag, data, data_version, offset_tag, block_entities
-        )
     blocks = Compound({
         "Palette": palette_tag,
         "Data": ByteArray(data),
-        "BlockEntities": _block_entities_tag(block_entities, v3=True),
+        "BlockEntities": _block_entities_tag(block_entities),
     })
     schem = Compound({
         "Version": Int(3),
@@ -99,32 +87,6 @@ def _schem_file(width, height, length, palette, data, data_version, offset=None,
         "Metadata": Compound({}),
     })
     return nbtlib.File({"Schematic": schem})
-
-
-def _schem_file_v2(width, height, length, palette_tag, data, data_version, offset_tag, block_entities=None):
-    """Sponge Schematic v2 container (WorldEdit 7.2.x / Minecraft 1.19 and older).
-
-    Unlike v3, the fields live directly under a root tag named ``Schematic``
-    (not nested under a ``Blocks`` compound), block data is stored as
-    ``BlockData`` rather than ``Blocks.Data``, and the palette carries a
-    ``PaletteMax`` count.
-    """
-    schem = Compound({
-        "Version": Int(2),
-        "DataVersion": Int(data_version),
-        "Width": Short(width),
-        "Height": Short(height),
-        "Length": Short(length),
-        "Offset": offset_tag,
-        "PaletteMax": Int(len(palette_tag)),
-        "Palette": palette_tag,
-        "BlockData": ByteArray(data),
-        "BlockEntities": _block_entities_tag(block_entities, v3=False),
-        "Metadata": Compound({}),
-    })
-    file = nbtlib.File(schem)
-    file.root_name = "Schematic"
-    return file
 
 
 def sponge_schem_from_cells(cells, data_version, offset=None, block_entities=None):

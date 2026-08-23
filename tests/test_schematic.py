@@ -1,12 +1,10 @@
-"""Schematic transforms, block-entity handling, and Sponge container versioning.
+"""Schematic transforms, block-entity handling, and the Sponge v3 container.
 
-The Sponge container version is chosen by the target's WorldEdit, not the blocks:
-WorldEdit 7.3.0 (Minecraft 1.20+) added the v3 container; the 7.2.x line shipping
-with 1.19.x reads only v2 and rejects v3. The writer therefore emits v2 below
-DataVersion 3463 (1.20) and v3 at or above it.
+Every output uses the Sponge Schematic v3 container (WorldEdit 7.3.0+, Minecraft
+1.20+). The hard floor is 1.20, so stamps never fall below the v3 window and the
+writer only ever emits v3.
 """
 import numpy as np
-import pytest
 from nbtlib import Compound, String
 
 from engine.schematic.reader import (
@@ -16,17 +14,14 @@ from engine.schematic.reader import (
 )
 from engine.schematic.transform import Tile, BlockEntity, rot_state, rot_tile
 from engine.schematic.writer import (
-    SPONGE_V3_MIN_DATA_VERSION,
     sponge_schem_from_cells,
     sponge_schem_from_grid,
     write_sponge_schem_cells,
     write_sponge_schem_grid,
 )
 
-V2 = 3337       # Minecraft 1.19.4, the hard floor and only release in [1.19.4, 1.20)
-V120 = 3463     # Minecraft 1.20, the v2 -> v3 container threshold
-V3 = 3700       # >= 1.20 -> Sponge v3 container
-LATEST = 4000   # any DataVersion well above the v3 threshold
+V120 = 3463     # Minecraft 1.20, the hard floor and start of the v3 window
+LATEST = 4000   # any DataVersion well above the floor
 
 
 # --- transforms -----------------------------------------------------------
@@ -85,12 +80,11 @@ def _sign(x, y, z, text):
     return BlockEntity(x, y, z, "minecraft:oak_sign", Compound({"Text1": String(text)}))
 
 
-@pytest.mark.parametrize("data_version", [V2, V3])
-def test_cells_roundtrip_preserves_block_entity(tmp_path, data_version):
+def test_cells_roundtrip_preserves_block_entity(tmp_path):
     cells = [[["minecraft:oak_sign[rotation=0]"]]]
     be = _sign(0, 0, 0, '{"text":"hello"}')
     path = tmp_path / "sign.schem"
-    write_sponge_schem_cells(cells, str(path), data_version, block_entities=[be])
+    write_sponge_schem_cells(cells, str(path), V120, block_entities=[be])
 
     got = decode_schem_block_entities(str(path))
     assert len(got) == 1
@@ -105,7 +99,7 @@ def test_grid_roundtrip_preserves_block_entity_position(tmp_path):
     palette = {"minecraft:air": 0, "minecraft:chest[facing=north]": 1}
     be = BlockEntity(3, 1, 2, "minecraft:chest", Compound({"LootTable": String("minecraft:chests/x")}))
     path = tmp_path / "chest.schem"
-    write_sponge_schem_grid(grid, palette, str(path), V3, block_entities=[be])
+    write_sponge_schem_grid(grid, palette, str(path), LATEST, block_entities=[be])
 
     got = decode_schem_block_entities(str(path))
     assert len(got) == 1
@@ -113,7 +107,7 @@ def test_grid_roundtrip_preserves_block_entity_position(tmp_path):
     assert got[0].id == "minecraft:chest"
 
 
-# --- container versioning ------------------------------------------------
+# --- v3 container --------------------------------------------------------
 
 def _cells_file(data_version):
     file, _ = sponge_schem_from_cells([[["minecraft:stone"]]], data_version)
@@ -125,16 +119,6 @@ def _grid_file(data_version):
     return sponge_schem_from_grid(grid, {"minecraft:stone": 0}, data_version)
 
 
-def _assert_v2(file):
-    # v2: fields sit directly under a root tag named "Schematic" (no wrapper),
-    # block data is "BlockData", palette carries "PaletteMax".
-    assert file.root_name == "Schematic"
-    assert "Schematic" not in file
-    assert int(file["Version"]) == 2
-    assert "BlockData" in file
-    assert int(file["PaletteMax"]) == len(file["Palette"])
-
-
 def _assert_v3(file):
     # v3: everything nested under a "Schematic" key, block data under Blocks.Data.
     assert "Schematic" in file
@@ -144,29 +128,21 @@ def _assert_v3(file):
     assert "BlockData" not in schem
 
 
-def test_cells_container_boundary_is_exact():
-    assert SPONGE_V3_MIN_DATA_VERSION == V120 == 3463
-    # One below the threshold is v2; exactly the threshold is v3.
-    _assert_v2(_cells_file(SPONGE_V3_MIN_DATA_VERSION - 1))
-    _assert_v3(_cells_file(SPONGE_V3_MIN_DATA_VERSION))
+def test_cells_and_grid_emit_v3_container():
+    _assert_v3(_cells_file(V120))
+    _assert_v3(_cells_file(LATEST))
+    _assert_v3(_grid_file(V120))
 
 
-def test_grid_emits_versioned_container():
-    _assert_v2(_grid_file(V2))
-    _assert_v3(_grid_file(LATEST))
-
-
-def test_both_containers_carry_target_data_version():
-    assert int(_cells_file(V2)["DataVersion"]) == V2
+def test_container_carries_target_data_version():
+    assert int(_cells_file(V120)["Schematic"]["DataVersion"]) == V120
     assert int(_cells_file(LATEST)["Schematic"]["DataVersion"]) == LATEST
 
 
-def test_reader_round_trips_both_containers(tmp_path):
-    # The render step reads schematics straight back after extraction; a v2 file
-    # must decode without tripping the reader's v3 "Schematic" child lookup.
+def test_reader_round_trips_written_cells(tmp_path):
+    # The render step reads schematics straight back after extraction.
     cells = [[["minecraft:stone", "minecraft:air"]], [["minecraft:oak_planks", "minecraft:stone"]]]
-    for data_version in (V2, LATEST):
-        path = tmp_path / f"round-{data_version}.schem"
-        write_sponge_schem_cells(cells, str(path), data_version)
-        assert decode_schem_cells(str(path)) == cells
-        assert decode_schem_offset(str(path)) == (0, 0, 0)
+    path = tmp_path / "round.schem"
+    write_sponge_schem_cells(cells, str(path), V120)
+    assert decode_schem_cells(str(path)) == cells
+    assert decode_schem_offset(str(path)) == (0, 0, 0)

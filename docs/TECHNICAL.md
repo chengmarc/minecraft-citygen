@@ -42,7 +42,7 @@ free, and there is no downgrade or "missing block" computation to do.
 This is handled by [config/versions.py](../src/config/versions.py):
 
 - outputs are **always stamped with the source world's `DataVersion`** (read
-  from its `level.dat`, else the 1.19.4 hard floor, and clamped up to that floor).
+  from its `level.dat`, else the 1.20 hard floor, and clamped up to that floor).
   WorldEdit's DataFixer then upgrades the schematic forward into whatever world
   you paste into. Stamping any newer version would skip the fixer and hole out
   blocks renamed since the source (e.g. `grass` → `short_grass`), so we never do
@@ -51,7 +51,7 @@ This is handled by [config/versions.py](../src/config/versions.py):
   do not set `MC_CITY_SAVE`, stamp the source version rather than re-detecting
   the default world.
 
-The supported floor is Minecraft 1.19.4 (`HARD_FLOOR_DATA_VERSION` in
+The supported floor is Minecraft 1.20 (`HARD_FLOOR_DATA_VERSION` in
 `versions.py`). CityGen does no version conversion of its own, so there is no
 compatibility table or per-block map — `versions.py` just reads the source
 version (`detect_world_data_version`), and holds a small `RELEASE_NAMES` map that
@@ -71,9 +71,8 @@ from the block id. The pipeline preserves that NBT end to end:
   holds a local `(x, y, z)`, the id, and a `Data` compound copied verbatim. The
   gold/diamond/emerald authoring markers live outside the extracted cuboid, so
   in-cuboid signs are kept as real content (not blanked).
-- `schematic_writer` emits them into the Sponge `BlockEntities` list (inline for
-  the v2 container, nested under `Data` for v3); `schematic_reader.decode_schem_block_entities`
-  reads them back.
+- `schematic_writer` emits them into the Sponge v3 `BlockEntities` list, nested
+  under `Data`; `schematic_reader.decode_schem_block_entities` reads them back.
 - through assembly the positions ride along with their blocks: `rot_tile` rotates
   a block entity to its cell's new coordinate (and `rot_state` turns the block's
   own `facing`/`rotation`), `building_schematic.assemble` offsets stacked pieces,

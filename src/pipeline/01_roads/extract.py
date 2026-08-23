@@ -1,4 +1,4 @@
-"""Extract road tiles and fill props from the world into Sponge v2 .schem files.
+"""Extract road tiles and fill props from the world into Sponge v3 .schem files.
 
 Road, fill, and building assets are all authored with the same marker
 convention, so this stage runs the shared marker extraction (wool boundary +
