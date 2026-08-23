@@ -150,40 +150,6 @@ class World:
         entry = palette[v]
         return str(entry["Name"]), self._block_properties(entry)
 
-    def surface_heightmap(self, cx, cz):
-        """Return (heights, min_y) for the chunk's WORLD_SURFACE heightmap.
-
-        ``heights`` is a 256-entry list indexed ``(z & 15) * 16 + (x & 15)`` giving
-        the world Y of each column's highest non-air block (``None`` for an empty
-        column). Returns ``(None, 0)`` when the chunk or heightmap is absent. This
-        is how map tools stay fast: one array read replaces a per-column scan.
-        """
-        chunk = self.load_chunk(cx, cz)
-        if chunk is None:
-            return None, 0
-        heightmaps = chunk.get("Heightmaps")
-        section_ys = [int(s["Y"]) for s in chunk.get("sections", [])]
-        if heightmaps is None or not section_ys:
-            return None, 0
-        data = heightmaps.get("WORLD_SURFACE")
-        if data is None:
-            return None, 0
-        # The WORLD_SURFACE heightmap is encoded relative to the dimension's
-        # minimum build height (-64 for 1.18+ overworld, section Y = -4), not
-        # the chunk's lowest section. Clamp to -4 to skip spurious void sections
-        # (e.g. Y=-5) that appear below the world floor in some generated worlds.
-        min_y = max(min(section_ys), -4) * 16
-        longs = np.asarray(data, dtype=np.int64).view(np.uint64)
-        n = 256
-        per_long = -(-n // len(longs))  # ceil: derive packing from longs count
-        bits = 64 // per_long
-        mask = np.uint64((1 << bits) - 1)
-        i = np.arange(n, dtype=np.intp)
-        shifts = (i % per_long * bits).astype(np.uint64)
-        values = (longs[i // per_long] >> shifts & mask).tolist()
-        heights = [None if v == 0 else min_y + v - 1 for v in values]
-        return heights, min_y
-
     def is_chunk_empty(self, cx, cz):
         """Return True when the chunk is absent from the region file."""
         return self.load_chunk(cx, cz) is None
