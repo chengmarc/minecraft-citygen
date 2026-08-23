@@ -13,9 +13,9 @@ from config.config_path import ARTIFACTS
 from config.path_discovery import resolve_region_dir
 from engine.render.topdown import render_topdown_preview
 
-from gui.qt_viewer import QtImageViewer
-from gui.theme import ACCENT_RGB
-from gui.workers import RegionPreviewSignals
+from gui.widgets.qt_viewer import QtImageViewer
+from gui.core.theme import ACCENT_RGB
+from gui.core.workers import RegionPreviewSignals
 
 CHUNK_SIZE = 16
 _PREVIEW_CACHE_DIR = Path(ARTIFACTS) / "world_preview"

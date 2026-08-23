@@ -35,18 +35,18 @@ PIPELINE_DEPENDENCY_MODULES = (
 )
 
 ORDERED_STAGE_SPECS = (
-    StageSpec("roads_simulation", "pipeline.01_roads_simulation"),
-    StageSpec("roads_extract", "pipeline.01_roads_extract"),
-    StageSpec("roads_render", "pipeline.01_roads_render"),
-    StageSpec("builds_simulation", "pipeline.02_builds_simulation"),
-    StageSpec("builds_extract", "pipeline.02_builds_extract"),
-    StageSpec("builds_render", "pipeline.02_builds_render"),
-    StageSpec("grid_simulation", "pipeline.03_grid_simulation"),
-    StageSpec("grid_construct", "pipeline.03_grid_construct"),
-    StageSpec("grid_render", "pipeline.03_grid_render"),
-    StageSpec("city_simulation", "pipeline.04_city_simulation"),
-    StageSpec("city_construct", "pipeline.04_city_construct"),
-    StageSpec("city_render", "pipeline.04_city_render"),
+    StageSpec("roads_simulation", "pipeline.01_roads.simulation"),
+    StageSpec("roads_extract", "pipeline.01_roads.extract"),
+    StageSpec("roads_render", "pipeline.01_roads.render"),
+    StageSpec("builds_simulation", "pipeline.02_builds.simulation"),
+    StageSpec("builds_extract", "pipeline.02_builds.extract"),
+    StageSpec("builds_render", "pipeline.02_builds.render"),
+    StageSpec("grid_simulation", "pipeline.03_grid.simulation"),
+    StageSpec("grid_construct", "pipeline.03_grid.construct"),
+    StageSpec("grid_render", "pipeline.03_grid.render"),
+    StageSpec("city_simulation", "pipeline.04_city.simulation"),
+    StageSpec("city_construct", "pipeline.04_city.construct"),
+    StageSpec("city_render", "pipeline.04_city.render"),
 )
 
 STAGES = {spec.key: spec for spec in ORDERED_STAGE_SPECS}

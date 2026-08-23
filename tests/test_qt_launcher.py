@@ -1,7 +1,8 @@
 import unittest
 from unittest import mock
 
-from gui import common, launcher
+from gui.core import common
+from gui import launcher
 
 
 class QtViewerLaunchTests(unittest.TestCase):

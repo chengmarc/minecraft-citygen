@@ -6,7 +6,7 @@ import threading
 
 from PySide6 import QtCore, QtWidgets
 
-from gui import common
+from gui.core import common
 
 
 class WorkerSignals(QtCore.QObject):

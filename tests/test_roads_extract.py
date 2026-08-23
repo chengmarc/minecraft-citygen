@@ -5,7 +5,7 @@ import unittest
 from pathlib import Path
 from unittest import mock
 
-roads_extract = importlib.import_module("pipeline.01_roads_extract")
+roads_extract = importlib.import_module("pipeline.01_roads.extract")
 
 
 def _component(boundary, cuboid, *, ground_y=None):

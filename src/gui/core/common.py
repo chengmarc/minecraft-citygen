@@ -101,10 +101,10 @@ CLEARANCE_OPTIONS = {
 }
 
 PREVIEW_PROGRESS_WEIGHTS = [
-    ("pipeline.01_roads_simulation", 15),
-    ("pipeline.02_builds_simulation", 20),
-    ("pipeline.03_grid_simulation", 30),
-    ("pipeline.04_city_simulation", 35),
+    ("pipeline.01_roads.simulation", 15),
+    ("pipeline.02_builds.simulation", 20),
+    ("pipeline.03_grid.simulation", 30),
+    ("pipeline.04_city.simulation", 35),
 ]
 
 # Per-step weights for the render-tab progress bar.

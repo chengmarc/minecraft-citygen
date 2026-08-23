@@ -49,7 +49,7 @@ def font(size):
 def load_build_asset(key):
     path = os.path.join(BUILDS, f"{key}.png")
     if not os.path.exists(path):
-        raise FileNotFoundError(f"missing build asset {path}; run `python -m pipeline.02_builds_simulation` first")
+        raise FileNotFoundError(f"missing build asset {path}; run `python -m pipeline.02_builds.simulation` first")
     return Image.open(path).convert("RGBA")
 
 
@@ -91,7 +91,7 @@ def fill_lots(road_cells, size):
 
 
 def load_fill_assets():
-    """Top-down fill-prop tiles produced by `pipeline.01_roads_simulation`."""
+    """Top-down fill-prop tiles produced by `pipeline.01_roads.simulation`."""
     paths = sorted(glob.glob(os.path.join(ROADS_SIM, f"*{FILL_TOKEN}*.png")))
     return [Image.open(path).convert("RGBA") for path in paths]
 

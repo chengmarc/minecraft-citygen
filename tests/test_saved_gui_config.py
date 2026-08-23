@@ -3,7 +3,7 @@ import unittest
 from pathlib import Path
 from unittest import mock
 
-from gui import common
+from gui.core import common
 
 
 class SavedGuiConfigTests(unittest.TestCase):

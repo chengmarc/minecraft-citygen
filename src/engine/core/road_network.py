@@ -2,7 +2,7 @@
 Road grid library -- shared helper for the grid pipelines.
 
 Holds network generation, the tile catalogue, and 2D vector compositing used by
-`pipeline.03_grid_simulation` (sim) and `pipeline.03_grid_construct` (prod).
+`pipeline.03_grid.simulation` (sim) and `pipeline.03_grid.construct` (prod).
 Not a driver itself; import it, optionally call `make_size()`, then call
 `gen_networks()` / `compose()`.
 

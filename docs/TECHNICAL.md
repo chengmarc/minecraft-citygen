@@ -153,12 +153,12 @@ This is defined by `CELL = 9` in [config/config_algo.py](../src/config/config_al
 
 Core modules:
 
-- [pipeline/01_roads_extract.py](../src/pipeline/01_roads_extract.py): extracts road schematics from the world
-- [pipeline/02_builds_extract.py](../src/pipeline/02_builds_extract.py): extracts building schematics and writes `buildings.json`
-- [pipeline/03_grid_simulation.py](../src/pipeline/03_grid_simulation.py): renders the road grid preview
-- [pipeline/03_grid_construct.py](../src/pipeline/03_grid_construct.py): builds the production road grid schematic
-- [pipeline/04_city_simulation.py](../src/pipeline/04_city_simulation.py): renders the full city preview
-- [pipeline/04_city_construct.py](../src/pipeline/04_city_construct.py): builds the final city schematic
+- [pipeline/01_roads/extract.py](../src/pipeline/01_roads/extract.py): extracts road schematics from the world
+- [pipeline/02_builds/extract.py](../src/pipeline/02_builds/extract.py): extracts building schematics and writes `buildings.json`
+- [pipeline/03_grid/simulation.py](../src/pipeline/03_grid/simulation.py): renders the road grid preview
+- [pipeline/03_grid/construct.py](../src/pipeline/03_grid/construct.py): builds the production road grid schematic
+- [pipeline/04_city/simulation.py](../src/pipeline/04_city/simulation.py): renders the full city preview
+- [pipeline/04_city/construct.py](../src/pipeline/04_city/construct.py): builds the final city schematic
 
 Core engines:
 
@@ -210,7 +210,7 @@ CityGen depends on explicit marker conventions inside the Minecraft source world
 
 ## Road Extraction Convention
 
-Road extraction is implemented in [pipeline/01_roads_extract.py](../src/pipeline/01_roads_extract.py) and shares its geometry pass with builds via [engine/marker_extract.py](../src/engine/marker_extract.py). Road tiles, fill props, and buildings all use the **same** marker convention, so there is no bespoke road-detection logic.
+Road extraction is implemented in [pipeline/01_roads/extract.py](../src/pipeline/01_roads/extract.py) and shares its geometry pass with builds via [engine/marker_extract.py](../src/engine/marker_extract.py). Road tiles, fill props, and buildings all use the **same** marker convention, so there is no bespoke road-detection logic.
 
 Region:
 
@@ -238,12 +238,12 @@ Practical implication:
 Fill props are authored in the road region alongside the road tiles, with the same marker convention, and are named `15_fill_1x1_A`, `16_fill_1x1_B`, `17_fill_1x1_C` (the `fill` token in the name is what distinguishes them). Each is a self-contained 9x9 (one fine cell) asset that carries its own ground — in the bundled world these are trees.
 
 - [engine/road_schematic.py](../src/engine/road_schematic.py) keeps them out of `load_tiles()` (so they are never placed as road-network tiles) and exposes them via `load_fillers()`
-- [pipeline/04_city_construct.py](../src/pipeline/04_city_construct.py) drops a randomly chosen, randomly rotated fill prop into every fully-empty non-road lot cell, seated on the lot ground plane; cells touched by a building keep the flat ground fill (`smooth_stone_slab`), and prop cells are excluded from that fill so nothing pokes through the prop's own ground
-- [pipeline/04_city_simulation.py](../src/pipeline/04_city_simulation.py) mirrors this in the top-down preview using the matching `*_fill_*` PNGs drawn by `pipeline.01_roads_simulation`, with the same seed so the preview lines up with the built city
+- [pipeline/04_city/construct.py](../src/pipeline/04_city/construct.py) drops a randomly chosen, randomly rotated fill prop into every fully-empty non-road lot cell, seated on the lot ground plane; cells touched by a building keep the flat ground fill (`smooth_stone_slab`), and prop cells are excluded from that fill so nothing pokes through the prop's own ground
+- [pipeline/04_city/simulation.py](../src/pipeline/04_city/simulation.py) mirrors this in the top-down preview using the matching `*_fill_*` PNGs drawn by `pipeline.01_roads.simulation`, with the same seed so the preview lines up with the built city
 
 ## Build Extraction Convention
 
-Build extraction is implemented in [pipeline/02_builds_extract.py](../src/pipeline/02_builds_extract.py).
+Build extraction is implemented in [pipeline/02_builds/extract.py](../src/pipeline/02_builds/extract.py).
 
 Build regions:
 
@@ -439,7 +439,7 @@ This avoids degenerate overlays and keeps road art compositing predictable.
 
 ## Simulation Grid Output
 
-Simulation grid output is produced by [pipeline/03_grid_simulation.py](../src/pipeline/03_grid_simulation.py).
+Simulation grid output is produced by [pipeline/03_grid/simulation.py](../src/pipeline/03_grid/simulation.py).
 
 It:
 
@@ -452,7 +452,7 @@ This is meant to be layout-accurate, not visually production-accurate.
 
 ## Production Grid Output
 
-Production grid output is produced by [pipeline/03_grid_construct.py](../src/pipeline/03_grid_construct.py) and [engine/road_schematic.py](../src/engine/road_schematic.py).
+Production grid output is produced by [pipeline/03_grid/construct.py](../src/pipeline/03_grid/construct.py) and [engine/road_schematic.py](../src/engine/road_schematic.py).
 
 It:
 
@@ -551,7 +551,7 @@ That filter is applied before placement.
 
 ## How the Final City Schematic Is Built
 
-Final city assembly lives in [pipeline/04_city_construct.py](../src/pipeline/04_city_construct.py).
+Final city assembly lives in [pipeline/04_city/construct.py](../src/pipeline/04_city/construct.py).
 
 The constructor:
 
@@ -669,13 +669,13 @@ pythonw application.pyw
 Common direct stage runs:
 
 ```bash
-python -m pipeline.01_roads_extract
-python -m pipeline.02_builds_extract
-python -m pipeline.03_grid_simulation --seed 5
-python -m pipeline.03_grid_construct --seed 5
-python -m pipeline.04_city_simulation --seed 5
-python -m pipeline.04_city_construct --seed 5
-python -m pipeline.04_city_render
+python -m pipeline.01_roads.extract
+python -m pipeline.02_builds.extract
+python -m pipeline.03_grid.simulation --seed 5
+python -m pipeline.03_grid.construct --seed 5
+python -m pipeline.04_city.simulation --seed 5
+python -m pipeline.04_city.construct --seed 5
+python -m pipeline.04_city.render
 ```
 
 ## Mental Model Summary

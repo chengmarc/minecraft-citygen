@@ -12,12 +12,12 @@ from config.config_world import SAVE
 from config.path_discovery import has_region_files
 from pipeline import services
 
-from gui import common
-from gui.qt_viewer import QtImageViewer
-from gui.region_dialog import RegionSelectorDialog
-from gui.theme import apply_button_icon, style_button
-from gui.widgets import AlgoControlsWidget, ExtractionAreaGroup
-from gui.workers import ProgressMixin, WeightedTaskMixin, WorkerSignals
+from gui.core import common
+from gui.widgets.qt_viewer import QtImageViewer
+from gui.widgets.region_dialog import RegionSelectorDialog
+from gui.core.theme import apply_button_icon, style_button
+from gui.widgets.widgets import AlgoControlsWidget, ExtractionAreaGroup
+from gui.core.workers import ProgressMixin, WeightedTaskMixin, WorkerSignals
 
 PROGRESS_BAR_SCALE = 1000
 

@@ -8,10 +8,10 @@ import traceback
 
 from PySide6 import QtGui, QtWidgets
 
-from gui import common
-from gui.qt_viewer import ensure_application
+from gui.core import common
+from gui.widgets.qt_viewer import ensure_application
 from gui.tabs import ExtractionTab, PreviewTab, RenderTab
-from gui.theme import configure_app_style
+from gui.core.theme import configure_app_style
 
 
 class CityGeneratorQtApp(QtWidgets.QMainWindow):

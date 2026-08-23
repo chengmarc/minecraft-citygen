@@ -6,8 +6,8 @@ from PySide6 import QtCore, QtWidgets
 
 from config.config_algo import DEFAULT_SEED
 
-from gui import common
-from gui.theme import apply_button_icon, style_button
+from gui.core import common
+from gui.core.theme import apply_button_icon, style_button
 
 
 class IntegerSliderControl(QtWidgets.QWidget):

@@ -7,9 +7,9 @@ os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 from PySide6 import QtWidgets  # noqa: E402
 
 from gui import app as gui_app  # noqa: E402
-from gui import common  # noqa: E402
-from gui.theme import configure_app_style  # noqa: E402
-from gui.widgets import AlgoControlsWidget, IntegerSliderControl  # noqa: E402
+from gui.core import common  # noqa: E402
+from gui.core.theme import configure_app_style  # noqa: E402
+from gui.widgets.widgets import AlgoControlsWidget, IntegerSliderControl  # noqa: E402
 
 
 def _qapp():

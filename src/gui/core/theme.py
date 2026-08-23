@@ -6,7 +6,7 @@ import os
 
 from PySide6 import QtGui, QtWidgets
 
-from gui import common
+from gui.core import common
 
 # Brand palette. ACCENT_HEX mirrors the accent used throughout APP_STYLESHEET;
 # ACCENT_RGB is the same colour for constructing QColor objects in code.
