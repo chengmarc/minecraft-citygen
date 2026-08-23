@@ -9,7 +9,7 @@ The default release artifact is:
 ## Release Rules
 
 - do not publish `dist/portable` or `dist/onefile` artifacts unless there is a specific testing reason
-- do not show a version number inside the app UI or README; the git tag is the release version of record
+- do not show a version number inside the app UI; the git tag is the release version of record
 - keep packaging metadata intentional, but do not treat it as user-facing release branding
 
 ## Pre-Release Checklist
@@ -36,7 +36,9 @@ python packaging/build_windows_release.py --clean
 - first launch succeeds
 - Extraction tab opens and accepts a world path
 - Preview completes successfully
-- Render completes successfully
+- Generate completes successfully (city `.schem`, isometric render, and exported world)
+- the exported world appears under `artifacts/saves/` and "Copy World" opens that folder
+- the exported world loads in Minecraft and drops the player standing on the city
 - installer uninstall works cleanly
 
 9. Confirm output behavior:

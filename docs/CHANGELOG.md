@@ -6,8 +6,20 @@ The format is based on Keep a Changelog, and versions should match the release v
 
 ## [Unreleased]
 
+## [1.0.0] - 2026-08-23
+
+The world-export milestone. Alongside the WorldEdit-ready `.schem`, CityGen now
+exports the finished city as a standalone, ready-to-play Minecraft world, so a
+city can be explored in-game with no mods.
+
 ### Added
 
+- **standalone world export** — the finished city can be exported as a
+  ready-to-play Minecraft world (`artifacts/saves/seed_<n>_world/`): a void world
+  with the city centred on the world origin and the player spawned on solid
+  ground, so it can be walked around in-game with no WorldEdit required. Exposed
+  as pipeline stage 5 (`pipeline/05_world`) and run automatically by the
+  Generation tab
 - block entities are now preserved through extraction and city assembly: signs
   (text), banners, chests/barrels (contents), beds, furnaces, skulls, etc. keep
   their NBT in the output schematic instead of pasting as empty blocks. Positions
@@ -16,6 +28,12 @@ The format is based on Keep a Changelog, and versions should match the release v
 
 ### Changed
 
+- the **Render** tab is now **Generation** and its button is **Generate**; a
+  single click runs construct → render → world, and the output action is now
+  **Copy World**, which opens `artifacts/saves/`
+- launching the app and switching worlds now share one artifact wipe that clears
+  everything under `artifacts/` except exported worlds (`saves/`), so both start
+  from the same clean slate
 - extraction no longer blanks signs to air; the gold/diamond/emerald authoring
   markers live outside the extracted cuboid, so in-cuboid signs are real content
 - both extractors now force grown leaves to `persistent=true` so exported
