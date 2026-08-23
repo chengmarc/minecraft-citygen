@@ -334,6 +334,25 @@ def _void_generator():
     })
 
 
+def _void_world_gen_settings(seed):
+    """A complete WorldGenSettings with every dimension a flat void.
+
+    Built from scratch rather than mutating the source world's settings: the
+    source is usually a normal noise world (and its structure can vary by
+    version), so replacing the whole tag is both simpler and more robust.
+    """
+    return Compound({
+        "seed": Long(seed),
+        "generate_features": Byte(0),
+        "bonus_chest": Byte(0),
+        "dimensions": Compound({
+            "minecraft:overworld": Compound({"type": String("minecraft:overworld"), "generator": _void_generator()}),
+            "minecraft:the_nether": Compound({"type": String("minecraft:the_nether"), "generator": _void_generator()}),
+            "minecraft:the_end": Compound({"type": String("minecraft:the_end"), "generator": _void_generator()}),
+        }),
+    })
+
+
 def _base_level_dat(base_world):
     """Load the level.dat to clone: the source world's, falling back to the bundle.
 
@@ -345,7 +364,10 @@ def _base_level_dat(base_world):
     if base_world:
         candidate = os.path.join(base_world, "level.dat")
         if os.path.isfile(candidate):
-            return nbtlib.load(candidate)
+            try:
+                return nbtlib.load(candidate)
+            except Exception:  # unreadable/odd source level.dat -> fall back to the bundle
+                pass
     return nbtlib.load(os.path.join(DEFAULT_WORLD, "level.dat"))
 
 
@@ -405,13 +427,17 @@ def _write_level_dat(out_dir, data_version, spawn, base_world=None):
     data["ServerBrands"] = List[String]([String("vanilla")])
     data["WasModded"] = Byte(0)
 
-    # Replace the overworld generator with a flat void. The source may be a normal
-    # noise world, so tweaking flat settings wouldn't void it -- swap the whole
-    # generator. Everything outside the written city chunks becomes void air.
-    dims = data["WorldGenSettings"]["dimensions"]
-    if "minecraft:overworld" in dims:
-        dims["minecraft:overworld"]["generator"] = _void_generator()
-    data["WorldGenSettings"]["generate_features"] = Byte(0)
+    # Overwrite worldgen with an all-void settings, preserving the source seed if
+    # readable. Built fresh (not mutated) so we don't depend on the source world's
+    # WorldGenSettings shape, which varies by version and may be absent entirely.
+    old_wgs = data.get("WorldGenSettings")
+    seed = 0
+    if old_wgs is not None and "seed" in old_wgs:
+        try:
+            seed = int(old_wgs["seed"])
+        except (TypeError, ValueError):
+            seed = 0
+    data["WorldGenSettings"] = _void_world_gen_settings(seed)
 
     os.makedirs(out_dir, exist_ok=True)
     level.gzipped = True

@@ -25,6 +25,7 @@ def run(*, seed=DEFAULT_SEED, out=None, logger=None, progress=None):
     out = out or os.path.join(SAVES, f"seed_{seed}_world")
 
     # Clone the source world's level.dat so the export is native to its version.
+    logger(f"cloning level.dat from source world: {SAVE}")
     summary = schem_to_world(schem, out, base_world=SAVE, progress=progress)
     logger(
         f"seed={seed}: wrote world to {out} "

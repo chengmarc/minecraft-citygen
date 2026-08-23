@@ -178,6 +178,29 @@ class SchemToWorldTests(unittest.TestCase):
             self.assertEqual([str(p) for p in data["DataPacks"]["Enabled"]], ["vanilla"])  # custom pack dropped
             self.assertNotIn("fabric", [str(b) for b in data["ServerBrands"]])
 
+    def test_source_without_worldgensettings_still_exports_void(self):
+        # A source level.dat may lack WorldGenSettings (trimmed world, or a shape
+        # this version doesn't expect); the export must build its own void settings
+        # instead of crashing on the missing key.
+        with tempfile.TemporaryDirectory() as tmp:
+            source = os.path.join(tmp, "source")
+            os.makedirs(source)
+            src_level = nbtlib.File({"Data": Compound({
+                "DataVersion": nbtlib.Int(4790),
+                "enabled_features": nbtlib.List[String]([String("minecraft:vanilla")]),
+            })})
+            src_level.gzipped = True
+            src_level.save(os.path.join(source, "level.dat"))
+
+            schem = os.path.join(tmp, "city.schem")
+            out = os.path.join(tmp, "world")
+            self._write_schem(schem)
+            world_writer.schem_to_world(schem, out, base_world=source)  # must not raise
+
+            dims = nbtlib.load(os.path.join(out, "level.dat"))["Data"]["WorldGenSettings"]["dimensions"]
+            for dim in ("minecraft:overworld", "minecraft:the_nether", "minecraft:the_end"):
+                self.assertEqual(str(dims[dim]["generator"]["type"]), "minecraft:flat")
+
     def test_stale_world_is_cleared_before_writing(self):
         with tempfile.TemporaryDirectory() as tmp:
             schem = os.path.join(tmp, "city.schem")
