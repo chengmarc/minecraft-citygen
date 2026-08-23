@@ -100,6 +100,7 @@ def run(*, logger=None, progress=None):
     total = len(builds)
     for i, (build_type, origin, size, cuboids, ground_y, boundary) in enumerate(builds):
         key = f"{i + 1:03d}"
+        progress(i, total, key)  # announce the build before its (slow) extraction
         x0, x1, z0, z1 = boundary
         stack_rng, appearance = catalog_signs(x0, x1, z0, z1)
 

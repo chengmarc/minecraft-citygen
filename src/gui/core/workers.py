@@ -70,7 +70,7 @@ class ProgressMixin:
             self._cancel_progress_animation()
             return
         remaining = self._progress_soft_target - current
-        step = max(0.2, remaining * 0.07)
+        step = max(0.2, remaining * common.SCRIPT_PROGRESS_RATE)
         self.progress_bar.setValue(int(round(min(current + step, self._progress_soft_target))))
 
     def _cancel_progress_animation(self):
@@ -95,11 +95,11 @@ class WeightedTaskMixin(ProgressMixin):
                 completed_weight = 0.0
                 total_tasks = len(tasks)
                 signals.status.emit(start_status)
-                for index, (label, weight, func) in enumerate(tasks, start=1):
+                for index, (module, annotation, weight, func) in enumerate(tasks, start=1):
                     signals.begin_progress.emit(
                         completed_weight,
                         completed_weight + weight,
-                        f"Running {index}/{total_tasks}: {label}",
+                        common.format_stage_status(index, total_tasks, module, annotation),
                     )
                     func()
                     completed_weight += weight

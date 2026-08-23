@@ -88,6 +88,7 @@ def run(*, logger=None, progress=None):
     total = len(components)
     for index, comp in enumerate(components, start=1):
         name = name_for(comp.boundary, names)
+        progress(index - 1, total, name)  # announce the asset before its (slow) extraction
         if name is None:
             logger(f"  !! no sign for boundary {comp.boundary}")
             progress(index, total, None)

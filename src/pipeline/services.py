@@ -13,12 +13,12 @@ ROADS_SIMULATION = stage_module("roads_simulation")
 BUILDS_SIMULATION = stage_module("builds_simulation")
 GRID_SIMULATION = stage_module("grid_simulation")
 CITY_SIMULATION = stage_module("city_simulation")
-
-_PROGRESS_STAGE_LABELS = {
-    "construct": "Constructing",
-    "extract": "Extracting",
-    "render": "Rendering",
-}
+ROADS_EXTRACT = stage_module("roads_extract")
+ROADS_RENDER = stage_module("roads_render")
+BUILDS_EXTRACT = stage_module("builds_extract")
+BUILDS_RENDER = stage_module("builds_render")
+CITY_CONSTRUCT = stage_module("city_construct")
+CITY_RENDER = stage_module("city_render")
 
 
 def _load_stage_runner(stage_key):
@@ -52,10 +52,15 @@ def _run_seeded_stage(stage_key, seed, fine, *, env_overrides=None, logger=None)
 
 
 def _progress_adapter(progress, stage_key):
+    """Tag a stage's ``(completed, total, detail)`` ticks with its module path.
+
+    The GUI keys off the module to show which script is running and its step,
+    e.g. ``Stage 1/4 - pipeline/01_roads/extract.py - ...``.
+    """
     if progress is None:
         return None
-    label = _PROGRESS_STAGE_LABELS[stage_key.rsplit("_", 1)[-1]]
-    return lambda completed, total, detail: progress(label, completed, total, detail)
+    module = stage_module(stage_key)
+    return lambda completed, total, detail: progress(module, completed, total, detail)
 
 
 def _run_extraction_pipeline(extract_stage, render_stage, *, env_overrides=None, logger=None, progress=None):

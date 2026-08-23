@@ -52,7 +52,7 @@ def test_run_grid_simulation_stage_coerces_numeric_arguments(monkeypatch):
     assert result["stage"] == "grid"
 
 
-def test_run_build_extraction_pipeline_adapts_progress_labels(monkeypatch):
+def test_run_build_extraction_pipeline_tags_progress_with_stage_modules(monkeypatch):
     calls = []
     progress_events = []
 
@@ -84,8 +84,8 @@ def test_run_build_extraction_pipeline_adapts_progress_labels(monkeypatch):
 
     assert calls == [(BUILDS_EXTRACT, "logger"), (BUILDS_RENDER, "logger")]
     assert progress_events == [
-        ("Extracting", 1, 4, "Scanning"),
-        ("Rendering", 4, 4, "Rendering sheet"),
+        (BUILDS_EXTRACT, 1, 4, "Scanning"),
+        (BUILDS_RENDER, 4, 4, "Rendering sheet"),
     ]
     assert result == {"extract": BUILDS_EXTRACT, "render": BUILDS_RENDER}
 

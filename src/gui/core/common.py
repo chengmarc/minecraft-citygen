@@ -106,8 +106,45 @@ PREVIEW_PROGRESS_WEIGHTS = [
 RENDER_CONSTRUCT_WEIGHTS = [3, 4, 2, 8, 18, 12, 8, 8]   # sum = 63
 RENDER_RENDER_WEIGHT = 37
 
-SCRIPT_PROGRESS_HEADROOM = 0.88
+# Per-stage weights for the extraction-tab progress bar, in run order: roads
+# extract, roads render, builds extract, builds render. The scanning-heavy
+# extract passes carry more weight than the contact-sheet render passes. Used as
+# one continuous weighted bar so it advances across all four stages instead of
+# resetting per stage.
+EXTRACT_STAGE_WEIGHTS = [20, 10, 45, 25]   # sum = 100
+
+# A stage can run several work phases with different totals (e.g. a fast "scan"
+# then a slow "export"). Each phase fills this fraction of the segment room still
+# left, so a later phase always has room to keep advancing smoothly instead of
+# freezing at the segment top.
+EXTRACT_PHASE_FILL = 0.7
+
+# How far the animated ("fake") progress creeps into the current step's segment
+# before stalling to wait for the stage to actually finish.
+SCRIPT_PROGRESS_HEADROOM = 0.90
+# Per-tick easing rate of that animation: each tick advances this fraction of the
+# remaining distance to the soft target (every SCRIPT_PROGRESS_TICK_MS ms).
+SCRIPT_PROGRESS_RATE = 0.10
 SCRIPT_PROGRESS_TICK_MS = 120
+
+
+def stage_script_label(module):
+    """Stage module path -> script path for status display.
+
+    ``'pipeline.04_city.construct'`` -> ``'pipeline/04_city/construct.py'``.
+    """
+    return module.replace(".", "/") + ".py"
+
+
+def format_stage_status(step, total_steps, module, annotation=""):
+    """Consistent progress status shared by the Preview and Render tabs.
+
+    ``'Stage 1/2 - pipeline/04_city/construct.py - Writing schematic'``. The
+    trailing annotation is omitted when empty.
+    """
+    status = f"Stage {step}/{total_steps} - {stage_script_label(module)}"
+    annotation = (annotation or "").strip()
+    return f"{status} - {annotation}" if annotation else status
 
 
 def grid_preview_path(seed):

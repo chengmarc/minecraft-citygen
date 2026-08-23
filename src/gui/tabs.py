@@ -21,6 +21,24 @@ from gui.core.workers import ProgressMixin, WeightedTaskMixin, WorkerSignals
 
 PROGRESS_BAR_SCALE = 1000
 
+# Pipeline-progress ticks are tagged with their stage module. Each tab maps that
+# module to a step index so the status reads consistently, e.g.
+# "Stage 1/2 - pipeline/04_city/construct.py - <detail>".
+RENDER_STAGE_STEPS = {
+    services.CITY_CONSTRUCT: 1,
+    services.CITY_RENDER: 2,
+}
+RENDER_TOTAL_STEPS = len(RENDER_STAGE_STEPS)
+
+# Extract runs four scripts in sequence: roads then builds, each extract + render.
+EXTRACT_STAGE_STEPS = {
+    services.ROADS_EXTRACT: 1,
+    services.ROADS_RENDER: 2,
+    services.BUILDS_EXTRACT: 3,
+    services.BUILDS_RENDER: 4,
+}
+EXTRACT_TOTAL_STEPS = len(EXTRACT_STAGE_STEPS)
+
 
 class PreviewTab(QtWidgets.QWidget, WeightedTaskMixin):
     def __init__(self, owner):
@@ -53,6 +71,7 @@ class PreviewTab(QtWidgets.QWidget, WeightedTaskMixin):
         self.controls.connect_change_handler(self._save_state)
         layout.addWidget(self.controls)
 
+        layout.addSpacing(8)
         self.status_label = QtWidgets.QLabel("", self)
         self.status_label.setObjectName("statusLabel")
         layout.addWidget(self.status_label)
@@ -83,10 +102,10 @@ class PreviewTab(QtWidgets.QWidget, WeightedTaskMixin):
             return
 
         tasks = [
-            (services.ROADS_SIMULATION, common.PREVIEW_PROGRESS_WEIGHTS[0][1], lambda: services.run_roads_simulation_stage(env_overrides=env)),
-            (services.BUILDS_SIMULATION, common.PREVIEW_PROGRESS_WEIGHTS[1][1], lambda: services.run_builds_simulation_stage(env_overrides=env)),
-            (services.GRID_SIMULATION, common.PREVIEW_PROGRESS_WEIGHTS[2][1], lambda: services.run_grid_simulation_stage(seed, fine, env_overrides=env)),
-            (services.CITY_SIMULATION, common.PREVIEW_PROGRESS_WEIGHTS[3][1], lambda: services.run_city_simulation_stage(seed, fine, env_overrides=env)),
+            (services.ROADS_SIMULATION, "Rendering road assets", common.PREVIEW_PROGRESS_WEIGHTS[0][1], lambda: services.run_roads_simulation_stage(env_overrides=env)),
+            (services.BUILDS_SIMULATION, "Rendering build assets", common.PREVIEW_PROGRESS_WEIGHTS[1][1], lambda: services.run_builds_simulation_stage(env_overrides=env)),
+            (services.GRID_SIMULATION, "Compositing road grid", common.PREVIEW_PROGRESS_WEIGHTS[2][1], lambda: services.run_grid_simulation_stage(seed, fine, env_overrides=env)),
+            (services.CITY_SIMULATION, "Compositing city layout", common.PREVIEW_PROGRESS_WEIGHTS[3][1], lambda: services.run_city_simulation_stage(seed, fine, env_overrides=env)),
         ]
         self._run_weighted_tasks(
             button=self.controls.action_button,
@@ -131,6 +150,7 @@ class RenderTab(QtWidgets.QWidget, ProgressMixin):
         self.controls.connect_change_handler(self._save_state)
         layout.addWidget(self.controls)
 
+        layout.addSpacing(8)
         self.status_label = QtWidgets.QLabel("", self)
         self.status_label.setObjectName("statusLabel")
         layout.addWidget(self.status_label)
@@ -174,7 +194,7 @@ class RenderTab(QtWidgets.QWidget, ProgressMixin):
 
         self._cancel_progress_animation()
 
-        if stage == "Constructing":
+        if stage == services.CITY_CONSTRUCT:
             prefix = sum(c_weights[:n])
             milestone = int(round(prefix / scale * PROGRESS_BAR_SCALE))
             self.progress_bar.setValue(milestone)
@@ -197,7 +217,8 @@ class RenderTab(QtWidgets.QWidget, ProgressMixin):
                 )
                 self._progress_timer.start(common.SCRIPT_PROGRESS_TICK_MS)
 
-        self.set_status(label or f"{stage} {n}/{int(total)}")
+        annotation = label or f"{n}/{int(total)}"
+        self.set_status(common.format_stage_status(RENDER_STAGE_STEPS[stage], RENDER_TOTAL_STEPS, stage, annotation))
 
     def _run_render(self):
         seed = self.controls.seed_edit.text().strip()
@@ -251,8 +272,9 @@ class ExtractionTab(QtWidgets.QWidget, ProgressMixin):
         super().__init__(owner)
         self.owner = owner
         self._init_progress_mixin()
-        self._current_stage = (None, None)
-        self._progress_stage_total = 1.0
+        self._extract_phase = None
+        self._phase_base = 0.0
+        self._phase_end = 0.0
         state = owner.get_saved_config_section("extraction") or common.default_extraction_tab_config()
         common.clear_preview_cache()
 
@@ -280,6 +302,7 @@ class ExtractionTab(QtWidgets.QWidget, ProgressMixin):
         self.world_edit.setFixedWidth(360)
         header.addWidget(self.world_edit)
         self.browse_button = QtWidgets.QPushButton("Browse...", self)
+        style_button(self.browse_button)
         self.browse_button.clicked.connect(self._browse_world)
         header.addWidget(self.browse_button)
         header.addSpacing(12)
@@ -339,6 +362,7 @@ class ExtractionTab(QtWidgets.QWidget, ProgressMixin):
         self.landmark_group.connect_change_handler(self._save_state)
         layout.addWidget(shell)
 
+        layout.addSpacing(8)
         self.status_label = QtWidgets.QLabel("", self)
         self.status_label.setObjectName("statusLabel")
         layout.addWidget(self.status_label)
@@ -431,43 +455,39 @@ class ExtractionTab(QtWidgets.QWidget, ProgressMixin):
         if dialog.exec():
             self._save_state()
 
-    def _start_determinate(self, total):
-        self._cancel_progress_animation()
-        self._progress_stage_total = max(float(total), 1.0)
-        self.progress_bar.setRange(0, PROGRESS_BAR_SCALE)
-        self.progress_bar.setValue(0)
-
-    def _set_progress_fraction(self, completed):
-        fraction = max(0.0, min(float(completed) / self._progress_stage_total, 1.0))
-        self.progress_bar.setValue(int(round(fraction * PROGRESS_BAR_SCALE)))
-
-    def _begin_soft_progress(self, status, *, headroom=common.SCRIPT_PROGRESS_HEADROOM):
-        self._cancel_progress_animation()
-        self.progress_bar.setValue(0)
-        self._progress_soft_target = PROGRESS_BAR_SCALE * float(headroom)
-        self.set_status(status)
-        self._progress_timer.start(common.SCRIPT_PROGRESS_TICK_MS)
-
-    @staticmethod
-    def _is_indeterminate_start(completed, total):
-        # Contract with pipeline.services: a stage that cannot report granular
-        # progress emits a single (completed=0, total=1) tick to ask the UI for
-        # an animated "soft" progress bar instead of a determinate fraction.
-        return total == 1 and completed == 0
-
     def _on_pipeline_progress(self, stage, completed, total, label):
-        if self._current_stage != (stage, total):
-            self._current_stage = (stage, total)
-            self._start_determinate(total)
-        if self._is_indeterminate_start(completed, total):
-            self._begin_soft_progress(label or stage, headroom=common.SCRIPT_PROGRESS_HEADROOM)
-            return
+        # One continuous weighted bar. Each stage owns a segment [seg_start, seg_end],
+        # and each work phase within a stage (a distinct total, e.g. scan then export)
+        # fills part of the segment room still left -- so a later phase keeps advancing
+        # smoothly instead of freezing. Progress only moves forward (max), so it never
+        # resets between stages or phases.
+        step = EXTRACT_STAGE_STEPS[stage]
+        weights = common.EXTRACT_STAGE_WEIGHTS
+        scale = float(sum(weights))
+        seg_start = sum(weights[:step - 1]) / scale * PROGRESS_BAR_SCALE
+        seg_end = sum(weights[:step]) / scale * PROGRESS_BAR_SCALE
+
         self._cancel_progress_animation()
-        self._set_progress_fraction(completed)
-        if label:
-            self.set_status(label)
-        else:
-            self.set_status(f"{stage} {int(completed)}/{int(total)}")
+
+        if self._extract_phase != (stage, total):
+            self._extract_phase = (stage, total)
+            self._phase_base = max(float(self.progress_bar.value()), seg_start)
+            self._phase_end = self._phase_base + (seg_end - self._phase_base) * common.EXTRACT_PHASE_FILL
+
+        frac = max(0.0, min(float(completed) / float(total or 1), 1.0))
+        target = self._phase_base + (self._phase_end - self._phase_base) * frac
+        milestone = max(self.progress_bar.value(), int(round(target)))
+        self.progress_bar.setValue(milestone)
+        # Always keep creeping so unreported work never looks frozen -- e.g. the
+        # per-component marker analysis after the chunk scan, or a slow extract
+        # whose tick only fires once it finishes. While a phase still reports,
+        # creep toward its end; once its real work is done (frac == 1), creep on
+        # toward the stage-segment end until the next phase reports.
+        ceiling = self._phase_end if frac < 1.0 else seg_end
+        self._progress_soft_target = milestone + (ceiling - milestone) * common.SCRIPT_PROGRESS_HEADROOM
+        self._progress_timer.start(common.SCRIPT_PROGRESS_TICK_MS)
+        annotation = label or f"{int(completed)}/{int(total)}"
+        self.set_status(common.format_stage_status(step, EXTRACT_TOTAL_STEPS, stage, annotation))
 
     def _run_extract_all(self):
         try:
@@ -490,10 +510,12 @@ class ExtractionTab(QtWidgets.QWidget, ProgressMixin):
         )
 
         self._save_state()
-        self._current_stage = (None, None)
         self.extract_button.setEnabled(False)
         self.set_status("Preparing extract...")
-        self._start_determinate(100)
+        self.progress_bar.setRange(0, PROGRESS_BAR_SCALE)
+        self.progress_bar.setValue(0)
+        self._progress_soft_target = 0.0
+        self._extract_phase = None
 
         signals = WorkerSignals(self)
         signals.pipeline_progress.connect(self._on_pipeline_progress)
