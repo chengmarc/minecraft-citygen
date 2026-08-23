@@ -7,7 +7,7 @@ and reads each jar's DataVersion from its bundled ``version.json``.
 
 Output (loaded by ``config/version_compat.py``):
 
-  - ``src/config/mc_versions.json``   ``{release: data_version}``, oldest first
+  - ``src/config/versions.json``   ``{release: data_version}``, oldest first
 
 CityGen commits to forward-only version compatibility: the export target is
 always the source world's own version or newer, so every block in the palette is
@@ -35,7 +35,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 TOOLS_DIR = ROOT / "tools"
 CONFIG_DIR = ROOT / "src" / "config"
-RELEASES_OUTPUT = CONFIG_DIR / "mc_versions.json"
+RELEASES_OUTPUT = CONFIG_DIR / "versions.json"
 
 VERSION_MANIFEST_URL = "https://piston-meta.mojang.com/mc/game/version_manifest_v2.json"
 HTTP_TIMEOUT_SECONDS = 120
@@ -120,7 +120,7 @@ def write_releases_json(releases: dict[int, str], path: Path) -> None:
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
-        description="Regenerate src/config/mc_versions.json from server JARs."
+        description="Regenerate src/config/versions.json from server JARs."
     )
     parser.add_argument(
         "--since",

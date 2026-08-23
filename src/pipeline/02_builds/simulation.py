@@ -13,8 +13,8 @@ from PIL import Image, ImageDraw, ImageFont
 if __package__ in (None, ""):
     sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from config.config_path import BUILD_CATALOG, BUILDS_SIM
-from config.config_render import BUILD_PREVIEW_COLORS, CONTACT_SHEET_BG
+from config.path import BUILD_CATALOG, BUILDS_SIM
+from config.render import BUILD_PREVIEW_COLORS, CONTACT_SHEET_BG
 from engine.core.city_layout import catalog_type
 from pipeline.stages import noop, run_stage_cli
 

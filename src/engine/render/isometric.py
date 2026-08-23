@@ -5,7 +5,7 @@ from __future__ import annotations
 import numpy as np
 from PIL import Image, ImageDraw, ImageFont
 
-from config.config_render import (CONTACT_SHEET_BG, ISO_MARGIN, ROAD_ASSET_ISO_BLOCK_H,
+from config.render import (CONTACT_SHEET_BG, ISO_MARGIN, ROAD_ASSET_ISO_BLOCK_H,
                                   ROAD_ASSET_ISO_TILE_H, ROAD_ASSET_ISO_TILE_W,
                                   UNKNOWN_BLOCK_RGBA)
 from engine.render.palette import block_color, is_air

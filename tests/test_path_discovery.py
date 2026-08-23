@@ -3,7 +3,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from config import path_discovery as paths
+from config import path as paths
 
 
 class PathDiscoveryTests(unittest.TestCase):
@@ -29,13 +29,6 @@ class PathDiscoveryTests(unittest.TestCase):
             expected = save_root / "dimensions" / "minecraft" / "overworld" / "region"
             expected.mkdir(parents=True)
             self.assertEqual(paths.resolve_region_dir(save_root), os.path.normpath(str(expected)))
-
-    def test_is_world_save_checks_region_candidates(self):
-        with tempfile.TemporaryDirectory() as tempdir:
-            save_root = Path(tempdir) / "world"
-            self.assertFalse(paths.is_world_save(save_root))
-            (save_root / "dimensions" / "minecraft" / "overworld" / "region").mkdir(parents=True)
-            self.assertTrue(paths.is_world_save(save_root))
 
 
 if __name__ == "__main__":

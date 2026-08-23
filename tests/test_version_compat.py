@@ -45,7 +45,7 @@ def test_detect_world_data_version_corrupt_returns_none(tmp_path):
 
 
 def test_load_releases_json_roundtrip(tmp_path):
-    path = tmp_path / "mc_versions.json"
+    path = tmp_path / "versions.json"
     path.write_text('{"1.19": 3105, "1.18": 2860}', encoding="utf-8")
     # Loader sorts ascending by data_version regardless of file order.
     assert vc.load_releases_json(str(path)) == (("1.18", 2860), ("1.19", 3105))

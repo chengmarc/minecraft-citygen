@@ -11,8 +11,8 @@ from pathlib import Path
 if __package__ in (None, ""):
     sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from config.config_path import DEFAULT_WORLD, RESOURCE_ROOT, ROOT
-from config.config_world import REGION_DIR, REGION_DIR_CANDIDATES, SAVE
+from config.path import DEFAULT_WORLD, RESOURCE_ROOT, ROOT
+from config.world import REGION_DIR, REGION_DIR_CANDIDATES, SAVE
 
 
 def _module_status(name: str) -> tuple[bool, str]:

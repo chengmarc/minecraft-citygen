@@ -25,7 +25,7 @@ class RegionModelTests(unittest.TestCase):
         self.assertEqual(region.to_env_value(), "2, ((1, 2, 3), (4, 5, 6))")
 
     def test_config_world_accepts_new_and_legacy_env_formats(self):
-        module_name = "config.config_world"
+        module_name = "config.world"
         original_module = importlib.import_module(module_name)
 
         try:

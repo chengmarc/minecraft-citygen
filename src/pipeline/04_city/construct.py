@@ -13,10 +13,10 @@ import numpy as np
 if __package__ in (None, ""):
     sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from config.config_algo import DEFAULT_SEED, FINE as DEFAULT_FINE
-from config.config_path import BUILD_CATALOG, CITY_PROD, GRID_PROD
-from config.config_render import CITY_ANCHOR_BLOCK, CITY_GROUND_FILL_BLOCK, CITY_GROUND_Y
-from config.config_world import DATA_VERSION
+from config.algo import DEFAULT_SEED, FINE as DEFAULT_FINE
+from config.path import BUILD_CATALOG, CITY_PROD, GRID_PROD
+from config.render import CITY_ANCHOR_BLOCK, CITY_GROUND_FILL_BLOCK, CITY_GROUND_Y
+from config.world import DATA_VERSION
 from engine.schematic.building import assemble
 from engine.core.city_layout import (
     FACE_K,

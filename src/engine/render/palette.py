@@ -4,8 +4,8 @@ from __future__ import annotations
 
 import csv
 
-from config.config_path import COLOR_RENDER_CSV
-from config.config_render import UNKNOWN_BLOCK_RGBA
+from config.path import COLOR_RENDER_CSV
+from config.render import UNKNOWN_BLOCK_RGBA
 
 
 UNKNOWN = UNKNOWN_BLOCK_RGBA

@@ -7,9 +7,9 @@ import threading
 
 from PySide6 import QtCore, QtWidgets
 
-from config.config_path import CITY_PROD
-from config.config_world import SAVE
-from config.path_discovery import has_region_files
+from config.path import CITY_PROD
+from config.world import SAVE
+from config.path import has_region_files
 from pipeline import services
 
 from gui.core import common

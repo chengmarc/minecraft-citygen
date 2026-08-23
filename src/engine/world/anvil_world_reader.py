@@ -15,8 +15,8 @@ import zlib
 import numpy as np
 import nbtlib
 
-from config.path_discovery import region_dir_candidates
-from config.config_world import REGION_DIR, REGION_DIR_CANDIDATES, SAVE
+from config.path import region_dir_candidates
+from config.world import REGION_DIR, REGION_DIR_CANDIDATES, SAVE
 
 
 def _checked_region_paths(region_dir, save_path, fallback_candidates):

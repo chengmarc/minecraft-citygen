@@ -58,7 +58,7 @@ resolution and labelling:
 - `RELEASES` — release name ↔ DataVersion
 
 `version_compat.py` loads it from generated JSON shipped as package data
-(`src/config/mc_versions.json`). This file is authoritative and required — the
+(`src/config/versions.json`). This file is authoritative and required — the
 module raises at import if it is missing or unreadable, pointing to the refresh
 command below. There is no in-code fallback table.
 
@@ -147,7 +147,7 @@ The important core unit is:
 1 fine cell = 9 simulation pixels = 9 production blocks
 ```
 
-This is defined by `CELL = 9` in [config/config_algo.py](../src/config/config_algo.py).
+This is defined by `CELL = 9` in [config/algo.py](../src/config/algo.py).
 
 ## Repository Structure
 
@@ -170,10 +170,10 @@ Core engines:
 
 Configuration:
 
-- [config/config_world.py](../src/config/config_world.py): world path, extraction regions, marker Y range
-- [config/config_algo.py](../src/config/config_algo.py): road-generation and placement tuning
-- [config/config_path.py](../src/config/config_path.py): artifact and output paths
-- [config/config_render.py](../src/config/config_render.py): render and ground-fill settings
+- [config/world.py](../src/config/world.py): world path, extraction regions, marker Y range
+- [config/algo.py](../src/config/algo.py): road-generation and placement tuning
+- [config/path.py](../src/config/path.py): artifact and output paths
+- [config/render.py](../src/config/render.py): render and ground-fill settings
 
 ## Pipeline Stages
 
@@ -214,7 +214,7 @@ Road extraction is implemented in [pipeline/01_roads/extract.py](../src/pipeline
 
 Region:
 
-- roads are scanned inside `ROAD_BOX` from [config/config_world.py](../src/config/config_world.py)
+- roads are scanned inside `ROAD_BOX` from [config/world.py](../src/config/world.py)
 
 Markers (identical to the build convention below):
 
@@ -591,7 +591,7 @@ The key design goal is that placement logic should be shared, while visual repre
 
 ## Key Configuration Knobs
 
-From [config/config_algo.py](../src/config/config_algo.py):
+From [config/algo.py](../src/config/algo.py):
 
 - `CELL`: blocks/pixels per fine cell
 - `FINE`: grid edge in fine cells
@@ -610,7 +610,7 @@ From [config/config_algo.py](../src/config/config_algo.py):
 - `TYPE2_TOP_FIT_CHOICES`: variation depth for type-2 selection
 - `TYPE2_SAME_COARSE_SPAN`: type-2 repeat exclusion window
 
-From [config/config_world.py](../src/config/config_world.py):
+From [config/world.py](../src/config/world.py):
 
 - `ROAD_BOX`: road extraction region
 - `BUILD_TYPES`: build extraction regions

@@ -25,8 +25,8 @@ class StageSpec:
 
 
 PIPELINE_DEPENDENCY_MODULES = (
-    "config.config_algo",
-    "config.config_world",
+    "config.algo",
+    "config.world",
     "engine.core.road_network",
     "engine.core.city_layout",
     "engine.schematic.road",

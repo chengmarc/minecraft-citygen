@@ -5,7 +5,7 @@ from __future__ import annotations
 import json
 import os
 
-from config.config_path import BUILD_CATALOG, BUILDS_PROD
+from config.path import BUILD_CATALOG, BUILDS_PROD
 from engine.core.city_layout import catalog_type
 from engine.schematic.reader import decode_schem_block_entities, decode_schem_cells
 from engine.schematic.transform import Tile

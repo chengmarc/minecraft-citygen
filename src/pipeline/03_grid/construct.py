@@ -9,8 +9,8 @@ from pathlib import Path
 if __package__ in (None, ""):
     sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from config.config_algo import DEFAULT_SEED, FINE as DEFAULT_FINE
-from config.config_path import GRID_PROD
+from config.algo import DEFAULT_SEED, FINE as DEFAULT_FINE
+from config.path import GRID_PROD
 from engine.schematic.road import build, to_schem
 from engine.schematic.writer import save_sponge_schem
 from pipeline.stages import noop, run_stage_cli

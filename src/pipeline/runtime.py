@@ -2,7 +2,7 @@
 
 Configuration model and its invariant
 --------------------------------------
-The config modules (``config.config_algo``, ``config.config_world``, ...) read
+The config modules (``config.algo``, ``config.world``, ...) read
 their values from ``MC_CITY_*`` environment variables *at import time* and expose
 them as module-level constants. The engine and pipeline modules bind those
 constants at *their* import time too. This keeps stage code simple, but it means

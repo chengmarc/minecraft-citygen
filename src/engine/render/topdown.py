@@ -8,7 +8,7 @@ from pathlib import Path
 
 import numpy as np
 
-from config.path_discovery import resolve_region_dir
+from config.path import resolve_region_dir
 from engine.world.anvil_world_reader import World
 from engine.render.palette import block_color
 

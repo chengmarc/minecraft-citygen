@@ -13,9 +13,9 @@ from PIL import Image, ImageDraw, ImageFont
 if __package__ in (None, ""):
     sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from config.config_algo import DEFAULT_SEED, FINE as DEFAULT_FINE
-from config.config_path import BUILDS_SIM, CITY_SIM, ROADS_SIM
-from config.config_render import CITY_GROUND_FILL_RGBA
+from config.algo import DEFAULT_SEED, FINE as DEFAULT_FINE
+from config.path import BUILDS_SIM, CITY_SIM, ROADS_SIM
+from config.render import CITY_GROUND_FILL_RGBA
 from engine.core.city_layout import (
     FACE_K,
     PlacementRules,

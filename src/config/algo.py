@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from config.env import env_int, env_set
+from config.path import env_int, env_set
 
 CELL = env_int("CELL", 9)              # simulation pixels and production blocks per fine cell
 FINE = env_int("FINE", 80)            # default fine grid edge (FINE x FINE cells); drivers may override

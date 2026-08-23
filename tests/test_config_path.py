@@ -4,7 +4,7 @@ import unittest
 from pathlib import Path
 from unittest import mock
 
-from config import config_path
+from config import path as config_path
 
 
 class ConfigPathTests(unittest.TestCase):

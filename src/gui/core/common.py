@@ -8,13 +8,13 @@ import os
 import subprocess
 import sys
 
-from config import config_algo
-from config.config_algo import DEFAULT_SEED
-from config.config_path import (
+from config import algo
+from config.algo import DEFAULT_SEED
+from config.path import (
     ARTIFACTS, BUILDS_PROD, BUILDS_SIM, CITY_PROD, CITY_SIM,
     GRID_PROD, GRID_SIM, GUI, ROOT, ROADS_PROD, ROADS_SIM,
 )
-from config.config_world import BUILD_TYPES, ROAD_BOX, SAVE
+from config.world import BUILD_TYPES, ROAD_BOX, SAVE
 from config.models import BlockRegion, BuildRegion
 from config.version_compat import (
     FALLBACK_DATA_VERSION,
@@ -45,7 +45,7 @@ APP_WIDTH = 1366
 APP_HEIGHT = 768
 STARTUP_ERROR_LOG = os.path.join(ROOT_DIR, "application_startup_error.log")
 LEGACY_SAVED_GUI_CONFIG_PATH = os.path.join(ROOT_DIR, "citygen_saved_config.json")
-SAVED_GUI_CONFIG_PATH = os.path.join(CONFIG_DIR, "config_citygen.json")
+SAVED_GUI_CONFIG_PATH = os.path.join(CONFIG_DIR, "citygen.json")
 
 PREVIEW_CONFIGS = [
     ("FINE", "City Size", "Fine-cell width and height of the generated map."),
@@ -189,7 +189,7 @@ def selector_label(name, value):
 
 
 def config_default(name):
-    value = getattr(config_algo, name)
+    value = getattr(algo, name)
     if isinstance(value, set):
         return ", ".join(sorted(value))
     if name in SELECTOR_OPTIONS:

@@ -16,7 +16,7 @@ from pathlib import Path
 if __package__ in (None, ""):
     sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
-from config.config_path import (
+from config.path import (
     BUILD_CATALOG,
     BUILDS_PROD,
     BUILDS_SIM,

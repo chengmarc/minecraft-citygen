@@ -39,9 +39,9 @@ from dataclasses import dataclass
 
 from PIL import Image
 
-from config.config_algo import (CELL, FINE as DEFAULT_FINE, GAP_MIXED, GAP_BIG, GAP_SMALL, PAD_BIG, PAD_SMALL,
+from config.algo import (CELL, FINE as DEFAULT_FINE, GAP_MIXED, GAP_BIG, GAP_SMALL, PAD_BIG, PAD_SMALL,
                                 N_BIG_CORNERS, N_SMALL_CORNERS, N_BIG_TEES, N_SMALL_TEES)
-from config.config_path import ROADS_SIM
+from config.path import ROADS_SIM
 
 ASSET_DIR = ROADS_SIM   # sim pipeline: vector tiles
 

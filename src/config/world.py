@@ -4,10 +4,10 @@ from __future__ import annotations
 
 import ast
 
-from config.config_path import DEFAULT_WORLD
-from config.env import env_raw, env_str
+from config.path import DEFAULT_WORLD
+from config.path import env_raw, env_str
 from config.models import BlockRegion, BuildRegion, VerticalRange
-from config.path_discovery import region_dir_candidates, resolve_region_dir
+from config.path import region_dir_candidates, resolve_region_dir
 from config.version_compat import (
     FALLBACK_DATA_VERSION,
     SUPPORTED_FLOOR,

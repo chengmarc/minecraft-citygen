@@ -10,7 +10,7 @@ class SavedGuiConfigTests(unittest.TestCase):
     def test_save_and_load_saved_gui_config(self):
         with tempfile.TemporaryDirectory() as tempdir:
             config_dir = Path(tempdir) / "src" / "config"
-            config_path = config_dir / "config_citygen.json"
+            config_path = config_dir / "citygen.json"
             sample = {
                 "preview": {"seed": "12", "algo": {"FINE": "Big"}},
                 "extraction": {"world_path": "C:/world"},
@@ -25,7 +25,7 @@ class SavedGuiConfigTests(unittest.TestCase):
     def test_load_saved_gui_config_migrates_legacy_root_file(self):
         with tempfile.TemporaryDirectory() as tempdir:
             config_dir = Path(tempdir) / "src" / "config"
-            config_path = config_dir / "config_citygen.json"
+            config_path = config_dir / "citygen.json"
             legacy_path = Path(tempdir) / "citygen_saved_config.json"
             sample = {"render": {"seed": "4"}}
             legacy_path.write_text('{"render": {"seed": "4"}}', encoding="utf-8")

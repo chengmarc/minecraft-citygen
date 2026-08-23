@@ -7,9 +7,9 @@ import os
 
 import numpy as np
 
-from config.config_algo import CELL
-from config.config_path import ROADS_PROD
-from config.config_world import DATA_VERSION
+from config.algo import CELL
+from config.path import ROADS_PROD
+from config.world import DATA_VERSION
 from engine.core.road_network import (
     BIG_TILES,
     MIXED_TILES,

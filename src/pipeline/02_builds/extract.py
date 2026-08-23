@@ -11,8 +11,8 @@ from pathlib import Path
 if __package__ in (None, ""):
     sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from config.config_path import BUILD_CATALOG, BUILDS_PROD
-from config.config_world import BUILD_MARKER_Y_RANGE, BUILD_TYPES, DATA_VERSION, REFERENCE_GROUND_Y
+from config.path import BUILD_CATALOG, BUILDS_PROD
+from config.world import BUILD_MARKER_Y_RANGE, BUILD_TYPES, DATA_VERSION, REFERENCE_GROUND_Y
 from engine.world.anvil_world_reader import World
 from engine.world.marker_extract import detect_assets, extract_cuboid, ground_shift, iter_signs, parse_range
 from engine.schematic.writer import write_sponge_schem_cells

@@ -7,7 +7,7 @@ build/
 dist/
 artifacts/
 
-src/config/config_citygen.json
+src/config/citygen.json
 application_startup_error.log
 tools/*.jar
 tools/*.jar.part

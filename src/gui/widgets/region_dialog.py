@@ -9,8 +9,8 @@ from pathlib import Path
 
 from PySide6 import QtCore, QtGui, QtWidgets
 
-from config.config_path import ARTIFACTS
-from config.path_discovery import resolve_region_dir
+from config.path import ARTIFACTS
+from config.path import resolve_region_dir
 from engine.render.topdown import render_topdown_preview
 
 from gui.widgets.qt_viewer import QtImageViewer
