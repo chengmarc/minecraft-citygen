@@ -26,11 +26,10 @@ import nbtlib
 from nbtlib import Byte, Compound, Double, Float, Int, List, Long, LongArray, String
 
 from config.path import DEFAULT_WORLD, GUI
-from config.versions import release_name_for
+from config.versions import HARD_FLOOR_DATA_VERSION, release_name_for
 from engine.schematic.reader import (
     decode_schem_array,
     decode_schem_block_entities,
-    decode_schem_data_version,
     decode_schem_offset,
 )
 
@@ -191,7 +190,7 @@ def _write_region(path, chunks):
         fh.write(body)
 
 
-def write_world(grid, inv, block_entities, out_dir, data_version, base_y, origin=None, spawn=None, base_world=None, progress=None):
+def write_world(grid, inv, block_entities, out_dir, data_version, base_y, origin=None, spawn=None, progress=None):
     """Write ``grid`` (shape H,L,Z indexed [y][z][x]) as a void world at ``out_dir``.
 
     ``inv`` maps palette index -> block state string; ``block_entities`` are
@@ -262,7 +261,7 @@ def write_world(grid, inv, block_entities, out_dir, data_version, base_y, origin
     progress(3, WORLD_WRITE_STEPS, "Writing level.dat")
     if spawn is None:
         spawn = (anchor_x + origin[0], anchor_top + base_y + 1, anchor_z + origin[1])
-    _write_level_dat(out_dir, data_version, spawn, base_world)
+    _write_level_dat(out_dir, data_version, spawn)
     _write_world_icon(out_dir)
     progress(WORLD_WRITE_STEPS, WORLD_WRITE_STEPS, "World saved")
 
@@ -317,9 +316,6 @@ def _write_world_icon(out_dir):
         icon.save(os.path.join(out_dir, "icon.png"))
 
 
-DATA_VERSION_1_20_5 = 3837  # first version with the enabled_features feature-flag list
-
-
 def _void_generator():
     """A flat generator with no layers -> a void dimension. Fresh Compound each call."""
     return Compound({
@@ -353,32 +349,21 @@ def _void_world_gen_settings(seed):
     })
 
 
-def _base_level_dat(base_world):
-    """Load the level.dat to clone: the source world's, falling back to the bundle.
+def _write_level_dat(out_dir, data_version, spawn):
+    """Write a void-world level.dat from the bundled template, stamped at data_version.
 
-    Basing the export on the *source* world's level.dat keeps it structurally
-    native to the source version (fields like ``enabled_features``, added in
-    1.20.5, and version-specific player data). A 1.20 template relabelled as a
-    newer version is missing those fields and Minecraft refuses to load it.
+    The template and everything this writer emits are in the 1.20 (floor) format,
+    so the world is stamped at that version and left for Minecraft's own DataFixer
+    to upgrade forward on load (adding fields like enabled_features and updating the
+    worldgen format). Stamping it as a newer version would skip that fixer, and the
+    game then rejects the older-format level.dat ("Overworld settings missing").
     """
-    if base_world:
-        candidate = os.path.join(base_world, "level.dat")
-        if os.path.isfile(candidate):
-            try:
-                return nbtlib.load(candidate)
-            except Exception:  # unreadable/odd source level.dat -> fall back to the bundle
-                pass
-    return nbtlib.load(os.path.join(DEFAULT_WORLD, "level.dat"))
-
-
-def _write_level_dat(out_dir, data_version, spawn, base_world=None):
-    """Write a void-world level.dat cloned from the source world (see _base_level_dat)."""
-    level = _base_level_dat(base_world)
+    level = nbtlib.load(os.path.join(DEFAULT_WORLD, "level.dat"))
     data = level["Data"]
 
     data["DataVersion"] = Int(data_version)
-    # Keep Version.Id in sync with DataVersion: a mismatch makes Minecraft show the
-    # wrong version and report data errors. (Name is cosmetic; Id is what counts.)
+    # Keep Version.Id in sync with DataVersion so the save list shows the right
+    # version and the fixer has a consistent starting point.
     version = data.get("Version") or Compound({"Series": String("main")})
     version["Id"] = Int(data_version)
     version["Name"] = String(release_name_for(data_version))
@@ -418,39 +403,27 @@ def _write_level_dat(out_dir, data_version, spawn, base_world=None):
         "foodLevel": Int(20),
     })
 
-    # Clean, portable data-pack + feature-flag config: vanilla only, nothing
-    # source-specific or missing that would block loading. enabled_features is
-    # required from 1.20.5 on and must stay consistent with the enabled packs.
+    # Clean, portable data packs: vanilla only (the template was saved by a Fabric
+    # server). The DataFixer adds version-appropriate enabled_features on upgrade.
     data["DataPacks"] = Compound({"Enabled": List[String]([String("vanilla")]), "Disabled": List[String]([])})
-    if data_version >= DATA_VERSION_1_20_5 or "enabled_features" in data:
-        data["enabled_features"] = List[String]([String("minecraft:vanilla")])
     data["ServerBrands"] = List[String]([String("vanilla")])
     data["WasModded"] = Byte(0)
 
-    # Overwrite worldgen with an all-void settings, preserving the source seed if
-    # readable. Built fresh (not mutated) so we don't depend on the source world's
-    # WorldGenSettings shape, which varies by version and may be absent entirely.
-    old_wgs = data.get("WorldGenSettings")
-    seed = 0
-    if old_wgs is not None and "seed" in old_wgs:
-        try:
-            seed = int(old_wgs["seed"])
-        except (TypeError, ValueError):
-            seed = 0
-    data["WorldGenSettings"] = _void_world_gen_settings(seed)
+    # All-void worldgen in the floor format; the DataFixer upgrades it on load.
+    data["WorldGenSettings"] = _void_world_gen_settings(0)
 
     os.makedirs(out_dir, exist_ok=True)
     level.gzipped = True
     level.save(os.path.join(out_dir, "level.dat"))
 
 
-def schem_to_world(schem_path, out_dir, data_version=None, base_world=None, progress=None):
+def schem_to_world(schem_path, out_dir, data_version=None, progress=None):
     """Read a city ``.schem`` and write a standalone void world to ``out_dir``.
 
-    ``base_world`` is the source world whose ``level.dat`` is cloned as the base
-    (so the export is structurally native to the source version); it falls back to
-    the bundled world. A stale world at ``out_dir`` is removed first so leftover
-    region files from a previous, larger city can never survive into the export.
+    The world is stamped at the writer's own (floor) format version and left for
+    Minecraft's DataFixer to upgrade forward on load, so it opens in any supported
+    version. A stale world at ``out_dir`` is removed first so leftover region files
+    from a previous, larger city can never survive into the export.
     """
     progress = progress or _noop
     progress(0, WORLD_WRITE_STEPS, "Reading schematic")
@@ -463,12 +436,12 @@ def schem_to_world(schem_path, out_dir, data_version=None, base_world=None, prog
     city_ground_y = -offset[1] - 1
     base_y = TARGET_GROUND_Y - city_ground_y if offset[1] != 0 else TARGET_GROUND_Y
 
-    # Match the world's version to the schematic's own stamp, not the ambient env.
+    # Stamp at the floor format the writer emits; Minecraft upgrades it on load.
     if data_version is None:
-        data_version = decode_schem_data_version(schem_path)
+        data_version = HARD_FLOOR_DATA_VERSION
 
     shutil.rmtree(out_dir, ignore_errors=True)
-    return write_world(grid, inv, block_entities, out_dir, data_version, base_y, base_world=base_world, progress=progress)
+    return write_world(grid, inv, block_entities, out_dir, data_version, base_y, progress=progress)
 
 
 if __name__ == "__main__":

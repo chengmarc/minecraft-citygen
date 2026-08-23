@@ -121,85 +121,31 @@ class SchemToWorldTests(unittest.TestCase):
             with Image.open(icon) as im:
                 self.assertEqual(im.size, (64, 64))
 
-    def test_version_and_provenance_match_the_exported_version(self):
-        # A source newer than the 1.20 template must not leak the template's
-        # version/provenance: Version.Id has to equal DataVersion (else Minecraft
-        # shows the wrong version and reports data errors), and the Fabric brand /
-        # data pack from the bundled world must be scrubbed.
+    def test_world_is_stamped_at_the_floor_version_for_forward_upgrade(self):
+        # The writer emits the floor (1.20) format, so the world is stamped there
+        # regardless of the schematic's own (newer) stamp and left for Minecraft's
+        # DataFixer to upgrade forward on load. Stamping it newer skips the fixer,
+        # and the game then rejects the older-format level.dat. Provenance is also
+        # scrubbed to clean vanilla (the template was saved by a Fabric server).
         with tempfile.TemporaryDirectory() as tmp:
             schem = os.path.join(tmp, "city.schem")
             out = os.path.join(tmp, "world")
-            grid, inv, block_entities = _sample_grid()
+            grid, inv, _ = _sample_grid()
             palette = {state: idx for idx, state in inv.items()}
-            write_sponge_schem_grid(grid, palette, schem, 4790, offset=(0, -1, 0))  # 26.1.2
+            write_sponge_schem_grid(grid, palette, schem, 4790, offset=(0, -1, 0))  # schem: 26.1.2
 
             world_writer.schem_to_world(schem, out)
 
             data = nbtlib.load(os.path.join(out, "level.dat"))["Data"]
-            self.assertEqual(int(data["DataVersion"]), 4790)
-            self.assertEqual(int(data["Version"]["Id"]), 4790)
-            self.assertEqual(str(data["Version"]["Name"]), "26.1.2")
+            self.assertEqual(int(data["DataVersion"]), DATA_VERSION)          # floor, not 4790
+            self.assertEqual(int(data["Version"]["Id"]), DATA_VERSION)
             self.assertNotIn("fabric", [str(b) for b in data["ServerBrands"]])
             self.assertEqual([str(p) for p in data["DataPacks"]["Enabled"]], ["vanilla"])
-            # 1.20.5+ requires enabled_features; a missing/empty list blocks loading.
-            self.assertEqual([str(f) for f in data["enabled_features"]], ["minecraft:vanilla"])
-
-    def test_clones_source_level_dat_and_voids_its_generator(self):
-        # A real source world (e.g. 26.1.2) is a normal noise world with
-        # enabled_features and possibly custom packs. The export must clone it (so
-        # the structure is native to the version), swap the generator to void, and
-        # normalise packs/features so nothing source-specific blocks loading.
-        with tempfile.TemporaryDirectory() as tmp:
-            source = os.path.join(tmp, "source")
-            os.makedirs(source)
-            src_level = nbtlib.File({"Data": Compound({
-                "enabled_features": nbtlib.List[String]([String("minecraft:vanilla"), String("minecraft:experiment")]),
-                "DataPacks": Compound({"Enabled": nbtlib.List[String]([String("vanilla"), String("myworldpack")]),
-                                       "Disabled": nbtlib.List[String]([])}),
-                "ServerBrands": nbtlib.List[String]([String("fabric")]),
-                "WorldGenSettings": Compound({"dimensions": Compound({"minecraft:overworld": Compound({
-                    "type": String("minecraft:overworld"),
-                    "generator": Compound({"type": String("minecraft:noise"), "settings": String("minecraft:overworld")}),
-                })})}),
-            })})
-            src_level.gzipped = True
-            src_level.save(os.path.join(source, "level.dat"))
-
-            schem = os.path.join(tmp, "city.schem")
-            out = os.path.join(tmp, "world")
-            self._write_schem(schem)
-            world_writer.schem_to_world(schem, out, base_world=source)
-
-            data = nbtlib.load(os.path.join(out, "level.dat"))["Data"]
-            gen = data["WorldGenSettings"]["dimensions"]["minecraft:overworld"]["generator"]
-            self.assertEqual(str(gen["type"]), "minecraft:flat")   # noise -> flat void
-            self.assertEqual(len(gen["settings"]["layers"]), 0)
-            self.assertEqual([str(f) for f in data["enabled_features"]], ["minecraft:vanilla"])
-            self.assertEqual([str(p) for p in data["DataPacks"]["Enabled"]], ["vanilla"])  # custom pack dropped
-            self.assertNotIn("fabric", [str(b) for b in data["ServerBrands"]])
-
-    def test_source_without_worldgensettings_still_exports_void(self):
-        # A source level.dat may lack WorldGenSettings (trimmed world, or a shape
-        # this version doesn't expect); the export must build its own void settings
-        # instead of crashing on the missing key.
-        with tempfile.TemporaryDirectory() as tmp:
-            source = os.path.join(tmp, "source")
-            os.makedirs(source)
-            src_level = nbtlib.File({"Data": Compound({
-                "DataVersion": nbtlib.Int(4790),
-                "enabled_features": nbtlib.List[String]([String("minecraft:vanilla")]),
-            })})
-            src_level.gzipped = True
-            src_level.save(os.path.join(source, "level.dat"))
-
-            schem = os.path.join(tmp, "city.schem")
-            out = os.path.join(tmp, "world")
-            self._write_schem(schem)
-            world_writer.schem_to_world(schem, out, base_world=source)  # must not raise
-
-            dims = nbtlib.load(os.path.join(out, "level.dat"))["Data"]["WorldGenSettings"]["dimensions"]
+            # All dimensions are a flat void; the DataFixer upgrades the format on load.
+            dims = data["WorldGenSettings"]["dimensions"]
             for dim in ("minecraft:overworld", "minecraft:the_nether", "minecraft:the_end"):
                 self.assertEqual(str(dims[dim]["generator"]["type"]), "minecraft:flat")
+                self.assertEqual(len(dims[dim]["generator"]["settings"]["layers"]), 0)
 
     def test_stale_world_is_cleared_before_writing(self):
         with tempfile.TemporaryDirectory() as tmp:

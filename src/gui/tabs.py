@@ -168,16 +168,15 @@ class GenerationTab(QtWidgets.QWidget, ProgressMixin):
         if self._peer is not None:
             self._peer.controls.set_state(state)
 
-    def _source_env(self):
-        """Env pinning the source world: its path plus its stamped DataVersion.
+    def _stamp_version_env(self):
+        """Stamp the final city schematic with the source world's version.
 
-        MC_CITY_SAVE lets the world-export stage clone the source world's level.dat
-        (so the exported world is native to the source version). The stamp keeps the
-        schematic on the source version; WorldEdit upgrades it forward on paste.
+        Forward-only: the schematic is stamped with the source version and
+        WorldEdit upgrades it forward on paste.
         """
         extraction = self.owner.get_saved_config_section("extraction") or {}
         world_path = str(extraction.get("world_path", SAVE))
-        return {"MC_CITY_SAVE": world_path, **common.stamp_version_env(world_path)}
+        return common.stamp_version_env(world_path)
 
     def _open_output_folder(self):
         """Open the exported-worlds folder so the user can copy a world into saves/."""
@@ -243,7 +242,7 @@ class GenerationTab(QtWidgets.QWidget, ProgressMixin):
             QtWidgets.QMessageBox.critical(self, "Invalid city config", str(exc))
             return
 
-        env.update(self._source_env())
+        env.update(self._stamp_version_env())
 
         self.controls.action_button.setEnabled(False)
         self.set_status("Starting generation...")
