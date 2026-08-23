@@ -23,6 +23,8 @@ This project turns a small handcrafted asset set into a complete city layout, pr
 
 CityGen targets **Minecraft 1.20+** and requires **WorldEdit 7.3.0+** to paste the generated schematics: outputs use the Sponge v3 `.schem` container, which WorldEdit 7.3.0 (the first release for 1.20) introduced and earlier versions cannot read.
 
+> **Note:** WorldEdit 7.3.0's Minecraft coverage depends on the platform — the Bukkit build (Spigot/Paper) supports 1.20–1.20.4, while the Forge build supports 1.20.4 only. Match the WorldEdit build to your server platform and Minecraft version. Verified working on 1.20.4.
+
 ## Rendering Result
 
 ![Isometric city render 1](docs/isometric1.png)
