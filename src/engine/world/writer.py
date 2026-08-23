@@ -23,7 +23,7 @@ import zlib
 
 import numpy as np
 import nbtlib
-from nbtlib import Byte, Compound, Double, Float, Int, List, Long, LongArray, Short, String
+from nbtlib import Byte, Compound, Double, Float, Int, List, Long, LongArray, String
 
 from config.path import DEFAULT_WORLD, GUI
 from config.versions import release_name_for
@@ -191,7 +191,7 @@ def _write_region(path, chunks):
         fh.write(body)
 
 
-def write_world(grid, inv, block_entities, out_dir, data_version, base_y, origin=None, spawn=None, progress=None):
+def write_world(grid, inv, block_entities, out_dir, data_version, base_y, origin=None, spawn=None, base_world=None, progress=None):
     """Write ``grid`` (shape H,L,Z indexed [y][z][x]) as a void world at ``out_dir``.
 
     ``inv`` maps palette index -> block state string; ``block_entities`` are
@@ -262,7 +262,7 @@ def write_world(grid, inv, block_entities, out_dir, data_version, base_y, origin
     progress(3, WORLD_WRITE_STEPS, "Writing level.dat")
     if spawn is None:
         spawn = (anchor_x + origin[0], anchor_top + base_y + 1, anchor_z + origin[1])
-    _write_level_dat(out_dir, data_version, spawn)
+    _write_level_dat(out_dir, data_version, spawn, base_world)
     _write_world_icon(out_dir)
     progress(WORLD_WRITE_STEPS, WORLD_WRITE_STEPS, "World saved")
 
@@ -317,63 +317,100 @@ def _write_world_icon(out_dir):
         icon.save(os.path.join(out_dir, "icon.png"))
 
 
-def _write_level_dat(out_dir, data_version, spawn):
-    """Copy the bundled level.dat, empty the generator to void, and reset spawn."""
-    level = nbtlib.load(os.path.join(DEFAULT_WORLD, "level.dat"))
+DATA_VERSION_1_20_5 = 3837  # first version with the enabled_features feature-flag list
+
+
+def _void_generator():
+    """A flat generator with no layers -> a void dimension. Fresh Compound each call."""
+    return Compound({
+        "type": String("minecraft:flat"),
+        "settings": Compound({
+            "layers": List[Compound]([]),
+            "biome": String("minecraft:the_void"),
+            "features": Byte(0),
+            "lakes": Byte(0),
+            "structure_overrides": List[String]([]),
+        }),
+    })
+
+
+def _base_level_dat(base_world):
+    """Load the level.dat to clone: the source world's, falling back to the bundle.
+
+    Basing the export on the *source* world's level.dat keeps it structurally
+    native to the source version (fields like ``enabled_features``, added in
+    1.20.5, and version-specific player data). A 1.20 template relabelled as a
+    newer version is missing those fields and Minecraft refuses to load it.
+    """
+    if base_world:
+        candidate = os.path.join(base_world, "level.dat")
+        if os.path.isfile(candidate):
+            return nbtlib.load(candidate)
+    return nbtlib.load(os.path.join(DEFAULT_WORLD, "level.dat"))
+
+
+def _write_level_dat(out_dir, data_version, spawn, base_world=None):
+    """Write a void-world level.dat cloned from the source world (see _base_level_dat)."""
+    level = _base_level_dat(base_world)
     data = level["Data"]
+
     data["DataVersion"] = Int(data_version)
-    # The Version compound is copied from the bundled 1.20 template; leaving it
-    # stale makes Minecraft show the world as 1.20 and, worse, disagree with
-    # DataVersion (Version.Id != DataVersion) so a newer game reports data errors.
-    # Stamp it to match the exported version. (Name is cosmetic; Id is what counts.)
-    version = data.get("Version")
-    if version is None:
-        version = Compound({"Series": String("main")})
-        data["Version"] = version
+    # Keep Version.Id in sync with DataVersion: a mismatch makes Minecraft show the
+    # wrong version and report data errors. (Name is cosmetic; Id is what counts.)
+    version = data.get("Version") or Compound({"Series": String("main")})
     version["Id"] = Int(data_version)
     version["Name"] = String(release_name_for(data_version))
     version["Snapshot"] = Byte(0)
+    data["Version"] = version
+
     data["LevelName"] = String("CityGen City")
     data["GameType"] = Int(1)          # creative, to fly around the void city
     data["allowCommands"] = Byte(1)
+    data["hardcore"] = Byte(0)         # don't inherit a hardcore source world
+    data["initialized"] = Byte(1)
     data["Time"] = Long(6000)
     data["DayTime"] = Long(6000)       # midday
     data["raining"] = Byte(0)
     data["thundering"] = Byte(0)
     data["SpawnX"], data["SpawnY"], data["SpawnZ"] = Int(spawn[0]), Int(spawn[1]), Int(spawn[2])
 
-    # In singleplayer the saved player position takes priority over the world
-    # spawn, and Minecraft ignores SpawnY in a void world. Seat the player
-    # directly on the anchored column so they load standing on the city.
-    player = data.get("Player") or Compound({})
-    player["Pos"] = List[Double]([Double(spawn[0] + 0.5), Double(spawn[1]), Double(spawn[2] + 0.5)])
-    player["Motion"] = List[Double]([Double(0.0), Double(0.0), Double(0.0)])
-    player["Rotation"] = List[Float]([Float(0.0), Float(0.0)])
-    player["FallDistance"] = Float(0.0)
-    player["OnGround"] = Byte(1)
-    player["Dimension"] = String("minecraft:overworld")
-    player["playerGameType"] = Int(1)
-    # Reset vitals so the cloned template player doesn't load already-dead.
-    player["Health"] = Float(20.0)
-    player["foodLevel"] = Int(20)
-    player["foodSaturationLevel"] = Float(5.0)
-    player["foodExhaustionLevel"] = Float(0.0)
-    player["Fire"] = Short(-20)
-    player["Air"] = Short(300)
-    player["DeathTime"] = Short(0)
-    player["HurtTime"] = Short(0)
-    player["HurtByTimestamp"] = Int(0)
-    data["Player"] = player
+    # Reset the world border so a small border on the source world isn't inherited.
+    data["BorderCenterX"] = Double(0.0)
+    data["BorderCenterZ"] = Double(0.0)
+    data["BorderSize"] = Double(59999968.0)
 
-    # The bundled template was saved by a Fabric server; scrub that provenance so
-    # a vanilla client doesn't warn about a missing "fabric" data pack.
+    # A fresh, minimal player pinned to the spawn column. In singleplayer the saved
+    # player position takes priority over the world spawn (and Minecraft ignores
+    # SpawnY in a void world), so this is what actually lands the player on the
+    # city. Building it fresh avoids carrying the source player's inventory or
+    # version-specific attributes; Minecraft fills the rest with valid defaults.
+    data["Player"] = Compound({
+        "Pos": List[Double]([Double(spawn[0] + 0.5), Double(spawn[1]), Double(spawn[2] + 0.5)]),
+        "Motion": List[Double]([Double(0.0), Double(0.0), Double(0.0)]),
+        "Rotation": List[Float]([Float(0.0), Float(0.0)]),
+        "FallDistance": Float(0.0),
+        "OnGround": Byte(1),
+        "Dimension": String("minecraft:overworld"),
+        "playerGameType": Int(1),
+        "Health": Float(20.0),
+        "foodLevel": Int(20),
+    })
+
+    # Clean, portable data-pack + feature-flag config: vanilla only, nothing
+    # source-specific or missing that would block loading. enabled_features is
+    # required from 1.20.5 on and must stay consistent with the enabled packs.
     data["DataPacks"] = Compound({"Enabled": List[String]([String("vanilla")]), "Disabled": List[String]([])})
+    if data_version >= DATA_VERSION_1_20_5 or "enabled_features" in data:
+        data["enabled_features"] = List[String]([String("minecraft:vanilla")])
     data["ServerBrands"] = List[String]([String("vanilla")])
     data["WasModded"] = Byte(0)
 
-    settings = data["WorldGenSettings"]["dimensions"]["minecraft:overworld"]["generator"]["settings"]
-    settings["layers"] = List[Compound]([])          # no layers -> void
-    settings["biome"] = String("minecraft:the_void")
+    # Replace the overworld generator with a flat void. The source may be a normal
+    # noise world, so tweaking flat settings wouldn't void it -- swap the whole
+    # generator. Everything outside the written city chunks becomes void air.
+    dims = data["WorldGenSettings"]["dimensions"]
+    if "minecraft:overworld" in dims:
+        dims["minecraft:overworld"]["generator"] = _void_generator()
     data["WorldGenSettings"]["generate_features"] = Byte(0)
 
     os.makedirs(out_dir, exist_ok=True)
@@ -381,11 +418,13 @@ def _write_level_dat(out_dir, data_version, spawn):
     level.save(os.path.join(out_dir, "level.dat"))
 
 
-def schem_to_world(schem_path, out_dir, data_version=None, progress=None):
+def schem_to_world(schem_path, out_dir, data_version=None, base_world=None, progress=None):
     """Read a city ``.schem`` and write a standalone void world to ``out_dir``.
 
-    A stale world at ``out_dir`` is removed first so leftover region files from a
-    previous, larger city can never survive into the new export.
+    ``base_world`` is the source world whose ``level.dat`` is cloned as the base
+    (so the export is structurally native to the source version); it falls back to
+    the bundled world. A stale world at ``out_dir`` is removed first so leftover
+    region files from a previous, larger city can never survive into the export.
     """
     progress = progress or _noop
     progress(0, WORLD_WRITE_STEPS, "Reading schematic")
@@ -403,7 +442,7 @@ def schem_to_world(schem_path, out_dir, data_version=None, progress=None):
         data_version = decode_schem_data_version(schem_path)
 
     shutil.rmtree(out_dir, ignore_errors=True)
-    return write_world(grid, inv, block_entities, out_dir, data_version, base_y, progress=progress)
+    return write_world(grid, inv, block_entities, out_dir, data_version, base_y, base_world=base_world, progress=progress)
 
 
 if __name__ == "__main__":

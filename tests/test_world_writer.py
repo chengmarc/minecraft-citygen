@@ -141,6 +141,42 @@ class SchemToWorldTests(unittest.TestCase):
             self.assertEqual(str(data["Version"]["Name"]), "26.1.2")
             self.assertNotIn("fabric", [str(b) for b in data["ServerBrands"]])
             self.assertEqual([str(p) for p in data["DataPacks"]["Enabled"]], ["vanilla"])
+            # 1.20.5+ requires enabled_features; a missing/empty list blocks loading.
+            self.assertEqual([str(f) for f in data["enabled_features"]], ["minecraft:vanilla"])
+
+    def test_clones_source_level_dat_and_voids_its_generator(self):
+        # A real source world (e.g. 26.1.2) is a normal noise world with
+        # enabled_features and possibly custom packs. The export must clone it (so
+        # the structure is native to the version), swap the generator to void, and
+        # normalise packs/features so nothing source-specific blocks loading.
+        with tempfile.TemporaryDirectory() as tmp:
+            source = os.path.join(tmp, "source")
+            os.makedirs(source)
+            src_level = nbtlib.File({"Data": Compound({
+                "enabled_features": nbtlib.List[String]([String("minecraft:vanilla"), String("minecraft:experiment")]),
+                "DataPacks": Compound({"Enabled": nbtlib.List[String]([String("vanilla"), String("myworldpack")]),
+                                       "Disabled": nbtlib.List[String]([])}),
+                "ServerBrands": nbtlib.List[String]([String("fabric")]),
+                "WorldGenSettings": Compound({"dimensions": Compound({"minecraft:overworld": Compound({
+                    "type": String("minecraft:overworld"),
+                    "generator": Compound({"type": String("minecraft:noise"), "settings": String("minecraft:overworld")}),
+                })})}),
+            })})
+            src_level.gzipped = True
+            src_level.save(os.path.join(source, "level.dat"))
+
+            schem = os.path.join(tmp, "city.schem")
+            out = os.path.join(tmp, "world")
+            self._write_schem(schem)
+            world_writer.schem_to_world(schem, out, base_world=source)
+
+            data = nbtlib.load(os.path.join(out, "level.dat"))["Data"]
+            gen = data["WorldGenSettings"]["dimensions"]["minecraft:overworld"]["generator"]
+            self.assertEqual(str(gen["type"]), "minecraft:flat")   # noise -> flat void
+            self.assertEqual(len(gen["settings"]["layers"]), 0)
+            self.assertEqual([str(f) for f in data["enabled_features"]], ["minecraft:vanilla"])
+            self.assertEqual([str(p) for p in data["DataPacks"]["Enabled"]], ["vanilla"])  # custom pack dropped
+            self.assertNotIn("fabric", [str(b) for b in data["ServerBrands"]])
 
     def test_stale_world_is_cleared_before_writing(self):
         with tempfile.TemporaryDirectory() as tmp:
