@@ -190,11 +190,13 @@ def _write_region(path, chunks):
         fh.write(body)
 
 
-def write_world(grid, inv, block_entities, out_dir, data_version, base_y, origin=None, spawn=None, progress=None):
+def write_world(grid, inv, block_entities, out_dir, data_version, base_y, origin=None, spawn=None, source_world=None, progress=None):
     """Write ``grid`` (shape H,L,Z indexed [y][z][x]) as a void world at ``out_dir``.
 
     ``inv`` maps palette index -> block state string; ``block_entities`` are
-    :class:`BlockEntity` records in schem-local coords. Returns a small summary.
+    :class:`BlockEntity` records in schem-local coords. ``source_world`` is the
+    world whose ``level.dat`` seeds the export (see :func:`_write_level_dat`).
+    Returns a small summary.
     """
     progress = progress or _noop
     progress(1, WORLD_WRITE_STEPS, "Composing chunks")
@@ -261,7 +263,7 @@ def write_world(grid, inv, block_entities, out_dir, data_version, base_y, origin
     progress(3, WORLD_WRITE_STEPS, "Writing level.dat")
     if spawn is None:
         spawn = (anchor_x + origin[0], anchor_top + base_y + 1, anchor_z + origin[1])
-    _write_level_dat(out_dir, data_version, spawn)
+    _write_level_dat(out_dir, data_version, spawn, source_world)
     _write_world_icon(out_dir)
     progress(WORLD_WRITE_STEPS, WORLD_WRITE_STEPS, "World saved")
 
@@ -333,9 +335,9 @@ def _void_generator():
 def _void_world_gen_settings(seed):
     """A complete WorldGenSettings with every dimension a flat void.
 
-    Built from scratch rather than mutating the source world's settings: the
-    source is usually a normal noise world (and its structure can vary by
-    version), so replacing the whole tag is both simpler and more robust.
+    Fallback for the rare case where the base level.dat has no WorldGenSettings;
+    normally we void the source world's own settings in place (see
+    :func:`_write_level_dat`) to keep them native to the source version.
     """
     return Compound({
         "seed": Long(seed),
@@ -349,25 +351,41 @@ def _void_world_gen_settings(seed):
     })
 
 
-def _write_level_dat(out_dir, data_version, spawn):
-    """Write a void-world level.dat from the bundled template, stamped at data_version.
+def _source_data_version(source_world):
+    """The source world's own DataVersion (from its level.dat), or the floor."""
+    if source_world:
+        candidate = os.path.join(source_world, "level.dat")
+        if os.path.isfile(candidate):
+            try:
+                return int(nbtlib.load(candidate)["Data"]["DataVersion"])
+            except Exception:
+                pass
+    return HARD_FLOOR_DATA_VERSION
 
-    The template and everything this writer emits are in the 1.20 (floor) format,
-    so the world is stamped at that version and left for Minecraft's own DataFixer
-    to upgrade forward on load (adding fields like enabled_features and updating the
-    worldgen format). Stamping it as a newer version would skip that fixer, and the
-    game then rejects the older-format level.dat ("Overworld settings missing").
+
+def _write_level_dat(out_dir, data_version, spawn, source_world):
+    """Write the void-world level.dat from the source world's own level.dat.
+
+    The source world (the one the user extracted from) already ships a level.dat
+    native to its Minecraft version -- correct WorldGenSettings shape,
+    enabled_features, data packs, everything. We reuse it and change only what a
+    void city showcase needs, so the world loads natively (no DataFixer, block
+    entities preserved exactly). Only the overworld *generator* is swapped to a
+    flat void; the rest of WorldGenSettings (and the nether/end) is left exactly as
+    the source authored it. Falls back to the bundled world's level.dat when the
+    source's is unavailable.
     """
-    level = nbtlib.load(os.path.join(DEFAULT_WORLD, "level.dat"))
+    src = os.path.join(source_world, "level.dat") if source_world else ""
+    if not (src and os.path.isfile(src)):
+        src = os.path.join(DEFAULT_WORLD, "level.dat")
+    level = nbtlib.load(src)
     data = level["Data"]
 
+    # Keep the source's native version; just ensure DataVersion and Version agree.
     data["DataVersion"] = Int(data_version)
-    # Keep Version.Id in sync with DataVersion so the save list shows the right
-    # version and the fixer has a consistent starting point.
     version = data.get("Version") or Compound({"Series": String("main")})
     version["Id"] = Int(data_version)
     version["Name"] = String(release_name_for(data_version))
-    version["Snapshot"] = Byte(0)
     data["Version"] = version
 
     data["LevelName"] = String("CityGen City")
@@ -390,7 +408,7 @@ def _write_level_dat(out_dir, data_version, spawn):
     # player position takes priority over the world spawn (and Minecraft ignores
     # SpawnY in a void world), so this is what actually lands the player on the
     # city. Building it fresh avoids carrying the source player's inventory or
-    # version-specific attributes; Minecraft fills the rest with valid defaults.
+    # position; Minecraft fills the rest with valid defaults for its version.
     data["Player"] = Compound({
         "Pos": List[Double]([Double(spawn[0] + 0.5), Double(spawn[1]), Double(spawn[2] + 0.5)]),
         "Motion": List[Double]([Double(0.0), Double(0.0), Double(0.0)]),
@@ -403,27 +421,31 @@ def _write_level_dat(out_dir, data_version, spawn):
         "foodLevel": Int(20),
     })
 
-    # Clean, portable data packs: vanilla only (the template was saved by a Fabric
-    # server). The DataFixer adds version-appropriate enabled_features on upgrade.
-    data["DataPacks"] = Compound({"Enabled": List[String]([String("vanilla")]), "Disabled": List[String]([])})
-    data["ServerBrands"] = List[String]([String("vanilla")])
-    data["WasModded"] = Byte(0)
-
-    # All-void worldgen in the floor format; the DataFixer upgrades it on load.
-    data["WorldGenSettings"] = _void_world_gen_settings(0)
+    # Void only the overworld generator, preserving the source's native
+    # WorldGenSettings structure (its exact shape is version-specific). Everything
+    # outside the written city chunks then generates as void air.
+    wgs = data.get("WorldGenSettings")
+    dims = wgs.get("dimensions") if wgs is not None else None
+    if dims is not None and "minecraft:overworld" in dims:
+        dims["minecraft:overworld"]["generator"] = _void_generator()
+        if "generate_features" in wgs:
+            wgs["generate_features"] = Byte(0)
+    else:
+        data["WorldGenSettings"] = _void_world_gen_settings(0)
 
     os.makedirs(out_dir, exist_ok=True)
     level.gzipped = True
     level.save(os.path.join(out_dir, "level.dat"))
 
 
-def schem_to_world(schem_path, out_dir, data_version=None, progress=None):
+def schem_to_world(schem_path, out_dir, source_world=None, data_version=None, progress=None):
     """Read a city ``.schem`` and write a standalone void world to ``out_dir``.
 
-    The world is stamped at the writer's own (floor) format version and left for
-    Minecraft's DataFixer to upgrade forward on load, so it opens in any supported
-    version. A stale world at ``out_dir`` is removed first so leftover region files
-    from a previous, larger city can never survive into the export.
+    The export is built from ``source_world``'s own ``level.dat`` and stamped at
+    that world's native version, so it loads natively (no DataFixer, block entities
+    preserved). ``source_world`` defaults to the bundled world. A stale world at
+    ``out_dir`` is removed first so leftover region files from a previous, larger
+    city can never survive into the export.
     """
     progress = progress or _noop
     progress(0, WORLD_WRITE_STEPS, "Reading schematic")
@@ -436,12 +458,13 @@ def schem_to_world(schem_path, out_dir, data_version=None, progress=None):
     city_ground_y = -offset[1] - 1
     base_y = TARGET_GROUND_Y - city_ground_y if offset[1] != 0 else TARGET_GROUND_Y
 
-    # Stamp at the floor format the writer emits; Minecraft upgrades it on load.
+    # Match chunks + level.dat to the source world's own version (native load).
     if data_version is None:
-        data_version = HARD_FLOOR_DATA_VERSION
+        data_version = _source_data_version(source_world)
 
     shutil.rmtree(out_dir, ignore_errors=True)
-    return write_world(grid, inv, block_entities, out_dir, data_version, base_y, progress=progress)
+    return write_world(grid, inv, block_entities, out_dir, data_version, base_y,
+                       source_world=source_world, progress=progress)
 
 
 if __name__ == "__main__":

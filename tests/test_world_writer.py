@@ -121,31 +121,73 @@ class SchemToWorldTests(unittest.TestCase):
             with Image.open(icon) as im:
                 self.assertEqual(im.size, (64, 64))
 
-    def test_world_is_stamped_at_the_floor_version_for_forward_upgrade(self):
-        # The writer emits the floor (1.20) format, so the world is stamped there
-        # regardless of the schematic's own (newer) stamp and left for Minecraft's
-        # DataFixer to upgrade forward on load. Stamping it newer skips the fixer,
-        # and the game then rejects the older-format level.dat. Provenance is also
-        # scrubbed to clean vanilla (the template was saved by a Fabric server).
+    def _fake_source_world(self, tmp, data_version):
+        """A source world dir whose level.dat is native to ``data_version``.
+
+        Mimics a normal noise world with a custom seed, extra dimension, and a
+        world data pack -- to check the export keeps that native structure and only
+        voids the overworld generator.
+        """
+        source = os.path.join(tmp, "source")
+        os.makedirs(source)
+        level = nbtlib.File({"Data": Compound({
+            "DataVersion": nbtlib.Int(data_version),
+            "Version": Compound({"Id": nbtlib.Int(data_version), "Name": String("26.1.2"), "Series": String("main")}),
+            "DataPacks": Compound({"Enabled": nbtlib.List[String]([String("vanilla"), String("myworldpack")]),
+                                   "Disabled": nbtlib.List[String]([])}),
+            "WorldGenSettings": Compound({
+                "seed": nbtlib.Long(12345),
+                "dimensions": Compound({
+                    "minecraft:overworld": Compound({
+                        "type": String("minecraft:overworld"),
+                        "generator": Compound({"type": String("minecraft:noise"), "settings": String("minecraft:overworld")}),
+                    }),
+                    "minecraft:the_nether": Compound({"type": String("minecraft:the_nether"), "generator": Compound({})}),
+                }),
+            }),
+        })})
+        level.gzipped = True
+        level.save(os.path.join(source, "level.dat"))
+        return source
+
+    def test_uses_source_level_dat_kept_native_with_overworld_voided(self):
+        # The export is built from the source world's own level.dat and stamped at
+        # its native version (no DataFixer). Only the overworld generator is voided;
+        # the rest of the native WorldGenSettings (seed, extra dims) is preserved.
         with tempfile.TemporaryDirectory() as tmp:
+            source = self._fake_source_world(tmp, 4790)  # 26.1.2
             schem = os.path.join(tmp, "city.schem")
             out = os.path.join(tmp, "world")
-            grid, inv, _ = _sample_grid()
-            palette = {state: idx for idx, state in inv.items()}
-            write_sponge_schem_grid(grid, palette, schem, 4790, offset=(0, -1, 0))  # schem: 26.1.2
+            self._write_schem(schem)
 
-            world_writer.schem_to_world(schem, out)
+            world_writer.schem_to_world(schem, out, source_world=source)
 
             data = nbtlib.load(os.path.join(out, "level.dat"))["Data"]
-            self.assertEqual(int(data["DataVersion"]), DATA_VERSION)          # floor, not 4790
-            self.assertEqual(int(data["Version"]["Id"]), DATA_VERSION)
-            self.assertNotIn("fabric", [str(b) for b in data["ServerBrands"]])
-            self.assertEqual([str(p) for p in data["DataPacks"]["Enabled"]], ["vanilla"])
-            # All dimensions are a flat void; the DataFixer upgrades the format on load.
-            dims = data["WorldGenSettings"]["dimensions"]
-            for dim in ("minecraft:overworld", "minecraft:the_nether", "minecraft:the_end"):
-                self.assertEqual(str(dims[dim]["generator"]["type"]), "minecraft:flat")
-                self.assertEqual(len(dims[dim]["generator"]["settings"]["layers"]), 0)
+            self.assertEqual(int(data["DataVersion"]), 4790)            # native, not floor
+            self.assertEqual(int(data["Version"]["Id"]), 4790)
+            wgs = data["WorldGenSettings"]
+            self.assertEqual(int(wgs["seed"]), 12345)                   # native seed preserved
+            self.assertIn("minecraft:the_nether", wgs["dimensions"])    # native dims preserved
+            self.assertEqual([str(p) for p in data["DataPacks"]["Enabled"]], ["vanilla", "myworldpack"])
+            gen = wgs["dimensions"]["minecraft:overworld"]["generator"]
+            self.assertEqual(str(gen["type"]), "minecraft:flat")        # overworld voided
+            self.assertEqual(len(gen["settings"]["layers"]), 0)
+
+    def test_source_without_worldgensettings_falls_back_to_void(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            source = os.path.join(tmp, "source")
+            os.makedirs(source)
+            level = nbtlib.File({"Data": Compound({"DataVersion": nbtlib.Int(4790)})})
+            level.gzipped = True
+            level.save(os.path.join(source, "level.dat"))
+            schem = os.path.join(tmp, "city.schem")
+            out = os.path.join(tmp, "world")
+            self._write_schem(schem)
+
+            world_writer.schem_to_world(schem, out, source_world=source)  # must not raise
+
+            dims = nbtlib.load(os.path.join(out, "level.dat"))["Data"]["WorldGenSettings"]["dimensions"]
+            self.assertEqual(str(dims["minecraft:overworld"]["generator"]["type"]), "minecraft:flat")
 
     def test_stale_world_is_cleared_before_writing(self):
         with tempfile.TemporaryDirectory() as tmp:
