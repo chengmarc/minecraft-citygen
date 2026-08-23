@@ -288,11 +288,24 @@ class ExtractionTab(QtWidgets.QWidget, ProgressMixin):
         self.detected_version_edit.setReadOnly(True)
         self.detected_version_edit.setPlaceholderText("—")
         self.detected_version_edit.setToolTip(
-            "The source world's DataVersion. Outputs are stamped with it and "
-            "WorldEdit upgrades them forward on paste, so they work in this "
+            "The source world's Minecraft version. Outputs are stamped with it "
+            "and WorldEdit upgrades them forward on paste, so they work in this "
             "version and any newer one."
         )
         header.addWidget(self.detected_version_edit)
+        header.addSpacing(12)
+        header.addWidget(QtWidgets.QLabel("Target Version"))
+        self.version_combo = QtWidgets.QComboBox(self)
+        for label, value in common.version_selector_items():
+            self.version_combo.addItem(label, value)
+        self._select_version(state.get("target_version", common.AUTO_VERSION))
+        self.version_combo.setToolTip(
+            "Indicator only: the Minecraft version you plan to paste into (the "
+            "source version or newer). It does not change the output -- the "
+            "schematic is always stamped with the source world's version and "
+            "WorldEdit upgrades it forward on paste."
+        )
+        header.addWidget(self.version_combo)
         header.addStretch(1)
         self.extract_button = QtWidgets.QPushButton("Extract", self)
         self.extract_button.setObjectName("primaryButton")
@@ -320,6 +333,7 @@ class ExtractionTab(QtWidgets.QWidget, ProgressMixin):
 
         self.world_edit.textChanged.connect(self._save_state)
         self.world_edit.textChanged.connect(self._refresh_detected_version)
+        self.version_combo.currentIndexChanged.connect(self._save_state)
         self.road_group.connect_change_handler(self._save_state)
         self.house_group.connect_change_handler(self._save_state)
         self.landmark_group.connect_change_handler(self._save_state)
@@ -341,14 +355,28 @@ class ExtractionTab(QtWidgets.QWidget, ProgressMixin):
             return
         self.owner.set_saved_config_section("extraction", state)
 
+    def _select_version(self, value):
+        index = self.version_combo.findData(value)
+        self.version_combo.setCurrentIndex(index if index >= 0 else 0)
+
     def _refresh_detected_version(self):
         path = self.world_edit.text().strip()
         version = common.detect_world_data_version(path) if path else None
-        text = str(version) if version is not None else ""
+        text = common.release_name_for(version) if version is not None else ""
         self.detected_version_edit.setText(text)
         fm = self.detected_version_edit.fontMetrics()
         measure = text if text else self.detected_version_edit.placeholderText()
         self.detected_version_edit.setFixedWidth(fm.horizontalAdvance(measure) + 20)
+        self._rebuild_version_combo(version)
+
+    def _rebuild_version_combo(self, min_data_version):
+        current = self.version_combo.currentData()
+        self.version_combo.blockSignals(True)
+        self.version_combo.clear()
+        for label, value in common.version_selector_items(min_data_version):
+            self.version_combo.addItem(label, value)
+        self._select_version(current or common.AUTO_VERSION)
+        self.version_combo.blockSignals(False)
 
     def _current_config_state(self):
         road_start, road_end = self.road_group.get_xyz_pair("Road")
@@ -356,6 +384,7 @@ class ExtractionTab(QtWidgets.QWidget, ProgressMixin):
         landmark_start, landmark_end = self.landmark_group.get_xyz_pair("Landmark")
         return {
             "world_path": self.world_edit.text().strip(),
+            "target_version": self.version_combo.currentData() or common.AUTO_VERSION,
             "road": {"start": list(road_start), "end": list(road_end)},
             "house": {"start": list(house_start), "end": list(house_end)},
             "landmark": {"start": list(landmark_start), "end": list(landmark_end)},

@@ -1,10 +1,17 @@
 from pathlib import Path
 
-from config import version_compat as vc
+from config import versions as vc
 
 
 def test_hard_floor_is_1_19_4():
     assert vc.HARD_FLOOR_DATA_VERSION == 3337
+
+
+def test_release_name_for_known_and_unknown():
+    assert vc.release_name_for(3337) == "1.19.4"
+    assert vc.release_name_for(3465) == "1.20.1"
+    # Unmapped versions fall back to the raw DataVersion.
+    assert vc.release_name_for(999999) == "DataVersion 999999"
 
 
 def test_detect_world_data_version_reads_bundled_world():

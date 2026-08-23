@@ -8,7 +8,7 @@ from config.path import DEFAULT_WORLD
 from config.path import env_raw, env_str
 from config.models import BlockRegion, BuildRegion, VerticalRange
 from config.path import region_dir_candidates, resolve_region_dir
-from config.version_compat import HARD_FLOOR_DATA_VERSION, detect_world_data_version
+from config.versions import HARD_FLOOR_DATA_VERSION, detect_world_data_version
 
 
 def _parse_tuple_like(value: str):
@@ -47,7 +47,7 @@ REGION_DIR = resolve_region_dir(SAVE)
 # DataFixer upgrades the schematic forward on paste. Resolves to the GUI-pinned
 # MC_CITY_DATA_VERSION (the source version, set explicitly because construct/render
 # do not set MC_CITY_SAVE), else the source world's detected version, else the
-# hard floor; always clamped up to the hard floor. See config/version_compat.py.
+# hard floor; always clamped up to the hard floor. See config/versions.py.
 def _resolve_data_version() -> int:
     raw = env_raw("DATA_VERSION")
     if raw is not None:

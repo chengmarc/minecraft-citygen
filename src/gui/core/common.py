@@ -16,7 +16,7 @@ from config.path import (
 )
 from config.world import BUILD_TYPES, ROAD_BOX, SAVE
 from config.models import BlockRegion, BuildRegion
-from config.version_compat import HARD_FLOOR_DATA_VERSION, detect_world_data_version
+from config.versions import HARD_FLOOR_DATA_VERSION, RELEASE_NAMES, detect_world_data_version, release_name_for
 
 
 class SeedError(ValueError):
@@ -250,19 +250,42 @@ def default_extraction_tab_config():
     landmark_start, landmark_end = region_to_xyz_pair(first_build_region(BUILD_TYPES, 2))
     return {
         "world_path": SAVE,
+        "target_version": AUTO_VERSION,
         "road": _serialize_xyz_pair(road_start, road_end),
         "house": _serialize_xyz_pair(house_start, house_end),
         "landmark": _serialize_xyz_pair(landmark_start, landmark_end),
     }
 
 
+# Sentinel meaning "no explicit paste target chosen" in the selector.
+AUTO_VERSION = "auto"
+
+
+def version_selector_items(min_data_version=None):
+    """(label, value) pairs for the paste-target dropdown, newest first.
+
+    Indicator only: it lists the Minecraft versions the output can be pasted into
+    -- the source version and newer -- so the user can confirm the target. It
+    does not affect the stamp, which is always the source version (see
+    source_stamp_data_version). When min_data_version is given, only versions at
+    or above it are listed.
+    """
+    items = [("Auto", AUTO_VERSION)]
+    items.extend(
+        (name, name)
+        for dv, name in sorted(RELEASE_NAMES.items(), reverse=True)
+        if min_data_version is None or dv >= min_data_version
+    )
+    return items
+
+
 def source_stamp_data_version(world_path):
     """DataVersion to stamp on outputs: the source world's own version.
 
-    Forward-only compatibility means outputs are always stamped with the source
-    world's version (clamped to the hard floor) and left for WorldEdit's DataFixer
-    to upgrade forward on paste. Stamping any newer version would skip that fixer
-    and hole out blocks that were renamed since the source.
+    Outputs are always stamped with the source world's version (clamped to the
+    hard floor) and left for WorldEdit's DataFixer to upgrade forward on paste.
+    Stamping any newer version would skip that fixer and hole out blocks that were
+    renamed since the source.
     """
     detected = detect_world_data_version(world_path)
     resolved = detected if detected is not None else HARD_FLOOR_DATA_VERSION

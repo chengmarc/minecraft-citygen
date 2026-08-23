@@ -39,7 +39,7 @@ the source world's own version or newer, so every block in the palette is
 guaranteed to exist in the target — WorldEdit handles the forward upgrade for
 free, and there is no downgrade or "missing block" computation to do.
 
-This is handled by [config/version_compat.py](../src/config/version_compat.py):
+This is handled by [config/versions.py](../src/config/versions.py):
 
 - outputs are **always stamped with the source world's `DataVersion`** (read
   from its `level.dat`, else the 1.19.4 hard floor, and clamped up to that floor).
@@ -52,10 +52,13 @@ This is handled by [config/version_compat.py](../src/config/version_compat.py):
   the default world.
 
 The supported floor is Minecraft 1.19.4 (`HARD_FLOOR_DATA_VERSION` in
-`version_compat.py`). There is no version table or per-block map: because the
-stamp is always the source world's own version, `version_compat.py` only needs
-to read that version (`detect_world_data_version`) and clamp it to the floor.
-The Extraction tab shows the detected source `DataVersion` for reference.
+`versions.py`). CityGen does no version conversion of its own, so there is no
+compatibility table or per-block map — `versions.py` just reads the source
+version (`detect_world_data_version`), and holds a small `RELEASE_NAMES` map that
+turns DataVersions into release names for display. The Extraction tab shows the
+detected source version and a **Target Version** selector; that selector is an
+indicator of which versions the output can be pasted into (the source version and
+newer) and does not change the stamp.
 
 ### Block Entities
 
