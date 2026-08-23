@@ -7,16 +7,12 @@ import importlib
 from pipeline.runtime import configured_environment
 from pipeline.stages import stage_module
 
+# Stage module paths used directly by the GUI preview buttons. Other callers
+# resolve stage modules on demand via stage_module(<key>).
 ROADS_SIMULATION = stage_module("roads_simulation")
-ROADS_EXTRACT = stage_module("roads_extract")
-ROADS_RENDER = stage_module("roads_render")
 BUILDS_SIMULATION = stage_module("builds_simulation")
-BUILDS_EXTRACT = stage_module("builds_extract")
-BUILDS_RENDER = stage_module("builds_render")
 GRID_SIMULATION = stage_module("grid_simulation")
 CITY_SIMULATION = stage_module("city_simulation")
-CITY_CONSTRUCT = stage_module("city_construct")
-CITY_RENDER = stage_module("city_render")
 
 _PROGRESS_STAGE_LABELS = {
     "construct": "Constructing",

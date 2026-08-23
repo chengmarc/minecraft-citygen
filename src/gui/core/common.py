@@ -318,13 +318,6 @@ def stamp_version_env(world_path):
     return {"MC_CITY_DATA_VERSION": str(source_stamp_data_version(world_path))}
 
 
-def target_version_summary(world_path, choice):
-    """Short human label for the resolved target, e.g. 'Auto -> 1.19.4'."""
-    resolved = resolve_target_data_version(world_path, choice)
-    name = release_name_for(resolved)
-    return f"Auto -> {name}" if choice == AUTO_VERSION else name
-
-
 def load_saved_gui_config():
     if not os.path.exists(SAVED_GUI_CONFIG_PATH) and os.path.exists(LEGACY_SAVED_GUI_CONFIG_PATH):
         try:

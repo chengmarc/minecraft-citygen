@@ -8,10 +8,9 @@ from PySide6 import QtGui, QtWidgets
 
 from gui.core import common
 
-# Brand palette. ACCENT_HEX mirrors the accent used throughout APP_STYLESHEET;
-# ACCENT_RGB is the same colour for constructing QColor objects in code.
+# Brand palette. ACCENT_RGB is the accent (#0d6efd) used throughout
+# APP_STYLESHEET, kept here for constructing QColor objects in code.
 ACCENT_RGB = (13, 110, 253)
-ACCENT_HEX = "#0d6efd"
 SHADOW_RGB = (23, 32, 43)
 
 APP_STYLESHEET = """

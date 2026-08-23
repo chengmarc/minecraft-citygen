@@ -6,7 +6,10 @@ from types import SimpleNamespace
 import pytest
 
 from pipeline import services
-from pipeline.stages import PIPELINE_STAGE_MODULES, RELOAD_ORDER
+from pipeline.stages import PIPELINE_STAGE_MODULES, RELOAD_ORDER, stage_module
+
+BUILDS_EXTRACT = stage_module("builds_extract")
+BUILDS_RENDER = stage_module("builds_render")
 
 
 def test_reload_order_stays_in_sync_with_stage_registry():
@@ -53,7 +56,7 @@ def test_run_build_extraction_pipeline_adapts_progress_labels(monkeypatch):
             calls.append((module_name, kwargs["logger"]))
             progress = kwargs.get("progress")
             if progress is not None:
-                if module_name == services.BUILDS_EXTRACT:
+                if module_name == BUILDS_EXTRACT:
                     progress(1, 4, "Scanning")
                 else:
                     progress(4, 4, "Rendering sheet")
@@ -71,16 +74,16 @@ def test_run_build_extraction_pipeline_adapts_progress_labels(monkeypatch):
     )
 
     assert calls == [
-        (services.BUILDS_EXTRACT, "logger"),
-        (services.BUILDS_RENDER, "logger"),
+        (BUILDS_EXTRACT, "logger"),
+        (BUILDS_RENDER, "logger"),
     ]
     assert progress_events == [
         ("Extracting", 1, 4, "Scanning"),
         ("Rendering", 4, 4, "Rendering sheet"),
     ]
     assert result == {
-        "extract": services.BUILDS_EXTRACT,
-        "render": services.BUILDS_RENDER,
+        "extract": BUILDS_EXTRACT,
+        "render": BUILDS_RENDER,
     }
 
 
