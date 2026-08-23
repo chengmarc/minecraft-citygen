@@ -114,6 +114,13 @@ class SchemToWorldTests(unittest.TestCase):
             world = World(region_dir=os.path.join(out, "region"), save_path=out)
             self.assertNotIn(world.block(int(px), int(py) - 1, int(pz))[0], world_writer.AIR_NAMES)
 
+            # The app icon is written as the 64x64 world icon for the save list.
+            from PIL import Image
+            icon = os.path.join(out, "icon.png")
+            self.assertTrue(os.path.exists(icon))
+            with Image.open(icon) as im:
+                self.assertEqual(im.size, (64, 64))
+
     def test_stale_world_is_cleared_before_writing(self):
         with tempfile.TemporaryDirectory() as tmp:
             schem = os.path.join(tmp, "city.schem")

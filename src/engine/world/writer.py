@@ -25,7 +25,7 @@ import numpy as np
 import nbtlib
 from nbtlib import Byte, Compound, Double, Float, Int, List, Long, LongArray, Short, String
 
-from config.path import DEFAULT_WORLD
+from config.path import DEFAULT_WORLD, GUI
 from engine.schematic.reader import (
     decode_schem_array,
     decode_schem_block_entities,
@@ -41,6 +41,10 @@ HEIGHTMAP_BITS = (WORLD_HEIGHT).bit_length()  # 9
 
 TARGET_GROUND_Y = 64  # world Y the city ground plane is seated at
 AIR_NAMES = frozenset({"minecraft:air", "minecraft:cave_air", "minecraft:void_air"})
+
+# Minecraft shows this in the save list; the app icon doubles as the world icon.
+APP_ICON = os.path.join(GUI, "icons", "app-icon.png")
+WORLD_ICON_SIZE = 64
 
 # Coarse progress steps a world export reports (read, compose, encode, level, done).
 WORLD_WRITE_STEPS = 4
@@ -258,6 +262,7 @@ def write_world(grid, inv, block_entities, out_dir, data_version, base_y, origin
     if spawn is None:
         spawn = (anchor_x + origin[0], anchor_top + base_y + 1, anchor_z + origin[1])
     _write_level_dat(out_dir, data_version, spawn)
+    _write_world_icon(out_dir)
     progress(WORLD_WRITE_STEPS, WORLD_WRITE_STEPS, "World saved")
 
     return {
@@ -296,6 +301,19 @@ def _chunk_block_entities(block_entities, cx, cz, origin, base_y):
             entry[key] = value
         out.append(entry)
     return out
+
+
+def _write_world_icon(out_dir):
+    """Copy the app icon in as the world's icon.png (64x64) for the save list."""
+    if not os.path.exists(APP_ICON):
+        return
+    try:
+        from PIL import Image
+    except ImportError:
+        return
+    with Image.open(APP_ICON) as img:
+        icon = img.convert("RGBA").resize((WORLD_ICON_SIZE, WORLD_ICON_SIZE), Image.LANCZOS)
+        icon.save(os.path.join(out_dir, "icon.png"))
 
 
 def _write_level_dat(out_dir, data_version, spawn):
