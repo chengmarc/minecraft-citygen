@@ -26,6 +26,7 @@ import nbtlib
 from nbtlib import Byte, Compound, Double, Float, Int, List, Long, LongArray, Short, String
 
 from config.path import DEFAULT_WORLD, GUI
+from config.versions import release_name_for
 from engine.schematic.reader import (
     decode_schem_array,
     decode_schem_block_entities,
@@ -321,6 +322,17 @@ def _write_level_dat(out_dir, data_version, spawn):
     level = nbtlib.load(os.path.join(DEFAULT_WORLD, "level.dat"))
     data = level["Data"]
     data["DataVersion"] = Int(data_version)
+    # The Version compound is copied from the bundled 1.20 template; leaving it
+    # stale makes Minecraft show the world as 1.20 and, worse, disagree with
+    # DataVersion (Version.Id != DataVersion) so a newer game reports data errors.
+    # Stamp it to match the exported version. (Name is cosmetic; Id is what counts.)
+    version = data.get("Version")
+    if version is None:
+        version = Compound({"Series": String("main")})
+        data["Version"] = version
+    version["Id"] = Int(data_version)
+    version["Name"] = String(release_name_for(data_version))
+    version["Snapshot"] = Byte(0)
     data["LevelName"] = String("CityGen City")
     data["GameType"] = Int(1)          # creative, to fly around the void city
     data["allowCommands"] = Byte(1)
@@ -352,6 +364,12 @@ def _write_level_dat(out_dir, data_version, spawn):
     player["HurtTime"] = Short(0)
     player["HurtByTimestamp"] = Int(0)
     data["Player"] = player
+
+    # The bundled template was saved by a Fabric server; scrub that provenance so
+    # a vanilla client doesn't warn about a missing "fabric" data pack.
+    data["DataPacks"] = Compound({"Enabled": List[String]([String("vanilla")]), "Disabled": List[String]([])})
+    data["ServerBrands"] = List[String]([String("vanilla")])
+    data["WasModded"] = Byte(0)
 
     settings = data["WorldGenSettings"]["dimensions"]["minecraft:overworld"]["generator"]["settings"]
     settings["layers"] = List[Compound]([])          # no layers -> void

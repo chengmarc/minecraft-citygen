@@ -121,6 +121,27 @@ class SchemToWorldTests(unittest.TestCase):
             with Image.open(icon) as im:
                 self.assertEqual(im.size, (64, 64))
 
+    def test_version_and_provenance_match_the_exported_version(self):
+        # A source newer than the 1.20 template must not leak the template's
+        # version/provenance: Version.Id has to equal DataVersion (else Minecraft
+        # shows the wrong version and reports data errors), and the Fabric brand /
+        # data pack from the bundled world must be scrubbed.
+        with tempfile.TemporaryDirectory() as tmp:
+            schem = os.path.join(tmp, "city.schem")
+            out = os.path.join(tmp, "world")
+            grid, inv, block_entities = _sample_grid()
+            palette = {state: idx for idx, state in inv.items()}
+            write_sponge_schem_grid(grid, palette, schem, 4790, offset=(0, -1, 0))  # 26.1.2
+
+            world_writer.schem_to_world(schem, out)
+
+            data = nbtlib.load(os.path.join(out, "level.dat"))["Data"]
+            self.assertEqual(int(data["DataVersion"]), 4790)
+            self.assertEqual(int(data["Version"]["Id"]), 4790)
+            self.assertEqual(str(data["Version"]["Name"]), "26.1.2")
+            self.assertNotIn("fabric", [str(b) for b in data["ServerBrands"]])
+            self.assertEqual([str(p) for p in data["DataPacks"]["Enabled"]], ["vanilla"])
+
     def test_stale_world_is_cleared_before_writing(self):
         with tempfile.TemporaryDirectory() as tmp:
             schem = os.path.join(tmp, "city.schem")
