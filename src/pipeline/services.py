@@ -19,6 +19,7 @@ BUILDS_EXTRACT = stage_module("builds_extract")
 BUILDS_RENDER = stage_module("builds_render")
 CITY_CONSTRUCT = stage_module("city_construct")
 CITY_RENDER = stage_module("city_render")
+WORLD_EXPORT = stage_module("world_export")
 
 
 def _load_stage_runner(stage_key):
@@ -112,6 +113,15 @@ def run_city_render_stage(*, env_overrides=None, logger=None, progress=None):
         logger=logger,
         progress=_progress_adapter(progress, "city_render"),
     )
+
+
+def run_world_export_stage(seed, *, env_overrides=None, logger=None, progress=None):
+    with configured_environment(env_overrides):
+        return _load_stage_runner("world_export")(
+            seed=_coerce_int(seed, "Seed"),
+            logger=logger,
+            progress=_progress_adapter(progress, "world_export"),
+        )
 
 
 def run_road_extraction_pipeline(*, env_overrides=None, logger=None, progress=None):

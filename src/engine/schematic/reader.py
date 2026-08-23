@@ -62,6 +62,11 @@ def decode_schem(path):
     return width, height, length, inv, vals
 
 
+def decode_schem_data_version(path):
+    """The Minecraft ``DataVersion`` the schematic was stamped with."""
+    return int(_load_schem(path)["DataVersion"])
+
+
 def decode_schem_offset(path):
     schem = _load_schem(path)
     if "Offset" not in schem:

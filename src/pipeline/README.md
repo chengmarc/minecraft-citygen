@@ -1,9 +1,10 @@
 # pipeline — stage orchestration
 
 The pipeline drives [engine](../engine/README.md) and [config](../config/README.md)
-through four numbered stages to produce the simulation previews and production
-schematics. Each stage exposes a uniform `run(*, logger=None, progress=None, ...)`
-entry so the GUI and CLI can call it the same way.
+through five numbered stages to produce the simulation previews, production
+schematics, and a ready-to-play world. Each stage exposes a uniform
+`run(*, logger=None, progress=None, ...)` entry so the GUI and CLI can call it the
+same way.
 
 ← Back to the [source architecture overview](../README.md).
 
@@ -18,10 +19,11 @@ entry so the GUI and CLI can call it the same way.
 | `02_builds/` | `extract`, `simulation`, `render` |
 | `03_grid/` | `simulation`, `construct`, `render` |
 | `04_city/` | `simulation`, `construct`, `render` |
+| `05_world/` | `world` |
 
 `extract` pulls assets from the world, `simulation` renders fast PNG previews,
-`construct` builds production `.schem` output, and `render` produces isometric
-PNGs.
+`construct` builds production `.schem` output, `render` produces isometric PNGs,
+and `world` exports the final city as a standalone Minecraft save.
 
 ## Pipeline stages
 
@@ -47,6 +49,14 @@ seed, samples type-2 stack counts, assembles rotated building schematics, places
 roads and buildings into one master 3D grid, optionally fills non-road ground
 cells, and writes the Sponge `.schem` (with an offset so the WorldEdit paste
 origin lands correctly).
+
+**5. World.** [05_world/world.py](05_world/world.py) reads the final city `.schem`
+and writes a standalone, ready-to-play void world to `artifacts/saves/seed_<n>_world/`
+(via [`engine.world.writer`](../engine/world/writer.py), the inverse of the Anvil
+reader). It slices the city into chunks, seats the ground near y=64, centres the
+city on the world origin, and pins the player spawn to solid ground — so the world
+loads and drops the player onto the city with no WorldEdit needed. Everything
+outside the city is left as void.
 
 ## In-world asset conventions
 
@@ -126,11 +136,13 @@ artifacts/builds/production/*.schem
 artifacts/builds/production/buildings.json
 artifacts/grid/production/seed_<n>.schem
 artifacts/city/production/seed_<n>.schem
+artifacts/saves/seed_<n>_world/                   # standalone playable world
 artifacts/*/*/*.png                        # preview and render images
 ```
 
 The final city schematic in `artifacts/city/production/` is a Sponge `.schem`
-ready to import with WorldEdit.
+ready to import with WorldEdit; `artifacts/saves/seed_<n>_world/` is a standalone world
+folder you can drop straight into `.minecraft/saves/`.
 
 ## Running stages
 
@@ -142,4 +154,5 @@ python -m pipeline.03_grid.construct --seed 5
 python -m pipeline.04_city.simulation --seed 5
 python -m pipeline.04_city.construct --seed 5
 python -m pipeline.04_city.render
+python -m pipeline.05_world.world --seed 5
 ```

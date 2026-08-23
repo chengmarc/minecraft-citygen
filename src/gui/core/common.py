@@ -100,11 +100,13 @@ PREVIEW_PROGRESS_WEIGHTS = [
     ("pipeline.04_city.simulation", 35),
 ]
 
-# Per-step weights for the render-tab progress bar.
-# Eight entries cover the eight city_construct work segments (steps 0→1 through 7→8).
-# RENDER_RENDER_WEIGHT covers the final isometric-render stage.
-RENDER_CONSTRUCT_WEIGHTS = [3, 4, 2, 8, 18, 12, 8, 8]   # sum = 63
-RENDER_RENDER_WEIGHT = 37
+# Per-step weights for the Generation-tab progress bar. The Generate button runs
+# three stages back to back: construct the .schem, render the isometric PNG, then
+# export the standalone world. Eight entries cover the eight city_construct work
+# segments (steps 0→1 through 7→8); the other two cover the render and world stages.
+GENERATION_CONSTRUCT_WEIGHTS = [3, 4, 2, 8, 18, 12, 8, 8]   # sum = 63
+GENERATION_RENDER_WEIGHT = 37
+GENERATION_WORLD_WEIGHT = 20
 
 # Per-stage weights for the extraction-tab progress bar, in run order: roads
 # extract, roads render, builds extract, builds render. The scanning-heavy
@@ -137,7 +139,7 @@ def stage_script_label(module):
 
 
 def format_stage_status(step, total_steps, module, annotation=""):
-    """Consistent progress status shared by the Preview and Render tabs.
+    """Consistent progress status shared by the Preview and Generation tabs.
 
     ``'Stage 1/2 - pipeline/04_city/construct.py - Writing schematic'``. The
     trailing annotation is omitted when empty.

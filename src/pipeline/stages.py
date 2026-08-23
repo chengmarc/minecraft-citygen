@@ -32,6 +32,7 @@ PIPELINE_DEPENDENCY_MODULES = (
     "engine.schematic.road",
     "engine.schematic.building",
     "engine.world.anvil_world_reader",
+    "engine.world.writer",
 )
 
 ORDERED_STAGE_SPECS = (
@@ -47,6 +48,7 @@ ORDERED_STAGE_SPECS = (
     StageSpec("city_simulation", "pipeline.04_city.simulation"),
     StageSpec("city_construct", "pipeline.04_city.construct"),
     StageSpec("city_render", "pipeline.04_city.render"),
+    StageSpec("world_export", "pipeline.05_world.world"),
 )
 
 STAGES = {spec.key: spec for spec in ORDERED_STAGE_SPECS}

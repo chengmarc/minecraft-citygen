@@ -3,8 +3,8 @@
 <div align="center">
   <img src="src/gui/icons/app-icon.png" alt="CityGen app icon" width="180">
   <br><br>
+  <img src="https://img.shields.io/badge/Version-1.0.0-6495ED?style=for-the-badge" alt="Release 1.0.0">
   <img src="https://img.shields.io/badge/Minecraft-%E2%89%A5%201.20-4C9A2A?style=for-the-badge" alt="Minecraft >= 1.20">
-  <img src="https://img.shields.io/badge/WorldEdit-%E2%89%A5%207.3.0-1E88E5?style=for-the-badge" alt="WorldEdit >= 7.3.0">
   <h3>
     Download <a href="https://github.com/CDS-SP/minecraft-citygen/releases/download/v0.4.1/CityGen-setup.exe">Windows Installer (.exe)</a> or 
     <a href="https://github.com/CDS-SP/minecraft-citygen/releases/download/v0.4.1/CityGen-portable-windows.zip">Compressed Portable (.zip)</a>
@@ -15,8 +15,6 @@
 **Build a TheoTown style Minecraft city from your own roads and buildings in minutes.**
 
 This project turns a small handcrafted asset set into a complete city layout, preview, and paste-ready in-game result. It is designed for creators who want large-scale city generation without giving up the look and feel of their own Minecraft builds.
-
-CityGen requires **WorldEdit** to paste the generated schematics. [**Download it here**](https://www.curseforge.com/minecraft/mc-mods/worldedit)
 
 ## Rendering Result
 
@@ -90,7 +88,7 @@ See the [source architecture overview](src/README.md) and its per-package guides
 ([config](src/config/README.md), [engine](src/engine/README.md),
 [gui](src/gui/README.md), [pipeline](src/pipeline/README.md)).
 
-### Supported Versions
+### Supported Minecraft Versions
 
 ![26.1](https://img.shields.io/badge/26.1-404040)
 ![26.1.1](https://img.shields.io/badge/26.1.1-404040)

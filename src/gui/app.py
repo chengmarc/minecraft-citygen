@@ -10,7 +10,7 @@ from PySide6 import QtGui, QtWidgets
 
 from gui.core import common
 from gui.widgets.qt_viewer import ensure_application
-from gui.tabs import ExtractionTab, PreviewTab, RenderTab
+from gui.tabs import ExtractionTab, GenerationTab, PreviewTab
 from gui.core.theme import configure_app_style
 
 
@@ -26,14 +26,14 @@ class CityGeneratorQtApp(QtWidgets.QMainWindow):
         self._saved_gui_config = common.load_saved_gui_config()
 
         preview_tab = PreviewTab(self)
-        render_tab = RenderTab(self)
-        preview_tab.set_peer(render_tab)
-        render_tab.set_peer(preview_tab)
+        generation_tab = GenerationTab(self)
+        preview_tab.set_peer(generation_tab)
+        generation_tab.set_peer(preview_tab)
 
         tabs = QtWidgets.QTabWidget(self)
         tabs.addTab(ExtractionTab(self), "Extraction")
         tabs.addTab(preview_tab, "Preview")
-        tabs.addTab(render_tab, "Render")
+        tabs.addTab(generation_tab, "Generation")
         self.setCentralWidget(tabs)
 
     def get_saved_config_section(self, section):

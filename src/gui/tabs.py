@@ -1,4 +1,4 @@
-"""The three main application tabs: Extraction, Preview, and Render."""
+"""The three main application tabs: Extraction, Preview, and Generation."""
 
 from __future__ import annotations
 
@@ -7,7 +7,7 @@ import threading
 
 from PySide6 import QtCore, QtWidgets
 
-from config.path import CITY_PROD
+from config.path import SAVES
 from config.world import SAVE
 from config.path import has_region_files
 from pipeline import services
@@ -24,11 +24,12 @@ PROGRESS_BAR_SCALE = 1000
 # Pipeline-progress ticks are tagged with their stage module. Each tab maps that
 # module to a step index so the status reads consistently, e.g.
 # "Stage 1/2 - pipeline/04_city/construct.py - <detail>".
-RENDER_STAGE_STEPS = {
+GENERATION_STAGE_STEPS = {
     services.CITY_CONSTRUCT: 1,
     services.CITY_RENDER: 2,
+    services.WORLD_EXPORT: 3,
 }
-RENDER_TOTAL_STEPS = len(RENDER_STAGE_STEPS)
+GENERATION_TOTAL_STEPS = len(GENERATION_STAGE_STEPS)
 
 # Extract runs four scripts in sequence: roads then builds, each extract + render.
 EXTRACT_STAGE_STEPS = {
@@ -123,7 +124,7 @@ class PreviewTab(QtWidgets.QWidget, WeightedTaskMixin):
         self.city_viewer.load_image(common.city_preview_path(seed))
 
 
-class RenderTab(QtWidgets.QWidget, ProgressMixin):
+class GenerationTab(QtWidgets.QWidget, ProgressMixin):
     def __init__(self, owner):
         super().__init__(owner)
         self.owner = owner
@@ -135,16 +136,16 @@ class RenderTab(QtWidgets.QWidget, ProgressMixin):
 
         layout = QtWidgets.QVBoxLayout(self)
         layout.setSpacing(0)
-        self.city_viewer = QtImageViewer("City Schematic Render", "Click Render to construct and render the city schematic.", self)
+        self.city_viewer = QtImageViewer("City Schematic Render", "Click Generate to build the city, render it, and export the world.", self)
         layout.addWidget(self.city_viewer, 1)
         layout.addSpacing(20)
 
         self.controls = AlgoControlsWidget(
-            "Render",
-            self._run_render,
+            "Generate",
+            self._run_generate,
             state,
             action_icon_name="render.png",
-            extra_actions=[("Copy City", self._open_output_folder, "folder.png")],
+            extra_actions=[("Copy World", self._open_output_folder, "folder.png")],
             parent=self,
         )
         self.controls.connect_change_handler(self._save_state)
@@ -178,49 +179,57 @@ class RenderTab(QtWidgets.QWidget, ProgressMixin):
         return common.stamp_version_env(world_path)
 
     def _open_output_folder(self):
-        if not os.path.isdir(CITY_PROD):
-            QtWidgets.QMessageBox.critical(self, "Output folder missing", CITY_PROD)
-            return
+        """Open the exported-worlds folder so the user can copy a world into saves/."""
+        os.makedirs(SAVES, exist_ok=True)
         try:
-            common.open_in_file_manager(CITY_PROD)
+            common.open_in_file_manager(SAVES)
         except OSError as exc:
-            QtWidgets.QMessageBox.critical(self, "Could not open output folder", str(exc))
+            QtWidgets.QMessageBox.critical(self, "Could not open worlds folder", str(exc))
 
     def _on_pipeline_progress(self, stage, completed, total, label):
         n = int(completed)
-        c_weights = common.RENDER_CONSTRUCT_WEIGHTS
-        r_weight = common.RENDER_RENDER_WEIGHT
-        scale = float(sum(c_weights) + r_weight)
+        c_weights = common.GENERATION_CONSTRUCT_WEIGHTS
+        r_weight = common.GENERATION_RENDER_WEIGHT
+        w_weight = common.GENERATION_WORLD_WEIGHT
+        scale = float(sum(c_weights) + r_weight + w_weight)
+
+        def bar(weight_prefix):
+            return int(round(weight_prefix / scale * PROGRESS_BAR_SCALE))
 
         self._cancel_progress_animation()
 
         if stage == services.CITY_CONSTRUCT:
-            prefix = sum(c_weights[:n])
-            milestone = int(round(prefix / scale * PROGRESS_BAR_SCALE))
+            # Construct reports discrete work segments; each owns one c_weight.
+            milestone = bar(sum(c_weights[:n]))
             self.progress_bar.setValue(milestone)
             if n < len(c_weights):
-                next_ms = int(round((prefix + c_weights[n]) / scale * PROGRESS_BAR_SCALE))
+                next_ms = bar(sum(c_weights[:n]) + c_weights[n])
                 self._progress_soft_target = milestone + int(
                     (next_ms - milestone) * common.SCRIPT_PROGRESS_HEADROOM
                 )
                 self._progress_timer.start(common.SCRIPT_PROGRESS_TICK_MS)
         else:
-            c_bar = int(round(sum(c_weights) / scale * PROGRESS_BAR_SCALE))
+            # Render and world each own a trailing segment, filled by n/total.
+            if stage == services.CITY_RENDER:
+                seg_start, seg_weight = sum(c_weights), r_weight
+            else:  # services.WORLD_EXPORT
+                seg_start, seg_weight = sum(c_weights) + r_weight, w_weight
+            bar_start = bar(seg_start)
+            seg_span = bar(seg_start + seg_weight) - bar_start
             t = float(total) if total > 0 else 1.0
-            r_span = PROGRESS_BAR_SCALE - c_bar
-            milestone = c_bar + int(round(n / t * r_span))
+            milestone = bar_start + int(round(n / t * seg_span))
             self.progress_bar.setValue(milestone)
             if n < total:
-                next_ms = c_bar + int(round((n + 1) / t * r_span))
+                next_ms = bar_start + int(round((n + 1) / t * seg_span))
                 self._progress_soft_target = milestone + int(
                     (next_ms - milestone) * common.SCRIPT_PROGRESS_HEADROOM
                 )
                 self._progress_timer.start(common.SCRIPT_PROGRESS_TICK_MS)
 
         annotation = label or f"{n}/{int(total)}"
-        self.set_status(common.format_stage_status(RENDER_STAGE_STEPS[stage], RENDER_TOTAL_STEPS, stage, annotation))
+        self.set_status(common.format_stage_status(GENERATION_STAGE_STEPS[stage], GENERATION_TOTAL_STEPS, stage, annotation))
 
-    def _run_render(self):
+    def _run_generate(self):
         seed = self.controls.seed_edit.text().strip()
         try:
             common.validate_seed(seed)
@@ -236,7 +245,7 @@ class RenderTab(QtWidgets.QWidget, ProgressMixin):
         env.update(self._stamp_version_env())
 
         self.controls.action_button.setEnabled(False)
-        self.set_status("Starting render...")
+        self.set_status("Starting generation...")
         self.progress_bar.setRange(0, PROGRESS_BAR_SCALE)
         self.progress_bar.setValue(0)
 
@@ -246,7 +255,7 @@ class RenderTab(QtWidgets.QWidget, ProgressMixin):
         signals.success.connect(lambda payload: (
             self.city_viewer.load_image(common.city_render_path(payload)),
             self._finish_progress(),
-            self.set_status("Render complete"),
+            self.set_status("Generation complete"),
         ))
         signals.finished.connect(lambda: (self._stop_progress(), self.controls.action_button.setEnabled(True)))
 
@@ -257,8 +266,9 @@ class RenderTab(QtWidgets.QWidget, ProgressMixin):
             try:
                 services.run_city_construct_stage(seed, fine, env_overrides=env, progress=on_progress)
                 services.run_city_render_stage(env_overrides=env, progress=on_progress)
+                services.run_world_export_stage(seed, env_overrides=env, progress=on_progress)
             except Exception as exc:  # boundary: surface any background failure to the UI
-                signals.failed.emit("Render failed", str(exc).strip() or "Render failed", "Render failed")
+                signals.failed.emit("Generation failed", str(exc).strip() or "Generation failed", "Generation failed")
             else:
                 signals.success.emit(seed)
             finally:

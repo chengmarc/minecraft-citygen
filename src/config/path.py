@@ -146,6 +146,9 @@ BUILD_CATALOG = str(Path(BUILDS_PROD) / "buildings.json")
 CITY_SIM = _artifact_dir("city", "simulation")
 CITY_PROD = _artifact_dir("city", "production")
 
+# Standalone Minecraft worlds exported from the final city (one folder per seed).
+SAVES = _artifact_dir("saves")
+
 COLOR_RENDER_CSV = str(Path(CONFIG) / "color_render.csv")
 
 
