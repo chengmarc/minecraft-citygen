@@ -16,14 +16,7 @@ from config.path import (
 )
 from config.world import BUILD_TYPES, ROAD_BOX, SAVE
 from config.models import BlockRegion, BuildRegion
-from config.version_compat import (
-    FALLBACK_DATA_VERSION,
-    RELEASES,
-    SUPPORTED_FLOOR,
-    data_version_for,
-    detect_world_data_version,
-    release_name_for,
-)
+from config.version_compat import HARD_FLOOR_DATA_VERSION, detect_world_data_version
 
 
 class SeedError(ValueError):
@@ -257,56 +250,23 @@ def default_extraction_tab_config():
     landmark_start, landmark_end = region_to_xyz_pair(first_build_region(BUILD_TYPES, 2))
     return {
         "world_path": SAVE,
-        "target_version": AUTO_VERSION,
         "road": _serialize_xyz_pair(road_start, road_end),
         "house": _serialize_xyz_pair(house_start, house_end),
         "landmark": _serialize_xyz_pair(landmark_start, landmark_end),
     }
 
 
-# Sentinel stored in config when the target version tracks the source world.
-AUTO_VERSION = "auto"
-
-
-def version_selector_items(min_data_version=None):
-    """(label, value) pairs for the target-version dropdown, newest first.
-
-    If min_data_version is given, only versions at or above it are included.
-    """
-    items = [("Auto", AUTO_VERSION)]
-    items.extend(
-        (name, name) for name, ver in reversed(RELEASES)
-        if min_data_version is None or ver >= min_data_version
-    )
-    return items
-
-
-def resolve_target_data_version(world_path, choice):
-    """Resolve a stored version choice to a concrete DataVersion int.
-
-    ``auto`` detects the source world's own version (fallback if unreadable);
-    any other value is a known release name.
-    """
-    if choice and choice != AUTO_VERSION:
-        known = data_version_for(choice)
-        if known is not None:
-            return known
-    detected = detect_world_data_version(world_path)
-    resolved = detected if detected is not None else FALLBACK_DATA_VERSION
-    # Never target below the hard floor, even if the source world is older.
-    return max(resolved, SUPPORTED_FLOOR)
-
-
 def source_stamp_data_version(world_path):
     """DataVersion to stamp on outputs: the source world's own version.
 
-    Forward-only compatibility means outputs are *always* stamped with the source
+    Forward-only compatibility means outputs are always stamped with the source
     world's version (clamped to the hard floor) and left for WorldEdit's DataFixer
     to upgrade forward on paste. Stamping any newer version would skip that fixer
-    and hole out blocks that were renamed since the source. The Target Version
-    selector is informational only and does not change this stamp.
+    and hole out blocks that were renamed since the source.
     """
-    return resolve_target_data_version(world_path, AUTO_VERSION)
+    detected = detect_world_data_version(world_path)
+    resolved = detected if detected is not None else HARD_FLOOR_DATA_VERSION
+    return max(resolved, HARD_FLOOR_DATA_VERSION)
 
 
 def stamp_version_env(world_path):

@@ -8,11 +8,7 @@ from config.path import DEFAULT_WORLD
 from config.path import env_raw, env_str
 from config.models import BlockRegion, BuildRegion, VerticalRange
 from config.path import region_dir_candidates, resolve_region_dir
-from config.version_compat import (
-    FALLBACK_DATA_VERSION,
-    SUPPORTED_FLOOR,
-    detect_world_data_version,
-)
+from config.version_compat import HARD_FLOOR_DATA_VERSION, detect_world_data_version
 
 
 def _parse_tuple_like(value: str):
@@ -50,15 +46,15 @@ REGION_DIR = resolve_region_dir(SAVE)
 # compatibility: this is always the source world's own version, so WorldEdit's
 # DataFixer upgrades the schematic forward on paste. Resolves to the GUI-pinned
 # MC_CITY_DATA_VERSION (the source version, set explicitly because construct/render
-# do not set MC_CITY_SAVE), else the source world's detected version, else a sane
-# fallback; clamped up to the hard floor. See config/version_compat.py.
+# do not set MC_CITY_SAVE), else the source world's detected version, else the
+# hard floor; always clamped up to the hard floor. See config/version_compat.py.
 def _resolve_data_version() -> int:
     raw = env_raw("DATA_VERSION")
     if raw is not None:
-        return max(int(raw.strip()), SUPPORTED_FLOOR)
+        return max(int(raw.strip()), HARD_FLOOR_DATA_VERSION)
     detected = detect_world_data_version(SAVE)
-    resolved = detected if detected is not None else FALLBACK_DATA_VERSION
-    return max(resolved, SUPPORTED_FLOOR)
+    resolved = detected if detected is not None else HARD_FLOOR_DATA_VERSION
+    return max(resolved, HARD_FLOOR_DATA_VERSION)
 
 
 DATA_VERSION = _resolve_data_version()

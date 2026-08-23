@@ -41,41 +41,21 @@ free, and there is no downgrade or "missing block" computation to do.
 
 This is handled by [config/version_compat.py](../src/config/version_compat.py):
 
-- outputs are **always stamped with the source world's `DataVersion`** (from its
-  `level.dat`, else a fallback, clamped up to the 1.19.4 hard floor). WorldEdit's
-  DataFixer then upgrades the schematic forward into whatever world you paste
-  into. Stamping any newer version would skip the fixer and hole out blocks
-  renamed since the source (e.g. `grass` → `short_grass`), so we never do it.
-- the Extraction tab's **Target Version** dropdown is informational — it records
-  the version you plan to paste into (source and newer) but does not change the
-  stamp. `DATA_VERSION` is pinned via `MC_CITY_DATA_VERSION` so construct/render,
-  which do not set `MC_CITY_SAVE`, stamp the source version rather than
-  re-detecting the default world.
+- outputs are **always stamped with the source world's `DataVersion`** (read
+  from its `level.dat`, else the 1.19.4 hard floor, and clamped up to that floor).
+  WorldEdit's DataFixer then upgrades the schematic forward into whatever world
+  you paste into. Stamping any newer version would skip the fixer and hole out
+  blocks renamed since the source (e.g. `grass` → `short_grass`), so we never do
+  it.
+- `DATA_VERSION` is pinned via `MC_CITY_DATA_VERSION` so construct/render, which
+  do not set `MC_CITY_SAVE`, stamp the source version rather than re-detecting
+  the default world.
 
-The supported floor is Minecraft 1.19.4. One data table drives version
-resolution and labelling:
-
-- `RELEASES` — release name ↔ DataVersion
-
-`version_compat.py` loads it from generated JSON shipped as package data
-(`src/config/versions.json`). This file is authoritative and required — the
-module raises at import if it is missing or unreadable, pointing to the refresh
-command below. There is no in-code fallback table.
-
-Refresh workflow:
-
-```bash
-python tools/update_mc_versions.py
-```
-
-Notes:
-
-- downloads every Java Edition release server JAR from 1.18 upward (cached under
-  `tools/`, git-ignored) and reads each jar's `DataVersion` from its bundled
-  `version.json`
-- versions whose download fails are skipped with a warning so a
-  partial-but-valid table is still written
-- the generated JSON file is packaged as `config` package data
+The supported floor is Minecraft 1.19.4 (`HARD_FLOOR_DATA_VERSION` in
+`version_compat.py`). There is no version table or per-block map: because the
+stamp is always the source world's own version, `version_compat.py` only needs
+to read that version (`detect_world_data_version`) and clamp it to the floor.
+The Extraction tab shows the detected source `DataVersion` for reference.
 
 ### Block Entities
 

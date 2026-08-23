@@ -9,7 +9,6 @@ import tempfile
 
 import numpy as np
 
-from config import version_compat as vc
 from engine.schematic.reader import decode_schem_cells, decode_schem_offset
 from engine.schematic.writer import (
     SPONGE_V3_MIN_DATA_VERSION,
@@ -19,9 +18,9 @@ from engine.schematic.writer import (
 )
 
 # 1.19.4 is the hard floor and the only release in the v2 window [1.19.4, 1.20).
-V194 = vc.data_version_for("1.19.4")
-V120 = vc.data_version_for("1.20")
-LATEST = vc.FALLBACK_DATA_VERSION
+V194 = 3337    # Minecraft 1.19.4, the hard floor
+V120 = 3463    # Minecraft 1.20, the v2 -> v3 container threshold
+LATEST = 4000  # any DataVersion well above the v3 threshold
 
 
 def _cells_file(data_version):
