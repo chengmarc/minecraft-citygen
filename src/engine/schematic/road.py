@@ -34,6 +34,12 @@ BLOCKS_PER_FINE_CELL = CELL
 # are not road-network tiles: they fill empty lot cells in the city, so they are
 # kept out of the road-grid tile set and loaded separately.
 FILL_TOKEN = "fill"
+GROUND_FILL_PREFIX = "18"
+ROAD_TILE_PREFIXES = frozenset(
+    name[:2]
+    for catalogue in (BIG_TILES, SMALL_TILES, MIXED_TILES)
+    for _base, name in catalogue
+)
 
 
 def _tile_from_schem(path):
@@ -51,7 +57,7 @@ def load_tiles():
     tiles = {}
     for path in glob.glob(os.path.join(ROADS_SCHEM, "*.schem")):
         name = os.path.basename(path)
-        if not name[:2].isdigit() or FILL_TOKEN in name:
+        if name[:2] not in ROAD_TILE_PREFIXES:
             continue
         tiles[name[:2]] = _tile_from_schem(path)
     return tiles
@@ -62,8 +68,16 @@ def load_fillers():
     return [
         _tile_from_schem(path)
         for path in sorted(glob.glob(os.path.join(ROADS_SCHEM, "*.schem")))
-        if FILL_TOKEN in os.path.basename(path)
+        if FILL_TOKEN in os.path.basename(path) and os.path.basename(path)[:2] != GROUND_FILL_PREFIX
     ]
+
+
+def load_ground_fill_tile():
+    """Load the dedicated empty-lot ground filler authored as road asset 18."""
+    for path in sorted(glob.glob(os.path.join(ROADS_SCHEM, "*.schem"))):
+        if os.path.basename(path)[:2] == GROUND_FILL_PREFIX:
+            return _tile_from_schem(path)
+    return None
 
 
 def tile_port_dirs(tile):

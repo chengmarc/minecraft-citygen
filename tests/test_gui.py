@@ -228,6 +228,21 @@ class ExtractionTabTests(unittest.TestCase):
         self.assertEqual(tab.browse_button.maximumHeight(), tab.world_edit.sizeHint().height())
         tab.close()
 
+    def test_browse_placeholder_keeps_contact_sheet_paths_for_success_reload(self):
+        state = common.default_extraction_tab_config()
+        with (
+            mock.patch.object(extraction_module.QtWidgets.QFileDialog, "getExistingDirectory", return_value="C:/world"),
+            mock.patch.object(extraction_module, "has_region_files", return_value=True),
+            mock.patch.object(extraction_module.common, "clear_pipeline_artifacts"),
+        ):
+            tab = ExtractionTab(_GuiOwner(extraction=state))
+            road_path = tab.road_viewer.image_path
+            build_path = tab.build_viewer.image_path
+            tab._browse_world()
+            self.assertEqual(tab.road_viewer.image_path, road_path)
+            self.assertEqual(tab.build_viewer.image_path, build_path)
+        tab.close()
+
 
 class ExtractionProgressCoalescingTests(unittest.TestCase):
     def test_coalescer_drops_redundant_updates_but_keeps_terminal_tick(self):

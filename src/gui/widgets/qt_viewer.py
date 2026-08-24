@@ -80,7 +80,6 @@ class QtImageViewer(QtWidgets.QFrame):
         layout.addWidget(shell, 1)
 
     def set_message(self, message):
-        self.image_path = None
         self._has_image = False
         self._scene.clear()
         self._pixmap_item = None
@@ -100,6 +99,9 @@ class QtImageViewer(QtWidgets.QFrame):
         self.fit_image()
 
     def load_image(self, image_path):
+        if not image_path:
+            self.set_message("Image path is not set.")
+            return
         path = Path(image_path)
         if not path.is_file():
             self.set_message(f"Image not found:\n{path}")

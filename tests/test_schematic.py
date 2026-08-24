@@ -7,6 +7,7 @@ emits v3.
 import numpy as np
 from nbtlib import Compound, String
 
+from engine.schematic import road as road_schem
 from engine.schematic.reader import (
     decode_schem_block_entities,
     decode_schem_cells,
@@ -146,3 +147,36 @@ def test_reader_round_trips_written_cells(tmp_path):
     write_sponge_schem_cells(cells, str(path), V120)
     assert decode_schem_cells(str(path)) == cells
     assert decode_schem_offset(str(path)) == (0, 0, 0)
+
+
+def test_road_asset_loaders_keep_network_tiles_fill_props_and_ground_fill_separate(tmp_path, monkeypatch):
+    write_sponge_schem_cells(
+        [[["minecraft:stone"]]],
+        str(tmp_path / "02_big_2x2_I.schem"),
+        V120,
+        offset=(0, -1, 0),
+    )
+    write_sponge_schem_cells(
+        [[["minecraft:oak_log"]]],
+        str(tmp_path / "15_fill_1x1_A.schem"),
+        V120,
+        offset=(0, -2, 0),
+    )
+    write_sponge_schem_cells(
+        [[["minecraft:moss_block"]]],
+        str(tmp_path / "18_empty_fill.schem"),
+        V120,
+        offset=(0, -3, 0),
+    )
+    monkeypatch.setattr(road_schem, "ROADS_SCHEM", str(tmp_path))
+
+    tiles = road_schem.load_tiles()
+    fillers = road_schem.load_fillers()
+    ground_fill = road_schem.load_ground_fill_tile()
+
+    assert set(tiles) == {"02"}
+    assert tiles["02"].ground_offset == 1
+    assert len(fillers) == 1
+    assert fillers[0].ground_offset == 2
+    assert ground_fill is not None
+    assert ground_fill.ground_offset == 3

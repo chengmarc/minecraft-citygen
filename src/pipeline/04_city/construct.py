@@ -15,7 +15,7 @@ if __package__ in (None, ""):
 
 from config.algo import DEFAULT_SEED, FINE as DEFAULT_FINE
 from config.path import BUILD_CATALOG, CITY_PROD, GRID_PROD
-from config.render import CITY_ANCHOR_BLOCK, CITY_GROUND_FILL_BLOCK, CITY_GROUND_Y
+from config.render import CITY_ANCHOR_BLOCK, CITY_GROUND_Y
 from config.world import DATA_VERSION
 from engine.schematic.building import assemble
 from engine.core.city_layout import (
@@ -31,6 +31,7 @@ from engine.core.city_layout import (
 from engine.core.road_network import CELL, gen_networks, make_size
 from engine.schematic.road import build as build_road_grid
 from engine.schematic.road import load_fillers
+from engine.schematic.road import load_ground_fill_tile
 from engine.schematic.reader import decode_schem
 from engine.schematic.transform import rot_tile, translate_block_entities
 from engine.schematic.writer import write_sponge_schem_grid
@@ -196,12 +197,36 @@ def _finalize_block_entities(block_entities, grid_shape):
     return list(by_pos.values())
 
 
-def _apply_ground_fill(grid, fill_idx, build_mask, road_cells, size, city_ground_y, skip_cells=frozenset()):
-    """Fill empty non-road lot cells on the ground plane with the configured block.
+def _place_ground_fill(
+    grid, master_palette, build_mask, road_cells, size, ground_y, ground_fill_tile, skip_cells=frozenset()
+):
+    """Seat the dedicated ground-fill asset into each empty non-road, non-building cell.
 
-    ``skip_cells`` are lot cells already covered by a fill prop (which carries its
-    own ground), so the flat fill must not poke a block up through them.
+    Asset 18 follows the same emerald/gold/diamond marker convention as every
+    other authored road-region asset, so it seats via the shared
+    ``_seat_y(ground_y, ground_offset)`` path.
+
+    Its footprint is repeated across every block column inside each empty lot
+    cell, and a pattern column is only stamped when all of its non-air blocks
+    fit into currently-empty space. ``skip_cells`` excludes whole lot cells that
+    already received a self-contained fill prop (15/16/17), preserving that
+    prop's authored ground without mixing in asset 18 around it.
     """
+    if ground_fill_tile is None:
+        return []
+    y0 = _seat_y(ground_y, ground_fill_tile.ground_offset)
+    if ground_fill_tile.block_entities:
+        raise ValueError("ground-fill asset 18 must not contain block entities")
+    pattern_columns = {}
+    for pz in range(ground_fill_tile.length):
+        for px in range(ground_fill_tile.width):
+            column = [
+                (dy, ground_fill_tile.cells[dy][pz][px])
+                for dy in range(ground_fill_tile.height)
+                if not ground_fill_tile.cells[dy][pz][px].startswith("minecraft:air")
+            ]
+            if column:
+                pattern_columns[(px, pz)] = column
     for fy in range(size.fine):
         for fx in range(size.fine):
             if (fx, fy) in road_cells or (fx, fy) in skip_cells:
@@ -210,9 +235,27 @@ def _apply_ground_fill(grid, fill_idx, build_mask, road_cells, size, city_ground
             z1 = PLAYER_ANCHOR_MARGIN + (fy + 1) * BLOCKS_PER_CELL
             x0 = PLAYER_ANCHOR_MARGIN + fx * BLOCKS_PER_CELL
             x1 = PLAYER_ANCHOR_MARGIN + (fx + 1) * BLOCKS_PER_CELL
-            area = grid[city_ground_y, z0:z1, x0:x1]
-            mask = (area == 0) & ~build_mask[z0:z1, x0:x1]
-            area[mask] = fill_idx
+            for gz in range(z0, z1):
+                for gx in range(x0, x1):
+                    if build_mask[gz, gx]:
+                        continue
+                    column = pattern_columns.get(
+                        ((gx - x0) % ground_fill_tile.width, (gz - z0) % ground_fill_tile.length)
+                    )
+                    if not column:
+                        continue
+                    for dy, _state in column:
+                        gy = y0 + dy
+                        if not (0 <= gy < grid.shape[0]) or grid[gy, gz, gx] != 0:
+                            break
+                    else:
+                        for dy, state in column:
+                            gy = y0 + dy
+                            idx = master_palette.get(state)
+                            if idx is None:
+                                idx = master_palette[state] = len(master_palette)
+                            grid[gy, gz, gx] = idx
+    return []
 
 
 def _place_fillers(grid, master_palette, build_mask, road_cells, size, ground_y, fillers, rng):
@@ -221,8 +264,8 @@ def _place_fillers(grid, master_palette, build_mask, road_cells, size, ground_y,
     Each prop is a self-contained 9x9 asset carrying its own ground, seated on the
     ground plane like any other marker asset. Cells touched by a building are
     skipped so nothing collides with a footprint. Returns the set of (fx, fy)
-    cells filled (so the flat ground fill can leave them alone) and the block
-    entities the placed props contribute, in master-grid coordinates.
+    cells receiving props and the block entities they contribute, in
+    master-grid coordinates.
     """
     placed = set()
     block_entities = []
@@ -266,10 +309,9 @@ def run(*, seed=DEFAULT_SEED, fine=None, out=None, no_ground_fill=False, logger=
     _step(3, "Planning placements")
     placements = _plan_placements(seed, network, size)
     city_ground_y = _city_ground_y(placements, catalog_meta)
-    # `ground_y` is the single plane every marker asset seats on (emerald = ground
-    # level). Roads, buildings, and trees all resolve to `_seat_y(ground_y, offset)`.
-    # The flat ground-fill slab is the lone exception, capping empty lots one row
-    # above at `city_ground_y`.
+    # `ground_y` is the single plane every marker asset seats on (emerald =
+    # ground level). Roads, buildings, the dedicated lot ground-fill asset, and
+    # tree props all resolve to `_seat_y(ground_y, offset)`.
     ground_y = city_ground_y - BUILD_SNAP_DROP
     road_y0 = _seat_y(ground_y, road_ground_offset)
     out_span = road_span + PLAYER_ANCHOR_MARGIN
@@ -279,15 +321,24 @@ def run(*, seed=DEFAULT_SEED, fine=None, out=None, no_ground_fill=False, logger=
 
     _step(5, "Composing voxel grid")
     fillers = [] if no_ground_fill else load_fillers()
+    ground_fill_tile = None if no_ground_fill else load_ground_fill_tile()
+    if not no_ground_fill and ground_fill_tile is None:
+        raise FileNotFoundError(
+            "missing road ground-fill asset 18 in artifacts/roads/production; run road extraction first"
+        )
     filler_top = max((_seat_y(ground_y, tile.ground_offset) + tile.height for tile in fillers), default=0)
-    max_height = max(road_y0 + road_height, building_top, filler_top)
+    ground_fill_top = (
+        _seat_y(ground_y, ground_fill_tile.ground_offset) + ground_fill_tile.height
+        if ground_fill_tile is not None
+        else 0
+    )
+    max_height = max(road_y0 + road_height, building_top, filler_top, ground_fill_top)
     road_cells = network["road_cells"]
     grid, master_palette, build_mask, block_entities = _compose_grid(
         road_grid, road_palette, road_span, road_height, road_y0, out_span, max_height, instances, road_block_entities
     )
 
     _step(6, "Placing trees and filling lots")
-    fill_idx = _palette_index(master_palette, CITY_GROUND_FILL_BLOCK)
     tree_cells = set()
     if not no_ground_fill:
         if fillers:
@@ -296,7 +347,9 @@ def run(*, seed=DEFAULT_SEED, fine=None, out=None, no_ground_fill=False, logger=
                 grid, master_palette, build_mask, road_cells, size, ground_y, fillers, filler_rng
             )
             block_entities += filler_block_entities
-        _apply_ground_fill(grid, fill_idx, build_mask, road_cells, size, city_ground_y, tree_cells)
+        block_entities += _place_ground_fill(
+            grid, master_palette, build_mask, road_cells, size, ground_y, ground_fill_tile, tree_cells
+        )
 
     _step(7, "Writing schematic")
     filler_count = len(tree_cells)

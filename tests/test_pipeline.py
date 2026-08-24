@@ -14,11 +14,13 @@ from types import SimpleNamespace
 from unittest import mock
 
 import pytest
+import numpy as np
 from PIL import Image
 
 from pipeline import runtime
 from pipeline import services
 from pipeline.stages import PIPELINE_STAGE_MODULES, RELOAD_ORDER, stage_module
+from engine.schematic.transform import Tile
 
 ROOT_DIR = Path(__file__).resolve().parents[1]
 BUILDS_EXTRACT = stage_module("builds_extract")
@@ -133,6 +135,7 @@ def test_run_build_extraction_pipeline_tags_progress_with_stage_modules(monkeypa
 roads_extract = importlib.import_module("pipeline.01_roads.extract")
 builds_render = importlib.import_module("pipeline.02_builds.render")
 roads_render = importlib.import_module("pipeline.01_roads.render")
+city_construct = importlib.import_module("pipeline.04_city.construct")
 
 
 def _component(boundary, cuboid, *, ground_y=None):
@@ -261,6 +264,86 @@ class ContactRenderTests(unittest.TestCase):
 def test_run_city_construct_stage_requires_integer_seed():
     with pytest.raises(ValueError, match="Seed must be an integer."):
         services.run_city_construct_stage("bad", "2")  # coercion guard shared by all stage services
+
+
+def test_city_ground_fill_asset_uses_shared_marker_ground_plane():
+    grid = np.zeros((6, 12, 12), dtype=np.int16)
+    palette = {"minecraft:air": 0}
+    build_mask = np.zeros((12, 12), dtype=bool)
+    size = SimpleNamespace(fine=1)
+    tile = Tile(
+        width=1,
+        height=1,
+        length=1,
+        cells=[[["minecraft:moss_block"]]],
+        ground_offset=0,
+    )
+
+    city_construct._place_ground_fill(
+        grid,
+        palette,
+        build_mask,
+        road_cells=set(),
+        size=size,
+        ground_y=3,
+        ground_fill_tile=tile,
+    )
+
+    z0 = city_construct.PLAYER_ANCHOR_MARGIN
+    z1 = z0 + city_construct.BLOCKS_PER_CELL
+    x0 = city_construct.PLAYER_ANCHOR_MARGIN
+    x1 = x0 + city_construct.BLOCKS_PER_CELL
+    assert np.count_nonzero(grid[3, z0:z1, x0:x1]) == city_construct.BLOCKS_PER_CELL ** 2
+    assert np.count_nonzero(grid[2, z0:z1, x0:x1]) == 0
+
+    offset_tile = Tile(
+        width=1,
+        height=1,
+        length=1,
+        cells=[[["minecraft:oak_planks"]]],
+        ground_offset=1,
+    )
+    city_construct._place_ground_fill(
+        grid,
+        palette,
+        build_mask,
+        road_cells=set(),
+        size=size,
+        ground_y=3,
+        ground_fill_tile=offset_tile,
+    )
+    assert np.count_nonzero(grid[2, z0:z1, x0:x1]) == city_construct.BLOCKS_PER_CELL ** 2
+
+
+def test_city_ground_fill_skips_cells_with_fill_props():
+    grid = np.zeros((6, 12, 12), dtype=np.int16)
+    palette = {"minecraft:air": 0}
+    build_mask = np.zeros((12, 12), dtype=bool)
+    size = SimpleNamespace(fine=1)
+    tile = Tile(
+        width=1,
+        height=1,
+        length=1,
+        cells=[[["minecraft:dirt"]]],
+        ground_offset=0,
+    )
+
+    city_construct._place_ground_fill(
+        grid,
+        palette,
+        build_mask,
+        road_cells=set(),
+        size=size,
+        ground_y=3,
+        ground_fill_tile=tile,
+        skip_cells={(0, 0)},
+    )
+
+    z0 = city_construct.PLAYER_ANCHOR_MARGIN
+    z1 = z0 + city_construct.BLOCKS_PER_CELL
+    x0 = city_construct.PLAYER_ANCHOR_MARGIN
+    x1 = x0 + city_construct.BLOCKS_PER_CELL
+    assert np.count_nonzero(grid[:, z0:z1, x0:x1]) == 0
 
 
 if __name__ == "__main__":
