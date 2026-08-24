@@ -12,7 +12,7 @@ import sys
 from config import algo
 from config.algo import DEFAULT_SEED
 from config.path import (
-    ARTIFACTS, BUILDS_PROD, CITY_PROD, CITY_SIM,
+    ARTIFACTS, BUILD_CATALOG, BUILDS_PROD, CITY_PROD, CITY_SIM,
     GRID_SIM, GUI, ROOT, ROADS_PROD, SAVES,
 )
 from config.world import BUILD_TYPES, ROAD_BOX, SAVE
@@ -42,8 +42,8 @@ LEGACY_SAVED_GUI_CONFIG_PATH = os.path.join(ROOT_DIR, "citygen_saved_config.json
 SAVED_GUI_CONFIG_PATH = os.path.join(CONFIG_DIR, "citygen.json")
 
 PREVIEW_CONFIGS = [
-    ("FINE", "Overall City Size", "Changes the footprint of the finished city."),
-    ("GAP_MIXED", "Avenue and Street Density", "Controls how tightly Avenues and Streets are packed across the city."),
+    ("FINE", "City Size", "Changes the footprint of the finished city."),
+    ("GAP_MIXED", "Road Density", "Controls how tightly Avenues and Streets are packed across the city."),
     ("GAP_BIG", "Avenue Spacing", "Higher values create fewer Avenues."),
     ("PAD_BIG", "Avenue Edge Margin", "Keeps Avenues farther from the edge of the city."),
     ("GAP_SMALL", "Street Spacing", "Lower values create more Streets."),
@@ -160,6 +160,19 @@ def city_preview_path(seed):
 
 def city_render_path(seed):
     return os.path.join(CITY_PROD, f"seed_{seed}.png")
+
+
+def state_signature(value):
+    return json.dumps(value, sort_keys=True, separators=(",", ":"), ensure_ascii=True)
+
+
+def extracted_assets_ready():
+    required = (ROAD_CONTACT_SHEET, BUILD_CONTACT_SHEET, BUILD_CATALOG)
+    if not all(os.path.exists(path) for path in required):
+        return False
+    road_assets = glob.glob(os.path.join(ROADS_PROD, "*.schem"))
+    build_assets = glob.glob(os.path.join(BUILDS_PROD, "*.schem"))
+    return bool(road_assets) and bool(build_assets)
 
 
 def format_xyz(pos):

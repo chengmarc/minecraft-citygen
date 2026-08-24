@@ -17,6 +17,12 @@ from gui.tabs._progress import GENERATION_STAGE_STEPS, GENERATION_TOTAL_STEPS, P
 from gui.widgets.qt_viewer import QtImageViewer
 from gui.widgets.widgets import AlgoControlsWidget
 
+GENERATION_STATUS_LABELS = {
+    services.CITY_CONSTRUCT: "Building city layout",
+    services.CITY_RENDER: "Rendering final city",
+    services.WORLD_EXPORT: "Exporting Minecraft world",
+}
+
 
 class GenerationTab(QtWidgets.QWidget, ProgressMixin):
     def __init__(self, owner):
@@ -58,15 +64,30 @@ class GenerationTab(QtWidgets.QWidget, ProgressMixin):
         self.progress_bar = QtWidgets.QProgressBar(self)
         self.progress_bar.setRange(0, PROGRESS_BAR_SCALE)
         layout.addWidget(self.progress_bar)
+        self.refresh_prerequisite_state()
 
     def set_peer(self, peer):
         self._peer = peer
+
+    def current_run_state(self):
+        return self.controls.current_state()
+
+    def refresh_prerequisite_state(self):
+        ready = True
+        if hasattr(self.owner, "generation_prerequisite_met"):
+            ready = bool(self.owner.generation_prerequisite_met())
+        self.controls.action_button.setEnabled(ready)
+        self.controls.action_button.setToolTip(
+            "Complete Extract Assets first." if not ready else "Build the final schematic, render, and export world."
+        )
 
     def _save_state(self):
         state = self.controls.current_state()
         self.owner.set_saved_config_section("algo", state)
         if self._peer is not None:
             self._peer.controls.set_state(state)
+        if hasattr(self.owner, "note_preview_inputs_changed"):
+            self.owner.note_preview_inputs_changed()
 
     def _source_env(self):
         """Env pinning the source world for the render pipeline.
@@ -125,15 +146,7 @@ class GenerationTab(QtWidgets.QWidget, ProgressMixin):
                 )
                 self._progress_timer.start(common.SCRIPT_PROGRESS_TICK_MS)
 
-        annotation = label or f"{n}/{int(total)}"
-        self.set_status(
-            common.format_stage_status(
-                GENERATION_STAGE_STEPS[stage],
-                GENERATION_TOTAL_STEPS,
-                stage,
-                annotation,
-            )
-        )
+        self.set_status(GENERATION_STATUS_LABELS.get(stage, "Building city"))
 
     def _run_generate(self):
         seed = self.controls.seed_edit.text().strip()
@@ -151,7 +164,7 @@ class GenerationTab(QtWidgets.QWidget, ProgressMixin):
         env.update(self._source_env())
 
         self.controls.action_button.setEnabled(False)
-        self.set_status("Starting generation...")
+        self.set_status("Building city layout")
         self.progress_bar.setRange(0, PROGRESS_BAR_SCALE)
         self.progress_bar.setValue(0)
 
@@ -161,9 +174,9 @@ class GenerationTab(QtWidgets.QWidget, ProgressMixin):
         signals.success.connect(lambda payload: (
             self.city_viewer.load_image(common.city_render_path(payload)),
             self._finish_progress(),
-            self.set_status("Generation complete"),
+            self.set_status("Build complete"),
         ))
-        signals.finished.connect(lambda: (self._stop_progress(), self.controls.action_button.setEnabled(True)))
+        signals.finished.connect(lambda: (self._stop_progress(), self.refresh_prerequisite_state()))
 
         def on_progress(stage, completed, total, label):
             signals.pipeline_progress.emit(stage, float(completed), float(total), label or "")

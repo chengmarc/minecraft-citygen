@@ -14,6 +14,9 @@ from gui import app as gui_app  # noqa: E402
 from gui import launcher  # noqa: E402
 from gui.core import common  # noqa: E402
 from gui.core.theme import configure_app_style  # noqa: E402
+from gui.tabs import ExtractionTab, GenerationTab, PreviewTab  # noqa: E402
+from gui.tabs import extraction as extraction_module  # noqa: E402
+from gui.tabs import generation as generation_module  # noqa: E402
 from gui.widgets.widgets import AlgoControlsWidget, IntegerSliderControl  # noqa: E402
 
 
@@ -68,6 +71,8 @@ class ConfigureStyleTests(unittest.TestCase):
         self.assertEqual(self.app.styleSheet(), "")
         configure_app_style(self.app, use_custom_theme=True)
         self.assertIn("QPushButton", self.app.styleSheet())
+        self.assertIn("QPushButton:disabled {\n    background: #e3e8f0;\n    color: #ffffff;", self.app.styleSheet())
+        self.assertIn("QToolButton#advancedToggle:checked:hover", self.app.styleSheet())
         self.app.setStyleSheet("")  # avoid leaking into other tests
 
 
@@ -109,6 +114,202 @@ class WidgetTests(unittest.TestCase):
         state = common.default_algo_tab_config()
         controls = AlgoControlsWidget("Preview", lambda: None, state)
         self.assertIsNotNone(controls.seed_edit.validator())
+
+    def test_algo_controls_use_updated_header_labels_and_seed_width(self):
+        state = common.default_algo_tab_config()
+        controls = AlgoControlsWidget("Preview", lambda: None, state)
+        labels = {label.text() for label in controls.findChildren(QtWidgets.QLabel)}
+        self.assertIn("City Size", labels)
+        self.assertIn("Road Density", labels)
+        self.assertEqual(controls.seed_edit.width(), 65)
+        self.assertEqual(controls.advanced_toggle.minimumHeight(), controls.seed_edit.sizeHint().height())
+        self.assertEqual(controls.advanced_toggle.maximumHeight(), controls.seed_edit.sizeHint().height())
+
+    def test_algo_controls_hide_advanced_by_default_and_toggle(self):
+        state = common.default_algo_tab_config()
+        controls = AlgoControlsWidget("Preview", lambda: None, state)
+        self.assertTrue(controls.advanced_panel.isHidden())
+        self.assertEqual(controls.advanced_toggle.text(), "Basic Settings")
+        controls.advanced_toggle.click()
+        self.assertFalse(controls.advanced_panel.isHidden())
+        self.assertEqual(controls.advanced_toggle.text(), "Advanced Settings")
+
+    def test_algo_controls_state_round_trip_includes_advanced_toggle(self):
+        state = common.default_algo_tab_config()
+        controls = AlgoControlsWidget("Preview", lambda: None, state)
+        controls.set_advanced_visible(True)
+        snapshot = controls.current_state()
+
+        mirror = AlgoControlsWidget("Preview", lambda: None, state)
+        mirror.set_state(snapshot)
+        self.assertFalse(mirror.advanced_panel.isHidden())
+        self.assertTrue(mirror.advanced_toggle.isChecked())
+        self.assertEqual(mirror.advanced_toggle.text(), "Advanced Settings")
+
+
+class _GuiOwner(QtWidgets.QWidget):
+    def __init__(self, **sections):
+        super().__init__()
+        self._sections = sections
+
+    def get_saved_config_section(self, section):
+        return self._sections.get(section)
+
+    def set_saved_config_section(self, section, value):
+        self._sections[section] = value
+
+
+class ExtractionTabTests(unittest.TestCase):
+    def setUp(self):
+        self.app = _qapp()
+
+    def test_extraction_cards_show_status_and_summary(self):
+        state = common.default_extraction_tab_config()
+        tab = ExtractionTab(_GuiOwner(extraction=state))
+        self.assertEqual(tab.findChildren(QtWidgets.QSplitter), [])
+        self.assertEqual(tab.road_group.status_chip.text(), "Selected")
+        self.assertIn("chunks selected", tab.road_group.detail_label.text())
+        self.assertFalse(hasattr(tab.road_group, "details_button"))
+        self.assertEqual(tab.road_group.findChildren(QtWidgets.QLineEdit), [])
+        self.assertEqual(tab.road_group.pick_button.sizePolicy().horizontalPolicy(), QtWidgets.QSizePolicy.Expanding)
+        self.assertGreater(tab.road_group.pick_button.height(), tab.road_group.pick_button.sizeHint().height())
+        tab.close()
+
+    def test_extract_button_requires_valid_world(self):
+        state = common.default_extraction_tab_config()
+        state["world_path"] = ""
+        with mock.patch.object(extraction_module, "has_region_files", return_value=False):
+            tab = ExtractionTab(_GuiOwner(extraction=state))
+            self.assertFalse(tab.extract_button.isEnabled())
+            self.assertFalse(tab.road_group.pick_button.isEnabled())
+        tab.close()
+
+    def test_browsing_valid_world_clears_selected_regions(self):
+        state = common.default_extraction_tab_config()
+        with (
+            mock.patch.object(extraction_module.QtWidgets.QFileDialog, "getExistingDirectory", return_value="C:/world"),
+            mock.patch.object(extraction_module, "has_region_files", return_value=True),
+            mock.patch.object(extraction_module.common, "clear_pipeline_artifacts"),
+        ):
+            tab = ExtractionTab(_GuiOwner(extraction=state))
+            tab._browse_world()
+            self.assertEqual(tab.road_group.status_chip.text(), "Not Selected")
+            self.assertEqual(tab.house_group.status_chip.text(), "Not Selected")
+            self.assertEqual(tab.landmark_group.status_chip.text(), "Not Selected")
+            self.assertFalse(tab.extract_button.isEnabled())
+            saved = tab.owner.get_saved_config_section("extraction")
+            self.assertIsNone(saved["road"]["start"])
+            self.assertIsNone(saved["road"]["end"])
+        tab.close()
+
+    def test_extraction_progress_uses_product_language(self):
+        state = common.default_extraction_tab_config()
+        with mock.patch.object(extraction_module, "has_region_files", return_value=True):
+            tab = ExtractionTab(_GuiOwner(extraction=state))
+        tab._on_pipeline_progress(extraction_module.services.ROADS_EXTRACT, 1, 10, "ignored")
+        self.assertEqual(tab.status_label.text(), "Extracting road pieces")
+        self.assertNotIn("pipeline/", tab.status_label.text())
+        tab.close()
+
+    def test_browse_button_matches_world_input_height(self):
+        state = common.default_extraction_tab_config()
+        with mock.patch.object(extraction_module, "has_region_files", return_value=True):
+            tab = ExtractionTab(_GuiOwner(extraction=state))
+        self.assertEqual(tab.browse_button.minimumHeight(), tab.world_edit.sizeHint().height())
+        self.assertEqual(tab.browse_button.maximumHeight(), tab.world_edit.sizeHint().height())
+        tab.close()
+
+
+class PreviewGenerationTabTests(unittest.TestCase):
+    def setUp(self):
+        self.app = _qapp()
+
+    def test_preview_tab_starts_with_advanced_controls_hidden(self):
+        tab = PreviewTab(_GuiOwner(algo=common.default_algo_tab_config()))
+        self.assertEqual(tab.findChildren(QtWidgets.QSplitter), [])
+        self.assertTrue(tab.controls.advanced_panel.isHidden())
+        self.assertEqual(tab.controls.advanced_toggle.text(), "Basic Settings")
+        tab.close()
+
+    def test_generation_progress_uses_product_language(self):
+        owner = _GuiOwner(
+            algo=common.default_algo_tab_config(),
+            extraction=common.default_extraction_tab_config(),
+        )
+        tab = GenerationTab(owner)
+        tab._on_pipeline_progress(generation_module.services.CITY_RENDER, 1, 2, "ignored")
+        self.assertEqual(tab.status_label.text(), "Rendering final city")
+        self.assertNotIn("pipeline/", tab.status_label.text())
+        tab.close()
+
+    def test_preview_button_disables_until_extraction_is_complete(self):
+        owner = _GuiOwner(
+            algo=common.default_algo_tab_config(),
+            extraction=common.default_extraction_tab_config(),
+        )
+        owner.preview_prerequisite_met = lambda: False
+        tab = PreviewTab(owner)
+        self.assertFalse(tab.controls.action_button.isEnabled())
+        self.assertIn("Complete Extract Assets first.", tab.controls.action_button.toolTip())
+        tab.close()
+
+    def test_generation_button_disables_until_extraction_is_complete(self):
+        owner = _GuiOwner(
+            algo=common.default_algo_tab_config(),
+            extraction=common.default_extraction_tab_config(),
+        )
+        owner.generation_prerequisite_met = lambda: False
+        tab = GenerationTab(owner)
+        self.assertFalse(tab.controls.action_button.isEnabled())
+        self.assertIn("Complete Extract Assets first.", tab.controls.action_button.toolTip())
+        tab.close()
+
+
+class StepGatingTests(unittest.TestCase):
+    def setUp(self):
+        self.app = _qapp()
+
+    def test_app_requires_extracted_assets_on_first_launch(self):
+        with (
+            mock.patch.object(common, "load_saved_gui_config", return_value={}),
+            mock.patch.object(common, "clear_pipeline_artifacts"),
+            mock.patch.object(common, "extracted_assets_ready", return_value=False),
+        ):
+            window = gui_app.CityGeneratorQtApp()
+
+        self.assertFalse(window.preview_tab.controls.action_button.isEnabled())
+        self.assertFalse(window.generation_tab.controls.action_button.isEnabled())
+        self.assertTrue(window.extraction_tab.extract_button.isEnabled())
+
+        window.extraction_tab.world_edit.setText("C:/different-world")
+        self.assertFalse(window.preview_tab.controls.action_button.isEnabled())
+        self.assertFalse(window.generation_tab.controls.action_button.isEnabled())
+
+        with mock.patch.object(common, "extracted_assets_ready", return_value=True):
+            window.mark_extraction_complete(window.extraction_tab.prerequisite_state())
+            self.assertTrue(window.preview_tab.controls.action_button.isEnabled())
+            self.assertTrue(window.generation_tab.controls.action_button.isEnabled())
+
+        window.close()
+
+    def test_preview_and_generation_keep_advanced_toggle_in_sync(self):
+        with (
+            mock.patch.object(common, "load_saved_gui_config", return_value={}),
+            mock.patch.object(common, "clear_pipeline_artifacts"),
+        ):
+            window = gui_app.CityGeneratorQtApp()
+
+        window.preview_tab.controls.advanced_toggle.click()
+        self.assertFalse(window.preview_tab.controls.advanced_panel.isHidden())
+        self.assertFalse(window.generation_tab.controls.advanced_panel.isHidden())
+        self.assertTrue(window.generation_tab.controls.advanced_toggle.isChecked())
+
+        window.generation_tab.controls.advanced_toggle.click()
+        self.assertTrue(window.generation_tab.controls.advanced_panel.isHidden())
+        self.assertTrue(window.preview_tab.controls.advanced_panel.isHidden())
+        self.assertFalse(window.preview_tab.controls.advanced_toggle.isChecked())
+
+        window.close()
 
 
 class SavedGuiConfigTests(unittest.TestCase):

@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from PySide6 import QtCore, QtWidgets
+from PySide6 import QtWidgets
 
 from pipeline import services
 
@@ -26,21 +26,23 @@ class PreviewTab(QtWidgets.QWidget, WeightedTaskMixin):
 
         layout = QtWidgets.QVBoxLayout(self)
         layout.setSpacing(0)
-        split = QtWidgets.QSplitter(QtCore.Qt.Horizontal, self)
+        viewer_shell = QtWidgets.QWidget(self)
+        viewer_row = QtWidgets.QHBoxLayout(viewer_shell)
+        viewer_row.setContentsMargins(0, 0, 0, 0)
+        viewer_row.setSpacing(12)
         self.grid_viewer = QtImageViewer(
             "Road Layout Preview",
             "Use Preview Layout to see the road network before building the final city.",
-            split,
+            viewer_shell,
         )
         self.city_viewer = QtImageViewer(
             "City Layout Preview",
             "Use Preview Layout to see how buildings fit into the generated road network.",
-            split,
+            viewer_shell,
         )
-        split.addWidget(self.grid_viewer)
-        split.addWidget(self.city_viewer)
-        split.setSizes([1, 1])
-        layout.addWidget(split, 1)
+        viewer_row.addWidget(self.grid_viewer, 1)
+        viewer_row.addWidget(self.city_viewer, 1)
+        layout.addWidget(viewer_shell, 1)
         layout.addSpacing(20)
 
         self.controls = AlgoControlsWidget(
@@ -60,15 +62,30 @@ class PreviewTab(QtWidgets.QWidget, WeightedTaskMixin):
         self.progress_bar = QtWidgets.QProgressBar(self)
         self.progress_bar.setRange(0, 100)
         layout.addWidget(self.progress_bar)
+        self.refresh_prerequisite_state()
 
     def set_peer(self, peer):
         self._peer = peer
+
+    def current_run_state(self):
+        return self.controls.current_state()
+
+    def refresh_prerequisite_state(self):
+        ready = True
+        if hasattr(self.owner, "preview_prerequisite_met"):
+            ready = bool(self.owner.preview_prerequisite_met())
+        self.controls.action_button.setEnabled(ready)
+        self.controls.action_button.setToolTip(
+            "Complete Extract Assets first." if not ready else "Generate a fast road and city layout preview."
+        )
 
     def _save_state(self):
         state = self.controls.current_state()
         self.owner.set_saved_config_section("algo", state)
         if self._peer is not None:
             self._peer.controls.set_state(state)
+        if hasattr(self.owner, "note_preview_inputs_changed"):
+            self.owner.note_preview_inputs_changed()
 
     def _run_preview(self):
         seed = self.controls.seed_edit.text().strip()
@@ -83,28 +100,31 @@ class PreviewTab(QtWidgets.QWidget, WeightedTaskMixin):
             QtWidgets.QMessageBox.critical(self, "Invalid preview config", str(exc))
             return
 
+        if hasattr(self.owner, "begin_preview_run"):
+            self.owner.begin_preview_run()
+        run_state = self.current_run_state()
         tasks = [
             (
                 services.ROADS_SIMULATION,
-                "Rendering road assets",
+                "Preparing road pieces",
                 common.PREVIEW_PROGRESS_WEIGHTS[0][1],
                 lambda: services.run_roads_simulation_stage(env_overrides=env),
             ),
             (
                 services.BUILDS_SIMULATION,
-                "Rendering build assets",
+                "Preparing building pieces",
                 common.PREVIEW_PROGRESS_WEIGHTS[1][1],
                 lambda: services.run_builds_simulation_stage(env_overrides=env),
             ),
             (
                 services.GRID_SIMULATION,
-                "Compositing road grid",
+                "Generating avenue layout",
                 common.PREVIEW_PROGRESS_WEIGHTS[2][1],
                 lambda: services.run_grid_simulation_stage(seed, fine, env_overrides=env),
             ),
             (
                 services.CITY_SIMULATION,
-                "Compositing city layout",
+                "Placing buildings",
                 common.PREVIEW_PROGRESS_WEIGHTS[3][1],
                 lambda: services.run_city_simulation_stage(seed, fine, env_overrides=env),
             ),
@@ -112,14 +132,19 @@ class PreviewTab(QtWidgets.QWidget, WeightedTaskMixin):
         self._run_weighted_tasks(
             button=self.controls.action_button,
             tasks=tasks,
-            start_status="Starting preview...",
+            start_status="Preparing preview",
             fail_title="Preview failed",
             fail_status="Preview failed",
-            complete_status="Preview complete",
+            complete_status="Preview ready",
             on_success=self._load_previews,
-            success_payload=seed,
+            success_payload=(seed, run_state),
+            status_formatter=lambda _index, _total, _module, annotation: annotation,
+            restore_button=self.refresh_prerequisite_state,
         )
 
-    def _load_previews(self, seed):
+    def _load_previews(self, payload):
+        seed, run_state = payload
         self.grid_viewer.load_image(common.grid_preview_path(seed))
         self.city_viewer.load_image(common.city_preview_path(seed))
+        if hasattr(self.owner, "mark_preview_complete"):
+            self.owner.mark_preview_complete(run_state)

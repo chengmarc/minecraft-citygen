@@ -79,7 +79,20 @@ class ProgressMixin:
 
 
 class WeightedTaskMixin(ProgressMixin):
-    def _run_weighted_tasks(self, *, button, tasks, start_status, fail_title, fail_status, complete_status, on_success, success_payload):
+    def _run_weighted_tasks(
+        self,
+        *,
+        button,
+        tasks,
+        start_status,
+        fail_title,
+        fail_status,
+        complete_status,
+        on_success,
+        success_payload,
+        status_formatter=None,
+        restore_button=None,
+    ):
         self._start_progress()
         button.setEnabled(False)
         signals = WorkerSignals(self)
@@ -88,7 +101,15 @@ class WeightedTaskMixin(ProgressMixin):
         signals.set_progress.connect(self._complete_script_progress)
         signals.success.connect(lambda payload: (on_success(payload), self._finish_progress(), self.set_status(complete_status)))
         signals.failed.connect(self._show_failure)
-        signals.finished.connect(lambda: (self._stop_progress(), button.setEnabled(True)))
+
+        def _restore():
+            self._stop_progress()
+            if restore_button is None:
+                button.setEnabled(True)
+            else:
+                restore_button()
+
+        signals.finished.connect(_restore)
 
         def worker():
             try:
@@ -96,10 +117,15 @@ class WeightedTaskMixin(ProgressMixin):
                 total_tasks = len(tasks)
                 signals.status.emit(start_status)
                 for index, (module, annotation, weight, func) in enumerate(tasks, start=1):
+                    status_text = (
+                        status_formatter(index, total_tasks, module, annotation)
+                        if status_formatter is not None
+                        else common.format_stage_status(index, total_tasks, module, annotation)
+                    )
                     signals.begin_progress.emit(
                         completed_weight,
                         completed_weight + weight,
-                        common.format_stage_status(index, total_tasks, module, annotation),
+                        status_text,
                     )
                     func()
                     completed_weight += weight

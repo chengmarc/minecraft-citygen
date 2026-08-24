@@ -26,15 +26,16 @@ class CityGeneratorQtApp(QtWidgets.QMainWindow):
         self._saved_gui_config = common.load_saved_gui_config()
         common.clear_pipeline_artifacts()  # clean slate each launch; keeps exported worlds
 
-        preview_tab = PreviewTab(self)
-        generation_tab = GenerationTab(self)
-        preview_tab.set_peer(generation_tab)
-        generation_tab.set_peer(preview_tab)
+        self.preview_tab = PreviewTab(self)
+        self.generation_tab = GenerationTab(self)
+        self.preview_tab.set_peer(self.generation_tab)
+        self.generation_tab.set_peer(self.preview_tab)
+        self.extraction_tab = ExtractionTab(self)
 
         tabs = QtWidgets.QTabWidget(self)
-        extraction_index = tabs.addTab(ExtractionTab(self), "Extract Assets")
-        preview_index = tabs.addTab(preview_tab, "Preview Layout")
-        generation_index = tabs.addTab(generation_tab, "Build City")
+        extraction_index = tabs.addTab(self.extraction_tab, "Extract Assets")
+        preview_index = tabs.addTab(self.preview_tab, "Preview Layout")
+        generation_index = tabs.addTab(self.generation_tab, "Build City")
         tab_bar = tabs.tabBar()
         tab_bar.setTabToolTip(
             extraction_index,
@@ -49,6 +50,7 @@ class CityGeneratorQtApp(QtWidgets.QMainWindow):
             "Step 3 of 3: Build the city, render it, and export the Minecraft world.",
         )
         self.setCentralWidget(tabs)
+        self.refresh_prerequisite_buttons()
 
     def get_saved_config_section(self, section):
         value = self._saved_gui_config.get(section)
@@ -57,6 +59,29 @@ class CityGeneratorQtApp(QtWidgets.QMainWindow):
     def set_saved_config_section(self, section, value):
         self._saved_gui_config[section] = value
         common.save_saved_gui_config(self._saved_gui_config)
+
+    def note_extraction_inputs_changed(self):
+        self.refresh_prerequisite_buttons()
+
+    def note_preview_inputs_changed(self):
+        self.refresh_prerequisite_buttons()
+
+    def begin_extraction_run(self):
+        self.refresh_prerequisite_buttons()
+
+    def mark_extraction_complete(self, _state):
+        self.refresh_prerequisite_buttons()
+
+    def preview_prerequisite_met(self):
+        return common.extracted_assets_ready()
+
+    def generation_prerequisite_met(self):
+        return common.extracted_assets_ready()
+
+    def refresh_prerequisite_buttons(self):
+        for tab in (getattr(self, "preview_tab", None), getattr(self, "generation_tab", None)):
+            if tab is not None and hasattr(tab, "refresh_prerequisite_state"):
+                tab.refresh_prerequisite_state()
 
 
 def _parse_args(argv: list[str]) -> tuple[argparse.Namespace, list[str]]:

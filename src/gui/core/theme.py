@@ -53,7 +53,8 @@ QGroupBox::title {
 QLineEdit, QComboBox, QSpinBox {
     border: 1px solid #cfd7e6;
     border-radius: 0;
-    padding: 6px 8px;
+    padding: 8px 8px;
+    min-height: 22px;
     background: #ffffff;
 }
 QLineEdit[readOnly="true"] {
@@ -78,6 +79,14 @@ QPushButton#primaryButton {
 QPushButton#primaryButton:hover {
     background: #0a5fd7;
 }
+QPushButton:disabled {
+    background: #e3e8f0;
+    color: #ffffff;
+}
+QPushButton#primaryButton:disabled {
+    background: #c3ccd9;
+    color: #ffffff;
+}
 QProgressBar {
     border: 1px solid #d3dbeb;
     border-radius: 0;
@@ -98,6 +107,62 @@ QLabel#sectionIntro {
 }
 QLabel#subtleLabel, QLabel#summaryLabel {
     color: #556170;
+}
+QGroupBox#extractionAreaCard {
+    border: 1px solid #d9dfeb;
+    border-radius: 0;
+    margin-top: 0;
+    background: #ffffff;
+}
+QGroupBox#extractionAreaCard::title {
+    subcontrol-origin: margin;
+    left: -9999px;
+    width: 0;
+    color: transparent;
+    padding: 0;
+}
+QLabel#cardTitle {
+    font-size: 14px;
+    font-weight: 700;
+}
+QLabel#cardDetail {
+    color: #556170;
+}
+QLabel#statusChip {
+    min-width: 88px;
+    padding: 4px 10px;
+    border-radius: 0;
+    border: 1px solid #d3dbeb;
+    background: #eef2f8;
+    color: #556170;
+    font-weight: 700;
+}
+QLabel#statusChip[selected="true"] {
+    border-color: #b7e2c8;
+    background: #dff4e8;
+    color: #1a6a44;
+}
+QToolButton#advancedToggle {
+    border: 0;
+    border-radius: 0;
+    padding: 9px 14px;
+    background: #dde6f8;
+    color: #1e2b39;
+    font-weight: 600;
+}
+QToolButton#advancedToggle:hover {
+    background: #d4def4;
+}
+QToolButton#advancedToggle:checked {
+    background: #dde6f8;
+    color: #1e2b39;
+}
+QToolButton#advancedToggle:checked:hover {
+    background: #d4def4;
+}
+QToolButton#advancedToggle:disabled {
+    background: #e3e8f0;
+    color: #ffffff;
 }
 QFrame#qtImageViewer {
     border: 1px solid #d9dfeb;
