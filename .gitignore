@@ -1,8 +1,10 @@
 __pycache__/
-**/__pycache__/
 .pytest_cache/
 .pytest_tmp/
 *.egg-info/
+
+.claude/
+.codex/
 
 build/
 dist/
