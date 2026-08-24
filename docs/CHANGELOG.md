@@ -6,6 +6,22 @@ The format is based on Keep a Changelog, and versions should match the release v
 
 ## [Unreleased]
 
+### Changed
+
+- world export now treats the selected source save as the template: it copies the
+  save, replaces the copied overworld region files with generated city chunks,
+  and preserves the source world's native save/worldgen structure
+
+### Fixed
+
+- world export now rejects missing explicit source-world paths instead of
+  silently falling back to the bundled default world
+- world export now rejects overlapping source/output directories before deleting
+  the output folder
+- region-directory discovery now prefers candidates that contain `.mca` files,
+  avoiding empty `region/` folders when a nested overworld region directory is
+  the real save data
+
 ## [1.0.0] - 2026-08-23
 
 The world-export milestone. Alongside the WorldEdit-ready `.schem`, CityGen now
@@ -15,11 +31,10 @@ city can be explored in-game with no mods.
 ### Added
 
 - **standalone world export** — the finished city can be exported as a
-  ready-to-play Minecraft world (`artifacts/saves/seed_<n>_world/`): a void world
-  with the city centred on the world origin and the player spawned on solid
-  ground, so it can be walked around in-game with no WorldEdit required. Exposed
-  as pipeline stage 5 (`pipeline/05_world`) and run automatically by the
-  Generation tab
+  ready-to-play Minecraft world (`artifacts/saves/seed_<n>_world/`) with the
+  city centred on the world origin and the player spawned on solid ground, so it
+  can be walked around in-game with no WorldEdit required. Exposed as pipeline
+  stage 5 (`pipeline/05_world`) and run automatically by the Generation tab
 - block entities are now preserved through extraction and city assembly: signs
   (text), banners, chests/barrels (contents), beds, furnaces, skulls, etc. keep
   their NBT in the output schematic instead of pasting as empty blocks. Positions

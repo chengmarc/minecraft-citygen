@@ -191,8 +191,8 @@ def _write_region(path, chunks):
 
 
 def _source_world_root(source_world):
-    """Source world dir to copy, falling back to the bundled default world."""
-    candidate = source_world if source_world and os.path.isdir(source_world) else DEFAULT_WORLD
+    """Source world dir to copy, falling back only when no source is provided."""
+    candidate = DEFAULT_WORLD if source_world is None else source_world
     if not os.path.isdir(candidate):
         raise FileNotFoundError(f"Source world not found: {candidate}")
     return candidate
@@ -209,8 +209,23 @@ def _world_region_dir(world_root):
     return os.path.join(world_root, "region")
 
 
+def _assert_distinct_world_paths(source_world, out_dir):
+    """Reject overlapping source/output paths before any destructive copy step."""
+    source = os.path.normcase(os.path.abspath(source_world))
+    output = os.path.normcase(os.path.abspath(out_dir))
+    if source == output:
+        raise ValueError("Output world directory must be different from the source world.")
+    try:
+        common = os.path.commonpath([source, output])
+    except ValueError:
+        return
+    if common in (source, output):
+        raise ValueError("Source and output world directories must not contain each other.")
+
+
 def _copy_source_world(source_world, out_dir):
     """Replace ``out_dir`` with a byte-for-byte copy of ``source_world``."""
+    _assert_distinct_world_paths(source_world, out_dir)
     shutil.rmtree(out_dir, ignore_errors=True)
     shutil.copytree(source_world, out_dir, copy_function=shutil.copy2)
 
@@ -256,8 +271,8 @@ def write_world(
     vals = grid[ys, zs, xs]
 
     # Anchor a guaranteed-solid column (the one nearest the city centre) at the
-    # world origin. Minecraft ignores the stored spawn in a flat/void world and
-    # drops the player at 0,0,0, so we make 0,0,0 land on the city instead.
+    # world origin. Some source worlds or game modes can ignore the stored Y
+    # spawn, so make 0,0 land on the city instead of an empty column.
     anchor_x, anchor_z, anchor_top = _anchor_column(mask)
     if origin is None:
         origin = (-anchor_x, -anchor_z)
@@ -328,7 +343,7 @@ def _anchor_column(mask):
     """Return (x, z, surface_y) of the solid column nearest the city centre.
 
     ``mask`` is the (H, L, W) non-air mask indexed ``[y][z][x]``. The exact
-    centre is often an empty gap in a void world, so we snap to the closest
+    centre can be an empty gap in the generated city, so we snap to the closest
     column that actually has ground.
     """
     _, length, width = mask.shape
@@ -373,7 +388,7 @@ def _source_data_version(source_world):
         candidate = os.path.join(source_world, "level.dat")
         if os.path.isfile(candidate):
             try:
-                return int(nbtlib.load(candidate)["Data"]["DataVersion"])
+                return max(int(nbtlib.load(candidate)["Data"]["DataVersion"]), HARD_FLOOR_DATA_VERSION)
             except Exception:
                 pass
     return HARD_FLOOR_DATA_VERSION
@@ -458,7 +473,7 @@ if __name__ == "__main__":
     if __package__ in (None, ""):
         sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
-    parser = argparse.ArgumentParser(description="Convert a city .schem into a standalone void world.")
+    parser = argparse.ArgumentParser(description="Convert a city .schem into a standalone Minecraft world.")
     parser.add_argument("schem", help="path to a city .schem")
     parser.add_argument("out_dir", help="output world folder (created if missing)")
     args = parser.parse_args()

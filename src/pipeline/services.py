@@ -56,7 +56,7 @@ def _progress_adapter(progress, stage_key):
     """Tag a stage's ``(completed, total, detail)`` ticks with its module path.
 
     The GUI keys off the module to show which script is running and its step,
-    e.g. ``Stage 1/4 - pipeline/01_roads/extract.py - ...``.
+    e.g. ``Stage 1/N - pipeline/01_roads/extract.py - ...``.
     """
     if progress is None:
         return None

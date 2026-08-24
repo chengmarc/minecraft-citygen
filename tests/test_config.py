@@ -80,6 +80,18 @@ class PathDiscoveryTests(unittest.TestCase):
             expected.mkdir(parents=True)
             self.assertEqual(config_path.resolve_region_dir(save_root), os.path.normpath(str(expected)))
 
+    def test_resolve_region_dir_prefers_candidate_with_region_files(self):
+        with tempfile.TemporaryDirectory() as tempdir:
+            save_root = Path(tempdir) / "world"
+            root_region = save_root / "region"
+            nested_region = save_root / "dimensions" / "minecraft" / "overworld" / "region"
+            root_region.mkdir(parents=True)
+            nested_region.mkdir(parents=True)
+            (nested_region / "r.0.0.mca").write_bytes(b"region")
+
+            self.assertEqual(config_path.resolve_region_dir(save_root), os.path.normpath(str(nested_region)))
+            self.assertTrue(config_path.has_region_files(save_root))
+
 
 # --- app-root selection ---------------------------------------------------
 

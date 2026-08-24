@@ -180,8 +180,15 @@ def has_region_files(save_path: os.PathLike[str] | str | None) -> bool:
     return any(Path(region_dir).glob("r.*.*.mca"))
 
 
+def _contains_region_files(region_dir: str) -> bool:
+    return os.path.isdir(region_dir) and any(Path(region_dir).glob("r.*.*.mca"))
+
+
 def resolve_region_dir(save_path: os.PathLike[str] | str | None) -> str:
     candidates = region_dir_candidates(save_path)
+    for candidate in candidates:
+        if _contains_region_files(candidate):
+            return candidate
     for candidate in candidates:
         if os.path.isdir(candidate):
             return candidate

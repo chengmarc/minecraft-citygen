@@ -25,16 +25,17 @@ CityGen produces two parallel outputs from the same source assets:
 
 - **simulation** — fast PNG previews for iteration
 - **production** — real Sponge `.schem` output plus isometric renders for
-  Minecraft use
+  Minecraft use, plus a ready-to-play copied source world
 
 Placement logic is shared between the two; only the rendered representation
-differs. The project flow runs in four numbered stages:
+differs. The project flow runs in five numbered stages:
 
 ```text
 01 roads   -> road assets            (extract from world)
 02 builds  -> building assets + catalog (extract from world)
 03 grid    -> generated road network  (seed -> network)
 04 city    -> roads + placed buildings (final assembly)
+05 world   -> copied source save with generated city regions
 ```
 
 The core unit tying pixels to blocks is:
@@ -92,3 +93,5 @@ Individual stages can be run directly; see the
 - Buildings are placed on the fine grid in two passes: type-2 first, then type-1.
 - Simulation and production share layout logic but render different assets.
 - `buildings.json` is the bridge between extraction and placement.
+- World export copies the source save, replaces its overworld region files, and
+  recenters spawn/player onto the generated city.

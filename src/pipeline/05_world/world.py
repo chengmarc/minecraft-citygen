@@ -1,4 +1,4 @@
-"""Export the final city .schem as a standalone, ready-to-play void world."""
+"""Export the final city .schem into a copied, ready-to-play source world."""
 
 from __future__ import annotations
 
@@ -24,7 +24,7 @@ def run(*, seed=DEFAULT_SEED, out=None, logger=None, progress=None):
         raise FileNotFoundError(f"City schematic not found: {schem}. Run city construct first.")
     out = out or os.path.join(SAVES, f"seed_{seed}_world")
 
-    # Build the world from the source world's own level.dat (native to its version).
+    # Copy the source world and replace only the output overworld region files.
     logger(f"building world from source level.dat: {os.path.join(SAVE, 'level.dat')}")
     summary = schem_to_world(schem, out, source_world=SAVE, progress=progress)
     logger(

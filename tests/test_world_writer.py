@@ -1,4 +1,4 @@
-"""World export: the schem -> standalone void world writer.
+"""World export: the schem -> standalone copied-world writer.
 
 The writer is the inverse of the Anvil reader, so the strongest check is a
 round trip: write a grid out as a world, read it back with ``World``, and assert
@@ -232,6 +232,58 @@ class SchemToWorldTests(unittest.TestCase):
             world_writer.schem_to_world(schem, out, source_world=source)
             self.assertFalse(os.path.exists(os.path.join(out, "stale.txt")))
             self.assertTrue(os.path.exists(os.path.join(out, "data", "marker.txt")))
+
+    def test_invalid_explicit_source_world_is_not_silently_replaced(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            schem = os.path.join(tmp, "city.schem")
+            out = os.path.join(tmp, "world")
+            self._write_schem(schem)
+
+            missing = os.path.join(tmp, "missing")
+            with self.assertRaisesRegex(FileNotFoundError, "Source world not found"):
+                world_writer.schem_to_world(schem, out, source_world=missing)
+
+    def test_source_data_version_is_clamped_to_sponge_v3_floor(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            source = self._fake_source_world(tmp, 3105)
+            schem = os.path.join(tmp, "city.schem")
+            out = os.path.join(tmp, "world")
+            self._write_schem(schem)
+
+            world_writer.schem_to_world(schem, out, source_world=source)
+
+            data = nbtlib.load(os.path.join(out, "level.dat"))["Data"]
+            self.assertEqual(int(data["DataVersion"]), world_writer.HARD_FLOOR_DATA_VERSION)
+
+    def test_export_rejects_output_inside_source_world(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            source = self._fake_source_world(tmp, 4790)
+            schem = os.path.join(tmp, "city.schem")
+            out = os.path.join(source, "nested-output")
+            self._write_schem(schem)
+
+            with self.assertRaisesRegex(ValueError, "must not contain each other"):
+                world_writer.schem_to_world(schem, out, source_world=source)
+
+    def test_export_rejects_source_world_as_output_dir(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            source = self._fake_source_world(tmp, 4790)
+            schem = os.path.join(tmp, "city.schem")
+            self._write_schem(schem)
+
+            with self.assertRaisesRegex(ValueError, "must be different"):
+                world_writer.schem_to_world(schem, source, source_world=source)
+
+    def test_export_rejects_source_world_inside_output_dir(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            output_parent = os.path.join(tmp, "output")
+            os.makedirs(output_parent)
+            source = self._fake_source_world(output_parent, 4790)
+            schem = os.path.join(tmp, "city.schem")
+            self._write_schem(schem)
+
+            with self.assertRaisesRegex(ValueError, "must not contain each other"):
+                world_writer.schem_to_world(schem, output_parent, source_world=source)
 
 
 if __name__ == "__main__":

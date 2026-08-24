@@ -53,9 +53,10 @@ origin lands correctly).
 **5. World.** [05_world/world.py](05_world/world.py) reads the final city `.schem`
 and writes a standalone, ready-to-play world to `artifacts/saves/seed_<n>_world/`
 (via [`engine.world.writer`](../engine/world/writer.py), the inverse of the Anvil
-reader). It slices the city into chunks, seats the ground near y=64, centres the
-city on the world origin, and pins the player spawn to solid ground — so the world
-loads and drops the player onto the city immediately.
+reader). It copies the selected source save, purges only the copied overworld
+region files, writes generated city chunks back into that same layout, seats the
+ground near y=64, centres the city on the world origin, and pins the player spawn
+to solid ground so the world opens directly on the city.
 
 ## In-world asset conventions
 
@@ -140,8 +141,8 @@ artifacts/*/*/*.png                        # preview and render images
 ```
 
 The final city schematic in `artifacts/city/production/` is a Sponge `.schem`;
-`artifacts/saves/seed_<n>_world/` is a standalone world folder you can drop
-straight into `.minecraft/saves/`.
+`artifacts/saves/seed_<n>_world/` is a copied source-world save with generated
+city regions, ready to drop straight into `.minecraft/saves/`.
 
 ## Running stages
 
