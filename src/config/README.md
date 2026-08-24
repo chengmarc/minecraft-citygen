@@ -21,7 +21,7 @@ a stage's behavior is fixed once its config module is imported.
 
 Non-code assets that ship in this package:
 
-- [default_world/](default_world) — the bundled source world (Minecraft 1.20)
+- `default_world/` — the bundled source world (Minecraft 1.20)
   the app defaults to; `MC_CITY_SAVE` overrides it.
 - `color_render.csv` — the isometric renderer's block-color palette (see
   [Render palette maintenance](#render-palette-maintenance)).
@@ -33,6 +33,12 @@ variable. The typed readers in `path.py` (`env_int`, `env_set`, `env_raw`, …)
 apply the override or fall back to the default. The GUI and CLI set these
 variables before importing/reloading a stage, which is how a run is configured
 without editing code.
+
+For in-process callers, the supported boundary is
+`pipeline.services.<stage>(env_overrides={...})`. Pass only the `MC_CITY_*` keys
+needed for that run; `pipeline.runtime.configured_environment` temporarily
+applies them, reloads the import-time config graph, and restores the prior
+environment after the stage exits.
 
 ## Version Compatibility
 

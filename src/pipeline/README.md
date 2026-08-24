@@ -25,6 +25,21 @@ same way.
 `construct` builds production `.schem` output, `render` produces isometric PNGs,
 and `world` exports the final city as a standalone Minecraft save.
 
+## Runtime boundary
+
+Pipeline stages read configuration from `MC_CITY_*` environment variables at
+import time through the `config` package. In-process callers should not mutate
+`os.environ` directly; call [`services.py`](services.py) functions with an
+`env_overrides` dict containing only the `MC_CITY_*` values needed for that run.
+[`runtime.py`](runtime.py) applies those values under a process-wide lock,
+reloads config/engine/stage modules in dependency order, runs the stage, then
+restores the previous environment and reloads again.
+
+This keeps GUI runs deterministic, but it is still process-global state. Run
+overridden stages one at a time inside a process. For true concurrent generation
+with different configs, use separate processes or replace the import-time config
+model with explicit config objects.
+
 ## Pipeline stages
 
 **1. Roads.** [01_roads/extract.py](01_roads/extract.py) exports named road `.schem`
@@ -145,6 +160,23 @@ The final city schematic in `artifacts/city/production/` is a Sponge `.schem`;
 city regions, ready to drop straight into `.minecraft/saves/`.
 
 ## Running stages
+
+From a repo checkout, direct script execution works without installing the
+package:
+
+```bash
+python src/pipeline/01_roads/extract.py
+python src/pipeline/02_builds/extract.py
+python src/pipeline/03_grid/simulation.py --seed 5
+python src/pipeline/03_grid/construct.py --seed 5
+python src/pipeline/04_city/simulation.py --seed 5
+python src/pipeline/04_city/construct.py --seed 5
+python src/pipeline/04_city/render.py
+python src/pipeline/05_world/world.py --seed 5
+```
+
+Package-module execution is also supported when `src/` is on `PYTHONPATH` or the
+project is installed:
 
 ```bash
 python -m pipeline.01_roads.extract

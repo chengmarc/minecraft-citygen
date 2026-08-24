@@ -6,23 +6,9 @@ The format is based on Keep a Changelog, and versions should match the release v
 
 ## [Unreleased]
 
-### Changed
+No unreleased changes.
 
-- world export now treats the selected source save as the template: it copies the
-  save, replaces the copied overworld region files with generated city chunks,
-  and preserves the source world's native save/worldgen structure
-
-### Fixed
-
-- world export now rejects missing explicit source-world paths instead of
-  silently falling back to the bundled default world
-- world export now rejects overlapping source/output directories before deleting
-  the output folder
-- region-directory discovery now prefers candidates that contain `.mca` files,
-  avoiding empty `region/` folders when a nested overworld region directory is
-  the real save data
-
-## [1.0.0] - 2026-08-23
+## [1.0.0] - 2026-08-25
 
 The world-export milestone. Alongside the WorldEdit-ready `.schem`, CityGen now
 exports the finished city as a standalone, ready-to-play Minecraft world, so a
@@ -46,6 +32,9 @@ city can be explored in-game with no mods.
 - the **Render** tab is now **Generation** and its button is **Generate**; a
   single click runs construct → render → world, and the output action is now
   **Copy World**, which opens `artifacts/saves/`
+- world export now treats the selected source save as the template: it copies the
+  save, replaces the copied overworld region files with generated city chunks,
+  and preserves the source world's native save/worldgen structure
 - launching the app and switching worlds now share one artifact wipe that clears
   everything under `artifacts/` except exported worlds (`saves/`), so both start
   from the same clean slate
@@ -66,6 +55,13 @@ city can be explored in-game with no mods.
 
 ### Fixed
 
+- world export now rejects missing explicit source-world paths instead of
+  silently falling back to the bundled default world
+- world export now rejects overlapping source/output directories before deleting
+  the output folder
+- region-directory discovery now prefers candidates that contain `.mca` files,
+  avoiding empty `region/` folders when a nested overworld region directory is
+  the real save data
 - picking a target version newer than the source no longer stamps the schematic
   with that newer version (which skipped the DataFixer and holed out blocks
   renamed since the source, e.g. `grass` → `short_grass`)

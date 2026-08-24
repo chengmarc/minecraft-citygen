@@ -12,7 +12,7 @@ import sys
 from config import algo
 from config.algo import DEFAULT_SEED
 from config.path import (
-    ARTIFACTS, BUILD_CATALOG, BUILDS_PROD, CITY_PROD, CITY_SIM,
+    ARTIFACTS, BUILDS_PROD, CITY_PROD, CITY_SIM,
     GRID_SIM, GUI, ROOT, ROADS_PROD, SAVES,
 )
 from config.world import BUILD_TYPES, ROAD_BOX, SAVE
@@ -163,12 +163,7 @@ def city_render_path(seed):
 
 
 def extracted_assets_ready():
-    required = (ROAD_CONTACT_SHEET, BUILD_CONTACT_SHEET, BUILD_CATALOG)
-    if not all(os.path.exists(path) for path in required):
-        return False
-    road_assets = glob.glob(os.path.join(ROADS_PROD, "*.schem"))
-    build_assets = glob.glob(os.path.join(BUILDS_PROD, "*.schem"))
-    return bool(road_assets) and bool(build_assets)
+    return os.path.exists(ROAD_CONTACT_SHEET) and os.path.exists(BUILD_CONTACT_SHEET)
 
 
 def region_to_xyz_pair(region):

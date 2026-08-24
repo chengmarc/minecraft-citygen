@@ -122,6 +122,15 @@ class MinecraftTopColorExtractor:
         self.model_cache: dict[str, dict] = {}
         self.texture_cache: dict[str, tuple[Image.Image, tuple[int, int]]] = {}
 
+    def __enter__(self) -> "MinecraftTopColorExtractor":
+        return self
+
+    def __exit__(self, *_exc_info) -> None:
+        self.close()
+
+    def close(self) -> None:
+        self.zf.close()
+
     def load_json(self, path: str) -> dict:
         if path not in self.json_cache:
             self.json_cache[path] = json.loads(self.zf.read(path))
@@ -178,7 +187,8 @@ class MinecraftTopColorExtractor:
             return self.texture_cache[texture_path]
 
         with self.zf.open(texture_path) as fh:
-            img = Image.open(fh).convert("RGBA")
+            with Image.open(fh) as image:
+                img = image.convert("RGBA")
             width, height = img.size
             frame_height = width if height >= width and height % width == 0 else height
             first_frame = img.crop((0, 0, width, frame_height))
@@ -487,8 +497,8 @@ def main() -> int:
     output_path = args.output.expanduser().resolve()
     version_id, jar_path = download_client_jar(args.version)
 
-    extractor = MinecraftTopColorExtractor(jar_path)
-    rows = apply_renamed_aliases(extractor.extract())
+    with MinecraftTopColorExtractor(jar_path) as extractor:
+        rows = apply_renamed_aliases(extractor.extract())
     write_csv(rows, output_path)
     print(f"downloaded {version_id} client JAR to {jar_path}")
     print(f"wrote {len(rows)} rows to {output_path}")

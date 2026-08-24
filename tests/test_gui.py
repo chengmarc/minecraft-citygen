@@ -337,13 +337,13 @@ class StepGatingTests(unittest.TestCase):
         self.assertFalse(window.generation_tab.controls.action_button.isEnabled())
 
         with mock.patch.object(common, "extracted_assets_ready", return_value=True):
-            window.mark_extraction_complete(window.extraction_tab.prerequisite_state())
+            window.refresh_prerequisite_buttons()
             self.assertTrue(window.preview_tab.controls.action_button.isEnabled())
             self.assertTrue(window.generation_tab.controls.action_button.isEnabled())
 
         window.close()
 
-    def test_successful_extraction_enables_preview_without_filesystem_probe(self):
+    def test_successful_extraction_enables_preview_when_contact_sheets_exist(self):
         with (
             mock.patch.object(common, "load_saved_gui_config", return_value={}),
             mock.patch.object(common, "clear_pipeline_artifacts"),
@@ -351,25 +351,26 @@ class StepGatingTests(unittest.TestCase):
         ):
             window = gui_app.CityGeneratorQtApp()
 
-        window.mark_extraction_complete(window.extraction_tab.prerequisite_state())
+        with mock.patch.object(common, "extracted_assets_ready", return_value=True):
+            window.mark_extraction_complete(window.extraction_tab.prerequisite_state())
         self.assertTrue(window.preview_tab.controls.action_button.isEnabled())
         self.assertTrue(window.generation_tab.controls.action_button.isEnabled())
         window.close()
 
-    def test_changing_extraction_inputs_after_success_disables_preview_again(self):
+    def test_changing_extraction_inputs_keeps_preview_enabled_when_contact_sheets_exist(self):
         with (
             mock.patch.object(common, "load_saved_gui_config", return_value={}),
             mock.patch.object(common, "clear_pipeline_artifacts"),
-            mock.patch.object(common, "extracted_assets_ready", return_value=False),
+            mock.patch.object(common, "extracted_assets_ready", return_value=True),
         ):
             window = gui_app.CityGeneratorQtApp()
 
-        window.mark_extraction_complete(window.extraction_tab.prerequisite_state())
-        self.assertTrue(window.preview_tab.controls.action_button.isEnabled())
+            window.mark_extraction_complete(window.extraction_tab.prerequisite_state())
+            self.assertTrue(window.preview_tab.controls.action_button.isEnabled())
 
-        window.extraction_tab.road_group.clear_selection()
-        self.assertFalse(window.preview_tab.controls.action_button.isEnabled())
-        self.assertFalse(window.generation_tab.controls.action_button.isEnabled())
+            window.extraction_tab.road_group.clear_selection()
+            self.assertTrue(window.preview_tab.controls.action_button.isEnabled())
+            self.assertTrue(window.generation_tab.controls.action_button.isEnabled())
         window.close()
 
     def test_preview_and_generation_keep_advanced_toggle_in_sync(self):

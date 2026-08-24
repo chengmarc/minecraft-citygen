@@ -6,7 +6,7 @@
   <img src="https://img.shields.io/badge/Version-1.0.0-6495ED?style=for-the-badge" alt="Release 1.0.0">
   <img src="https://img.shields.io/badge/Minecraft-%E2%89%A5%201.20-4C9A2A?style=for-the-badge" alt="Minecraft >= 1.20">
   <h3>
-    Download <a href="https://github.com/CDS-SP/minecraft-citygen/releases/download/v1.0.0/CityGen-setup.exe">Windows Installer (.exe)</a> or 
+    Download <a href="https://github.com/CDS-SP/minecraft-citygen/releases/download/v1.0.0/CityGen-setup.exe">Windows Installer (.exe)</a> or
     <a href="https://github.com/CDS-SP/minecraft-citygen/releases/download/v1.0.0/CityGen-portable-windows.zip">Compressed Portable (.zip)</a>
   </h3>
   <br>
@@ -88,10 +88,38 @@ See the [source architecture overview](src/README.md) and its per-package guides
 ([config](src/config/README.md), [engine](src/engine/README.md),
 [gui](src/gui/README.md), [pipeline](src/pipeline/README.md)).
 
+## Developer Quick Start
+
+```bash
+python -m pip install -e .
+pytest -q
+pythonw application.pyw
+```
+
+The source tree is organized as four packages under `src/`: `config`, `engine`,
+`gui`, and `pipeline`. Generated previews, schematics, renders, exported worlds,
+test caches, and packaging outputs live in git-ignored directories such as
+`artifacts/`, `build/`, and `dist/`. To clear regenerated local outputs:
+
+```bash
+python tools/clear_cache.py
+```
+
+Pipeline stages can be run from their script paths in a checkout, for example:
+
+```bash
+python src/pipeline/04_city/construct.py --seed 5
+```
+
+Use `MC_CITY_*` environment overrides through `pipeline.services` for in-process
+runs; the pipeline runtime applies them under a lock and reloads import-time
+configuration safely for one run at a time.
+
 ### Supported Minecraft Versions
 
 ![26.1](https://img.shields.io/badge/26.1-404040)
 ![26.1.1](https://img.shields.io/badge/26.1.1-404040)
+![26.1.2](https://img.shields.io/badge/26.1.2-404040)
 ![26.2](https://img.shields.io/badge/26.2-404040)
 
 ![1.21](https://img.shields.io/badge/1.21-707070)

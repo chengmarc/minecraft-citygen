@@ -17,8 +17,13 @@ from collections import deque
 from dataclasses import dataclass, field
 from typing import Any
 
-from config.algo import (BANNED_BUILDINGS, CELL, TYPE1_TOP_FIT_CHOICES,
-                                TYPE2_SAME_COARSE_SPAN, TYPE2_TOP_FIT_CHOICES)
+from config.algo import (
+    BANNED_BUILDINGS,
+    CELL,
+    TYPE1_TOP_FIT_CHOICES,
+    TYPE2_SAME_COARSE_SPAN,
+    TYPE2_TOP_FIT_CHOICES,
+)
 from config.path import BUILD_CATALOG
 
 CELL_BLOCKS = CELL
@@ -136,7 +141,7 @@ class PlacementRules:
         for cx, cy in coarse_cells_of_rect(rect):
             for ox, oy in occupied:
                 if abs(cx - ox) <= max_delta and abs(cy - oy) <= max_delta:
-                        return True
+                    return True
         return False
 
 
@@ -145,7 +150,8 @@ def catalog_type(meta):
 
 
 def load_catalog(rules=None):
-    data = json.load(open(BUILD_CATALOG))
+    with open(BUILD_CATALOG, encoding="utf-8") as fh:
+        data = json.load(fh)
     buildings = []
     for num, meta in data.items():
         if rules is not None and not rules.allow_building(num, meta):

@@ -11,7 +11,7 @@ from pathlib import Path
 from PIL import Image, ImageDraw, ImageFont
 
 if __package__ in (None, ""):
-    sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+    sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
 from config.path import BUILD_CATALOG, BUILDS_SIM
 from config.render import BUILD_PREVIEW_COLORS, CONTACT_SHEET_BG
@@ -122,7 +122,8 @@ def write_contact(images):
 def run(*, key=None, logger=None, progress=None):
     logger = logger or noop
     progress = progress or noop
-    catalog = json.load(open(CATALOG))
+    with open(CATALOG, encoding="utf-8") as fh:
+        catalog = json.load(fh)
     keys = [key] if key else sorted(catalog)
     os.makedirs(BUILDS_SIM, exist_ok=True)
 

@@ -61,8 +61,8 @@ def configured_environment(env_overrides=None):
     ``os.environ`` and reload shared modules, so the body must run in isolation.
     """
     env_overrides = env_overrides or {}
-    previous = {key: os.environ.get(key) for key in env_overrides}
     with PIPELINE_LOCK:
+        previous = {key: os.environ.get(key) for key in env_overrides}
         try:
             for key, value in env_overrides.items():
                 os.environ[key] = value

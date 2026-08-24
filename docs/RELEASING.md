@@ -1,14 +1,18 @@
 # Releasing
 
-This repo publishes a Windows installer as the primary end-user deliverable.
+This repo publishes a Windows installer and a portable Windows zip as the
+end-user deliverables.
 
-The default release artifact is:
+The default release artifacts are:
 
 - `dist/release/CityGen-setup.exe`
+- `dist/release/CityGen-portable-windows.zip`
 
 ## Release Rules
 
-- do not publish `dist/portable` or `dist/onefile` artifacts unless there is a specific testing reason
+- publish only the curated files under `dist/release`, not the raw `dist/portable`
+  or `dist/onefile` build directories
+- do not publish the standalone `CityGen.exe` unless there is a specific testing reason
 - do not show a version number inside the app UI; the git tag is the release version of record
 - keep packaging metadata intentional, but do not treat it as user-facing release branding
 
@@ -23,13 +27,14 @@ The default release artifact is:
 python -m unittest discover -s tests
 ```
 
-5. Build the installer:
+5. Build the release artifacts:
 
 ```bash
 python packaging/build_windows_release.py --clean
 ```
 
-6. Confirm the only published artifact in `dist/release` is `CityGen-setup.exe`.
+6. Confirm the only published artifacts in `dist/release` are
+   `CityGen-setup.exe` and `CityGen-portable-windows.zip`.
 7. Install the generated installer on a non-dev machine or a clean VM.
 8. Smoke-test the real user flow:
 
@@ -66,7 +71,8 @@ Inno Setup must be installed so `ISCC.exe` is available. The current build scrip
 
 ## Optional Non-Release Artifacts
 
-These are for testing only and should not be the default public deliverables:
+The standalone one-file executable is for testing only and should not be the
+default public deliverable:
 
 ```bash
 python packaging/build_windows_release.py --clean --include-standalone
@@ -74,7 +80,6 @@ python packaging/build_windows_release.py --clean --include-standalone
 
 This can additionally produce:
 
-- `dist/release/CityGen-portable-windows.zip`
 - `dist/release/CityGen.exe`
 
 ## Recommended Release Sequence
@@ -82,7 +87,7 @@ This can additionally produce:
 1. Choose the release tag.
 2. Update changelog.
 3. Run tests.
-4. Build installer.
+4. Build release artifacts.
 5. Install and smoke-test installer.
 6. Tag release.
-7. Publish only `CityGen-setup.exe`.
+7. Publish `CityGen-setup.exe` and `CityGen-portable-windows.zip`.

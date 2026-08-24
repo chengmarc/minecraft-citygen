@@ -32,7 +32,8 @@ def assemble(key, meta):
 def run(*, logger=None, progress=None):
     logger = logger or noop
     progress = progress or noop
-    catalog = json.load(open(CATALOG))
+    with open(CATALOG, encoding="utf-8") as fh:
+        catalog = json.load(fh)
     os.makedirs(BUILDS_PROD, exist_ok=True)
 
     images = []

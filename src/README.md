@@ -10,13 +10,13 @@ inside a Minecraft world — into a complete, paste-ready city. Everything under
 
 | Package | Responsibility | Guide |
 |---|---|---|
-| [`config/`](config/README.md) | Settings, tuning knobs, paths, version compatibility, the bundled world | [config guide](config/README.md) |
-| [`engine/`](engine/README.md) | Pure generation & transforms: road networks, placement, schematic I/O, rendering | [engine guide](engine/README.md) |
-| [`gui/`](gui/README.md) | PySide6 desktop app that drives the pipeline | [gui guide](gui/README.md) |
-| [`pipeline/`](pipeline/README.md) | Numbered stages that orchestrate engine + config into artifacts | [pipeline guide](pipeline/README.md) |
+| `config/` | Settings, tuning knobs, paths, version compatibility, the bundled world | [config guide](config/README.md) |
+| `engine/` | Pure generation & transforms: road networks, placement, schematic I/O, rendering | [engine guide](engine/README.md) |
+| `gui/` | PySide6 desktop app that drives the pipeline | [gui guide](gui/README.md) |
+| `pipeline/` | Numbered stages that orchestrate engine + config into artifacts | [pipeline guide](pipeline/README.md) |
 
-The dependency direction is one-way: `gui` and `pipeline` depend on `engine` and
-`config`; `engine` depends on `config`; `config` depends on nothing else in the
+The dependency direction is one-way: `gui/` and `pipeline/` depend on `engine/` and
+`config/`; `engine/` depends on `config/`; `config/` depends on nothing else in the
 tree.
 
 ## High-Level Model
@@ -82,8 +82,21 @@ GUI (installed entry point `citygen`, or from the repo):
 pythonw application.pyw
 ```
 
-Individual stages can be run directly; see the
-[pipeline guide](pipeline/README.md#running-stages) for the full list.
+Individual stages can be run directly from their script path, or as package
+modules when `src/` is on `PYTHONPATH`; see the
+[pipeline guide](pipeline/README.md#running-stages) for the full list and the
+runtime configuration contract.
+
+Generated outputs are intentionally kept outside source packages:
+
+```text
+artifacts/     previews, schematics, renders, exported worlds
+build/ dist/   packaging outputs
+.pytest_cache/ test-run cache
+```
+
+These directories are git-ignored and can be regenerated. `tools/clear_cache.py`
+removes generated artifacts/build caches when you need a clean local run.
 
 ## Mental Model Summary
 

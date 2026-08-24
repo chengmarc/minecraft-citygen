@@ -14,7 +14,7 @@ from functools import lru_cache
 from pathlib import Path
 
 if __package__ in (None, ""):
-    sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+    sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
 from config.path import ROADS_PROD
 from config.world import BUILD_MARKER_Y_RANGE, DATA_VERSION, REFERENCE_GROUND_Y, ROAD_BOX

@@ -31,5 +31,26 @@ class ClearPipelineArtifactsTests(unittest.TestCase):
             self.assertFalse(os.path.exists(os.path.join(root, "loose.png")))  # loose files wiped
 
 
+class ExtractedAssetsReadyTests(unittest.TestCase):
+    def test_requires_only_road_and_build_contact_sheets(self):
+        with tempfile.TemporaryDirectory() as root:
+            road_sheet = os.path.join(root, "roads", "production", "_contact_sheet.png")
+            build_sheet = os.path.join(root, "builds", "production", "_contact_sheet.png")
+            os.makedirs(os.path.dirname(road_sheet))
+            os.makedirs(os.path.dirname(build_sheet))
+
+            with (
+                mock.patch.object(common, "ROAD_CONTACT_SHEET", road_sheet),
+                mock.patch.object(common, "BUILD_CONTACT_SHEET", build_sheet),
+            ):
+                self.assertFalse(common.extracted_assets_ready())
+
+                open(road_sheet, "wb").close()
+                self.assertFalse(common.extracted_assets_ready())
+
+                open(build_sheet, "wb").close()
+                self.assertTrue(common.extracted_assets_ready())
+
+
 if __name__ == "__main__":
     unittest.main()

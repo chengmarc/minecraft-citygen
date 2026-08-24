@@ -9,7 +9,7 @@ from functools import lru_cache
 from pathlib import Path
 
 if __package__ in (None, ""):
-    sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+    sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
 from config.path import BUILD_CATALOG, BUILDS_PROD
 from config.world import BUILD_MARKER_Y_RANGE, BUILD_TYPES, DATA_VERSION, REFERENCE_GROUND_Y
@@ -121,7 +121,8 @@ def run(*, logger=None, progress=None):
         logger(f"extracted {key}")
         progress(i + 1, total, key)
 
-    json.dump(catalog, open(CATALOG, "w"), indent=2)
+    with open(CATALOG, "w", encoding="utf-8") as fh:
+        json.dump(catalog, fh, indent=2)
     logger(f"wrote {len(catalog)} builds to {CATALOG}")
     return {
         "count": len(catalog),

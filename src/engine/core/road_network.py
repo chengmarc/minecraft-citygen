@@ -106,7 +106,8 @@ MIXED_TILES = [
 def load_assets():
     assets = {}
     for _, name in BIG_TILES + SMALL_TILES + MIXED_TILES:
-        assets[name] = Image.open(os.path.join(ASSET_DIR, name + ".png")).convert("RGBA")
+        with Image.open(os.path.join(ASSET_DIR, name + ".png")) as image:
+            assets[name] = image.convert("RGBA")
     return assets
 
 

@@ -1,9 +1,13 @@
 """Developer tooling: the render-colour extractor and the Windows release build."""
 import importlib.util
+import io
 import os
 import sys
 import unittest
+from contextlib import redirect_stdout
 from pathlib import Path
+from types import SimpleNamespace
+from unittest import mock
 
 from PIL import Image
 
@@ -138,6 +142,38 @@ class BuildWindowsReleaseTests(unittest.TestCase):
         parts = env["PYTHONPATH"].split(os.pathsep)
         self.assertEqual(parts[0], str(build_windows_release.SRC_ROOT))
         self.assertIn("existing-path", parts[1:])
+
+    def test_default_release_main_publishes_installer_and_portable_zip(self):
+        installer_path = Path("dist/release/CityGen-setup.exe")
+        zip_path = Path("dist/release/CityGen-portable-windows.zip")
+
+        with (
+            mock.patch.object(build_windows_release.os, "name", "nt"),
+            mock.patch.object(
+                build_windows_release,
+                "parse_args",
+                return_value=SimpleNamespace(clean=False, include_standalone=False),
+            ),
+            mock.patch.object(build_windows_release, "ensure_pyinstaller"),
+            mock.patch.object(build_windows_release, "load_version", return_value="1.0.0"),
+            mock.patch.object(build_windows_release, "build_icon", return_value=Path("icon.ico")),
+            mock.patch.object(build_windows_release, "build_portable", return_value=Path("portable/CityGen")) as build_portable,
+            mock.patch.object(build_windows_release, "build_installer", return_value=installer_path),
+            mock.patch.object(build_windows_release, "build_zip", return_value=zip_path) as build_zip,
+            mock.patch.object(build_windows_release, "build_onefile") as build_onefile,
+            mock.patch.object(build_windows_release, "prune_release_artifacts") as prune_release_artifacts,
+        ):
+            with redirect_stdout(io.StringIO()):
+                result = build_windows_release.main()
+
+        self.assertEqual(result, 0)
+        build_zip.assert_called_once_with(build_portable.return_value)
+        build_onefile.assert_not_called()
+        prune_release_artifacts.assert_called_once_with(
+            keep_installer=True,
+            keep_zip=True,
+            keep_exe=False,
+        )
 
 
 if __name__ == "__main__":

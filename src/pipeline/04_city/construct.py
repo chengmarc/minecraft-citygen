@@ -11,7 +11,7 @@ from pathlib import Path
 import numpy as np
 
 if __package__ in (None, ""):
-    sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+    sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
 from config.algo import DEFAULT_SEED, FINE as DEFAULT_FINE
 from config.path import BUILD_CATALOG, CITY_PROD, GRID_PROD

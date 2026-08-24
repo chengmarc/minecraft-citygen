@@ -22,7 +22,7 @@ application.pyw  ->  gui.launcher:main  ->  gui.app  (QApplication + main window
 |---|---|
 | [launcher.py](launcher.py) | Installed GUI entry point; routes to the Qt app |
 | [app.py](app.py) | PySide6 host shell: main window, arg parsing, theme wiring, top-level error handling |
-| [tabs/](tabs) | The three main tabs: **Extraction**, **Preview**, **Generation** |
+| `tabs/` | The three main tabs: **Extraction**, **Preview**, **Generation** |
 | `core/` | Non-widget GUI support (below) |
 | `widgets/` | Custom input and viewer widgets (below) |
 

@@ -11,7 +11,7 @@ from pathlib import Path
 from PIL import Image, ImageDraw, ImageFont
 
 if __package__ in (None, ""):
-    sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+    sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
 from config.algo import DEFAULT_SEED, FINE as DEFAULT_FINE
 from config.path import BUILDS_SIM, CITY_SIM, ROADS_SIM
@@ -50,7 +50,8 @@ def load_build_asset(key):
     path = os.path.join(BUILDS, f"{key}.png")
     if not os.path.exists(path):
         raise FileNotFoundError(f"missing build asset {path}; run `python -m pipeline.02_builds.simulation` first")
-    return Image.open(path).convert("RGBA")
+    with Image.open(path) as image:
+        return image.convert("RGBA")
 
 
 def paste_building(canvas, asset, key, facing, rect):
@@ -93,7 +94,11 @@ def fill_lots(road_cells, size):
 def load_fill_assets():
     """Top-down fill-prop tiles produced by `pipeline.01_roads.simulation`."""
     paths = sorted(glob.glob(os.path.join(ROADS_SIM, f"*{FILL_TOKEN}*.png")))
-    return [Image.open(path).convert("RGBA") for path in paths]
+    assets = []
+    for path in paths:
+        with Image.open(path) as image:
+            assets.append(image.convert("RGBA"))
+    return assets
 
 
 def place_fill_props(canvas, road_cells, occupied, size, fillers, rng):
