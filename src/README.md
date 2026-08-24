@@ -25,7 +25,7 @@ CityGen produces two parallel outputs from the same source assets:
 
 - **simulation** — fast PNG previews for iteration
 - **production** — real Sponge `.schem` output plus isometric renders for
-  Minecraft / WorldEdit use
+  Minecraft use
 
 Placement logic is shared between the two; only the rendered representation
 differs. The project flow runs in four numbered stages:
@@ -52,9 +52,9 @@ defined by `CELL = 9` in [config/algo.py](config/algo.py). `buildings.json`
   (optional `numba` for speed). Declared in [pyproject.toml](../pyproject.toml).
 - Source world: Minecraft **Java Edition**, 1.18+ Anvil region/chunk format.
   Not a Bedrock pipeline; older world formats are not supported.
-- Output: Sponge `.schem` (v3 container), for a WorldEdit workflow. The supported
-  floor is Minecraft **1.20**; versioning is **forward-only** — see the
-  [config guide](config/README.md#version-compatibility).
+- Output: Sponge `.schem` (v3 container) plus standalone world exports. The
+  supported floor is Minecraft **1.20**; versioning is **forward-only** — see
+  the [config guide](config/README.md#version-compatibility).
 - Local filesystem access to the Minecraft save and the export directory is
   assumed. A few GUI behaviors are Windows-oriented (e.g. `os.startfile`).
 

@@ -1,15 +1,14 @@
-"""Prototype writer: turn a city ``.schem`` into a standalone void world.
+"""Export a city ``.schem`` into a copied Minecraft world save.
 
 The inverse of :mod:`engine.world.anvil_world_reader`. It slices the city voxel
 grid into 16x16x16 sections, bit-packs each section's ``block_states`` the same
-way the reader unpacks them, assembles chunk NBT + region files, and drops the
-result into a copy of the bundled ``default_world`` with the generator emptied to
-a void (so nothing is generated around the city -- everything outside the written
-chunks is simply void air).
+way the reader unpacks them, assembles chunk NBT + region files, and writes them
+into a byte-for-byte copy of the source world. Only the copied world's
+overworld region files, player/spawn location, save-list name, and icon are
+changed, so the output keeps the source world's native save structure.
 
-Scope is deliberately small: just place the city, leave the rest void. No
-lighting is baked (``isLightOn`` is false so Minecraft relights on load) and no
-terrain/structures are generated.
+Scope is deliberately small: just place the city in the copied world. No
+lighting is baked (``isLightOn`` is false so Minecraft relights on load).
 """
 
 from __future__ import annotations
@@ -20,12 +19,13 @@ import shutil
 import struct
 import time
 import zlib
+from pathlib import Path
 
 import numpy as np
 import nbtlib
 from nbtlib import Byte, Compound, Double, Float, Int, List, Long, LongArray, String
 
-from config.path import DEFAULT_WORLD, GUI
+from config.path import DEFAULT_WORLD, GUI, region_dir_candidates, resolve_region_dir
 from config.versions import HARD_FLOOR_DATA_VERSION, release_name_for
 from engine.schematic.reader import (
     decode_schem_array,
@@ -190,12 +190,60 @@ def _write_region(path, chunks):
         fh.write(body)
 
 
-def write_world(grid, inv, block_entities, out_dir, data_version, base_y, origin=None, spawn=None, source_world=None, progress=None):
-    """Write ``grid`` (shape H,L,Z indexed [y][z][x]) as a void world at ``out_dir``.
+def _source_world_root(source_world):
+    """Source world dir to copy, falling back to the bundled default world."""
+    candidate = source_world if source_world and os.path.isdir(source_world) else DEFAULT_WORLD
+    if not os.path.isdir(candidate):
+        raise FileNotFoundError(f"Source world not found: {candidate}")
+    return candidate
+
+
+def _world_region_dir(world_root):
+    """Return a world's overworld region dir, creating the best fallback path later."""
+    resolved = resolve_region_dir(world_root)
+    if resolved and os.path.isdir(resolved):
+        return resolved
+    candidates = region_dir_candidates(world_root)
+    if candidates:
+        return candidates[0]
+    return os.path.join(world_root, "region")
+
+
+def _copy_source_world(source_world, out_dir):
+    """Replace ``out_dir`` with a byte-for-byte copy of ``source_world``."""
+    shutil.rmtree(out_dir, ignore_errors=True)
+    shutil.copytree(source_world, out_dir, copy_function=shutil.copy2)
+
+
+def _prepare_output_region_dir(out_dir, source_world):
+    """Return the copied world's overworld region dir after purging old regions."""
+    source_region_dir = _world_region_dir(source_world)
+    rel_region_dir = os.path.relpath(source_region_dir, source_world)
+    out_region_dir = os.path.join(out_dir, rel_region_dir)
+    os.makedirs(out_region_dir, exist_ok=True)
+    for stale_region in Path(out_region_dir).glob("r.*.*.mca"):
+        stale_region.unlink()
+    return out_region_dir
+
+
+def write_world(
+    grid,
+    inv,
+    block_entities,
+    out_dir,
+    data_version,
+    base_y,
+    origin=None,
+    spawn=None,
+    source_world=None,
+    region_dir=None,
+    progress=None,
+):
+    """Write ``grid`` (shape H,L,Z indexed [y][z][x]) into ``out_dir``.
 
     ``inv`` maps palette index -> block state string; ``block_entities`` are
     :class:`BlockEntity` records in schem-local coords. ``source_world`` is the
-    world whose ``level.dat`` seeds the export (see :func:`_write_level_dat`).
+    world whose copied save is edited in place (see :func:`_write_level_dat`).
     Returns a small summary.
     """
     progress = progress or _noop
@@ -257,8 +305,9 @@ def write_world(grid, inv, block_entities, out_dir, data_version, base_y, origin
         regions.setdefault((ccx >> 5, ccz >> 5), {})[(ccx, ccz)] = compound
 
     progress(2, WORLD_WRITE_STEPS, "Encoding regions")
+    region_dir = region_dir or os.path.join(out_dir, "region")
     for (rx, rz), chunks in regions.items():
-        _write_region(os.path.join(out_dir, "region", f"r.{rx}.{rz}.mca"), chunks)
+        _write_region(os.path.join(region_dir, f"r.{rx}.{rz}.mca"), chunks)
 
     progress(3, WORLD_WRITE_STEPS, "Writing level.dat")
     if spawn is None:
@@ -318,39 +367,6 @@ def _write_world_icon(out_dir):
         icon.save(os.path.join(out_dir, "icon.png"))
 
 
-def _void_generator():
-    """A flat generator with no layers -> a void dimension. Fresh Compound each call."""
-    return Compound({
-        "type": String("minecraft:flat"),
-        "settings": Compound({
-            "layers": List[Compound]([]),
-            "biome": String("minecraft:the_void"),
-            "features": Byte(0),
-            "lakes": Byte(0),
-            "structure_overrides": List[String]([]),
-        }),
-    })
-
-
-def _void_world_gen_settings(seed):
-    """A complete WorldGenSettings with every dimension a flat void.
-
-    Fallback for the rare case where the base level.dat has no WorldGenSettings;
-    normally we void the source world's own settings in place (see
-    :func:`_write_level_dat`) to keep them native to the source version.
-    """
-    return Compound({
-        "seed": Long(seed),
-        "generate_features": Byte(0),
-        "bonus_chest": Byte(0),
-        "dimensions": Compound({
-            "minecraft:overworld": Compound({"type": String("minecraft:overworld"), "generator": _void_generator()}),
-            "minecraft:the_nether": Compound({"type": String("minecraft:the_nether"), "generator": _void_generator()}),
-            "minecraft:the_end": Compound({"type": String("minecraft:the_end"), "generator": _void_generator()}),
-        }),
-    })
-
-
 def _source_data_version(source_world):
     """The source world's own DataVersion (from its level.dat), or the floor."""
     if source_world:
@@ -364,88 +380,53 @@ def _source_data_version(source_world):
 
 
 def _write_level_dat(out_dir, data_version, spawn, source_world):
-    """Write the void-world level.dat from the source world's own level.dat.
+    """Edit the copied world's ``level.dat`` in place.
 
-    The source world (the one the user extracted from) already ships a level.dat
-    native to its Minecraft version -- correct WorldGenSettings shape,
-    enabled_features, data packs, everything. We reuse it and change only what a
-    void city showcase needs, so the world loads natively (no DataFixer, block
-    entities preserved exactly). Only the overworld *generator* is swapped to a
-    flat void; the rest of WorldGenSettings (and the nether/end) is left exactly as
-    the source authored it. Falls back to the bundled world's level.dat when the
-    source's is unavailable.
+    The copied save already has the source world's native structure, so only edit
+    the fields needed for the exported city: keep version labels aligned, rename
+    the save, and recenter the player/spawn onto the city.
     """
-    src = os.path.join(source_world, "level.dat") if source_world else ""
+    target = os.path.join(out_dir, "level.dat")
+    src = target if os.path.isfile(target) else ""
+    if not src:
+        src = os.path.join(source_world, "level.dat") if source_world else ""
     if not (src and os.path.isfile(src)):
         src = os.path.join(DEFAULT_WORLD, "level.dat")
     level = nbtlib.load(src)
     data = level["Data"]
 
-    # Keep the source's native version; just ensure DataVersion and Version agree.
-    data["DataVersion"] = Int(data_version)
-    version = data.get("Version") or Compound({"Series": String("main")})
-    version["Id"] = Int(data_version)
-    version["Name"] = String(release_name_for(data_version))
-    data["Version"] = version
-
-    data["LevelName"] = String("CityGen City")
-    data["GameType"] = Int(1)          # creative, to fly around the void city
-    data["allowCommands"] = Byte(1)
-    data["hardcore"] = Byte(0)         # don't inherit a hardcore source world
-    data["initialized"] = Byte(1)
-    data["Time"] = Long(6000)
-    data["DayTime"] = Long(6000)       # midday
-    data["raining"] = Byte(0)
-    data["thundering"] = Byte(0)
+    data["LevelName"] = String("CityGen World")
     data["SpawnX"], data["SpawnY"], data["SpawnZ"] = Int(spawn[0]), Int(spawn[1]), Int(spawn[2])
+    data["DataVersion"] = Int(data_version)
+    version = data.get("Version")
+    if version is not None:
+        version["Id"] = Int(data_version)
+        version["Name"] = String(release_name_for(data_version))
 
-    # Reset the world border so a small border on the source world isn't inherited.
-    data["BorderCenterX"] = Double(0.0)
-    data["BorderCenterZ"] = Double(0.0)
-    data["BorderSize"] = Double(59999968.0)
-
-    # A fresh, minimal player pinned to the spawn column. In singleplayer the saved
-    # player position takes priority over the world spawn (and Minecraft ignores
-    # SpawnY in a void world), so this is what actually lands the player on the
-    # city. Building it fresh avoids carrying the source player's inventory or
-    # position; Minecraft fills the rest with valid defaults for its version.
-    data["Player"] = Compound({
-        "Pos": List[Double]([Double(spawn[0] + 0.5), Double(spawn[1]), Double(spawn[2] + 0.5)]),
-        "Motion": List[Double]([Double(0.0), Double(0.0), Double(0.0)]),
-        "Rotation": List[Float]([Float(0.0), Float(0.0)]),
-        "FallDistance": Float(0.0),
-        "OnGround": Byte(1),
-        "Dimension": String("minecraft:overworld"),
-        "playerGameType": Int(1),
-        "Health": Float(20.0),
-        "foodLevel": Int(20),
-    })
-
-    # Void only the overworld generator, preserving the source's native
-    # WorldGenSettings structure (its exact shape is version-specific). Everything
-    # outside the written city chunks then generates as void air.
-    wgs = data.get("WorldGenSettings")
-    dims = wgs.get("dimensions") if wgs is not None else None
-    if dims is not None and "minecraft:overworld" in dims:
-        dims["minecraft:overworld"]["generator"] = _void_generator()
-        if "generate_features" in wgs:
-            wgs["generate_features"] = Byte(0)
-    else:
-        data["WorldGenSettings"] = _void_world_gen_settings(0)
+    player = data.get("Player")
+    if player is None:
+        player = Compound({})
+        data["Player"] = player
+    player["Pos"] = List[Double]([Double(spawn[0] + 0.5), Double(spawn[1]), Double(spawn[2] + 0.5)])
+    player["Motion"] = List[Double]([Double(0.0), Double(0.0), Double(0.0)])
+    player["FallDistance"] = Float(0.0)
+    player["OnGround"] = Byte(1)
+    player["Dimension"] = String("minecraft:overworld")
+    if "Rotation" not in player:
+        player["Rotation"] = List[Float]([Float(0.0), Float(0.0)])
 
     os.makedirs(out_dir, exist_ok=True)
     level.gzipped = True
-    level.save(os.path.join(out_dir, "level.dat"))
+    level.save(target)
 
 
 def schem_to_world(schem_path, out_dir, source_world=None, data_version=None, progress=None):
-    """Read a city ``.schem`` and write a standalone void world to ``out_dir``.
+    """Read a city ``.schem`` and write it into a copied world save at ``out_dir``.
 
-    The export is built from ``source_world``'s own ``level.dat`` and stamped at
-    that world's native version, so it loads natively (no DataFixer, block entities
-    preserved). ``source_world`` defaults to the bundled world. A stale world at
-    ``out_dir`` is removed first so leftover region files from a previous, larger
-    city can never survive into the export.
+    ``source_world`` defaults to the bundled world. The source save is copied
+    byte-for-byte, its overworld region files are purged, the generated regions
+    are written back into that same layout, and ``level.dat`` is edited so the
+    copied world opens at the city.
     """
     progress = progress or _noop
     progress(0, WORLD_WRITE_STEPS, "Reading schematic")
@@ -462,9 +443,11 @@ def schem_to_world(schem_path, out_dir, source_world=None, data_version=None, pr
     if data_version is None:
         data_version = _source_data_version(source_world)
 
-    shutil.rmtree(out_dir, ignore_errors=True)
+    template_world = _source_world_root(source_world)
+    _copy_source_world(template_world, out_dir)
+    region_dir = _prepare_output_region_dir(out_dir, template_world)
     return write_world(grid, inv, block_entities, out_dir, data_version, base_y,
-                       source_world=source_world, progress=progress)
+                       source_world=template_world, region_dir=region_dir, progress=progress)
 
 
 if __name__ == "__main__":

@@ -173,7 +173,7 @@ class GenerationTab(QtWidgets.QWidget, ProgressMixin):
 
         MC_CITY_SAVE lets the world-export stage read the source world's own
         level.dat as the base for the exported world. The version stamp keeps the
-        schematic on the source version (WorldEdit upgrades it forward on paste).
+        schematic on the source version so outputs stay aligned with the source.
         """
         extraction = self.owner.get_saved_config_section("extraction") or {}
         world_path = str(extraction.get("world_path", SAVE))
@@ -322,9 +322,7 @@ class ExtractionTab(QtWidgets.QWidget, ProgressMixin):
         self.detected_version_edit.setReadOnly(True)
         self.detected_version_edit.setPlaceholderText("—")
         self.detected_version_edit.setToolTip(
-            "The source world's Minecraft version. Outputs are stamped with it "
-            "and WorldEdit upgrades them forward on paste, so they work in this "
-            "version and any newer one."
+            "The Minecraft version of the world you selected."
         )
         header.addWidget(self.detected_version_edit)
         header.addSpacing(12)
@@ -334,10 +332,8 @@ class ExtractionTab(QtWidgets.QWidget, ProgressMixin):
             self.version_combo.addItem(label, value)
         self._select_version(state.get("target_version", common.AUTO_VERSION))
         self.version_combo.setToolTip(
-            "Indicator only: the Minecraft version you plan to paste into (the "
-            "source version or newer). It does not change the output -- the "
-            "schematic is always stamped with the source world's version and "
-            "WorldEdit upgrades it forward on paste."
+            "Shows which Minecraft versions the schematic should work with. "
+            "This does not change the export."
         )
         header.addWidget(self.version_combo)
         header.addStretch(1)

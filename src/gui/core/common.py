@@ -42,20 +42,20 @@ LEGACY_SAVED_GUI_CONFIG_PATH = os.path.join(ROOT_DIR, "citygen_saved_config.json
 SAVED_GUI_CONFIG_PATH = os.path.join(CONFIG_DIR, "citygen.json")
 
 PREVIEW_CONFIGS = [
-    ("FINE", "City Size", "Fine-cell width and height of the generated map."),
-    ("GAP_MIXED", "Grid Density", "Minimum clearance between a small street and a big avenue band."),
-    ("GAP_BIG", "Avenue Spacing", "Coarse-cell spacing between avenues. Higher means fewer avenues."),
-    ("PAD_BIG", "Avenue Padding", "Coarse-cell margin that keeps avenues away from the edge."),
-    ("GAP_SMALL", "Street Spacing", "Fine-cell spacing between streets. Lower means more streets."),
-    ("PAD_SMALL", "Street Padding", "Fine-cell margin that keeps streets away from the edge."),
-    ("N_BIG_CORNERS", "Avenue L-corners", "Forced L-corner count in the avenue network."),
-    ("N_BIG_TEES", "Avenue T-intersections", "Forced T-intersection count in the avenue network."),
-    ("N_SMALL_CORNERS", "Street L-corners", "Forced L-corner count in the street network."),
-    ("N_SMALL_TEES", "Street T-intersections", "Forced T-intersection count in the street network."),
-    ("BANNED_BUILDINGS", "Banned Buildings", "Comma-separated house or landmark IDs skipped during city placement."),
-    ("TYPE1_TOP_FIT_CHOICES", "House Variety", "Higher values allow more eligible house designs to appear in similar street lots."),
-    ("TYPE2_TOP_FIT_CHOICES", "Landmark Variety", "Higher values allow more eligible landmark designs to appear along avenue frontage."),
-    ("TYPE2_SAME_COARSE_SPAN", "Landmark Separation", "Controls how far apart repeated landmark designs must be. Higher values spread repeated landmarks farther apart."),
+    ("FINE", "City Size", "Changes the overall size of the generated city."),
+    ("GAP_MIXED", "Grid Density", "Controls how tightly streets and avenues are packed together."),
+    ("GAP_BIG", "Avenue Spacing", "Higher values create fewer main roads."),
+    ("PAD_BIG", "Avenue Padding", "Keeps main roads farther from the edge of the map."),
+    ("GAP_SMALL", "Street Spacing", "Lower values create more small streets."),
+    ("PAD_SMALL", "Street Padding", "Keeps small streets farther from the edge of the map."),
+    ("N_BIG_CORNERS", "Avenue L-corners", "Adds more bends to major roads."),
+    ("N_BIG_TEES", "Avenue T-intersections", "Adds more T-junctions to major roads."),
+    ("N_SMALL_CORNERS", "Street L-corners", "Adds more bends to small streets."),
+    ("N_SMALL_TEES", "Street T-intersections", "Adds more T-junctions to small streets."),
+    ("BANNED_BUILDINGS", "Banned Buildings", "Comma-separated building IDs to leave out of generation."),
+    ("TYPE1_TOP_FIT_CHOICES", "House Variety", "Higher values mix in more different house designs."),
+    ("TYPE2_TOP_FIT_CHOICES", "Landmark Variety", "Higher values mix in more different landmark designs."),
+    ("TYPE2_SAME_COARSE_SPAN", "Landmark Separation", "Higher values spread repeated landmarks farther apart."),
 ]
 PREVIEW_CONFIG_LOOKUP = {name: (label, description) for name, label, description in PREVIEW_CONFIGS}
 
@@ -323,9 +323,9 @@ def source_stamp_data_version(world_path):
     """DataVersion to stamp on outputs: the source world's own version.
 
     Outputs are always stamped with the source world's version (clamped to the
-    hard floor) and left for WorldEdit's DataFixer to upgrade forward on paste.
-    Stamping any newer version would skip that fixer and hole out blocks that were
-    renamed since the source.
+    hard floor) so forward-only compatibility stays anchored to the source data.
+    Stamping any newer version would risk skipping rename/upgrade steps for
+    blocks that changed after the source version.
     """
     detected = detect_world_data_version(world_path)
     resolved = detected if detected is not None else HARD_FLOOR_DATA_VERSION

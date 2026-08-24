@@ -42,12 +42,12 @@ SAVE = env_str("SAVE", DEFAULT_WORLD)
 REGION_DIR_CANDIDATES = tuple(region_dir_candidates(SAVE))
 REGION_DIR = resolve_region_dir(SAVE)
 
-# Schematic DataVersion (the version WorldEdit assumes when pasting). Forward-only
-# compatibility: this is always the source world's own version, so WorldEdit's
-# DataFixer upgrades the schematic forward on paste. Resolves to the GUI-pinned
-# MC_CITY_DATA_VERSION (the source version, set explicitly because construct/render
-# do not set MC_CITY_SAVE), else the source world's detected version, else the
-# hard floor; always clamped up to the hard floor. See config/versions.py.
+# Schematic DataVersion. Forward-only compatibility means this is always the
+# source world's own version, so schematic import stays aligned with the source
+# data. Resolves to the GUI-pinned MC_CITY_DATA_VERSION (the source version, set
+# explicitly because construct/render do not set MC_CITY_SAVE), else the source
+# world's detected version, else the hard floor; always clamped up to the hard
+# floor. See config/versions.py.
 def _resolve_data_version() -> int:
     raw = env_raw("DATA_VERSION")
     if raw is not None:

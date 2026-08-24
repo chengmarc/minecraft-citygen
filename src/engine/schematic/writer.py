@@ -1,8 +1,8 @@
 """Shared Sponge v3 schematic writing helpers.
 
-Every output uses the Sponge Schematic v3 container (WorldEdit 7.3.0+, Minecraft
-1.20+). The hard floor is 1.20 (see config/versions.py), so stamps never fall
-below the v3 window and the older v2 container is not emitted.
+Every output uses the Sponge Schematic v3 container (Minecraft 1.20+). The hard
+floor is 1.20 (see config/versions.py), so stamps never fall below the v3
+window and the older v2 container is not emitted.
 """
 
 from __future__ import annotations

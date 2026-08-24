@@ -47,16 +47,15 @@ preview; [04_city/construct.py](04_city/construct.py) assembles the final result
 loads/regenerates the road grid, loads the catalog, generates placements from the
 seed, samples type-2 stack counts, assembles rotated building schematics, places
 roads and buildings into one master 3D grid, optionally fills non-road ground
-cells, and writes the Sponge `.schem` (with an offset so the WorldEdit paste
+cells, and writes the Sponge `.schem` (with an offset so the schematic import
 origin lands correctly).
 
 **5. World.** [05_world/world.py](05_world/world.py) reads the final city `.schem`
-and writes a standalone, ready-to-play void world to `artifacts/saves/seed_<n>_world/`
+and writes a standalone, ready-to-play world to `artifacts/saves/seed_<n>_world/`
 (via [`engine.world.writer`](../engine/world/writer.py), the inverse of the Anvil
 reader). It slices the city into chunks, seats the ground near y=64, centres the
 city on the world origin, and pins the player spawn to solid ground — so the world
-loads and drops the player onto the city with no WorldEdit needed. Everything
-outside the city is left as void.
+loads and drops the player onto the city immediately.
 
 ## In-world asset conventions
 
@@ -140,9 +139,9 @@ artifacts/saves/seed_<n>_world/                   # standalone playable world
 artifacts/*/*/*.png                        # preview and render images
 ```
 
-The final city schematic in `artifacts/city/production/` is a Sponge `.schem`
-ready to import with WorldEdit; `artifacts/saves/seed_<n>_world/` is a standalone world
-folder you can drop straight into `.minecraft/saves/`.
+The final city schematic in `artifacts/city/production/` is a Sponge `.schem`;
+`artifacts/saves/seed_<n>_world/` is a standalone world folder you can drop
+straight into `.minecraft/saves/`.
 
 ## Running stages
 

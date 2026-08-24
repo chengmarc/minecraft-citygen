@@ -208,8 +208,8 @@ def detect_source_ground_y(world, x_a, x_b, z_a, z_b):
 
     Assets are authored on a flat terrain surface, so the most common column top
     is that surface. Iterates chunks in the region and calls top_solid_blocks()
-    once per chunk, independent of the stored heightmap (which WorldEdit leaves
-    stale after a paste). Returns None when the region has no solid columns.
+    once per chunk, independent of the stored heightmap (which can be stale after
+    bulk block placement/import). Returns None when the region has no solid columns.
 
     This is the *source* ground (where assets are authored), distinct from the
     emerald marker's per-asset ``ground_y`` and the generated ``city_ground_y``.

@@ -2,8 +2,8 @@
 
 CityGen does no version *conversion* of its own -- this is not a compatibility
 layer. Blocks are copied verbatim from the source world into the output
-schematic, which is stamped with the source world's own DataVersion; WorldEdit's
-DataFixer does any upgrade on paste. So all this module needs to do is:
+schematic, which is stamped with the source world's own DataVersion; downstream
+import or load tooling handles any forward upgrade. So all this module needs to do is:
 
 * read the source world's DataVersion from its ``level.dat``
   (``detect_world_data_version``),
@@ -12,7 +12,7 @@ DataFixer does any upgrade on paste. So all this module needs to do is:
 * record the minimum version CityGen supports (``HARD_FLOOR_DATA_VERSION``).
 
 The floor is 1.20: the bundled source world is 1.20, and every output uses the
-Sponge v3 container (WorldEdit 7.3.0+, Minecraft 1.20+).
+Sponge v3 container (Minecraft 1.20+).
 """
 from __future__ import annotations
 
@@ -20,11 +20,10 @@ import os
 
 import nbtlib
 
-# Forward-only compatibility floor. Forward compat is free -- WorldEdit upgrades
-# an older schematic forward into a newer world -- but backward is impossible, so
-# every stamp is clamped up to this floor. The floor is 1.20: the bundled source
-# world is 1.20, and outputs always use the Sponge v3 container, which pre-1.20
-# WorldEdit (7.2.x) cannot read anyway.
+# Forward-only compatibility floor. Older schematics can be upgraded forward into
+# newer Minecraft versions, but backward is impossible, so every stamp is clamped
+# up to this floor. The floor is 1.20: the bundled source world is 1.20, and
+# outputs always use the Sponge v3 container, which matches the 1.20+ window.
 HARD_FLOOR_DATA_VERSION = 3463  # Minecraft 1.20
 
 # DataVersion -> Minecraft release name, used only to label the detected source

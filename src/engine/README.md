@@ -113,8 +113,9 @@ end to end:
   `04_city.construct` translates each into master-grid coordinates, clipping to
   bounds and collapsing duplicates (one per cell).
 
-The NBT is carried unchanged and upgraded forward by WorldEdit's DataFixer on
-paste (e.g. a legacy sign's `Text1`–`Text4` becomes `front_text`/`back_text`).
+The NBT is carried unchanged so downstream import/load tooling can apply normal
+forward upgrades (e.g. a legacy sign's `Text1`–`Text4` can become
+`front_text`/`back_text`).
 
 ## Rendering
 

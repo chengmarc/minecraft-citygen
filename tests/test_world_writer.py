@@ -12,6 +12,7 @@ import numpy as np
 import nbtlib
 from nbtlib import Byte, Compound, String
 
+from config.path import resolve_region_dir
 from engine.schematic.transform import BlockEntity
 from engine.schematic.writer import write_sponge_schem_grid
 from engine.world.anvil_world_reader import World
@@ -51,7 +52,7 @@ class WorldWriterRoundTripTests(unittest.TestCase):
             world_writer.write_world(
                 grid, inv, block_entities, out, DATA_VERSION, base_y, origin=(0, 0)
             )
-            world = World(region_dir=os.path.join(out, "region"), save_path=out)
+            world = World(region_dir=resolve_region_dir(out), save_path=out)
 
             h, length, width = grid.shape
             for y in range(h):
@@ -72,7 +73,7 @@ class WorldWriterRoundTripTests(unittest.TestCase):
             world_writer.write_world(
                 grid, inv, block_entities, out, DATA_VERSION, base_y, origin=(0, 0)
             )
-            world = World(region_dir=os.path.join(out, "region"), save_path=out)
+            world = World(region_dir=resolve_region_dir(out), save_path=out)
             chunk = world.load_chunk(0, 0)  # sign at world (8, 65, 8) -> chunk (0, 0)
             entries = [be for be in chunk["block_entities"]
                        if (int(be["x"]), int(be["y"]), int(be["z"])) == (8, 65, 8)]
@@ -91,7 +92,7 @@ class SchemToWorldTests(unittest.TestCase):
             offset=(0, -1, 0), block_entities=block_entities,
         )
 
-    def test_void_world_and_spawn_stands_on_solid_ground(self):
+    def test_exported_world_and_spawn_stands_on_solid_ground(self):
         with tempfile.TemporaryDirectory() as tmp:
             schem = os.path.join(tmp, "city.schem")
             out = os.path.join(tmp, "world")
@@ -103,15 +104,11 @@ class SchemToWorldTests(unittest.TestCase):
             data = nbtlib.load(os.path.join(out, "level.dat"))["Data"]
             # World version matches the schematic's own stamp, not the ambient env.
             self.assertEqual(int(data["DataVersion"]), DATA_VERSION)
-            # Generator is emptied to a void.
-            gen = data["WorldGenSettings"]["dimensions"]["minecraft:overworld"]["generator"]
-            self.assertEqual(str(gen["type"]), "minecraft:flat")
-            self.assertEqual(len(gen["settings"]["layers"]), 0)
-            self.assertEqual(str(gen["settings"]["biome"]), "minecraft:the_void")
+            self.assertEqual(str(data["LevelName"]), "CityGen World")
 
             # The saved player sits one block above a solid column (no void drop).
             px, py, pz = (float(v) for v in data["Player"]["Pos"])
-            world = World(region_dir=os.path.join(out, "region"), save_path=out)
+            world = World(region_dir=resolve_region_dir(out), save_path=out)
             self.assertNotIn(world.block(int(px), int(py) - 1, int(pz))[0], world_writer.AIR_NAMES)
 
             # The app icon is written as the 64x64 world icon for the save list.
@@ -121,16 +118,24 @@ class SchemToWorldTests(unittest.TestCase):
             with Image.open(icon) as im:
                 self.assertEqual(im.size, (64, 64))
 
-    def _fake_source_world(self, tmp, data_version):
-        """A source world dir whose level.dat is native to ``data_version``.
-
-        Mimics a normal noise world with a custom seed, extra dimension, and a
-        world data pack -- to check the export keeps that native structure and only
-        voids the overworld generator.
-        """
+    def _fake_source_world(self, tmp, data_version, *, nested_overworld=False, include_player=True):
+        """A source world dir whose save layout and ``level.dat`` are native."""
         source = os.path.join(tmp, "source")
-        os.makedirs(source)
-        level = nbtlib.File({"Data": Compound({
+        region_dir = (
+            os.path.join(source, "dimensions", "minecraft", "overworld", "region")
+            if nested_overworld
+            else os.path.join(source, "region")
+        )
+        os.makedirs(region_dir, exist_ok=True)
+        with open(os.path.join(region_dir, "r.99.99.mca"), "wb") as fh:
+            fh.write(b"stale region")
+        with open(os.path.join(region_dir, "keep.txt"), "w", encoding="utf-8") as fh:
+            fh.write("keep me")
+        os.makedirs(os.path.join(source, "data"), exist_ok=True)
+        with open(os.path.join(source, "data", "marker.txt"), "w", encoding="utf-8") as fh:
+            fh.write("copied")
+
+        data = Compound({
             "DataVersion": nbtlib.Int(data_version),
             "Version": Compound({"Id": nbtlib.Int(data_version), "Name": String("26.1.2"), "Series": String("main")}),
             "DataPacks": Compound({"Enabled": nbtlib.List[String]([String("vanilla"), String("myworldpack")]),
@@ -145,15 +150,21 @@ class SchemToWorldTests(unittest.TestCase):
                     "minecraft:the_nether": Compound({"type": String("minecraft:the_nether"), "generator": Compound({})}),
                 }),
             }),
-        })})
+        })
+        if include_player:
+            data["Player"] = Compound({
+                "Pos": nbtlib.List[nbtlib.Double]([nbtlib.Double(10.5), nbtlib.Double(80.0), nbtlib.Double(-12.5)]),
+                "Dimension": String("minecraft:the_nether"),
+                "SeenCredits": Byte(1),
+            })
+        level = nbtlib.File({"Data": data})
         level.gzipped = True
         level.save(os.path.join(source, "level.dat"))
         return source
 
-    def test_uses_source_level_dat_kept_native_with_overworld_voided(self):
-        # The export is built from the source world's own level.dat and stamped at
-        # its native version (no DataFixer). Only the overworld generator is voided;
-        # the rest of the native WorldGenSettings (seed, extra dims) is preserved.
+    def test_uses_source_level_dat_kept_native_and_recenters_player(self):
+        # The export keeps the source world's native version and worldgen, and only
+        # changes the copied save's name plus player/spawn location.
         with tempfile.TemporaryDirectory() as tmp:
             source = self._fake_source_world(tmp, 4790)  # 26.1.2
             schem = os.path.join(tmp, "city.schem")
@@ -169,39 +180,58 @@ class SchemToWorldTests(unittest.TestCase):
             self.assertEqual(int(wgs["seed"]), 12345)                   # native seed preserved
             self.assertIn("minecraft:the_nether", wgs["dimensions"])    # native dims preserved
             self.assertEqual([str(p) for p in data["DataPacks"]["Enabled"]], ["vanilla", "myworldpack"])
+            self.assertEqual(str(data["LevelName"]), "CityGen World")
             gen = wgs["dimensions"]["minecraft:overworld"]["generator"]
-            self.assertEqual(str(gen["type"]), "minecraft:flat")        # overworld voided
-            self.assertEqual(len(gen["settings"]["layers"]), 0)
+            self.assertEqual(str(gen["type"]), "minecraft:noise")       # native worldgen preserved
+            self.assertEqual(str(data["Player"]["Dimension"]), "minecraft:overworld")
+            self.assertEqual(int(data["Player"]["SeenCredits"]), 1)     # existing player state kept
+            self.assertEqual((int(data["SpawnX"]), int(data["SpawnY"]), int(data["SpawnZ"])), (0, 65, 0))
+            self.assertTrue(os.path.exists(os.path.join(out, "data", "marker.txt")))
 
-    def test_source_without_worldgensettings_falls_back_to_void(self):
+    def test_source_without_player_still_gets_centered_spawn(self):
         with tempfile.TemporaryDirectory() as tmp:
-            source = os.path.join(tmp, "source")
-            os.makedirs(source)
-            level = nbtlib.File({"Data": Compound({"DataVersion": nbtlib.Int(4790)})})
-            level.gzipped = True
-            level.save(os.path.join(source, "level.dat"))
+            source = self._fake_source_world(tmp, 4790, include_player=False)
             schem = os.path.join(tmp, "city.schem")
             out = os.path.join(tmp, "world")
             self._write_schem(schem)
 
             world_writer.schem_to_world(schem, out, source_world=source)  # must not raise
 
-            dims = nbtlib.load(os.path.join(out, "level.dat"))["Data"]["WorldGenSettings"]["dimensions"]
-            self.assertEqual(str(dims["minecraft:overworld"]["generator"]["type"]), "minecraft:flat")
+            data = nbtlib.load(os.path.join(out, "level.dat"))["Data"]
+            self.assertEqual(str(data["LevelName"]), "CityGen World")
+            self.assertEqual(str(data["Player"]["Dimension"]), "minecraft:overworld")
+            self.assertEqual((int(data["SpawnX"]), int(data["SpawnY"]), int(data["SpawnZ"])), (0, 65, 0))
 
-    def test_stale_world_is_cleared_before_writing(self):
+    def test_export_uses_source_overworld_layout_and_purges_only_region_files(self):
         with tempfile.TemporaryDirectory() as tmp:
+            source = self._fake_source_world(tmp, 4790, nested_overworld=True)
             schem = os.path.join(tmp, "city.schem")
             out = os.path.join(tmp, "world")
             self._write_schem(schem)
 
-            os.makedirs(os.path.join(out, "region"))
-            stale = os.path.join(out, "region", "r.99.99.mca")
-            with open(stale, "wb") as fh:
-                fh.write(b"junk")
+            world_writer.schem_to_world(schem, out, source_world=source)
 
-            world_writer.schem_to_world(schem, out)
-            self.assertFalse(os.path.exists(stale))
+            region_dir = resolve_region_dir(out)
+            self.assertEqual(region_dir, os.path.join(out, "dimensions", "minecraft", "overworld", "region"))
+            self.assertFalse(os.path.exists(os.path.join(region_dir, "r.99.99.mca")))
+            self.assertTrue(os.path.exists(os.path.join(region_dir, "keep.txt")))
+            self.assertGreater(len([name for name in os.listdir(region_dir) if name.endswith(".mca")]), 0)
+            self.assertFalse(os.path.exists(os.path.join(out, "region", "r.0.0.mca")))
+
+    def test_stale_output_dir_is_replaced_before_copying_source_world(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            source = self._fake_source_world(tmp, 4790)
+            schem = os.path.join(tmp, "city.schem")
+            out = os.path.join(tmp, "world")
+            self._write_schem(schem)
+
+            os.makedirs(out)
+            with open(os.path.join(out, "stale.txt"), "w", encoding="utf-8") as fh:
+                fh.write("junk")
+
+            world_writer.schem_to_world(schem, out, source_world=source)
+            self.assertFalse(os.path.exists(os.path.join(out, "stale.txt")))
+            self.assertTrue(os.path.exists(os.path.join(out, "data", "marker.txt")))
 
 
 if __name__ == "__main__":

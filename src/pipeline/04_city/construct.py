@@ -185,8 +185,8 @@ def _finalize_block_entities(block_entities, grid_shape):
     """Drop out-of-bounds entities and collapse duplicates on a cell (last wins).
 
     A schematic must not carry a block entity outside its bounds or two on the
-    same position (WorldEdit rejects the latter). Blits already clip blocks to the
-    grid; this applies the same clipping and one-per-cell rule to the entities.
+    same position. Blits already clip blocks to the grid; this applies the same
+    clipping and one-per-cell rule to the entities.
     """
     max_height, span_z, span_x = grid_shape
     by_pos = {}
