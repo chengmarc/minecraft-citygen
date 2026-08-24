@@ -32,9 +32,22 @@ class CityGeneratorQtApp(QtWidgets.QMainWindow):
         generation_tab.set_peer(preview_tab)
 
         tabs = QtWidgets.QTabWidget(self)
-        tabs.addTab(ExtractionTab(self), "Extraction")
-        tabs.addTab(preview_tab, "Preview")
-        tabs.addTab(generation_tab, "Generation")
+        extraction_index = tabs.addTab(ExtractionTab(self), "Extract Assets")
+        preview_index = tabs.addTab(preview_tab, "Preview Layout")
+        generation_index = tabs.addTab(generation_tab, "Build City")
+        tab_bar = tabs.tabBar()
+        tab_bar.setTabToolTip(
+            extraction_index,
+            "Step 1 of 3: Choose a Minecraft world and extract road, house, and landmark assets.",
+        )
+        tab_bar.setTabToolTip(
+            preview_index,
+            "Step 2 of 3: Test seeds and Avenue/Street settings before the final build.",
+        )
+        tab_bar.setTabToolTip(
+            generation_index,
+            "Step 3 of 3: Build the city, render it, and export the Minecraft world.",
+        )
         self.setCentralWidget(tabs)
 
     def get_saved_config_section(self, section):

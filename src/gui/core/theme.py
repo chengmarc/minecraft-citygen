@@ -92,6 +92,13 @@ QProgressBar::chunk {
 QLabel#statusLabel {
     color: #4d5a69;
 }
+QLabel#sectionIntro {
+    color: #314052;
+    padding: 10px 0 6px 0;
+}
+QLabel#subtleLabel, QLabel#summaryLabel {
+    color: #556170;
+}
 QFrame#qtImageViewer {
     border: 1px solid #d9dfeb;
     border-radius: 0;

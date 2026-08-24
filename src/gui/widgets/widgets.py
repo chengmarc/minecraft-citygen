@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from PySide6 import QtCore, QtWidgets
+from PySide6 import QtCore, QtGui, QtWidgets
 
 from config.algo import DEFAULT_SEED
 
@@ -68,13 +68,15 @@ class AlgoControlsWidget(QtWidgets.QWidget):
         row = QtWidgets.QHBoxLayout()
         layout.addLayout(row)
 
-        row.addWidget(QtWidgets.QLabel("Seed"))
+        row.addWidget(QtWidgets.QLabel("Layout Seed"))
         self.seed_edit = QtWidgets.QLineEdit(str(state.get("seed", DEFAULT_SEED)), self)
-        self.seed_edit.setFixedWidth(120)
+        self.seed_edit.setFixedWidth(130)
+        self.seed_edit.setValidator(QtGui.QIntValidator(-2147483647, 2147483647, self.seed_edit))
+        self.seed_edit.setToolTip("Use the same seed again to regenerate the same city layout.")
         row.addWidget(self.seed_edit)
 
         row.addSpacing(8)
-        row.addWidget(QtWidgets.QLabel("City Size"))
+        row.addWidget(QtWidgets.QLabel("Overall Size"))
         city_size = QtWidgets.QComboBox(self)
         city_size.addItems(list(common.CANVAS_SIZE_OPTIONS))
         city_size.setCurrentText(algo_state["FINE"])
@@ -82,7 +84,7 @@ class AlgoControlsWidget(QtWidgets.QWidget):
         self.widgets["FINE"] = city_size
 
         row.addSpacing(8)
-        row.addWidget(QtWidgets.QLabel("Grid Density"))
+        row.addWidget(QtWidgets.QLabel("Avenue and Street Density"))
         density = QtWidgets.QComboBox(self)
         density.addItems(list(common.CLEARANCE_OPTIONS))
         density.setCurrentText(algo_state["GAP_MIXED"])
@@ -126,6 +128,7 @@ class AlgoControlsWidget(QtWidgets.QWidget):
     def _build_widget(self, name, value, parent):
         if name == "BANNED_BUILDINGS":
             widget = QtWidgets.QLineEdit(str(value), parent)
+            widget.setPlaceholderText("e.g. 001, 002")
             return widget
         if name in {"FINE", "GAP_MIXED"}:
             raise RuntimeError(f"{name} is handled by the header row.")
@@ -179,23 +182,27 @@ class AlgoControlsWidget(QtWidgets.QWidget):
 
 
 class ExtractionAreaGroup(QtWidgets.QGroupBox):
-    def __init__(self, title, area_kind, region, parent=None):
+    def __init__(self, title, description, area_kind, region, parent=None):
         super().__init__(title, parent)
         self.area_kind = area_kind
+        self.setToolTip(description)
         start, end = common.region_to_xyz_pair(region)
         layout = QtWidgets.QHBoxLayout(self)
         layout.setContentsMargins(20, 20, 20, 20)
         layout.setSpacing(12)
-        layout.addWidget(QtWidgets.QLabel("From", self))
+        layout.addWidget(QtWidgets.QLabel("Start", self))
         self.start_edit = QtWidgets.QLineEdit(f"({common.format_xyz(start)})", self)
         self.start_edit.setReadOnly(True)
+        self.start_edit.setToolTip("Read-only. Use Choose on Map to change this corner.")
         layout.addWidget(self.start_edit, 1)
-        layout.addWidget(QtWidgets.QLabel("To", self))
+        layout.addWidget(QtWidgets.QLabel("End", self))
         self.end_edit = QtWidgets.QLineEdit(f"({common.format_xyz(end)})", self)
         self.end_edit.setReadOnly(True)
+        self.end_edit.setToolTip("Read-only. Use Choose on Map to change this corner.")
         layout.addWidget(self.end_edit, 1)
-        self.pick_button = QtWidgets.QPushButton("Pick", self)
+        self.pick_button = QtWidgets.QPushButton("Choose on Map", self)
         style_button(self.pick_button)
+        self.pick_button.setToolTip(description)
         layout.addWidget(self.pick_button)
 
     def connect_change_handler(self, handler):

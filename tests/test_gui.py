@@ -28,6 +28,17 @@ class LauncherTests(unittest.TestCase):
         self.assertEqual(result, 23)
         qt_main.assert_called_once_with([])
 
+    def test_main_window_sets_step_tooltips_on_tabs(self):
+        _qapp()
+        window = gui_app.CityGeneratorQtApp()
+        tabs = window.centralWidget()
+        tab_bar = tabs.tabBar()
+        self.assertEqual(tabs.tabText(0), "Extract Assets")
+        self.assertEqual(tab_bar.tabToolTip(0), "Step 1 of 3: Choose a Minecraft world and extract road, house, and landmark assets.")
+        self.assertEqual(tab_bar.tabToolTip(1), "Step 2 of 3: Test seeds and Avenue/Street settings before the final build.")
+        self.assertEqual(tab_bar.tabToolTip(2), "Step 3 of 3: Build the city, render it, and export the Minecraft world.")
+        window.close()
+
 
 class ArgParsingTests(unittest.TestCase):
     def test_parse_args_defaults_and_passthrough(self):
@@ -92,6 +103,12 @@ class WidgetTests(unittest.TestCase):
         self.assertEqual(env["MC_CITY_FINE"], common.CANVAS_SIZE_OPTIONS["Small"])
         self.assertEqual(env["MC_CITY_GAP_MIXED"], common.CLEARANCE_OPTIONS["Dense"])
         self.assertEqual(env["MC_CITY_GAP_BIG"], "7")
+        self.assertTrue(all(key.startswith("MC_CITY_") for key in env))
+
+    def test_algo_controls_seed_validator_present(self):
+        state = common.default_algo_tab_config()
+        controls = AlgoControlsWidget("Preview", lambda: None, state)
+        self.assertIsNotNone(controls.seed_edit.validator())
 
 
 class SavedGuiConfigTests(unittest.TestCase):

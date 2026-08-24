@@ -42,27 +42,27 @@ LEGACY_SAVED_GUI_CONFIG_PATH = os.path.join(ROOT_DIR, "citygen_saved_config.json
 SAVED_GUI_CONFIG_PATH = os.path.join(CONFIG_DIR, "citygen.json")
 
 PREVIEW_CONFIGS = [
-    ("FINE", "City Size", "Changes the overall size of the generated city."),
-    ("GAP_MIXED", "Grid Density", "Controls how tightly streets and avenues are packed together."),
-    ("GAP_BIG", "Avenue Spacing", "Higher values create fewer main roads."),
-    ("PAD_BIG", "Avenue Padding", "Keeps main roads farther from the edge of the map."),
-    ("GAP_SMALL", "Street Spacing", "Lower values create more small streets."),
-    ("PAD_SMALL", "Street Padding", "Keeps small streets farther from the edge of the map."),
-    ("N_BIG_CORNERS", "Avenue L-corners", "Adds more bends to major roads."),
-    ("N_BIG_TEES", "Avenue T-intersections", "Adds more T-junctions to major roads."),
-    ("N_SMALL_CORNERS", "Street L-corners", "Adds more bends to small streets."),
-    ("N_SMALL_TEES", "Street T-intersections", "Adds more T-junctions to small streets."),
-    ("BANNED_BUILDINGS", "Banned Buildings", "Comma-separated building IDs to leave out of generation."),
-    ("TYPE1_TOP_FIT_CHOICES", "House Variety", "Higher values mix in more different house designs."),
-    ("TYPE2_TOP_FIT_CHOICES", "Landmark Variety", "Higher values mix in more different landmark designs."),
-    ("TYPE2_SAME_COARSE_SPAN", "Landmark Separation", "Higher values spread repeated landmarks farther apart."),
+    ("FINE", "Overall City Size", "Changes the footprint of the finished city."),
+    ("GAP_MIXED", "Avenue and Street Density", "Controls how tightly Avenues and Streets are packed across the city."),
+    ("GAP_BIG", "Avenue Spacing", "Higher values create fewer Avenues."),
+    ("PAD_BIG", "Avenue Edge Margin", "Keeps Avenues farther from the edge of the city."),
+    ("GAP_SMALL", "Street Spacing", "Lower values create more Streets."),
+    ("PAD_SMALL", "Street Edge Margin", "Keeps Streets farther from the edge of the city."),
+    ("N_BIG_CORNERS", "Avenue Turns", "Adds more bends to Avenues."),
+    ("N_BIG_TEES", "Avenue T-Junctions", "Adds more T-junctions to Avenues."),
+    ("N_SMALL_CORNERS", "Street Turns", "Adds more bends to Streets."),
+    ("N_SMALL_TEES", "Street T-Junctions", "Adds more T-junctions to Streets."),
+    ("BANNED_BUILDINGS", "Skip Building IDs", "Optional comma-separated building IDs to leave out of generation."),
+    ("TYPE1_TOP_FIT_CHOICES", "House Style Variety", "Higher values mix in more different standard house designs."),
+    ("TYPE2_TOP_FIT_CHOICES", "Landmark Style Variety", "Higher values mix in more different landmark designs."),
+    ("TYPE2_SAME_COARSE_SPAN", "Landmark Repeat Distance", "Higher values spread repeated landmarks farther apart."),
 ]
 PREVIEW_CONFIG_LOOKUP = {name: (label, description) for name, label, description in PREVIEW_CONFIGS}
 
 PREVIEW_CONFIG_GROUPS = [
-    ("Spacing and Padding", ["GAP_BIG", "PAD_BIG", "GAP_SMALL", "PAD_SMALL"]),
-    ("Corners and Tees", ["N_BIG_CORNERS", "N_BIG_TEES", "N_SMALL_CORNERS", "N_SMALL_TEES"]),
-    ("Building Placement", ["BANNED_BUILDINGS", "TYPE1_TOP_FIT_CHOICES", "TYPE2_TOP_FIT_CHOICES", "TYPE2_SAME_COARSE_SPAN"]),
+    ("Avenue and Street Spacing", ["GAP_BIG", "PAD_BIG", "GAP_SMALL", "PAD_SMALL"]),
+    ("Avenue and Street Shape", ["N_BIG_CORNERS", "N_BIG_TEES", "N_SMALL_CORNERS", "N_SMALL_TEES"]),
+    ("Building Mix", ["BANNED_BUILDINGS", "TYPE1_TOP_FIT_CHOICES", "TYPE2_TOP_FIT_CHOICES", "TYPE2_SAME_COARSE_SPAN"]),
 ]
 
 PREVIEW_SLIDER_RANGES = {
@@ -254,7 +254,7 @@ def snapshot_config_values(config_values):
 
 def build_algo_env_from_values(config_values):
     normalized = snapshot_config_values(config_values)
-    env = os.environ.copy()
+    env = {}
     for name, _label, _description in PREVIEW_CONFIGS:
         value = normalized[name]
         if name == "BANNED_BUILDINGS":
