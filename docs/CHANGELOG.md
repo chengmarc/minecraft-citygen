@@ -6,8 +6,9 @@ The format is based on Keep a Changelog, and versions should match the release v
 
 ## [Unreleased]
 
-Patch draft for 1.0.1. This release tightens the road-region empty-space fill
-path around the new authored asset `18`.
+No unreleased changes.
+
+## [1.0.1] - 2026-08-24
 
 ### Added
 

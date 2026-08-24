@@ -1,6 +1,6 @@
 # CityGen 1.0.1 Release Notes
 
-Draft for the 1.0.1 patch release.
+Released on August 24, 2026.
 
 CityGen 1.0.1 is a follow-up patch for the road-region empty-space fill change.
 It wires the new authored asset `18` into the bundled default world, corrects

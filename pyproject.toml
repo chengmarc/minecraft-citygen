@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "minecraft-city-generator"
-version = "1.0.0"
+version = "1.0.1"
 description = "Procedural Minecraft city generation pipelines."
 readme = "README.md"
 requires-python = ">=3.10"
