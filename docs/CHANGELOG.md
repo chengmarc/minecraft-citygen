@@ -6,7 +6,32 @@ The format is based on Keep a Changelog, and versions should match the release v
 
 ## [Unreleased]
 
-No unreleased changes.
+Patch draft for 1.0.1. This release tightens the road-region empty-space fill
+path around the new authored asset `18`.
+
+### Added
+
+- the bundled default world now includes the road-region fill asset `18`, the
+  marker-authored column pattern used to fill empty non-road, non-building
+  ground in production outputs
+
+### Changed
+
+- the city **simulation preview** is back to the flat gray lot fill; asset `18`
+  is production-only and is no longer sampled into the preview PNG
+
+### Fixed
+
+- the dedicated road-region ground-fill asset now repeats across empty lot
+  columns instead of being pasted only once per 9x9 cell
+- asset `18` now seats through the same extracted `ground_offset` path as every
+  other marker-authored asset, using the shared `_seat_y(ground_y, offset)`
+  contract
+- ground fill now skips any lot cell already occupied by a self-contained
+  `15`/`16`/`17` filler prop, so the prop's authored ground is not overwritten
+- after browsing to a different world, the Extraction tab now preserves the road
+  and building contact-sheet paths so successful extraction reloads the asset
+  sheets correctly
 
 ## [1.0.0] - 2026-08-25
 
