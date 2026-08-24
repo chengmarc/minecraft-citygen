@@ -3,7 +3,7 @@
 <div align="center">
   <img src="src/gui/icons/app-icon.png" alt="CityGen app icon" width="180">
   <br><br>
-  <img src="https://img.shields.io/badge/Version-1.0.0-6495ED?style=for-the-badge" alt="Release 1.0.1">
+  <img src="https://img.shields.io/badge/Version-1.0.1-6495ED?style=for-the-badge" alt="Release 1.0.1">
   <img src="https://img.shields.io/badge/Minecraft-%E2%89%A5%201.20-4C9A2A?style=for-the-badge" alt="Minecraft >= 1.20">
   <h3>
     Download <a href="https://github.com/CDS-SP/minecraft-citygen/releases/download/v1.0.1/CityGen-setup.exe">Windows Installer (.exe)</a> or
