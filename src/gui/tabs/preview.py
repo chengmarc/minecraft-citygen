@@ -8,21 +8,21 @@ from pipeline import services
 
 from gui.core import common
 from gui.core.workers import WeightedTaskMixin
+from gui.tabs._algo import AlgoTabMixin
 from gui.widgets.qt_viewer import QtImageViewer
 from gui.widgets.widgets import AlgoControlsWidget
 
 
-class PreviewTab(QtWidgets.QWidget, WeightedTaskMixin):
+class PreviewTab(QtWidgets.QWidget, AlgoTabMixin, WeightedTaskMixin):
+    legacy_state_sections = ("preview",)
+    prerequisite_owner_method = "preview_prerequisite_met"
+    ready_tooltip = "Generate a fast road and city layout preview."
+
     def __init__(self, owner):
         super().__init__(owner)
-        self.owner = owner
-        self._peer = None
+        self._init_algo_tab(owner)
         self._init_progress_mixin()
-        state = (
-            owner.get_saved_config_section("algo")
-            or owner.get_saved_config_section("preview")
-            or common.default_algo_tab_config()
-        )
+        state = self._load_algo_state()
 
         layout = QtWidgets.QVBoxLayout(self)
         layout.setSpacing(0)
@@ -52,7 +52,7 @@ class PreviewTab(QtWidgets.QWidget, WeightedTaskMixin):
             action_icon_name="preview.png",
             parent=self,
         )
-        self.controls.connect_change_handler(self._save_state)
+        self.controls.connect_change_handler(self._save_algo_state)
         layout.addWidget(self.controls)
 
         layout.addSpacing(8)
@@ -63,29 +63,6 @@ class PreviewTab(QtWidgets.QWidget, WeightedTaskMixin):
         self.progress_bar.setRange(0, 100)
         layout.addWidget(self.progress_bar)
         self.refresh_prerequisite_state()
-
-    def set_peer(self, peer):
-        self._peer = peer
-
-    def current_run_state(self):
-        return self.controls.current_state()
-
-    def refresh_prerequisite_state(self):
-        ready = True
-        if hasattr(self.owner, "preview_prerequisite_met"):
-            ready = bool(self.owner.preview_prerequisite_met())
-        self.controls.action_button.setEnabled(ready)
-        self.controls.action_button.setToolTip(
-            "Complete Extract Assets first." if not ready else "Generate a fast road and city layout preview."
-        )
-
-    def _save_state(self):
-        state = self.controls.current_state()
-        self.owner.set_saved_config_section("algo", state)
-        if self._peer is not None:
-            self._peer.controls.set_state(state)
-        if hasattr(self.owner, "note_preview_inputs_changed"):
-            self.owner.note_preview_inputs_changed()
 
     def _run_preview(self):
         seed = self.controls.seed_edit.text().strip()
@@ -102,7 +79,7 @@ class PreviewTab(QtWidgets.QWidget, WeightedTaskMixin):
 
         if hasattr(self.owner, "begin_preview_run"):
             self.owner.begin_preview_run()
-        run_state = self.current_run_state()
+        run_state = self.controls.current_state()
         tasks = [
             (
                 services.ROADS_SIMULATION,

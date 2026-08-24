@@ -13,7 +13,7 @@ from pipeline import services
 from gui.core import common
 from gui.core.theme import apply_button_icon, style_button
 from gui.core.workers import ProgressMixin, WorkerSignals
-from gui.tabs._progress import EXTRACT_STAGE_STEPS, EXTRACT_TOTAL_STEPS, PROGRESS_BAR_SCALE
+from gui.tabs._progress import EXTRACT_STAGE_STEPS, PROGRESS_BAR_SCALE
 from gui.widgets.qt_viewer import QtImageViewer
 from gui.widgets.region_dialog import RegionSelectorDialog
 from gui.widgets.widgets import ExtractionAreaGroup
@@ -24,6 +24,24 @@ EXTRACT_STATUS_LABELS = {
     services.BUILDS_EXTRACT: "Extracting building pieces",
     services.BUILDS_RENDER: "Building asset sheet",
 }
+
+
+def coalesce_pipeline_progress(emit, *, buckets=100):
+    """Reduce redundant cross-thread progress events while preserving completion."""
+    last_key = None
+
+    def on_progress(stage, completed, total, label):
+        nonlocal last_key
+        total_i = max(int(total), 1)
+        completed_i = max(0, min(int(completed), total_i))
+        bucket = buckets if completed_i >= total_i else int((completed_i * buckets) / total_i)
+        key = (stage, total_i, bucket)
+        if key == last_key:
+            return
+        last_key = key
+        emit(stage, float(completed_i), float(total_i), label)
+
+    return on_progress
 
 
 class ExtractionTab(QtWidgets.QWidget, ProgressMixin):
@@ -306,7 +324,7 @@ class ExtractionTab(QtWidgets.QWidget, ProgressMixin):
             self._save_state()
             self._refresh_extract_readiness()
 
-    def _on_pipeline_progress(self, stage, completed, total, label):
+    def _on_pipeline_progress(self, stage, completed, total, _label):
         step = EXTRACT_STAGE_STEPS[stage]
         weights = common.EXTRACT_STAGE_WEIGHTS
         scale = float(sum(weights))
@@ -321,6 +339,11 @@ class ExtractionTab(QtWidgets.QWidget, ProgressMixin):
             self._phase_end = self._phase_base + (seg_end - self._phase_base) * common.EXTRACT_PHASE_FILL
 
         frac = max(0.0, min(float(completed) / float(total or 1), 1.0))
+        if frac >= 1.0:
+            self.progress_bar.setValue(int(round(seg_end)))
+            self._progress_soft_target = float(seg_end)
+            self.set_status(EXTRACT_STATUS_LABELS.get(stage, "Extracting assets"))
+            return
         target = self._phase_base + (self._phase_end - self._phase_base) * frac
         milestone = max(self.progress_bar.value(), int(round(target)))
         self.progress_bar.setValue(milestone)
@@ -361,15 +384,28 @@ class ExtractionTab(QtWidgets.QWidget, ProgressMixin):
         self._extract_phase = None
 
         signals = WorkerSignals(self)
+        run_context = {"succeeded": False}
         signals.pipeline_progress.connect(self._on_pipeline_progress)
         signals.failed.connect(self._show_failure)
-        signals.success.connect(self._handle_extract_success)
-        signals.finished.connect(lambda: (self._stop_progress(), self._refresh_extract_readiness()))
+
+        def _handle_success(run_state):
+            run_context["succeeded"] = True
+            self._handle_extract_success(run_state)
+
+        def _handle_finished():
+            self._stop_progress()
+            if hasattr(self.owner, "end_extraction_run"):
+                self.owner.end_extraction_run(run_context["succeeded"])
+            self._refresh_extract_readiness()
+
+        signals.success.connect(_handle_success)
+        signals.finished.connect(_handle_finished)
 
         def worker():
             try:
-                def on_progress(stage, completed, total, label):
-                    signals.pipeline_progress.emit(stage, float(completed), float(total), label)
+                on_progress = coalesce_pipeline_progress(
+                    lambda stage, completed, total, label: signals.pipeline_progress.emit(stage, completed, total, label)
+                )
 
                 services.run_road_extraction_pipeline(env_overrides=env, progress=on_progress)
                 services.run_build_extraction_pipeline(env_overrides=env, progress=on_progress)

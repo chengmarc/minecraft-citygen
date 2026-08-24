@@ -162,10 +162,6 @@ def city_render_path(seed):
     return os.path.join(CITY_PROD, f"seed_{seed}.png")
 
 
-def state_signature(value):
-    return json.dumps(value, sort_keys=True, separators=(",", ":"), ensure_ascii=True)
-
-
 def extracted_assets_ready():
     required = (ROAD_CONTACT_SHEET, BUILD_CONTACT_SHEET, BUILD_CATALOG)
     if not all(os.path.exists(path) for path in required):
@@ -173,23 +169,6 @@ def extracted_assets_ready():
     road_assets = glob.glob(os.path.join(ROADS_PROD, "*.schem"))
     build_assets = glob.glob(os.path.join(BUILDS_PROD, "*.schem"))
     return bool(road_assets) and bool(build_assets)
-
-
-def format_xyz(pos):
-    return ", ".join(str(value) for value in pos)
-
-
-def parse_xyz(value, label):
-    value = value.strip()
-    if value.startswith("(") and value.endswith(")"):
-        value = value[1:-1]
-    parts = [part.strip() for part in value.replace(";", ",").split(",") if part.strip()]
-    if len(parts) != 3:
-        raise ValueError(f"{label} must be three values: x, y, z")
-    try:
-        return tuple(int(part) for part in parts)
-    except ValueError as exc:
-        raise ValueError(f"{label} must contain only integers.") from exc
 
 
 def region_to_xyz_pair(region):

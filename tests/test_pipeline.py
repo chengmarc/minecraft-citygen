@@ -2,6 +2,9 @@
 from __future__ import annotations
 
 import importlib
+import os
+import subprocess
+import sys
 import tempfile
 import types
 import unittest
@@ -11,18 +14,53 @@ from types import SimpleNamespace
 from unittest import mock
 
 import pytest
+from PIL import Image
 
+from pipeline import runtime
 from pipeline import services
 from pipeline.stages import PIPELINE_STAGE_MODULES, RELOAD_ORDER, stage_module
 
+ROOT_DIR = Path(__file__).resolve().parents[1]
 BUILDS_EXTRACT = stage_module("builds_extract")
 BUILDS_RENDER = stage_module("builds_render")
+ROADS_RENDER = stage_module("roads_render")
 
 
 # --- stage services -------------------------------------------------------
 
 def test_reload_order_stays_in_sync_with_stage_registry():
     assert tuple(RELOAD_ORDER[-len(PIPELINE_STAGE_MODULES):]) == PIPELINE_STAGE_MODULES
+
+
+@pytest.mark.parametrize("module_name", PIPELINE_STAGE_MODULES)
+def test_pipeline_stage_scripts_bootstrap_without_pythonpath(module_name):
+    script = ROOT_DIR / "src" / Path(*module_name.split(".")).with_suffix(".py")
+    env = os.environ.copy()
+    env.pop("PYTHONPATH", None)
+
+    result = subprocess.run(
+        [sys.executable, str(script), "--help"],
+        cwd=ROOT_DIR,
+        env=env,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+
+    assert result.returncode == 0, result.stderr or result.stdout
+
+
+def test_configured_environment_restores_requested_keys(monkeypatch):
+    monkeypatch.setattr(runtime, "reload_pipeline_modules", lambda: None)
+    monkeypatch.setenv("MC_CITY_FINE", "80")
+    monkeypatch.delenv("MC_CITY_GAP_BIG", raising=False)
+
+    with runtime.configured_environment({"MC_CITY_FINE": "60", "MC_CITY_GAP_BIG": "7"}):
+        assert os.environ["MC_CITY_FINE"] == "60"
+        assert os.environ["MC_CITY_GAP_BIG"] == "7"
+
+    assert os.environ["MC_CITY_FINE"] == "80"
+    assert "MC_CITY_GAP_BIG" not in os.environ
 
 
 def test_run_grid_simulation_stage_coerces_numeric_arguments(monkeypatch):
@@ -93,6 +131,8 @@ def test_run_build_extraction_pipeline_tags_progress_with_stage_modules(monkeypa
 # --- roads extraction stage ----------------------------------------------
 
 roads_extract = importlib.import_module("pipeline.01_roads.extract")
+builds_render = importlib.import_module("pipeline.02_builds.render")
+roads_render = importlib.import_module("pipeline.01_roads.render")
 
 
 def _component(boundary, cuboid, *, ground_y=None):
@@ -142,6 +182,80 @@ class RoadsExtractTests(unittest.TestCase):
                     roads_extract.run()
 
             self.assertFalse(stale.exists())
+
+
+class ContactRenderTests(unittest.TestCase):
+    def test_builds_render_uses_saved_png_paths_for_contact_sheet_and_reports_contact_progress(self):
+        with tempfile.TemporaryDirectory() as tempdir:
+            out_dir = Path(tempdir)
+            catalog_path = out_dir / "buildings.json"
+            catalog_path.write_text(
+                '{"001": {"type": 1}, "002": {"type": 1}}',
+                encoding="utf-8",
+            )
+            progress_events = []
+
+            real_write_contact = importlib.import_module("engine.render.isometric").write_contact
+
+            def checking_write_contact(images, out, **kwargs):
+                assert all(isinstance(source, (str, os.PathLike)) for _key, source in images)
+                return real_write_contact(images, out, **kwargs)
+
+            with mock.patch.object(builds_render, "CATALOG", str(catalog_path)), \
+                 mock.patch.object(builds_render, "SCHEM", str(out_dir)), \
+                 mock.patch.object(builds_render, "BUILDS_PROD", str(out_dir)), \
+                 mock.patch.object(builds_render, "assemble", return_value=[[["minecraft:stone"]]]), \
+                 mock.patch.object(builds_render, "render_cells_visible_iso", return_value=Image.new("RGBA", (16, 16))), \
+                 mock.patch.object(builds_render, "write_contact", side_effect=checking_write_contact):
+                result = builds_render.run(
+                    progress=lambda completed, total, label: progress_events.append((completed, total, label)),
+                )
+
+            assert result["count"] == 2
+            assert (out_dir / "001.png").exists()
+            assert (out_dir / "002.png").exists()
+            assert (out_dir / "_contact_sheet.png").exists()
+            assert progress_events == [
+                (1, 5, "001"),
+                (2, 5, "002"),
+                (3, 5, "Rendering build contact sheet..."),
+                (4, 5, "Rendering build contact sheet..."),
+                (5, 5, "Rendered build contact sheet."),
+            ]
+
+    def test_roads_render_uses_saved_png_paths_for_contact_sheet_and_reports_contact_progress(self):
+        with tempfile.TemporaryDirectory() as tempdir:
+            out_dir = Path(tempdir)
+            (out_dir / "a.schem").write_text("stub", encoding="utf-8")
+            (out_dir / "b.schem").write_text("stub", encoding="utf-8")
+            progress_events = []
+
+            real_write_contact = importlib.import_module("engine.render.isometric").write_contact
+
+            def checking_write_contact(images, out, **kwargs):
+                assert all(isinstance(source, (str, os.PathLike)) for _key, source in images)
+                return real_write_contact(images, out, **kwargs)
+
+            with mock.patch.object(roads_render, "SCHEM", str(out_dir)), \
+                 mock.patch.object(roads_render, "ROADS_PROD", str(out_dir)), \
+                 mock.patch.object(roads_render, "decode_schem_cells", return_value=[[["minecraft:stone"]]]), \
+                 mock.patch.object(roads_render, "render_cells_visible_iso", return_value=Image.new("RGBA", (16, 16))), \
+                 mock.patch.object(roads_render, "write_contact", side_effect=checking_write_contact):
+                result = roads_render.run(
+                    progress=lambda completed, total, label: progress_events.append((completed, total, label)),
+                )
+
+            assert result["count"] == 2
+            assert (out_dir / "a.png").exists()
+            assert (out_dir / "b.png").exists()
+            assert (out_dir / "_contact_sheet.png").exists()
+            assert progress_events == [
+                (1, 5, "a"),
+                (2, 5, "b"),
+                (3, 5, "Rendering road contact sheet..."),
+                (4, 5, "Rendering road contact sheet..."),
+                (5, 5, "Rendered road contact sheet."),
+            ]
 
 
 def test_run_city_construct_stage_requires_integer_seed():

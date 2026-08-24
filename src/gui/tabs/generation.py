@@ -13,7 +13,8 @@ from pipeline import services
 
 from gui.core import common
 from gui.core.workers import ProgressMixin, WorkerSignals
-from gui.tabs._progress import GENERATION_STAGE_STEPS, GENERATION_TOTAL_STEPS, PROGRESS_BAR_SCALE
+from gui.tabs._algo import AlgoTabMixin
+from gui.tabs._progress import PROGRESS_BAR_SCALE
 from gui.widgets.qt_viewer import QtImageViewer
 from gui.widgets.widgets import AlgoControlsWidget
 
@@ -24,17 +25,16 @@ GENERATION_STATUS_LABELS = {
 }
 
 
-class GenerationTab(QtWidgets.QWidget, ProgressMixin):
+class GenerationTab(QtWidgets.QWidget, AlgoTabMixin, ProgressMixin):
+    legacy_state_sections = ("render",)
+    prerequisite_owner_method = "generation_prerequisite_met"
+    ready_tooltip = "Build the final schematic, render, and export world."
+
     def __init__(self, owner):
         super().__init__(owner)
-        self.owner = owner
-        self._peer = None
+        self._init_algo_tab(owner)
         self._init_progress_mixin()
-        state = (
-            owner.get_saved_config_section("algo")
-            or owner.get_saved_config_section("render")
-            or common.default_algo_tab_config()
-        )
+        state = self._load_algo_state()
 
         layout = QtWidgets.QVBoxLayout(self)
         layout.setSpacing(0)
@@ -54,7 +54,7 @@ class GenerationTab(QtWidgets.QWidget, ProgressMixin):
             extra_actions=[("Copy World", self._open_output_folder, "folder.png")],
             parent=self,
         )
-        self.controls.connect_change_handler(self._save_state)
+        self.controls.connect_change_handler(self._save_algo_state)
         layout.addWidget(self.controls)
 
         layout.addSpacing(8)
@@ -65,29 +65,6 @@ class GenerationTab(QtWidgets.QWidget, ProgressMixin):
         self.progress_bar.setRange(0, PROGRESS_BAR_SCALE)
         layout.addWidget(self.progress_bar)
         self.refresh_prerequisite_state()
-
-    def set_peer(self, peer):
-        self._peer = peer
-
-    def current_run_state(self):
-        return self.controls.current_state()
-
-    def refresh_prerequisite_state(self):
-        ready = True
-        if hasattr(self.owner, "generation_prerequisite_met"):
-            ready = bool(self.owner.generation_prerequisite_met())
-        self.controls.action_button.setEnabled(ready)
-        self.controls.action_button.setToolTip(
-            "Complete Extract Assets first." if not ready else "Build the final schematic, render, and export world."
-        )
-
-    def _save_state(self):
-        state = self.controls.current_state()
-        self.owner.set_saved_config_section("algo", state)
-        if self._peer is not None:
-            self._peer.controls.set_state(state)
-        if hasattr(self.owner, "note_preview_inputs_changed"):
-            self.owner.note_preview_inputs_changed()
 
     def _source_env(self):
         """Env pinning the source world for the render pipeline.
@@ -108,7 +85,7 @@ class GenerationTab(QtWidgets.QWidget, ProgressMixin):
         except OSError as exc:
             QtWidgets.QMessageBox.critical(self, "Could not open worlds folder", str(exc))
 
-    def _on_pipeline_progress(self, stage, completed, total, label):
+    def _on_pipeline_progress(self, stage, completed, total, _label):
         n = int(completed)
         c_weights = common.GENERATION_CONSTRUCT_WEIGHTS
         r_weight = common.GENERATION_RENDER_WEIGHT

@@ -8,7 +8,7 @@ import sys
 from pathlib import Path
 
 if __package__ in (None, ""):
-    sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+    sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
 from config.path import ROADS_PROD
 from config.render import ROAD_ASSET_ISO_BLOCK_H, ROAD_ASSET_ISO_TILE_H, ROAD_ASSET_ISO_TILE_W
@@ -25,7 +25,7 @@ def run(*, logger=None, progress=None):
     os.makedirs(ROADS_PROD, exist_ok=True)
     images = []
     paths = sorted(glob.glob(os.path.join(SCHEM, "*.schem")))
-    total = len(paths)
+    total = len(paths) * 2 + 1
     for index, path in enumerate(paths, start=1):
         name = os.path.splitext(os.path.basename(path))[0]
         im = render_cells_visible_iso(
@@ -36,14 +36,23 @@ def run(*, logger=None, progress=None):
         )
         out = os.path.join(ROADS_PROD, name + ".png")
         im.save(out)
-        images.append((name, im))
+        images.append((name, out))
         logger(f"saved {out} ({im.width}x{im.height})")
         progress(index, total, name)
 
     contact = os.path.join(ROADS_PROD, "_contact_sheet.png")
-    progress(0, 1, "Rendering road contact sheet...")
-    write_contact(images, contact, cols=5, cell_w=220, cell_h=190)
-    progress(1, 1, "Rendered road contact sheet.")
+    write_contact(
+        images,
+        contact,
+        cols=5,
+        cell_w=220,
+        cell_h=190,
+        on_progress=lambda done, _contact_total: progress(
+            len(paths) + done,
+            total,
+            "Rendered road contact sheet." if done == len(images) + 1 else "Rendering road contact sheet...",
+        ),
+    )
     logger(f"rendered {len(images)} roads -> {contact}")
     return {"count": len(images), "contact_sheet": contact}
 

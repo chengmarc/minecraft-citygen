@@ -8,7 +8,7 @@ import sys
 from pathlib import Path
 
 if __package__ in (None, ""):
-    sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+    sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
 from config.path import BUILD_CATALOG, BUILDS_PROD
 from engine.core.city_layout import catalog_type
@@ -37,19 +37,28 @@ def run(*, logger=None, progress=None):
 
     images = []
     keys = sorted(catalog)
-    total = len(keys)
+    total = len(keys) * 2 + 1
     for index, key in enumerate(keys, start=1):
         im = render_cells_visible_iso(assemble(key, catalog[key]))
         out = os.path.join(BUILDS_PROD, f"{key}.png")
         im.save(out)
-        images.append((key, im))
+        images.append((key, out))
         logger(f"saved {out} ({im.width}x{im.height})")
         progress(index, total, key)
 
     contact = os.path.join(BUILDS_PROD, "_contact_sheet.png")
-    progress(0, 1, "Rendering build contact sheet...")
-    write_contact(images, contact, cols=8, cell_w=180, cell_h=180)
-    progress(1, 1, "Rendered build contact sheet.")
+    write_contact(
+        images,
+        contact,
+        cols=8,
+        cell_w=180,
+        cell_h=180,
+        on_progress=lambda done, _contact_total: progress(
+            len(keys) + done,
+            total,
+            "Rendered build contact sheet." if done == len(images) + 1 else "Rendering build contact sheet...",
+        ),
+    )
     logger(f"rendered {len(images)} builds -> {contact}")
     return {"count": len(images), "contact_sheet": contact}
 

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import copy
 import os
 import traceback
 
@@ -24,6 +25,8 @@ class CityGeneratorQtApp(QtWidgets.QMainWindow):
             self.setWindowIcon(QtGui.QIcon(common.APP_ICON_PATH))
 
         self._saved_gui_config = common.load_saved_gui_config()
+        self._completed_extraction_state = None
+        self._extraction_run_active = False
         common.clear_pipeline_artifacts()  # clean slate each launch; keeps exported worlds
 
         self.preview_tab = PreviewTab(self)
@@ -60,23 +63,48 @@ class CityGeneratorQtApp(QtWidgets.QMainWindow):
         self._saved_gui_config[section] = value
         common.save_saved_gui_config(self._saved_gui_config)
 
-    def note_extraction_inputs_changed(self):
+    def _refresh_after_gui_change(self, *_args):
         self.refresh_prerequisite_buttons()
 
-    def note_preview_inputs_changed(self):
+    note_preview_inputs_changed = _refresh_after_gui_change
+
+    def _current_extraction_state(self):
+        tab = getattr(self, "extraction_tab", None)
+        if tab is None:
+            return None
+        return tab.prerequisite_state()
+
+    def note_extraction_inputs_changed(self):
+        current = self._current_extraction_state()
+        if self._completed_extraction_state is not None and current != self._completed_extraction_state:
+            self._completed_extraction_state = None
         self.refresh_prerequisite_buttons()
 
     def begin_extraction_run(self):
+        self._extraction_run_active = True
+        self._completed_extraction_state = None
         self.refresh_prerequisite_buttons()
 
-    def mark_extraction_complete(self, _state):
+    def mark_extraction_complete(self, state):
+        self._extraction_run_active = False
+        self._completed_extraction_state = copy.deepcopy(state)
         self.refresh_prerequisite_buttons()
 
-    def preview_prerequisite_met(self):
+    def end_extraction_run(self, succeeded):
+        self._extraction_run_active = False
+        if not succeeded:
+            self.refresh_prerequisite_buttons()
+
+    def _assets_ready(self):
+        if self._extraction_run_active:
+            return False
+        current = self._current_extraction_state()
+        if self._completed_extraction_state is not None:
+            return current == self._completed_extraction_state
         return common.extracted_assets_ready()
 
-    def generation_prerequisite_met(self):
-        return common.extracted_assets_ready()
+    preview_prerequisite_met = _assets_ready
+    generation_prerequisite_met = _assets_ready
 
     def refresh_prerequisite_buttons(self):
         for tab in (getattr(self, "preview_tab", None), getattr(self, "generation_tab", None)):

@@ -211,6 +211,15 @@ class ExtractionTabTests(unittest.TestCase):
         self.assertNotIn("pipeline/", tab.status_label.text())
         tab.close()
 
+    def test_extraction_final_stage_completion_fills_progress_bar(self):
+        state = common.default_extraction_tab_config()
+        with mock.patch.object(extraction_module, "has_region_files", return_value=True):
+            tab = ExtractionTab(_GuiOwner(extraction=state))
+        tab._on_pipeline_progress(extraction_module.services.BUILDS_RENDER, 9, 9, "ignored")
+        self.assertEqual(tab.progress_bar.value(), extraction_module.PROGRESS_BAR_SCALE)
+        self.assertEqual(tab.status_label.text(), "Building asset sheet")
+        tab.close()
+
     def test_browse_button_matches_world_input_height(self):
         state = common.default_extraction_tab_config()
         with mock.patch.object(extraction_module, "has_region_files", return_value=True):
@@ -220,9 +229,51 @@ class ExtractionTabTests(unittest.TestCase):
         tab.close()
 
 
+class ExtractionProgressCoalescingTests(unittest.TestCase):
+    def test_coalescer_drops_redundant_updates_but_keeps_terminal_tick(self):
+        emitted = []
+        on_progress = extraction_module.coalesce_pipeline_progress(
+            lambda stage, completed, total, label: emitted.append((stage, completed, total, label)),
+            buckets=4,
+        )
+
+        for completed in (0, 1, 2, 2, 3, 4, 8, 8, 9):
+            on_progress("stage", completed, 9, "label")
+
+        self.assertEqual(
+            emitted,
+            [
+                ("stage", 0.0, 9.0, "label"),
+                ("stage", 3.0, 9.0, "label"),
+                ("stage", 8.0, 9.0, "label"),
+                ("stage", 9.0, 9.0, "label"),
+            ],
+        )
+
+
 class PreviewGenerationTabTests(unittest.TestCase):
     def setUp(self):
         self.app = _qapp()
+
+    def test_preview_prefers_shared_algo_state_over_legacy_preview_state(self):
+        owner = _GuiOwner(
+            algo={"seed": "11", "algo": {"FINE": "Very Big"}},
+            preview={"seed": "29", "algo": {"FINE": "Very Small"}},
+        )
+        tab = PreviewTab(owner)
+        self.assertEqual(tab.controls.seed_edit.text(), "11")
+        self.assertEqual(tab.controls.widgets["FINE"].currentText(), "Very Big")
+        tab.close()
+
+    def test_generation_uses_legacy_render_state_when_shared_algo_missing(self):
+        owner = _GuiOwner(
+            render={"seed": "17", "algo": {"GAP_MIXED": "Sparse"}},
+            extraction=common.default_extraction_tab_config(),
+        )
+        tab = GenerationTab(owner)
+        self.assertEqual(tab.controls.seed_edit.text(), "17")
+        self.assertEqual(tab.controls.widgets["GAP_MIXED"].currentText(), "Sparse")
+        tab.close()
 
     def test_preview_tab_starts_with_advanced_controls_hidden(self):
         tab = PreviewTab(_GuiOwner(algo=common.default_algo_tab_config()))
@@ -290,6 +341,35 @@ class StepGatingTests(unittest.TestCase):
             self.assertTrue(window.preview_tab.controls.action_button.isEnabled())
             self.assertTrue(window.generation_tab.controls.action_button.isEnabled())
 
+        window.close()
+
+    def test_successful_extraction_enables_preview_without_filesystem_probe(self):
+        with (
+            mock.patch.object(common, "load_saved_gui_config", return_value={}),
+            mock.patch.object(common, "clear_pipeline_artifacts"),
+            mock.patch.object(common, "extracted_assets_ready", return_value=False),
+        ):
+            window = gui_app.CityGeneratorQtApp()
+
+        window.mark_extraction_complete(window.extraction_tab.prerequisite_state())
+        self.assertTrue(window.preview_tab.controls.action_button.isEnabled())
+        self.assertTrue(window.generation_tab.controls.action_button.isEnabled())
+        window.close()
+
+    def test_changing_extraction_inputs_after_success_disables_preview_again(self):
+        with (
+            mock.patch.object(common, "load_saved_gui_config", return_value={}),
+            mock.patch.object(common, "clear_pipeline_artifacts"),
+            mock.patch.object(common, "extracted_assets_ready", return_value=False),
+        ):
+            window = gui_app.CityGeneratorQtApp()
+
+        window.mark_extraction_complete(window.extraction_tab.prerequisite_state())
+        self.assertTrue(window.preview_tab.controls.action_button.isEnabled())
+
+        window.extraction_tab.road_group.clear_selection()
+        self.assertFalse(window.preview_tab.controls.action_button.isEnabled())
+        self.assertFalse(window.generation_tab.controls.action_button.isEnabled())
         window.close()
 
     def test_preview_and_generation_keep_advanced_toggle_in_sync(self):

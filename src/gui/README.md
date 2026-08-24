@@ -22,7 +22,7 @@ application.pyw  ->  gui.launcher:main  ->  gui.app  (QApplication + main window
 |---|---|
 | [launcher.py](launcher.py) | Installed GUI entry point; routes to the Qt app |
 | [app.py](app.py) | PySide6 host shell: main window, arg parsing, theme wiring, top-level error handling |
-| [tabs.py](tabs.py) | The three main tabs: **Extraction**, **Preview**, **Render** |
+| [tabs/](tabs) | The three main tabs: **Extraction**, **Preview**, **Generation** |
 | `core/` | Non-widget GUI support (below) |
 | `widgets/` | Custom input and viewer widgets (below) |
 
@@ -46,11 +46,24 @@ application.pyw  ->  gui.launcher:main  ->  gui.app  (QApplication + main window
   for snapping an extraction region to chunk boundaries (uses
   [`engine.render.topdown`](../engine/README.md#rendering)).
 
+`tabs/`:
+
+- [_algo.py](tabs/_algo.py) — shared saved-state, peer-sync, and prerequisite
+  gating helper for the preview and generation tabs.
+- [extraction.py](tabs/extraction.py) — source-world selection, region editing,
+  and road/building extraction.
+- [preview.py](tabs/preview.py) — fast generated road-grid and city previews.
+- [generation.py](tabs/generation.py) — production schematic build, isometric
+  render, and standalone world export.
+
 ## How it drives the pipeline
 
 - The tabs collect settings into `MC_CITY_*` env overrides and call
   [`pipeline.services`](../pipeline/README.md) functions from background workers,
   streaming progress back to the UI through the `workers` mixins.
+- The GUI passes only explicit `MC_CITY_*` overrides into the pipeline runtime.
+  The runtime owns temporary environment mutation/reload/restore; GUI code should
+  not set process environment variables directly for a stage run.
 - The Extraction tab detects and displays the source world's Minecraft version and
   offers the Target Version selector (see the
   [config guide](../config/README.md#version-compatibility)).
