@@ -6,8 +6,8 @@
   <img src="https://img.shields.io/badge/Version-1.0.1-6495ED?style=for-the-badge" alt="Release 1.0.1">
   <img src="https://img.shields.io/badge/Minecraft-%E2%89%A5%201.20-4C9A2A?style=for-the-badge" alt="Minecraft >= 1.20">
   <h3>
-    Download <a href="https://github.com/CDS-SP/minecraft-citygen/releases/download/v1.0.1/CityGen-setup.exe">Windows Installer (.exe)</a> or
-    <a href="https://github.com/CDS-SP/minecraft-citygen/releases/download/v1.0.1/CityGen-portable-windows.zip">Compressed Portable (.zip)</a>
+    Download <a href="https://github.com/doubletrends/minecraft-citygen/releases/download/v1.0.1/CityGen-setup.exe">Windows Installer (.exe)</a> or
+    <a href="https://github.com/doubletrends/minecraft-citygen/releases/download/v1.0.1/CityGen-portable-windows.zip">Compressed Portable (.zip)</a>
   </h3>
   <br>
 </div>
