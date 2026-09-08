@@ -1,0 +1,122 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" role="img" aria-labelledby="title description">
+  <title id="title">Minecraft City Generator</title>
+  <desc id="description">Three ivory buildings with blue glass on a rounded green tile, constructed on one consistent isometric grid.</desc>
+  <defs>
+    <radialGradient id="background" cx=".46" cy=".46" r=".65">
+      <stop stop-color="#44D5EA"/><stop offset=".42" stop-color="#329BEE"/><stop offset="1" stop-color="#2935D5"/>
+    </radialGradient>
+    <linearGradient id="gloss" x1="256" y1="22" x2="256" y2="260" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FFFFFF" stop-opacity=".15"/><stop offset=".38" stop-color="#FFFFFF" stop-opacity=".05"/><stop offset="1" stop-color="#FFFFFF" stop-opacity="0"/>
+    </linearGradient>
+    <linearGradient id="rim" x1="58" y1="42" x2="452" y2="466" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FFFFFF" stop-opacity=".32"/><stop offset=".28" stop-color="#7AF3FF" stop-opacity=".2"/><stop offset=".72" stop-color="#8B7CFF" stop-opacity=".14"/><stop offset="1" stop-color="#FFFFFF" stop-opacity=".22"/>
+    </linearGradient>
+    <linearGradient id="grass" x1="0" y1="0" x2=".8" y2="1">
+      <stop stop-color="#C1EA05"/><stop offset=".55" stop-color="#A4D800"/><stop offset="1" stop-color="#8FC100"/>
+    </linearGradient>
+    <linearGradient id="stone" x1="0" y1="0" x2="1" y2=".35">
+      <stop stop-color="#F3ECD5"/><stop offset="1" stop-color="#D9CEAF"/>
+    </linearGradient>
+    <linearGradient id="stoneSide" x1="0" y1="0" x2="1" y2="1">
+      <stop stop-color="#D1C6A7"/><stop offset="1" stop-color="#A99F82"/>
+    </linearGradient>
+    <linearGradient id="glass" x1="0" y1="0" x2="1" y2="0">
+      <stop stop-color="#08618F"/><stop offset=".5" stop-color="#228FC0"/><stop offset="1" stop-color="#1179AD"/>
+    </linearGradient>
+    <linearGradient id="glassSide" x1="0" y1="0" x2="1" y2="0">
+      <stop stop-color="#06456B"/><stop offset="1" stop-color="#096A9B"/>
+    </linearGradient>
+    <linearGradient id="base" x1="0" y1="0" x2="0" y2="1">
+      <stop stop-color="#A99F84"/><stop offset="1" stop-color="#736D5C"/>
+    </linearGradient>
+    <clipPath id="groundClip">
+      <path d="M238.922 213.86 Q256 204 273.078 213.86 L439.8399 310.14 Q456.9179 320 439.8399 329.86 L273.078 426.14 Q256 436 238.922 426.14 L72.1601 329.86 Q55.0821 320 72.1601 310.14Z"/>
+    </clipPath>
+    <!-- Ground silhouettes swept 30 degrees down-right; horizontal reach = height * 0.16. -->
+    <g id="groundShadows">
+      <path d="M190.1821 254 238.6795 282 261.3995 295.1174 212.9021 323.1174 190.1821 310 141.6846 282Z"/>
+      <path d="M328.7461 262 384.1718 294 428.9718 319.8653 373.5461 351.8653 328.7461 326 273.3205 294Z"/>
+      <path d="M256 347.8 310.04 379 319.256 384.321 265.216 415.521 256 410.2 201.96 379Z"/>
+    </g>
+  </defs>
+  <!-- Rounded enamel frame and lighting shared with the Alpha Verifier icon. -->
+  <rect x="18" y="18" width="476" height="476" rx="108" fill="url(#background)"/>
+  <g transform="translate(256 256) scale(.9) translate(-256 -256)">
+  <g transform="translate(0 12)">
+  <!-- Shared projection: x = 256 + (u - v) * sqrt(3)/2; y = 320 + (u + v)/2 - z. -->
+  <!-- Every straight architectural edge follows one of the same three axes. -->
+  <path d="M63.6211 320 Q63.6211 324.93 72.1601 329.86 L238.922 426.14 Q256 436 273.078 426.14 L439.8399 329.86 Q448.3789 324.93 448.3789 320 V364 Q448.3789 368.93 439.8399 373.86 L273.078 470.14 Q256 480 238.922 470.14 L72.1601 373.86 Q63.6211 368.93 63.6211 364Z" fill="#303B3D"/>
+  <path d="M63.6211 320 Q63.6211 324.93 72.1601 329.86 L238.922 426.14 Q256 436 273.078 426.14 L439.8399 329.86 Q448.3789 324.93 448.3789 320 V350 Q448.3789 354.93 439.8399 359.86 L273.078 456.14 Q256 466 238.922 456.14 L72.1601 359.86 Q63.6211 354.93 63.6211 350Z" fill="url(#base)"/>
+  <path d="M63.6211 320 Q63.6211 324.93 72.1601 329.86 L238.922 426.14 Q256 436 273.078 426.14 L439.8399 329.86 Q448.3789 324.93 448.3789 320 V336 Q448.3789 340.93 439.8399 345.86 L273.078 442.14 Q256 452 238.922 442.14 L72.1601 345.86 Q63.6211 340.93 63.6211 336Z" fill="#C8BE9C"/>
+  <path d="M238.922 213.86 Q256 204 273.078 213.86 L439.8399 310.14 Q456.9179 320 439.8399 329.86 L273.078 426.14 Q256 436 238.922 426.14 L72.1601 329.86 Q55.0821 320 72.1601 310.14Z" fill="url(#grass)"/>
+  <!-- Front-facing L: 19.2 ground units wide, with both arms extending forward. -->
+  <path d="M256 310.4 364.7728 373.2 348.1451 382.8 256 329.6 163.8549 382.8 147.2272 373.2Z" fill="#293434" clip-path="url(#groundClip)"/>
+  <!-- Layered feathering keeps shadows soft in both browser and Qt SVG renderers. -->
+  <g clip-path="url(#groundClip)" fill="#39382B" stroke="#39382B" stroke-linejoin="round">
+    <use href="#groundShadows" stroke-width="10" opacity=".018"/>
+    <use href="#groundShadows" stroke-width="7" opacity=".024"/>
+    <use href="#groundShadows" stroke-width="4" opacity=".032"/>
+    <use href="#groundShadows" stroke-width="2" opacity=".04"/>
+    <use href="#groundShadows" stroke="none" opacity=".08"/>
+  </g>
+  <!-- Left tower and its inset roof cap. -->
+  <path d="M190.1821 128 238.6795 156 190.1821 184 141.6846 156Z" fill="#FFFAE9"/>
+  <path d="M141.6846 156 190.1821 184 190.1821 310 141.6846 282Z" fill="url(#stone)"/>
+  <path d="M190.1821 184 238.6795 156 238.6795 282 190.1821 310Z" fill="url(#stoneSide)"/>
+  <path d="M149.4789 173.5 182.3878 192.5 182.3878 297.5 149.4789 278.5Z" fill="#756E58"/>
+  <path d="M152.077 178 180.6558 194.5 180.6558 293.5 152.077 277Z" fill="url(#glass)"/>
+  <path d="M152.077 178 154.675 179.5 154.675 278.5 152.077 277Z" fill="#3299C1"/>
+  <path d="M190.1821 122 233.4833 147 190.1821 172 146.8808 147Z" fill="#FFFAE9"/>
+  <path d="M146.8808 147 190.1821 172 190.1821 181 146.8808 156Z" fill="url(#stone)"/>
+  <path d="M190.1821 172 233.4833 147 233.4833 156 190.1821 181Z" fill="url(#stoneSide)"/>
+  <path d="M190.1821 129 221.359 147 190.1821 165 159.0052 147Z" fill="#9E9479"/>
+  <path d="M190.1821 127 212.6987 140 190.1821 153 167.6654 140Z" fill="#FFFAE9"/>
+  <path d="M167.6654 140 190.1821 153 190.1821 160 167.6654 147Z" fill="url(#stone)"/>
+  <path d="M190.1821 153 212.6987 140 212.6987 147 190.1821 160Z" fill="url(#stoneSide)"/>
+  <!-- Main tower: identical axes for the body, glass, and roof setbacks. -->
+  <path d="M328.7461 72 384.1718 104 328.7461 136 273.3205 104Z" fill="#FFFAE9"/>
+  <path d="M273.3205 104 328.7461 136 328.7461 326 273.3205 294Z" fill="url(#stone)"/>
+  <path d="M328.7461 136 384.1718 104 384.1718 294 328.7461 326Z" fill="url(#stoneSide)"/>
+  <path d="M282.8468 123.5 319.2199 144.5 319.2199 310.5 282.8468 289.5Z" fill="#746D57"/>
+  <path d="M285.4449 128 317.4878 146.5 317.4878 306.5 285.4449 288Z" fill="url(#glass)"/>
+  <path d="M338.2724 144.5 374.6455 123.5 374.6455 289.5 338.2724 310.5Z" fill="#6B624D"/>
+  <path d="M340.0045 146.5 372.0474 128 372.0474 288 340.0045 306.5Z" fill="url(#glassSide)"/>
+  <path d="M295.8372 134 296.4001 134.325 296.4001 294.325 295.8372 294Z" fill="#126C98"/>
+  <path d="M307.0955 140.5 307.6584 140.825 307.6584 300.825 307.0955 300.5Z" fill="#126C98"/>
+  <path d="M355.896 137.325 356.4589 137 356.4589 297 355.896 297.325Z" fill="#085781"/>
+  <path d="M273.3205 104 275.9186 105.5 275.9186 295.5 273.3205 294Z" fill="#FFF8E5"/>
+  <path d="M326.1481 134.5 328.7461 136 328.7461 326 326.1481 324.5Z" fill="#FFF7E1"/>
+  <path d="M328.7461 50 372.0474 75 328.7461 100 285.4449 75Z" fill="#FFFAE9"/>
+  <path d="M285.4449 75 328.7461 100 328.7461 129 285.4449 104Z" fill="url(#stone)"/>
+  <path d="M328.7461 100 372.0474 75 372.0474 104 328.7461 129Z" fill="url(#stoneSide)"/>
+  <path d="M294.9711 92.5 319.2199 106.5 319.2199 118.5 294.9711 104.5Z" fill="url(#glass)"/>
+  <path d="M338.2724 106.5 362.5211 92.5 362.5211 104.5 338.2724 118.5Z" fill="#6E705E"/>
+  <path d="M328.7461 50 372.0474 75 328.7461 100 285.4449 75Z" fill="#FFFAE9"/>
+  <path d="M285.4449 75 328.7461 100 328.7461 107 285.4449 82Z" fill="url(#stone)"/>
+  <path d="M328.7461 100 372.0474 75 372.0474 82 328.7461 107Z" fill="url(#stoneSide)"/>
+  <path d="M328.7461 28 358.191 45 328.7461 62 299.3013 45Z" fill="#FFFAE9"/>
+  <path d="M299.3013 45 328.7461 62 328.7461 92 299.3013 75Z" fill="url(#stone)"/>
+  <path d="M328.7461 62 358.191 45 358.191 75 328.7461 92Z" fill="url(#stoneSide)"/>
+  <path d="M328.7461 9 337.4064 14 328.7461 19 320.0859 14Z" fill="#FFFAE9"/>
+  <path d="M320.0859 14 328.7461 19 328.7461 50 320.0859 45Z" fill="url(#stone)"/>
+  <path d="M328.7461 19 337.4064 14 337.4064 45 328.7461 50Z" fill="url(#stoneSide)"/>
+  <!-- Foreground pavilion: roof inset and openings share the same grid. -->
+  <g transform="translate(256 379) scale(1.2) translate(-278.5167 -379)">
+  <path d="M278.5167 305 323.55 331 278.5167 357 233.4833 331Z" fill="#FFFAE9"/>
+  <path d="M233.4833 331 278.5167 357 278.5167 405 233.4833 379Z" fill="url(#stone)"/>
+  <path d="M278.5167 357 323.55 331 323.55 379 278.5167 405Z" fill="url(#stoneSide)"/>
+  <path d="M278.5167 312 311.4256 331 278.5167 350 245.6077 331Z" fill="#A79C7F"/>
+  <path d="M278.5167 316 306.2295 332 278.5167 348 250.8038 332Z" fill="#E5D9BB"/>
+  <path d="M246.4737 356.5 262.9282 366 262.9282 396 246.4737 386.5Z" fill="#746E54"/>
+  <path d="M249.9378 361.5 261.1962 368 261.1962 395 249.9378 388.5Z" fill="#384237"/>
+  <path d="M290.641 365 313.1577 352 313.1577 374 290.641 387Z" fill="#776D53"/>
+  <path d="M292.3731 367 310.5596 356.5 310.5596 372.5 292.3731 383Z" fill="url(#glass)"/>
+  </g>
+  </g>
+  </g>
+  <!-- Soft top reflection follows the frame's rounded contour. -->
+  <path d="M126 18H386C445.6468 18 494 66.3532 494 126V155C392 205 153 190 18 120C21.18 63.2 68.4 18 126 18Z" fill="url(#gloss)"/>
+  <ellipse cx="146" cy="77" rx="72" ry="24" fill="#FFFFFF" fill-opacity=".04" transform="rotate(-13 146 77)"/>
+  <rect x="19.5" y="19.5" width="473" height="473" rx="106.5" fill="none" stroke="url(#rim)" stroke-width="3"/>
+  <rect x="28" y="28" width="456" height="456" rx="99" fill="none" stroke="#00156B" stroke-opacity=".24" stroke-width="2"/>
+</svg>
