@@ -1,0 +1,6 @@
+1 - pipeline numerical order matches the actual GUI pipeline
+2 - cut down test suites to essentials
+3 - time the progress bar, and how long each substep actually takes, make the progress bar more smooth (uniform progression rate)
+4 - optimization: speed up schematics extraction
+5 - optimization: speed up top down preview rendering
+6 - UI change - make the buttons more appealing, feel more responsive on hover 
