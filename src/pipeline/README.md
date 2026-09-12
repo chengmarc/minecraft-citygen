@@ -79,18 +79,17 @@ Extraction is driven by explicit marker blocks, not guesswork.
 
 ### Roads & fill props
 
-Roads are scanned inside `ROAD_BOX`. `detect_assets(..., expected_components=1)`
-resolves each wool-bounded component into a single cuboid (roads are single-solid,
-like a type-1 build), and a sign inside the boundary provides the exported name
-(e.g. `02_big_2x2_I`). Because markers define the cuboid directly, a tile taller
-than `ROAD_BOX`'s Y span is still captured in full (markers are searched over
-`BUILD_MARKER_Y_RANGE`).
+Roads are scanned inside `ROAD_BOX` with the shared marker extractor. A
+one-layer asset becomes one road schematic, and the sign above the emerald
+provides the exported name (e.g. `02_big_2x2_I`). Because markers define the
+cuboid directly, a tile taller than `ROAD_BOX`'s Y span is still captured in full
+(markers are searched over `BUILD_MARKER_Y_RANGE`).
 
-Fill props are authored in the road region with the same convention and named with
-a `fill` token (`15_fill_1x1_A`, …). Each is a self-contained 9x9 (one fine cell)
-asset carrying its own ground. `engine.schematic.road` keeps them out of the road
-tile set and exposes them via `load_fillers()`; `04_city/construct.py` drops a
-random, randomly-rotated fill prop into every fully-empty non-road lot cell.
+Fill props are authored in the road region and named with a `fill` token
+(`15_fill_1x1_A`, ...). Each is a self-contained 9x9 (one fine cell) asset
+carrying its own ground. `engine.schematic.road` keeps them out of the road tile
+set and exposes them via `load_fillers()`; `04_city/construct.py` drops a random,
+randomly-rotated fill prop into every fully-empty non-road lot cell.
 
 ### Builds
 

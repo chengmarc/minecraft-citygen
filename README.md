@@ -61,9 +61,8 @@ building. Three vertically aligned pairs with the same footprint create a
 stackable building with bottom, middle, and top pieces. A sign inside the
 building footprint can set stack options.
 
-Roads and fill props still use the road-region convention: a wool rectangle
-bounds each asset, one gold/diamond pair marks the captured cuboid, one emerald
-marks ground level, and a sign names the exported road/fill asset.
+Roads and fill props use the same marker format. Their sign names the exported
+road/fill asset.
 
 Marker blocks are stripped from the exported result automatically. In-cuboid
 signs and other block entities are preserved as real content, so put authoring
