@@ -21,7 +21,7 @@ from engine.world import writer as world_writer
 STONE = "minecraft:stone"
 STAIRS = "minecraft:oak_stairs[facing=east,half=bottom,shape=straight,waterlogged=false]"
 SIGN = "minecraft:oak_sign[rotation=0,waterlogged=false]"
-DATA_VERSION = 3463  # 1.20.1
+DATA_VERSION = 4790  # 26.1.2
 
 
 def _sample_grid():

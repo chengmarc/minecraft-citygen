@@ -55,14 +55,13 @@ PREVIEW_CONFIGS = [
     ("BANNED_BUILDINGS", "Skip Building IDs", "Optional comma-separated building IDs to leave out of generation."),
     ("TYPE1_TOP_FIT_CHOICES", "House Style Variety", "Higher values mix in more different standard house designs."),
     ("TYPE2_TOP_FIT_CHOICES", "Landmark Style Variety", "Higher values mix in more different landmark designs."),
-    ("TYPE2_SAME_COARSE_SPAN", "Landmark Repeat Distance", "Higher values spread repeated landmarks farther apart."),
 ]
 PREVIEW_CONFIG_LOOKUP = {name: (label, description) for name, label, description in PREVIEW_CONFIGS}
 
 PREVIEW_CONFIG_GROUPS = [
     ("Avenue and Street Spacing", ["GAP_BIG", "PAD_BIG", "GAP_SMALL", "PAD_SMALL"]),
     ("Avenue and Street Shape", ["N_BIG_CORNERS", "N_BIG_TEES", "N_SMALL_CORNERS", "N_SMALL_TEES"]),
-    ("Building Mix", ["BANNED_BUILDINGS", "TYPE1_TOP_FIT_CHOICES", "TYPE2_TOP_FIT_CHOICES", "TYPE2_SAME_COARSE_SPAN"]),
+    ("Building Mix", ["BANNED_BUILDINGS", "TYPE1_TOP_FIT_CHOICES", "TYPE2_TOP_FIT_CHOICES"]),
 ]
 
 PREVIEW_SLIDER_RANGES = {
@@ -76,7 +75,6 @@ PREVIEW_SLIDER_RANGES = {
     "N_SMALL_TEES": (0, 12),
     "TYPE1_TOP_FIT_CHOICES": (5, 9),
     "TYPE2_TOP_FIT_CHOICES": (1, 5),
-    "TYPE2_SAME_COARSE_SPAN": (4, 8),
 }
 
 CANVAS_SIZE_OPTIONS = {

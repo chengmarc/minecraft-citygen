@@ -6,7 +6,7 @@ from config.path import env_int, env_set
 
 CELL = env_int("CELL", 9)              # simulation pixels and production blocks per fine cell
 FINE = env_int("FINE", 80)            # default fine grid edge (FINE x FINE cells); drivers may override
-DEFAULT_SEED = env_int("DEFAULT_SEED", 4)
+DEFAULT_SEED = env_int("DEFAULT_SEED", 5)
 
 # forced gap between parallel lines
 GAP_MIXED = env_int("GAP_MIXED", 5)    # fine-cell clearance between a small street and a big corridor band
@@ -27,6 +27,3 @@ BANNED_BUILDINGS = env_set("BANNED_BUILDINGS", {"001", "002"})  # building IDs t
 
 TYPE2_TOP_FIT_CHOICES = env_int("TYPE2_TOP_FIT_CHOICES", 3)
 TYPE1_TOP_FIT_CHOICES = env_int("TYPE1_TOP_FIT_CHOICES", 7)
-
-# Type-2 buildings cannot repeat inside the same coarse-cell window.
-TYPE2_SAME_COARSE_SPAN = env_int("TYPE2_SAME_COARSE_SPAN", 6)

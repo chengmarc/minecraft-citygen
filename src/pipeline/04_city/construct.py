@@ -21,7 +21,6 @@ from engine.schematic.building import assemble
 from engine.core.city_layout import (
     FACE_K,
     PlacementRules,
-    catalog_type,
     find_lots,
     load_catalog,
     place_city,
@@ -87,13 +86,13 @@ def _city_ground_y(placements, catalog_meta):
 
 
 def _seat_y(ground_y, ground_offset):
-    """Bottom row of a marker asset: its emerald marker seats on the ground plane.
-
-    Every asset authored with the gold/diamond/emerald convention (roads,
-    buildings, trees) seats the same way -- the emerald marks ground level, so
-    the asset's bottom sits ``ground_offset`` rows below it.
-    """
+    """Bottom row of a seated asset relative to the city ground plane."""
     return ground_y - ground_offset
+
+
+def _is_stacked(entry):
+    pieces = entry.get("pieces", {})
+    return all(name in pieces for name in ("bottom", "middle", "top"))
 
 
 def _assemble_instances(seed, placements, catalog_meta, ground_y):
@@ -104,7 +103,7 @@ def _assemble_instances(seed, placements, catalog_meta, ground_y):
     for placement in placements:
         building = placement.building
         entry = catalog_meta[building.num]
-        mid_sections = height_rng.randint(*entry["stack"]) if catalog_type(entry) == 2 else 0
+        mid_sections = height_rng.randint(*entry.get("stack", [1, 1])) if _is_stacked(entry) else 0
         tile = rot_tile(assemble(building.num, mid_sections, catalog_meta), FACE_K[placement.facing])
         px, pz = placement_origin(placement.rect, placement.facing, tile.width, tile.length, BLOCKS_PER_CELL)
         px += PLAYER_ANCHOR_MARGIN
@@ -309,9 +308,8 @@ def run(*, seed=DEFAULT_SEED, fine=None, out=None, no_ground_fill=False, logger=
     _step(3, "Planning placements")
     placements = _plan_placements(seed, network, size)
     city_ground_y = _city_ground_y(placements, catalog_meta)
-    # `ground_y` is the single plane every marker asset seats on (emerald =
-    # ground level). Roads, buildings, the dedicated lot ground-fill asset, and
-    # tree props all resolve to `_seat_y(ground_y, offset)`.
+    # `ground_y` is the shared plane roads, buildings, the dedicated lot
+    # ground-fill asset, and tree props resolve against.
     ground_y = city_ground_y - BUILD_SNAP_DROP
     road_y0 = _seat_y(ground_y, road_ground_offset)
     out_span = road_span + PLAYER_ANCHOR_MARGIN

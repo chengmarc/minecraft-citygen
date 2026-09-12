@@ -11,7 +11,6 @@ if __package__ in (None, ""):
     sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
 from config.path import BUILD_CATALOG, BUILDS_PROD
-from engine.core.city_layout import catalog_type
 from engine.render.isometric import render_cells_visible_iso, write_contact
 from engine.schematic.reader import decode_schem_cells
 from pipeline.stages import noop, run_stage_cli
@@ -21,7 +20,8 @@ CATALOG = BUILD_CATALOG
 
 
 def assemble(key, meta):
-    if catalog_type(meta) == 1:
+    pieces = meta.get("pieces", {})
+    if "whole" in pieces:
         return decode_schem_cells(os.path.join(SCHEM, f"{key}.schem"))
     cells = []
     for part in ("bottom", "middle", "top"):

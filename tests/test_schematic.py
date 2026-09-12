@@ -1,12 +1,9 @@
-"""Schematic transforms, block-entity handling, and the Sponge v3 container.
-
-Every output uses the Sponge Schematic v3 container (Minecraft 1.20+). The hard
-floor is 1.20, so stamps never fall below the v3 window and the writer only ever
-emits v3.
-"""
+"""Schematic transforms, block-entity handling, and the Sponge v3 container."""
 import numpy as np
-from nbtlib import Compound, String
+import nbtlib
+from nbtlib import Byte, Compound, String
 
+from engine.schematic import building as building_schem
 from engine.schematic import road as road_schem
 from engine.schematic.reader import (
     decode_schem_block_entities,
@@ -21,8 +18,8 @@ from engine.schematic.writer import (
     write_sponge_schem_grid,
 )
 
-V120 = 3463     # Minecraft 1.20, the hard floor and start of the v3 window
-LATEST = 4000   # any DataVersion well above the floor
+V2612 = 4790
+LATEST = 4903
 
 
 # --- transforms -----------------------------------------------------------
@@ -78,20 +75,23 @@ def test_rot_tile_moves_block_entity_with_its_cell():
 # --- block-entity round-trips --------------------------------------------
 
 def _sign(x, y, z, text):
-    return BlockEntity(x, y, z, "minecraft:oak_sign", Compound({"Text1": String(text)}))
+    return BlockEntity(x, y, z, "minecraft:oak_sign", Compound({
+        "is_waxed": Byte(0),
+        "front_text": Compound({"messages": nbtlib.List[String]([String(text)])}),
+    }))
 
 
 def test_cells_roundtrip_preserves_block_entity(tmp_path):
     cells = [[["minecraft:oak_sign[rotation=0]"]]]
     be = _sign(0, 0, 0, '{"text":"hello"}')
     path = tmp_path / "sign.schem"
-    write_sponge_schem_cells(cells, str(path), V120, block_entities=[be])
+    write_sponge_schem_cells(cells, str(path), V2612, block_entities=[be])
 
     got = decode_schem_block_entities(str(path))
     assert len(got) == 1
     assert (got[0].x, got[0].y, got[0].z) == (0, 0, 0)
     assert got[0].id == "minecraft:oak_sign"
-    assert str(got[0].data["Text1"]) == '{"text":"hello"}'
+    assert str(got[0].data["front_text"]["messages"][0]) == '{"text":"hello"}'
 
 
 def test_grid_roundtrip_preserves_block_entity_position(tmp_path):
@@ -130,13 +130,13 @@ def _assert_v3(file):
 
 
 def test_cells_and_grid_emit_v3_container():
-    _assert_v3(_cells_file(V120))
+    _assert_v3(_cells_file(V2612))
     _assert_v3(_cells_file(LATEST))
-    _assert_v3(_grid_file(V120))
+    _assert_v3(_grid_file(V2612))
 
 
 def test_container_carries_target_data_version():
-    assert int(_cells_file(V120)["Schematic"]["DataVersion"]) == V120
+    assert int(_cells_file(V2612)["Schematic"]["DataVersion"]) == V2612
     assert int(_cells_file(LATEST)["Schematic"]["DataVersion"]) == LATEST
 
 
@@ -144,7 +144,7 @@ def test_reader_round_trips_written_cells(tmp_path):
     # The render step reads schematics straight back after extraction.
     cells = [[["minecraft:stone", "minecraft:air"]], [["minecraft:oak_planks", "minecraft:stone"]]]
     path = tmp_path / "round.schem"
-    write_sponge_schem_cells(cells, str(path), V120)
+    write_sponge_schem_cells(cells, str(path), V2612)
     assert decode_schem_cells(str(path)) == cells
     assert decode_schem_offset(str(path)) == (0, 0, 0)
 
@@ -153,19 +153,19 @@ def test_road_asset_loaders_keep_network_tiles_fill_props_and_ground_fill_separa
     write_sponge_schem_cells(
         [[["minecraft:stone"]]],
         str(tmp_path / "02_big_2x2_I.schem"),
-        V120,
+        V2612,
         offset=(0, -1, 0),
     )
     write_sponge_schem_cells(
         [[["minecraft:oak_log"]]],
         str(tmp_path / "15_fill_1x1_A.schem"),
-        V120,
+        V2612,
         offset=(0, -2, 0),
     )
     write_sponge_schem_cells(
         [[["minecraft:moss_block"]]],
         str(tmp_path / "18_empty_fill.schem"),
-        V120,
+        V2612,
         offset=(0, -3, 0),
     )
     monkeypatch.setattr(road_schem, "ROADS_SCHEM", str(tmp_path))
@@ -180,3 +180,29 @@ def test_road_asset_loaders_keep_network_tiles_fill_props_and_ground_fill_separa
     assert fillers[0].ground_offset == 2
     assert ground_fill is not None
     assert ground_fill.ground_offset == 3
+
+
+def test_building_assembly_uses_piece_shape_not_placement_type(tmp_path, monkeypatch):
+    monkeypatch.setattr(building_schem, "BUILDS", str(tmp_path))
+    monkeypatch.setattr(building_schem, "META", None)
+    monkeypatch.setattr(building_schem, "_piece", {})
+
+    write_sponge_schem_cells([[["minecraft:bottom"]]], str(tmp_path / "001_bottom.schem"), V2612)
+    write_sponge_schem_cells([[["minecraft:middle"]]], str(tmp_path / "001_middle.schem"), V2612)
+    write_sponge_schem_cells([[["minecraft:top"]]], str(tmp_path / "001_top.schem"), V2612)
+    write_sponge_schem_cells([[["minecraft:whole"]]], str(tmp_path / "002.schem"), V2612)
+
+    stacked = building_schem.assemble("001", 2, {
+        "001": {"type": 1, "pieces": {"bottom": 1, "middle": 1, "top": 1}},
+    })
+    whole = building_schem.assemble("002", 0, {
+        "002": {"type": 2, "pieces": {"whole": 1}},
+    })
+
+    assert [layer[0][0] for layer in stacked.cells] == [
+        "minecraft:bottom",
+        "minecraft:middle",
+        "minecraft:middle",
+        "minecraft:top",
+    ]
+    assert whole.cells == [[["minecraft:whole"]]]

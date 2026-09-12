@@ -21,7 +21,6 @@ from config.algo import (
     BANNED_BUILDINGS,
     CELL,
     TYPE1_TOP_FIT_CHOICES,
-    TYPE2_SAME_COARSE_SPAN,
     TYPE2_TOP_FIT_CHOICES,
 )
 from config.path import BUILD_CATALOG
@@ -85,35 +84,20 @@ def normalize_building_id(value):
 
 
 class PlacementRuleState:
-    def __init__(self, type2_targets):
+    def __init__(self):
         self.counts = {}
-        self.type2_targets = type2_targets
-        self.type2_coarse_cells = {}
 
 
 class PlacementRules:
     def __init__(self, banned_buildings=None):
         banned = BANNED_BUILDINGS if banned_buildings is None else banned_buildings
         self.banned_buildings = {normalize_building_id(v) for v in banned}
-        self.type2_appearance_ranges = {}
-        self.type2_same_coarse_span = max(1, int(TYPE2_SAME_COARSE_SPAN))
 
-    def new_state(self, rng):
-        targets = {}
-        for num, rep in self.type2_appearance_ranges.items():
-            lo, hi = rep
-            targets[num] = rng.randint(lo, hi)
-        return PlacementRuleState(targets)
+    def new_state(self, _rng):
+        return PlacementRuleState()
 
-    def prepare_catalog(self, buildings):
-        self.type2_appearance_ranges = {}
-        for building in buildings:
-            if building.type != 2:
-                continue
-            rep = building.meta.get("appearance", [1, 1])
-            lo, hi = rep if isinstance(rep, list) else [rep, rep]
-            lo, hi = max(1, int(lo)), max(1, int(hi))
-            self.type2_appearance_ranges[building.num] = [min(lo, hi), max(lo, hi)]
+    def prepare_catalog(self, _buildings):
+        return None
 
     def allow_building(self, num, _meta):
         return normalize_building_id(num) not in self.banned_buildings
@@ -121,28 +105,10 @@ class PlacementRules:
     def can_place(self, building, _facing, rect, state):
         if building.type != 2:
             return True
-
-        target = state.type2_targets.get(building.num, 1)
-        if state.counts.get(building.num, 0) >= target:
-            return False
-        return not self._type2_repeats_nearby(building.num, rect, state)
+        return state.counts.get(building.num, 0) == 0
 
     def record_placement(self, building, _facing, rect, state):
         state.counts[building.num] = state.counts.get(building.num, 0) + 1
-        if building.type == 2:
-            cells = state.type2_coarse_cells.setdefault(building.num, set())
-            cells.update(coarse_cells_of_rect(rect))
-
-    def _type2_repeats_nearby(self, num, rect, state):
-        occupied = state.type2_coarse_cells.get(num)
-        if not occupied:
-            return False
-        max_delta = self.type2_same_coarse_span - 1
-        for cx, cy in coarse_cells_of_rect(rect):
-            for ox, oy in occupied:
-                if abs(cx - ox) <= max_delta and abs(cy - oy) <= max_delta:
-                    return True
-        return False
 
 
 def catalog_type(meta):

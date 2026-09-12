@@ -1,10 +1,4 @@
-"""Shared Sponge v3 schematic reading helpers.
-
-CityGen only ever reads the v3 schematics it writes (the hard floor is 1.20, so
-every output uses the Sponge v3 container), so this reader assumes the v3 layout:
-fields nested under a ``Schematic`` key, blocks under ``Blocks`` with a ``Data``
-array, block entities carrying their NBT in a ``Data`` compound.
-"""
+"""Shared Sponge v3 schematic reading helpers."""
 
 from __future__ import annotations
 

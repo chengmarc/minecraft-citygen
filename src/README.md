@@ -54,7 +54,7 @@ defined by `CELL = 9` in [config/algo.py](config/algo.py). `buildings.json`
 - Source world: Minecraft **Java Edition**, 1.18+ Anvil region/chunk format.
   Not a Bedrock pipeline; older world formats are not supported.
 - Output: Sponge `.schem` (v3 container) plus standalone world exports. The
-  supported floor is Minecraft **1.20**; versioning is **forward-only** — see
+  supported floor is Minecraft **26.1.2**; versioning is **forward-only** — see
   the [config guide](config/README.md#version-compatibility).
 - Local filesystem access to the Minecraft save and the export directory is
   assumed. A few GUI behaviors are Windows-oriented (e.g. `os.startfile`).
@@ -64,8 +64,9 @@ defined by `CELL = 9` in [config/algo.py](config/algo.py). `buildings.json`
 - Roads are orthogonal Manhattan-style only (no diagonals/curves); big roads are
   `2x2` fine cells, small roads `1x1`, mixed pieces `1x2` transverse crossings.
 - Extraction depends on strict in-world marker conventions; malformed markers
-  skip the build. Type `1` builds resolve to exactly 1 cuboid; type `2` to
-  exactly 3 (`bottom`/`middle`/`top`).
+  skip the build. Building type controls placement, while one or three
+  vertically aligned gold/diamond pairs control whether the asset is exported as
+  a whole schematic or `bottom`/`middle`/`top` pieces.
 - Footprints snap to the fine-cell grid; no freeform placement.
 - Simulation previews are layout-accurate stand-ins, not production-faithful
   visuals.

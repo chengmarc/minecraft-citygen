@@ -52,6 +52,27 @@ class CityLayoutTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "overlaps"):
             C.validate_placements(set(), placements, fine=4)
 
+    def test_type2_building_places_at_most_once(self):
+        fine = 5
+        road_cells = {(0, y) for y in range(fine)}
+        lots = C.find_lots(road_cells, fine)
+        building = C.Building("010", 2, 9, 9, {"type": 2})
+        rules = C.PlacementRules(banned_buildings=set())
+        state = rules.new_state(random.Random(1))
+
+        placements = C.place_city(
+            road_cells,
+            lots,
+            [building],
+            fine,
+            rng=random.Random(5),
+            rules=rules,
+            rule_state=state,
+            type2_frontage_cells=road_cells,
+        )
+
+        self.assertEqual(len([p for p in placements if p.building.num == "010"]), 1)
+
 
 class IsometricRendererTests(unittest.TestCase):
     def test_render_grid_visible_iso_returns_rgba_image(self):
