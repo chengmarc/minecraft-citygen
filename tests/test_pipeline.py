@@ -133,6 +133,7 @@ def test_run_build_extraction_pipeline_tags_progress_with_stage_modules(monkeypa
 # --- roads extraction stage ----------------------------------------------
 
 roads_extract = importlib.import_module("pipeline.01_roads.extract")
+builds_extract = importlib.import_module("pipeline.02_builds.extract")
 builds_render = importlib.import_module("pipeline.02_builds.render")
 roads_render = importlib.import_module("pipeline.01_roads.render")
 city_construct = importlib.import_module("pipeline.04_city.construct")
@@ -185,6 +186,20 @@ class RoadsExtractTests(unittest.TestCase):
                     roads_extract.run()
 
             self.assertFalse(stale.exists())
+
+
+def test_build_stack_sign_reads_sign_one_block_above_emerald(monkeypatch):
+    monkeypatch.setattr(
+        builds_extract,
+        "iter_signs",
+        lambda _world, _xa, _xb, _za, _zb: [
+            (4, 70, 8, "stack: 9"),
+            (4, 71, 8, "stack: 2-5"),
+        ],
+    )
+    monkeypatch.setattr(builds_extract, "get_world", lambda: object())
+
+    assert builds_extract.stack_sign((4, 70, 8)) == [2, 5]
 
 
 class ContactRenderTests(unittest.TestCase):

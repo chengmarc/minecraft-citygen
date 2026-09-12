@@ -16,7 +16,9 @@ from engine.world.anvil_world_reader import World
 from engine.world.marker_extract import (
     detect_source_ground_y,
     extract_cuboid,
+    group_build_cuboids,
     ground_shift,
+    pair_gold_diamond_markers,
     sign_text,
 )
 
@@ -130,19 +132,72 @@ def test_ground_shift_zero_when_undetectable():
 
 # --- marker parsing: signs ------------------------------------------------
 
-def test_sign_text_reads_legacy_text1_4():
-    be = {
-        "Text1": '{"text":"01_big"}',
-        "Text2": '{"text":"_2x2"}',
-        "Text3": '{"text":"_deadend"}',
-        "Text4": '{"text":""}',
-    }
-    assert sign_text(be) == "01_big _2x2 _deadend"
-
-
 def test_sign_text_reads_modern_front_back_text():
-    be = {"front_text": {"messages": ["stack: 5-7", "", "appearance: 4-6", ""]}}
-    assert sign_text(be) == "stack: 5-7 appearance: 4-6"
+    be = {"front_text": {"messages": ["stack: 5-7", "", "plain note", ""]}}
+    assert sign_text(be) == "stack: 5-7 plain note"
+
+
+def test_gold_markers_pair_with_closest_unused_diamonds():
+    golds = [(10, 64, 10), (100, 64, 10)]
+    diamonds = [(6, 70, 6), (90, 80, 2)]
+    cuboids, skipped = pair_gold_diamond_markers(golds, diamonds)
+
+    assert skipped == []
+    assert cuboids == [
+        ((6, 10, 64, 70, 6, 10), (10, 64, 10)),
+        ((90, 100, 64, 80, 2, 10), (100, 64, 10)),
+    ]
+
+
+def test_gold_markers_ignore_diamonds_outside_north_west_up_direction():
+    cuboids, skipped = pair_gold_diamond_markers(
+        golds=[(10, 64, 10)],
+        diamonds=[(9, 63, 9), (11, 70, 9), (9, 70, 11)],
+    )
+
+    assert cuboids == []
+    assert skipped[0] == (10, 10, "no north/west/up diamond marker available for gold (10, 64, 10)")
+    assert len(skipped) == 4
+
+
+def test_build_cuboids_group_by_vertical_alignment():
+    cuboids = [
+        ((0, 8, 80, 89, 0, 8), (8, 80, 8)),
+        ((20, 28, 70, 75, 0, 8), (28, 70, 8)),
+        ((0, 8, 64, 69, 0, 8), (8, 64, 8)),
+        ((0, 8, 70, 79, 0, 8), (8, 70, 8)),
+    ]
+
+    components, skipped = group_build_cuboids(cuboids, emeralds=[(9, 63, 9), (29, 70, 9)])
+
+    assert skipped == []
+    assert len(components) == 2
+    assert components[0].cuboids == [
+        (0, 8, 64, 69, 0, 8),
+        (0, 8, 70, 79, 0, 8),
+        (0, 8, 80, 89, 0, 8),
+    ]
+    assert components[0].ground_offset == -1
+    assert components[1].cuboids == [(20, 28, 70, 75, 0, 8)]
+
+
+def test_build_cuboids_skip_invalid_layer_counts():
+    components, skipped = group_build_cuboids([
+        ((0, 8, 64, 69, 0, 8), (8, 64, 8)),
+        ((0, 8, 70, 79, 0, 8), (8, 70, 8)),
+    ], emeralds=[(9, 64, 9)])
+
+    assert components == []
+    assert skipped == [(0, 0, "expected 1 or 3 vertically aligned layer(s), got 2")]
+
+
+def test_build_cuboids_require_emerald_adjacent_to_bottom_gold():
+    components, skipped = group_build_cuboids([
+        ((0, 8, 64, 69, 0, 8), (8, 64, 8)),
+    ], emeralds=[(10, 64, 10)])
+
+    assert components == []
+    assert skipped == [(0, 0, "no horizontally adjacent emerald marker for gold (8, 64, 8)")]
 
 
 # --- marker parsing: cuboid leaf persistence ------------------------------

@@ -1,15 +1,8 @@
-"""Shared marker-based asset extraction from a Minecraft world.
+"""Marker-based asset extraction from a Minecraft world.
 
-Buildings, road tiles, and fill props are all authored in the world with the
-*same* convention, so they share one geometry pass:
-
-  * a wool rectangle bounds each asset (connected wool components separate them);
-  * a gold + diamond pair marks two opposite corners of each solid cuboid;
-  * a single emerald marks ground level (its Y seats the asset in the city).
-
-The building extractor packages the result into a stacked catalog; the road /
-fill extractor names each result from its sign. The logic below is common to
-both and knows nothing about either domain.
+Road tiles and fill props use the wool/gold/diamond/emerald convention. Buildings
+use direct gold/diamond marker pairs: one pair exports a whole asset, and three
+vertically aligned pairs export bottom/middle/top pieces.
 """
 
 from __future__ import annotations
@@ -36,6 +29,16 @@ class AssetComponent:
     cuboids: list       # list of (x0, x1, y0, y1, z0, z1)
     ground_y: int       # emerald marker Y (ground level)
     boundary: tuple     # wool bounding box (xmn, xmx, zmn, zmx)
+
+
+@dataclass(frozen=True)
+class BuildAssetComponent:
+    origin: list        # [footprint_x0, footprint_z0, lowest_box_y0]
+    size: list          # [width, depth] in blocks
+    cuboids: list       # one cuboid or bottom/middle/top cuboids
+    ground_offset: int  # emerald marker Y relative to the lowest cuboid bottom
+    emerald: tuple      # emerald marker paired with the bottom gold
+    boundary: tuple     # footprint box (xmn, xmx, zmn, zmx)
 
 
 def block_base(world, x, y, z):
@@ -112,6 +115,133 @@ def component_cuboids(golds, diamonds):
     return sorted(cuboids, key=lambda bb: (bb[2], bb[4], bb[0]))
 
 
+def _cuboid_from_pair(gold, diamond):
+    x0, x1 = sorted((gold[0], diamond[0]))
+    y0, y1 = sorted((gold[1], diamond[1]))
+    z0, z1 = sorted((gold[2], diamond[2]))
+    return x0, x1, y0, y1, z0, z1
+
+
+def build_markers_in_region(world, x_a, x_b, z_a, z_b, y_range, *, on_progress=None):
+    """Find building gold/diamond markers directly in the configured region."""
+    xlo, xhi = min(x_a, x_b), max(x_a, x_b)
+    zlo, zhi = min(z_a, z_b), max(z_a, z_b)
+    ylo, yhi = y_range
+    cx_lo, cx_hi = xlo >> 4, xhi >> 4
+    cz_lo, cz_hi = zlo >> 4, zhi >> 4
+    total_chunks = (cx_hi - cx_lo + 1) * (cz_hi - cz_lo + 1)
+    chunks_done = 0
+    found = {"gold_block": [], "diamond_block": [], "emerald_block": []}
+
+    for cx in range(cx_lo, cx_hi + 1):
+        x_start = max(xlo, cx << 4)
+        x_end = min(xhi, (cx << 4) + 15)
+        for cz in range(cz_lo, cz_hi + 1):
+            z_start = max(zlo, cz << 4)
+            z_end = min(zhi, (cz << 4) + 15)
+            if not world.is_chunk_empty(cx, cz):
+                for x in range(x_start, x_end + 1):
+                    for z in range(z_start, z_end + 1):
+                        for y in range(ylo, yhi + 1):
+                            base = block_base(world, x, y, z)
+                            if base in found:
+                                found[base].append((x, y, z))
+            chunks_done += 1
+            if on_progress is not None:
+                on_progress(chunks_done, total_chunks)
+
+    for values in found.values():
+        values.sort(key=lambda pos: (pos[2], pos[0], pos[1]))
+    return found
+
+
+def _diamond_faces_gold(diamond, gold):
+    """A valid build diamond is north/west/up from its gold origin marker."""
+    return diamond[0] <= gold[0] and diamond[1] >= gold[1] and diamond[2] <= gold[2]
+
+
+def _nearby_horizontal_emerald(gold, emeralds):
+    candidates = [
+        emerald for emerald in emeralds
+        if max(abs(emerald[0] - gold[0]), abs(emerald[2] - gold[2])) == 1
+    ]
+    return min(candidates, key=lambda pos: (pos[2], pos[0], pos[1])) if candidates else None
+
+
+def pair_gold_diamond_markers(golds, diamonds):
+    """Pair each gold marker with its closest unused north/west/up diamond."""
+    unused = set(diamonds)
+    cuboids = []
+    skipped = []
+    for gold in sorted(golds, key=lambda pos: (pos[2], pos[0], pos[1])):
+        candidates = [diamond for diamond in unused if _diamond_faces_gold(diamond, gold)]
+        if not candidates:
+            skipped.append((gold[0], gold[2], f"no north/west/up diamond marker available for gold {gold}"))
+            continue
+        diamond = min(
+            candidates,
+            key=lambda pos: (
+                (gold[0] - pos[0]) ** 2 + (gold[1] - pos[1]) ** 2 + (gold[2] - pos[2]) ** 2,
+                pos[2],
+                pos[0],
+                pos[1],
+            ),
+        )
+        unused.remove(diamond)
+        cuboids.append((_cuboid_from_pair(gold, diamond), gold))
+    for diamond in sorted(unused, key=lambda pos: (pos[2], pos[0], pos[1])):
+        skipped.append((diamond[0], diamond[2], f"unused diamond marker {diamond}"))
+    return cuboids, skipped
+
+
+def group_build_cuboids(cuboids, emeralds=()):
+    """Group cuboids by vertical alignment into one- or three-layer assets."""
+    grouped = {}
+    for cuboid, gold in cuboids:
+        x0, x1, _y0, _y1, z0, z1 = cuboid
+        grouped.setdefault((x0, x1, z0, z1), []).append((cuboid, gold))
+
+    components = []
+    skipped = []
+    for (x0, x1, z0, z1), group in sorted(grouped.items(), key=lambda item: (item[0][2], item[0][0])):
+        group.sort(key=lambda item: (item[0][2], item[0][3], item[0][4], item[0][0]))
+        if len(group) not in (1, 3):
+            skipped.append((x0, z0, f"expected 1 or 3 vertically aligned layer(s), got {len(group)}"))
+            continue
+        bottom_cuboid, bottom_gold = group[0]
+        emerald = _nearby_horizontal_emerald(bottom_gold, emeralds)
+        if emerald is None:
+            skipped.append((x0, z0, f"no horizontally adjacent emerald marker for gold {bottom_gold}"))
+            continue
+        ground_offset = emerald[1] - bottom_cuboid[2]
+        ordered_cuboids = [cuboid for cuboid, _gold in group]
+        y0 = min(bb[2] for bb in ordered_cuboids)
+        components.append(BuildAssetComponent(
+            origin=[x0, z0, y0],
+            size=[x1 - x0 + 1, z1 - z0 + 1],
+            cuboids=ordered_cuboids,
+            ground_offset=ground_offset,
+            emerald=emerald,
+            boundary=(x0, x1, z0, z1),
+        ))
+    return components, skipped
+
+
+def detect_build_assets(world, x_a, x_b, z_a, z_b, marker_y_range, *, on_progress=None):
+    """Detect building assets from gold/diamond marker pairs.
+
+    Each gold is paired with the closest unused diamond. The resulting cuboids are
+    grouped by identical X/Z footprint, so three vertically aligned cuboids become
+    a bottom/middle/top asset and a single cuboid becomes a whole asset.
+    """
+    markers = build_markers_in_region(
+        world, x_a, x_b, z_a, z_b, marker_y_range, on_progress=on_progress
+    )
+    cuboids, skipped = pair_gold_diamond_markers(markers["gold_block"], markers["diamond_block"])
+    components, group_skipped = group_build_cuboids(cuboids, markers["emerald_block"])
+    return components, skipped + group_skipped
+
+
 def detect_assets(world, x_a, x_b, z_a, z_b, y0, y1, expected_components, marker_y_range, *, on_progress=None):
     """Resolve every wool-bounded asset in the box into its marker cuboids.
 
@@ -164,11 +294,6 @@ def _sign_line(raw):
 
 def sign_text(be):
     parts = []
-    # Legacy (pre-1.20 / the 1.19.4 source world) single-sided signs: Text1..Text4.
-    for i in range(1, 5):
-        if f"Text{i}" in be:
-            parts.append(_sign_line(be[f"Text{i}"]))
-    # Modern (1.20+) two-sided signs: front_text/back_text message lists.
     for side in ("front_text", "back_text"):
         for message in be.get(side, {}).get("messages", []):
             parts.append(_sign_line(message))

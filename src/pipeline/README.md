@@ -60,7 +60,7 @@ rendered differently.
 **4. City.** [04_city/simulation.py](04_city/simulation.py) renders the full city
 preview; [04_city/construct.py](04_city/construct.py) assembles the final result —
 loads/regenerates the road grid, loads the catalog, generates placements from the
-seed, samples type-2 stack counts, assembles rotated building schematics, places
+seed, samples stack counts for three-piece buildings, assembles rotated building schematics, places
 roads and buildings into one master 3D grid, optionally fills non-road ground
 cells, and writes the Sponge `.schem` (with an offset so the schematic import
 origin lands correctly).
@@ -75,17 +75,7 @@ to solid ground so the world opens directly on the city.
 
 ## In-world asset conventions
 
-Extraction is driven by explicit marker blocks, not guesswork. Roads, fill props,
-and buildings all use the **same** convention, so they share one geometry pass in
-[`engine.world.marker_extract`](../engine/world/marker_extract.py).
-
-Markers inside each asset:
-
-- a **wool** rectangle bounds each asset; connected wool components separate assets
-- one `gold_block` + one `diamond_block` mark two opposite corners of a cuboid
-- exactly one `emerald_block` marks ground level (its Y becomes the
-  `ground_offset` used to seat the build on city ground)
-- marker blocks and signs are blanked to air in the saved schematic
+Extraction is driven by explicit marker blocks, not guesswork.
 
 ### Roads & fill props
 
@@ -104,35 +94,34 @@ random, randomly-rotated fill prop into every fully-empty non-road lot cell.
 
 ### Builds
 
-Each build region in `BUILD_TYPES` carries a `type`. Builds are grouped by
-connected X/Z components containing wool in the allowed Y range. Inside each
-boundary: exactly one `emerald_block`, and matching counts of `gold_block` /
-`diamond_block` markers, sorted by Y and paired in order — each pair defines one
-cuboid's opposite corners.
+Each build region in `BUILD_TYPES` carries a placement `type`. Builds are detected
+from direct gold/diamond marker pairs: each gold is paired with the closest unused
+diamond, and each pair defines one cuboid's opposite corners. Cuboids with the
+same X/Z footprint are grouped by vertical alignment.
 
-- **Type 1** — expected components: 1; exported as one complete schematic.
-  Typically smaller frontage buildings.
+- **One layer** — one gold/diamond pair; exported as one complete schematic.
 
   ![Type 1 convention](../../docs/type1.png)
 
-- **Type 2** — expected components: 3; exported as `bottom`/`middle`/`top` pieces.
-  Intended for stackable or landmark buildings, supporting height variation and
-  appearance targeting.
+- **Three layers** — three vertically aligned gold/diamond pairs; exported as
+  `bottom`/`middle`/`top` pieces. City generation can repeat the middle piece to
+  vary height.
 
   ![Type 2 convention](../../docs/type2.png)
 
-**Sign directives** inside a build boundary add catalog metadata: `stack: n` or
-`stack: min-max` (how many middle sections a type-2 building can receive), and
-`appearance: n` or `appearance: min-max` (how many times it should appear per
-city). These are parsed into `buildings.json` and stripped from the exported
-pieces.
+Type and layer count are independent: a type-1 building can have three layers,
+and a type-2 landmark can have one. Type-2 catalog IDs are placed exactly once per
+city; type-1 IDs have no repeat limit.
+
+**Sign directives** inside a build footprint add catalog metadata: `stack: n` or
+`stack: min-max` (how many middle sections a three-layer building can receive).
 
 ## Generated build catalog
 
 `artifacts/builds/production/buildings.json` is written by stage 02 and consumed
 by both simulation stand-ins and production placement. Each entry contains: `type`,
-`size`, `origin`, `ground_offset`, `pieces`, plus `stack` and `appearance` for
-type-2 buildings.
+`size`, `origin`, `ground_offset`, and `pieces`, plus `stack` for three-layer
+buildings.
 
 ## Simulation vs production
 

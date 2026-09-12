@@ -60,14 +60,14 @@ def _resolve_data_version() -> int:
 DATA_VERSION = _resolve_data_version()
 
 # Road assets region in world ((x_a, y_a, z_a), (x_b, y_b, z_b))
-ROAD_REGION = BlockRegion.from_xyz_pair((-80, 65, -256), (-17, 75, -145))
+ROAD_REGION = BlockRegion.from_xyz_pair((-80, 65, 16), (-17, 75, 127))
 ROAD_BOX = _env_block_region("ROAD_BOX", ROAD_REGION)
 
 # Built assets region in world (type, (x_a, y_a, z_a), (x_b, y_b, z_b))
 # y0/y1 is retained as catalog metadata; marker blocks define extracted geometry.
 
-BUILD_TYPE1_REGION = BuildRegion(1, BlockRegion.from_xyz_pair((-272, 64, -144), (-1, 65, -1)))
-BUILD_TYPE2_REGION = BuildRegion(2, BlockRegion.from_xyz_pair((0, 64, -256), (383, 65, -1)))
+BUILD_TYPE1_REGION = BuildRegion(1, BlockRegion.from_xyz_pair((-336, 64, -192), (-1, 65, -1)))
+BUILD_TYPE2_REGION = BuildRegion(2, BlockRegion.from_xyz_pair((0, 64, -320), (351, 65, 207)))
 
 BUILD_MARKER_Y_RANGE = VerticalRange(60, 230)
 BUILD_TYPES = _env_build_regions("BUILD_TYPES", (BUILD_TYPE1_REGION, BUILD_TYPE2_REGION))
@@ -75,6 +75,6 @@ BUILD_TYPES = _env_build_regions("BUILD_TYPES", (BUILD_TYPE1_REGION, BUILD_TYPE2
 # Source-world ground plane (grass level) the extraction Y windows above are
 # authored against. Each stage detects the actual source ground at run time and
 # shifts its wool/marker search windows by the difference, so a source world
-# seated at any Y works. Distinct from the emerald marker's per-asset ground_y
-# and the generated city_ground_y. See engine/marker_extract.detect_source_ground_y.
+# seated at any Y works. Distinct from road/fill emerald marker ground_y and the
+# generated city_ground_y. See engine/marker_extract.detect_source_ground_y.
 REFERENCE_GROUND_Y = 63

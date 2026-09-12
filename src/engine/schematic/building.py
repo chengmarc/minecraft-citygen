@@ -6,7 +6,6 @@ import json
 import os
 
 from config.path import BUILD_CATALOG, BUILDS_PROD
-from engine.core.city_layout import catalog_type
 from engine.schematic.reader import decode_schem_block_entities, decode_schem_cells
 from engine.schematic.transform import Tile
 
@@ -38,7 +37,8 @@ def piece(name):
 
 def assemble(key, n_mid, meta=None):
     catalog = load_catalog_meta() if meta is None else meta
-    if catalog_type(catalog[key]) == 1:
+    pieces = catalog[key].get("pieces", {})
+    if "whole" in pieces:
         width, height, length, cells, bes = piece(key)
         return Tile(width, height, length, cells, block_entities=tuple(bes))
     layers, block_entities, width, length, y_offset = [], [], None, None, 0

@@ -21,7 +21,7 @@ a stage's behavior is fixed once its config module is imported.
 
 Non-code assets that ship in this package:
 
-- `default_world/` — the bundled source world (Minecraft 1.20)
+- `default_world/` — the bundled source world (Minecraft 26.1.2)
   the app defaults to; `MC_CITY_SAVE` overrides it.
 - `color_render.csv` — the isometric renderer's block-color palette (see
   [Render palette maintenance](#render-palette-maintenance)).
@@ -55,13 +55,13 @@ or load tooling, and there is no downgrade or "missing block" computation.
 Handled by [versions.py](versions.py):
 
 - Outputs are **always stamped with the source world's `DataVersion`** (read from
-  its `level.dat`, else the **1.20 hard floor**, and clamped up to that floor).
+  its `level.dat`, else the **26.1.2 hard floor**, and clamped up to that floor).
   Stamping any newer version would skip the DataFixer and hole out blocks renamed
   since the source (e.g. `grass` → `short_grass`).
 - `DATA_VERSION` is pinned via `MC_CITY_DATA_VERSION` so construct/render stages —
   which do not set `MC_CITY_SAVE` — stamp the source version rather than
   re-detecting the default world.
-- The floor is `HARD_FLOOR_DATA_VERSION = 3463` (Minecraft 1.20). Because every
+- The floor is `HARD_FLOOR_DATA_VERSION = 4790` (Minecraft 26.1.2). Because every
   stamp is ≥ this floor, outputs always use the **Sponge v3** container; the
   writer and reader in [`engine/schematic`](../engine/README.md#schematic-io)
   are v3-only.
@@ -84,13 +84,12 @@ From [algo.py](algo.py):
 - `N_SMALL_CORNERS` / `N_SMALL_TEES` — forced street L-corners / T-intersections
 - `BANNED_BUILDINGS` — building IDs excluded from placement
 - `TYPE1_TOP_FIT_CHOICES` / `TYPE2_TOP_FIT_CHOICES` — variation depth per type
-- `TYPE2_SAME_COARSE_SPAN` — type-2 repeat-exclusion window
 
 From [world.py](world.py):
 
 - `ROAD_BOX` — road extraction region
 - `BUILD_TYPES` — build extraction regions (each with a `type`)
-- `BUILD_MARKER_Y_RANGE` — Y range scanned for emerald/gold/diamond markers
+- `BUILD_MARKER_Y_RANGE` — Y range scanned for extraction markers
 - `SAVE` — source Minecraft world
 
 All of these accept `MC_CITY_`-prefixed overrides.

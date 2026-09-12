@@ -4,7 +4,7 @@
   <br><br>
   <img src="https://img.shields.io/badge/Version-1.0.1-6495ED?style=for-the-badge&amp;logo=data%3Aimage%2Fsvg%2Bxml%3Bbase64%2CPHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCI%2BPHBhdGggZmlsbD0id2hpdGUiIGZpbGwtcnVsZT0iZXZlbm9kZCIgZD0iTTMgM2g4bDEwIDEwLTggOEwzIDExWk04LjUgN2ExLjUgMS41IDAgMSAwLTMgMCAxLjUgMS41IDAgMCAwIDMgMFoiLz48L3N2Zz4%3D" alt="Release 1.0.1">
   <!-- Minecraft badge logo: Pictogrammers Material Design Icons (Apache-2.0), https://github.com/Templarian/MaterialDesign/blob/master/svg/minecraft.svg -->
-  <img src="https://img.shields.io/badge/Minecraft-%E2%89%A5%201.20-4C9A2A?style=for-the-badge&amp;logo=data%3Aimage%2Fsvg%2Bxml%3Bbase64%2CPHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCI%2BPHBhdGggZmlsbD0id2hpdGUiIGQ9Ik00LDJIMjBBMiwyIDAgMCwxIDIyLDRWMjBBMiwyIDAgMCwxIDIwLDIySDRBMiwyIDAgMCwxIDIsMjBWNEEyLDIgMCAwLDEgNCwyTTYsNlYxMEgxMFYxMkg4VjE4SDEwVjE2SDE0VjE4SDE2VjEySDE0VjEwSDE4VjZIMTRWMTBIMTBWNkg2WiIvPjwvc3ZnPg%3D%3D" alt="Minecraft >= 1.20">
+  <img src="https://img.shields.io/badge/Minecraft-%E2%89%A5%2026.1.2-4C9A2A?style=for-the-badge&amp;logo=data%3Aimage%2Fsvg%2Bxml%3Bbase64%2CPHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCI%2BPHBhdGggZmlsbD0id2hpdGUiIGQ9Ik00LDJIMjBBMiwyIDAgMCwxIDIyLDRWMjBBMiwyIDAgMCwxIDIwLDIySDRBMiwyIDAgMCwxIDIsMjBWNEEyLDIgMCAwLDEgNCwyTTYsNlYxMEgxMFYxMkg4VjE4SDEwVjE2SDE0VjE4SDE2VjEySDE0VjEwSDE4VjZIMTRWMTBIMTBWNkg2WiIvPjwvc3ZnPg%3D%3D" alt="Minecraft >= 26.1.2">
   <h3>
     Download <a href="https://github.com/doubletrends/minecraft-citygen/releases/download/v1.0.1/CityGen-setup.exe">Windows Installer (.exe)</a> or
     <a href="https://github.com/doubletrends/minecraft-citygen/releases/download/v1.0.1/CityGen-portable-windows.zip">Compressed Portable (.zip)</a>
@@ -53,34 +53,38 @@ The app includes extraction tools, previews, and a generation UI built for itera
 ## Tutorial - Marking Your Own Assets
 
 CityGen builds cities from structures you mark up inside your own Minecraft world,
-using a handful of marker blocks. Roads, buildings, and fillers all follow the
-**same** convention:
+using a handful of marker blocks.
 
-- **Wool** — outline each asset with a wool rectangle. One connected wool shape is one asset.
-- **Gold + Diamond** — place a *gold block* and a *diamond block* at two opposite corners of the region you want captured.
-- **Emerald** — place exactly one *emerald block* at ground level so the tool knows where the ground is.
-- **Sign** — put a sign inside the asset to name it (and, for buildings, to set options).
+For buildings, place a *gold block* and a *diamond block* at two opposite corners
+of each region you want captured. One gold/diamond pair creates a one-piece
+building. Three vertically aligned pairs with the same footprint create a
+stackable building with bottom, middle, and top pieces. A sign inside the
+building footprint can set stack options.
 
-Marker blocks and signs are stripped from the exported result automatically — they
-never show up in your finished city.
+Roads and fill props still use the road-region convention: a wool rectangle
+bounds each asset, one gold/diamond pair marks the captured cuboid, one emerald
+marks ground level, and a sign names the exported road/fill asset.
 
-### Two Building Types
+Marker blocks are stripped from the exported result automatically. In-cuboid
+signs and other block entities are preserved as real content, so put authoring
+signs outside the captured cuboid if you do not want them in the finished city.
 
-**Type 1 — a single building.** One gold/diamond pair marks the whole build.
-Best for smaller, street-front buildings.
+### Building Types And Layers
+
+**Type 1 — standard frontage buildings.** These fill ordinary street lots. They
+can be one-piece buildings or stackable three-piece buildings.
 
 ![Type 1 convention](docs/type1.png)
 
-**Type 2 — a stackable building.** Three gold/diamond pairs mark a **bottom**, a
-**middle**, and a **top**. CityGen stacks copies of the middle to vary the height,
-so one build becomes many. Best for towers and landmarks.
+**Type 2 — landmarks.** These are placed first on big-road frontage and appear
+once per generated city. They can also be one-piece or stackable three-piece
+buildings.
 
 ![Type 2 convention](docs/type2.png)
 
-You can tune a type-2 building with sign directives placed inside its boundary:
+You can tune any three-piece building with a sign directive inside its footprint:
 
 - `stack: 3-7` — how many middle sections it may grow (min–max)
-- `appearance: 2-4` — how many times it should appear across a city (min–max)
 
 ## For Technical Details
 
@@ -135,10 +139,3 @@ configuration safely for one run at a time.
 ![1.21.10](https://img.shields.io/badge/1.21.10-707070)
 ![1.21.11](https://img.shields.io/badge/1.21.11-707070)
 
-![1.20](https://img.shields.io/badge/1.20-A0A0A0)
-![1.20.1](https://img.shields.io/badge/1.20.1-A0A0A0)
-![1.20.2](https://img.shields.io/badge/1.20.2-A0A0A0)
-![1.20.3](https://img.shields.io/badge/1.20.3-A0A0A0)
-![1.20.4](https://img.shields.io/badge/1.20.4-A0A0A0)
-![1.20.5](https://img.shields.io/badge/1.20.5-A0A0A0)
-![1.20.6](https://img.shields.io/badge/1.20.6-A0A0A0)

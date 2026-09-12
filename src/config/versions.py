@@ -11,8 +11,8 @@ import or load tooling handles any forward upgrade. So all this module needs to 
   (``RELEASE_NAMES`` / ``release_name_for``), and
 * record the minimum version CityGen supports (``HARD_FLOOR_DATA_VERSION``).
 
-The floor is 1.20: the bundled source world is 1.20, and every output uses the
-Sponge v3 container (Minecraft 1.20+).
+The floor is 26.1.2: the bundled source world and authored asset format target
+that version or newer.
 """
 from __future__ import annotations
 
@@ -22,37 +22,14 @@ import nbtlib
 
 # Forward-only compatibility floor. Older schematics can be upgraded forward into
 # newer Minecraft versions, but backward is impossible, so every stamp is clamped
-# up to this floor. The floor is 1.20: the bundled source world is 1.20, and
-# outputs always use the Sponge v3 container, which matches the 1.20+ window.
-HARD_FLOOR_DATA_VERSION = 3463  # Minecraft 1.20
+# up to this floor.
+HARD_FLOOR_DATA_VERSION = 4790  # Minecraft 26.1.2
 
 # DataVersion -> Minecraft release name, used only to label the detected source
 # world in the GUI. Hand-maintained (display only): add newer releases as they
 # ship; an unknown DataVersion just falls back to its raw number, so a missing
 # entry is purely cosmetic.
 RELEASE_NAMES = {
-    3337: "1.19.4",
-    3463: "1.20",
-    3465: "1.20.1",
-    3578: "1.20.2",
-    3698: "1.20.3",
-    3700: "1.20.4",
-    3837: "1.20.5",
-    3839: "1.20.6",
-    3953: "1.21",
-    3955: "1.21.1",
-    4080: "1.21.2",
-    4082: "1.21.3",
-    4189: "1.21.4",
-    4325: "1.21.5",
-    4435: "1.21.6",
-    4438: "1.21.7",
-    4440: "1.21.8",
-    4554: "1.21.9",
-    4556: "1.21.10",
-    4671: "1.21.11",
-    4786: "26.1",
-    4788: "26.1.1",
     4790: "26.1.2",
     4903: "26.2",
 }

@@ -80,17 +80,15 @@ order, the first N fitting candidates collected, and one chosen randomly from th
 top-fit set (`TYPE1_TOP_FIT_CHOICES`, `TYPE2_TOP_FIT_CHOICES`) — variation without
 abandoning fit quality.
 
-**Repetition & appearance (type-2 only).** Each type-2 building can define an
-`appearance` range; a target count is sampled per city and, once reached, that
-building stops being placed. Type-2 buildings also cannot repeat within the same
-coarse-cell window (`TYPE2_SAME_COARSE_SPAN`). Banned IDs (`BANNED_BUILDINGS`) are
-filtered before placement.
+**Repetition.** Type-2 buildings are landmarks and each catalog ID can be placed
+at most once in a generated city. Type-1 buildings have no repeat limit. Banned
+IDs (`BANNED_BUILDINGS`) are filtered before placement.
 
 ## Schematic I/O
 
 [schematic/writer.py](schematic/writer.py) and
 [schematic/reader.py](schematic/reader.py) handle the Sponge `.schem` container.
-Because the hard floor is Minecraft 1.20, every output stamp lands in the v3
+Because the hard floor is Minecraft 26.1.2, every output stamp lands in the v3
 window, so **both are v3-only**: the writer always emits the v3 container and the
 reader assumes the v3 layout. Versioning rationale lives in the
 [config guide](../config/README.md#version-compatibility).
@@ -113,9 +111,8 @@ end to end:
   `04_city.construct` translates each into master-grid coordinates, clipping to
   bounds and collapsing duplicates (one per cell).
 
-The NBT is carried unchanged so downstream import/load tooling can apply normal
-forward upgrades (e.g. a legacy sign's `Text1`–`Text4` can become
-`front_text`/`back_text`).
+The NBT is carried unchanged so downstream import/load tooling can preserve or
+upgrade block-entity payloads normally.
 
 ## Rendering
 
