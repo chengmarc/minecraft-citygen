@@ -1,10 +1,4 @@
-"""Extract road tiles and fill props from the world into Sponge v3 .schem files.
-
-Road, fill, and building assets are all authored with the same marker
-convention, so this stage runs the shared marker extraction (wool boundary +
-gold/diamond/emerald cuboid) and simply names each result from its sign -- no
-bespoke surface/marker-strip detection is needed anymore.
-"""
+"""Extract road tiles and fill props from the world into Sponge v3 .schem files."""
 
 from __future__ import annotations
 
@@ -17,9 +11,9 @@ if __package__ in (None, ""):
     sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
 from config.path import ROADS_PROD
-from config.world import BUILD_MARKER_Y_RANGE, DATA_VERSION, REFERENCE_GROUND_Y, ROAD_BOX
+from config.world import BUILD_MARKER_Y_RANGE, DATA_VERSION, ROAD_BOX
 from engine.world.anvil_world_reader import World
-from engine.world.marker_extract import detect_assets, extract_cuboid, ground_shift, iter_signs
+from engine.world.marker_extract import detect_marker_assets, extract_cuboid, iter_signs
 from engine.schematic.writer import write_sponge_schem_cells
 from pipeline.stages import noop, run_stage_cli
 
@@ -34,22 +28,16 @@ def get_world():
     return World()
 
 
-def read_names():
-    """Map each sign's (x, z) to its normalized asset name (e.g. 01_big_2x2_I)."""
-    names = []
-    for x, y, z, text in iter_signs(get_world(), X0, X1, Z0, Z1):
-        name = text.replace(" ", "").strip()
-        if name:
-            names.append((x, z, name))
-    return names
+def sign_text_at(x, y, z):
+    for sx, sy, sz, text in iter_signs(get_world(), x, x, z, z):
+        if sx == x and sy == y and sz == z:
+            return text
+    return ""
 
 
-def name_for(boundary, names):
-    xmn, xmx, zmn, zmx = boundary
-    for x, z, name in names:
-        if xmn <= x <= xmx and zmn <= z <= zmx:
-            return name
-    return None
+def name_for(emerald):
+    ex, ey, ez = emerald
+    return sign_text_at(ex, ey + 1, ez).replace(" ", "").strip() or None
 
 
 def remove_existing_schems():
@@ -69,38 +57,39 @@ def run(*, logger=None, progress=None):
     )
     progress(0, total_scan_chunks, "Scanning road region...")
 
-    names = read_names()
-    delta = ground_shift(get_world(), X0, X1, Z0, Z1, REFERENCE_GROUND_Y)
     m_lo, m_hi = BUILD_MARKER_Y_RANGE.as_tuple()
 
     def on_scan(done, total):
         progress(done, total, "Scanning road region...")
 
-    components, skipped = detect_assets(
-        get_world(), X0, X1, Z0, Z1, Y0 + delta, Y1 + delta, 1, (m_lo + delta, m_hi + delta),
+    components, skipped = detect_marker_assets(
+        get_world(), X0, X1, Z0, Z1, (m_lo, m_hi),
         on_progress=on_scan,
     )
-    logger(f"source ground shift {delta:+d}; {len(names)} signs, {len(components)} marker components")
+    logger(f"{len(components)} marker components")
     for xmn, zmn, reason in skipped:
         logger(f"  !! boundary at x={xmn} z={zmn}: {reason} -- SKIPPED")
 
     results = []
     total = len(components)
     for index, comp in enumerate(components, start=1):
-        name = name_for(comp.boundary, names)
+        name = name_for(comp.emerald)
         progress(index - 1, total, name)  # announce the asset before its (slow) extraction
         if name is None:
-            logger(f"  !! no sign for boundary {comp.boundary}")
+            logger(f"  !! no sign above emerald {comp.emerald}")
             progress(index, total, None)
+            continue
+        if len(comp.cuboids) != 1:
+            logger(f"  !! road asset {name} has {len(comp.cuboids)} layers; expected 1 -- SKIPPED")
+            progress(index, total, name)
             continue
         cells, block_entities = extract_cuboid(get_world(), comp.cuboids[0], force_persistent_leaves=True)
         height, length, width = len(cells), len(cells[0]), len(cells[0][0])
-        ground_offset = comp.ground_y - comp.cuboids[0][2]
         write_sponge_schem_cells(
             cells,
             os.path.join(OUT, name + ".schem"),
             DATA_VERSION,
-            offset=(0, -ground_offset, 0),
+            offset=(0, -comp.ground_offset, 0),
             block_entities=block_entities,
         )
         logger(f"extracted {name}")

@@ -14,7 +14,7 @@ if __package__ in (None, ""):
 from config.path import BUILD_CATALOG, BUILDS_PROD
 from config.world import BUILD_MARKER_Y_RANGE, BUILD_TYPES, DATA_VERSION
 from engine.world.anvil_world_reader import World
-from engine.world.marker_extract import detect_build_assets, extract_cuboid, iter_signs, parse_range
+from engine.world.marker_extract import detect_marker_assets, extract_cuboid, iter_signs, parse_range
 from engine.schematic.writer import write_sponge_schem_cells
 from pipeline.stages import noop, run_stage_cli
 
@@ -29,7 +29,7 @@ def get_world():
 def detect_builds(build_type, x_a, x_b, z_a, z_b, y0, y1, *, on_scan_progress=None):
     """Detect one- or three-layer builds from direct gold/diamond marker pairs."""
     m_lo, m_hi = BUILD_MARKER_Y_RANGE.as_tuple()
-    components, skipped = detect_build_assets(
+    components, skipped = detect_marker_assets(
         get_world(), x_a, x_b, z_a, z_b, (m_lo, m_hi),
         on_progress=on_scan_progress,
     )

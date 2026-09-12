@@ -1,8 +1,9 @@
 """Marker-based asset extraction from a Minecraft world.
 
-Road tiles and fill props use the wool/gold/diamond/emerald convention. Buildings
-use direct gold/diamond marker pairs: one pair exports a whole asset, and three
-vertically aligned pairs export bottom/middle/top pieces.
+Road tiles, fill props, and buildings all use direct gold/diamond marker pairs:
+one pair exports a whole asset, and three vertically aligned pairs export
+bottom/middle/top pieces. The emerald next to the bottom gold marks ground level,
+and the sign above that emerald carries the asset metadata.
 """
 
 from __future__ import annotations
@@ -32,7 +33,7 @@ class AssetComponent:
 
 
 @dataclass(frozen=True)
-class BuildAssetComponent:
+class MarkerAssetComponent:
     origin: list        # [footprint_x0, footprint_z0, lowest_box_y0]
     size: list          # [width, depth] in blocks
     cuboids: list       # one cuboid or bottom/middle/top cuboids
@@ -122,8 +123,8 @@ def _cuboid_from_pair(gold, diamond):
     return x0, x1, y0, y1, z0, z1
 
 
-def build_markers_in_region(world, x_a, x_b, z_a, z_b, y_range, *, on_progress=None):
-    """Find building gold/diamond markers directly in the configured region."""
+def marker_blocks_in_region(world, x_a, x_b, z_a, z_b, y_range, *, on_progress=None):
+    """Find gold/diamond/emerald asset markers directly in the configured region."""
     xlo, xhi = min(x_a, x_b), max(x_a, x_b)
     zlo, zhi = min(z_a, z_b), max(z_a, z_b)
     ylo, yhi = y_range
@@ -194,7 +195,7 @@ def pair_gold_diamond_markers(golds, diamonds):
     return cuboids, skipped
 
 
-def group_build_cuboids(cuboids, emeralds=()):
+def group_marker_cuboids(cuboids, emeralds=()):
     """Group cuboids by vertical alignment into one- or three-layer assets."""
     grouped = {}
     for cuboid, gold in cuboids:
@@ -216,7 +217,7 @@ def group_build_cuboids(cuboids, emeralds=()):
         ground_offset = emerald[1] - bottom_cuboid[2]
         ordered_cuboids = [cuboid for cuboid, _gold in group]
         y0 = min(bb[2] for bb in ordered_cuboids)
-        components.append(BuildAssetComponent(
+        components.append(MarkerAssetComponent(
             origin=[x0, z0, y0],
             size=[x1 - x0 + 1, z1 - z0 + 1],
             cuboids=ordered_cuboids,
@@ -227,19 +228,25 @@ def group_build_cuboids(cuboids, emeralds=()):
     return components, skipped
 
 
-def detect_build_assets(world, x_a, x_b, z_a, z_b, marker_y_range, *, on_progress=None):
-    """Detect building assets from gold/diamond marker pairs.
+def detect_marker_assets(world, x_a, x_b, z_a, z_b, marker_y_range, *, on_progress=None):
+    """Detect marker-authored assets from gold/diamond marker pairs.
 
     Each gold is paired with the closest unused diamond. The resulting cuboids are
     grouped by identical X/Z footprint, so three vertically aligned cuboids become
     a bottom/middle/top asset and a single cuboid becomes a whole asset.
     """
-    markers = build_markers_in_region(
+    markers = marker_blocks_in_region(
         world, x_a, x_b, z_a, z_b, marker_y_range, on_progress=on_progress
     )
     cuboids, skipped = pair_gold_diamond_markers(markers["gold_block"], markers["diamond_block"])
-    components, group_skipped = group_build_cuboids(cuboids, markers["emerald_block"])
+    components, group_skipped = group_marker_cuboids(cuboids, markers["emerald_block"])
     return components, skipped + group_skipped
+
+
+BuildAssetComponent = MarkerAssetComponent
+build_markers_in_region = marker_blocks_in_region
+group_build_cuboids = group_marker_cuboids
+detect_build_assets = detect_marker_assets
 
 
 def detect_assets(world, x_a, x_b, z_a, z_b, y0, y1, expected_components, marker_y_range, *, on_progress=None):
