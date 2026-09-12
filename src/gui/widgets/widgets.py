@@ -55,6 +55,7 @@ class AlgoControlsWidget(QtWidgets.QWidget):
         state,
         action_icon_name=None,
         extra_actions=None,
+        show_seed=True,
         parent=None,
     ):
         super().__init__(parent)
@@ -76,14 +77,19 @@ class AlgoControlsWidget(QtWidgets.QWidget):
         style_button(self.advanced_toggle)
         self.advanced_toggle.toggled.connect(self._toggle_advanced)
 
-        row.addSpacing(8)
-        row.addWidget(QtWidgets.QLabel("Layout Seed"))
+        self.seed_label = QtWidgets.QLabel("Layout Seed", self)
         self.seed_edit = QtWidgets.QLineEdit(str(state.get("seed", DEFAULT_SEED)), self)
         self.seed_edit.setFixedWidth(65)
         self.seed_edit.setValidator(QtGui.QIntValidator(-2147483647, 2147483647, self.seed_edit))
         self.seed_edit.setToolTip("Use the same seed again to regenerate the same city layout.")
         self.advanced_toggle.setFixedHeight(self.seed_edit.sizeHint().height())
-        row.addWidget(self.seed_edit)
+        if show_seed:
+            row.addSpacing(8)
+            row.addWidget(self.seed_label)
+            row.addWidget(self.seed_edit)
+        else:
+            self.seed_label.hide()
+            self.seed_edit.hide()
 
         row.addSpacing(8)
         row.addWidget(QtWidgets.QLabel("City Size"))

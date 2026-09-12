@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import random
+
 from PySide6 import QtWidgets
 
 from pipeline import services
@@ -46,10 +48,11 @@ class PreviewTab(QtWidgets.QWidget, AlgoTabMixin, WeightedTaskMixin):
         layout.addSpacing(20)
 
         self.controls = AlgoControlsWidget(
-            "Preview Layout",
-            self._run_preview,
+            "Preview",
+            self._randomize_seed_and_run_preview,
             state,
-            action_icon_name="preview.png",
+            action_icon_name="refresh.png",
+            show_seed=False,
             parent=self,
         )
         self.controls.connect_change_handler(self._save_algo_state)
@@ -63,6 +66,14 @@ class PreviewTab(QtWidgets.QWidget, AlgoTabMixin, WeightedTaskMixin):
         self.progress_bar.setRange(0, 100)
         layout.addWidget(self.progress_bar)
         self.refresh_prerequisite_state()
+
+    def _randomize_seed_and_run_preview(self):
+        current_seed = self.controls.seed_edit.text().strip()
+        seed = str(random.randint(0, 2_147_483_647))
+        while seed == current_seed:
+            seed = str(random.randint(0, 2_147_483_647))
+        self.controls.seed_edit.setText(seed)
+        self._run_preview()
 
     def _run_preview(self):
         seed = self.controls.seed_edit.text().strip()

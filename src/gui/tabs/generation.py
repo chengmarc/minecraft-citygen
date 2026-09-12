@@ -52,6 +52,7 @@ class GenerationTab(QtWidgets.QWidget, AlgoTabMixin, ProgressMixin):
             state,
             action_icon_name="render.png",
             extra_actions=[("Copy World", self._open_output_folder, "folder.png")],
+            show_seed=False,
             parent=self,
         )
         self.controls.connect_change_handler(self._save_algo_state)
