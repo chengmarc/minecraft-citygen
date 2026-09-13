@@ -18,6 +18,7 @@ from engine.world.marker_extract import (
     extract_cuboid,
     group_build_cuboids,
     ground_shift,
+    marker_blocks_in_region,
     pair_gold_diamond_markers,
     sign_text,
 )
@@ -55,6 +56,54 @@ class AnvilWorldReaderTests(unittest.TestCase):
         world = object.__new__(World)
         world.load_chunk = lambda cx, cz: None
         self.assertIsNone(world.top_solid_block(0, 0))
+
+    def test_block_positions_in_section_skips_decode_when_palette_has_no_target(self):
+        world = object.__new__(World)
+        world.load_chunk = lambda cx, cz: {
+            "sections": [
+                {
+                    "Y": 4,
+                    "block_states": {
+                        "palette": [{"Name": "minecraft:air"}, {"Name": "minecraft:stone"}],
+                        "data": [0],
+                    },
+                }
+            ]
+        }
+        world._section = lambda cx, cz, sy: (_ for _ in ()).throw(AssertionError("section data was decoded"))
+
+        self.assertEqual(world.block_positions_in_section(0, 0, 4, {"minecraft:gold_block"}), [])
+
+    def test_block_positions_in_section_returns_target_world_coordinates(self):
+        palette = [
+            {"Name": "minecraft:air"},
+            {"Name": "minecraft:gold_block"},
+            {"Name": "minecraft:emerald_block"},
+        ]
+        indexes = [0] * 4096
+        indexes[2 * 256 + 3 * 16 + 4] = 1
+        indexes[5 * 256 + 6 * 16 + 7] = 2
+        world = object.__new__(World)
+        world.load_chunk = lambda cx, cz: {
+            "sections": [
+                {
+                    "Y": 4,
+                    "block_states": {
+                        "palette": palette,
+                        "data": [0],
+                    },
+                }
+            ]
+        }
+        world._section = lambda cx, cz, sy: (palette, indexes)
+
+        self.assertEqual(
+            world.block_positions_in_section(2, -1, 4, {"minecraft:gold_block", "minecraft:emerald_block"}),
+            [
+                (36, 66, -13, "minecraft:gold_block"),
+                (39, 69, -10, "minecraft:emerald_block"),
+            ],
+        )
 
 
 # --- ground detection -----------------------------------------------------
@@ -198,6 +247,46 @@ def test_build_cuboids_require_emerald_adjacent_to_bottom_gold():
 
     assert components == []
     assert skipped == [(0, 0, "no horizontally adjacent emerald marker for gold (8, 64, 8)")]
+
+
+class _SectionMarkerWorld:
+    def __init__(self, markers_by_section):
+        self.markers_by_section = markers_by_section
+        self.calls = []
+
+    def is_chunk_empty(self, cx, cz):
+        return False
+
+    def block_positions_in_section(self, cx, cz, sy, block_names):
+        self.calls.append((cx, cz, sy, frozenset(block_names)))
+        return self.markers_by_section.get((cx, cz, sy), [])
+
+
+def test_marker_blocks_in_region_clips_section_results_and_reports_chunk_progress():
+    world = _SectionMarkerWorld({
+        (0, 0, 4): [
+            (1, 64, 2, "minecraft:gold_block"),
+            (20, 64, 2, "minecraft:diamond_block"),  # outside X bounds
+            (3, 80, 4, "minecraft:emerald_block"),   # outside Y bounds
+            (4, 65, 20, "minecraft:emerald_block"),  # outside Z bounds
+        ]
+    })
+    progress = []
+
+    markers = marker_blocks_in_region(
+        world, 0, 15, 0, 15, (64, 79),
+        on_progress=lambda done, total: progress.append((done, total)),
+    )
+
+    assert markers == {
+        "gold_block": [(1, 64, 2)],
+        "diamond_block": [],
+        "emerald_block": [],
+    }
+    assert progress == [(1, 1)]
+    assert world.calls == [
+        (0, 0, 4, frozenset({"minecraft:gold_block", "minecraft:diamond_block", "minecraft:emerald_block"}))
+    ]
 
 
 # --- marker parsing: cuboid leaf persistence ------------------------------

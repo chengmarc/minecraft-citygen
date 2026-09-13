@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from PySide6 import QtCore, QtWidgets
 
-from gui.core import common
+from gui.core import progress
 
 
 class WorkerSignals(QtCore.QObject):
@@ -54,9 +54,9 @@ class ProgressMixin:
         self._cancel_progress_animation()
         self.progress_bar.setValue(int(start_value))
         segment = max(float(end_value) - float(start_value), 0.0)
-        self._progress_soft_target = float(start_value) + segment * common.SCRIPT_PROGRESS_HEADROOM
+        self._progress_soft_target = float(start_value) + segment * progress.creep_headroom("default")
         self.set_status(status)
-        self._progress_timer.start(common.SCRIPT_PROGRESS_TICK_MS)
+        self._progress_timer.start(progress.creep_tick_ms("default"))
 
     def _complete_script_progress(self, value):
         self._cancel_progress_animation()
@@ -68,7 +68,7 @@ class ProgressMixin:
             self._cancel_progress_animation()
             return
         remaining = self._progress_soft_target - current
-        step = max(0.2, remaining * common.SCRIPT_PROGRESS_RATE)
+        step = max(0.2, remaining * progress.PROGRESS_CREEP_RATE)
         self.progress_bar.setValue(int(round(min(current + step, self._progress_soft_target))))
 
     def _cancel_progress_animation(self):

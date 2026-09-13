@@ -13,10 +13,12 @@ from PySide6 import QtWidgets  # noqa: E402
 from gui import app as gui_app  # noqa: E402
 from gui import launcher  # noqa: E402
 from gui.core import common  # noqa: E402
+from gui.core import progress as progress_config  # noqa: E402
 from gui.core.theme import configure_app_style  # noqa: E402
 from gui.tabs import ExtractionTab, GenerationTab, PreviewTab  # noqa: E402
 from gui.tabs import extraction as extraction_module  # noqa: E402
 from gui.tabs import generation as generation_module  # noqa: E402
+from gui.tabs import preview as preview_module  # noqa: E402
 from gui.widgets.widgets import AlgoControlsWidget, IntegerSliderControl  # noqa: E402
 
 
@@ -216,7 +218,7 @@ class ExtractionTabTests(unittest.TestCase):
         with mock.patch.object(extraction_module, "has_region_files", return_value=True):
             tab = ExtractionTab(_GuiOwner(extraction=state))
         tab._on_pipeline_progress(extraction_module.services.BUILDS_RENDER, 9, 9, "ignored")
-        self.assertEqual(tab.progress_bar.value(), extraction_module.PROGRESS_BAR_SCALE)
+        self.assertEqual(tab.progress_bar.value(), progress_config.PROGRESS_BAR_SCALE)
         self.assertEqual(tab.status_label.text(), "Building asset sheet")
         tab.close()
 
@@ -295,6 +297,13 @@ class PreviewGenerationTabTests(unittest.TestCase):
         self.assertEqual(tab.findChildren(QtWidgets.QSplitter), [])
         self.assertTrue(tab.controls.advanced_panel.isHidden())
         self.assertEqual(tab.controls.advanced_toggle.text(), "Basic Settings")
+        tab.close()
+
+    def test_preview_progress_uses_measured_step_weights(self):
+        tab = PreviewTab(_GuiOwner(algo=common.default_algo_tab_config()))
+        for completed, expected in ((0, 0), (1, 8), (2, 16), (3, 31), (4, 100)):
+            tab._on_pipeline_progress(preview_module.services.PREVIEW, completed, 4, "Preview")
+            self.assertEqual(tab.progress_bar.value(), expected)
         tab.close()
 
     def test_generation_progress_uses_product_language(self):

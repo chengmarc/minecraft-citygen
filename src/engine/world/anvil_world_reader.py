@@ -150,6 +150,65 @@ class World:
         entry = palette[v]
         return str(entry["Name"]), self._block_properties(entry)
 
+    def block_positions_in_section(self, cx, cz, sy, block_names):
+        """Return world positions for target block names in one chunk section.
+
+        This checks the raw section palette before decoding packed block-state
+        indexes, so callers can skip whole sections that cannot contain the
+        requested blocks.
+        """
+        targets = frozenset(str(name) for name in block_names)
+        if not targets:
+            return []
+        chunk = self.load_chunk(cx, cz)
+        if chunk is None:
+            return []
+
+        block_states = None
+        for section in chunk.get("sections", []):
+            if int(section["Y"]) == sy:
+                block_states = section.get("block_states")
+                break
+        if block_states is None:
+            return []
+
+        raw_palette = list(block_states["palette"])
+        names = [str(entry["Name"]) for entry in raw_palette]
+        target_indexes = {
+            index: name
+            for index, name in enumerate(names)
+            if name in targets
+        }
+        if not target_indexes:
+            return []
+
+        data = block_states.get("data")
+        if data is None:
+            name = target_indexes.get(0)
+            if name is None:
+                return []
+            return [
+                ((cx << 4) + lx, (sy << 4) + ly, (cz << 4) + lz, name)
+                for ly in range(16)
+                for lz in range(16)
+                for lx in range(16)
+            ]
+
+        _palette, indexes = self._section(cx, cz, sy)
+        if indexes is None:
+            return []
+        positions = []
+        for offset, palette_index in enumerate(indexes):
+            name = target_indexes.get(palette_index)
+            if name is None:
+                continue
+            ly = offset >> 8
+            remainder = offset & 255
+            lz = remainder >> 4
+            lx = remainder & 15
+            positions.append(((cx << 4) + lx, (sy << 4) + ly, (cz << 4) + lz, name))
+        return positions
+
     def is_chunk_empty(self, cx, cz):
         """Return True when the chunk is absent from the region file."""
         return self.load_chunk(cx, cz) is None

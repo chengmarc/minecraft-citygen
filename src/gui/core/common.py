@@ -93,23 +93,6 @@ CLEARANCE_OPTIONS = {
     "Very Sparse": "7",
 }
 
-# Per-step weights for the Generation-tab progress bar. The Generate button runs
-# three stages back to back: construct the .schem, render the isometric PNG, then
-# export the standalone world. Eight entries cover the eight city_construct work
-# segments (steps 0→1 through 7→8); the other two cover the render and world stages.
-GENERATION_CONSTRUCT_WEIGHTS = [1, 1, 1, 1, 22, 4, 4, 16]   # sum = 50
-GENERATION_RENDER_WEIGHT = 5
-GENERATION_WORLD_WEIGHT = 45
-
-# How far the animated ("fake") progress creeps into the current step's segment
-# before stalling to wait for the stage to actually finish.
-SCRIPT_PROGRESS_HEADROOM = 0.90
-# Per-tick easing rate of that animation: each tick advances this fraction of the
-# remaining distance to the soft target (every SCRIPT_PROGRESS_TICK_MS ms).
-SCRIPT_PROGRESS_RATE = 0.10
-SCRIPT_PROGRESS_TICK_MS = 120
-
-
 def stage_script_label(module):
     """Stage module path -> script path for status display.
 

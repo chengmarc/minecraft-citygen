@@ -19,6 +19,7 @@ from engine.schematic.transform import BlockEntity
 from engine.schematic.writer import blockstate
 
 MARKER_BLOCKS = {"gold_block", "diamond_block", "emerald_block"}
+MARKER_BLOCK_NAMES = {f"minecraft:{name}" for name in MARKER_BLOCKS}
 # Chunk block-entity keys that describe position/identity rather than payload.
 _BE_META_KEYS = ("id", "x", "y", "z", "keepPacked")
 
@@ -130,23 +131,19 @@ def marker_blocks_in_region(world, x_a, x_b, z_a, z_b, y_range, *, on_progress=N
     ylo, yhi = y_range
     cx_lo, cx_hi = xlo >> 4, xhi >> 4
     cz_lo, cz_hi = zlo >> 4, zhi >> 4
+    sy_lo, sy_hi = ylo >> 4, yhi >> 4
     total_chunks = (cx_hi - cx_lo + 1) * (cz_hi - cz_lo + 1)
     chunks_done = 0
     found = {"gold_block": [], "diamond_block": [], "emerald_block": []}
 
     for cx in range(cx_lo, cx_hi + 1):
-        x_start = max(xlo, cx << 4)
-        x_end = min(xhi, (cx << 4) + 15)
         for cz in range(cz_lo, cz_hi + 1):
-            z_start = max(zlo, cz << 4)
-            z_end = min(zhi, (cz << 4) + 15)
             if not world.is_chunk_empty(cx, cz):
-                for x in range(x_start, x_end + 1):
-                    for z in range(z_start, z_end + 1):
-                        for y in range(ylo, yhi + 1):
-                            base = block_base(world, x, y, z)
-                            if base in found:
-                                found[base].append((x, y, z))
+                for sy in range(sy_lo, sy_hi + 1):
+                    for x, y, z, name in world.block_positions_in_section(cx, cz, sy, MARKER_BLOCK_NAMES):
+                        if not (xlo <= x <= xhi and ylo <= y <= yhi and zlo <= z <= zhi):
+                            continue
+                        found[name.split(":")[-1]].append((x, y, z))
             chunks_done += 1
             if on_progress is not None:
                 on_progress(chunks_done, total_chunks)
