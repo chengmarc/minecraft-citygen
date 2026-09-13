@@ -16,17 +16,22 @@ from engine.world.writer import schem_to_world
 from pipeline.stages import noop, run_stage_cli
 
 
+def exported_world_name(seed):
+    return f"CityGen World {seed}"
+
+
 def run(*, seed=DEFAULT_SEED, out=None, logger=None, progress=None):
     logger = logger or noop
 
     schem = os.path.join(CITY_SCHEM, f"seed_{seed}.schem")
     if not os.path.exists(schem):
         raise FileNotFoundError(f"City schematic not found: {schem}. Run Stage 4 first.")
-    out = out or os.path.join(SAVES, f"seed_{seed}_world")
+    world_name = exported_world_name(seed)
+    out = out or os.path.join(SAVES, world_name)
 
     # Copy the source world and replace only the output overworld region files.
     logger(f"building world from source level.dat: {os.path.join(SAVE, 'level.dat')}")
-    summary = schem_to_world(schem, out, source_world=SAVE, progress=progress)
+    summary = schem_to_world(schem, out, source_world=SAVE, world_name=world_name, progress=progress)
     logger(
         f"seed={seed}: wrote world to {out} "
         f"({summary['chunks']} chunks, {summary['regions']} regions, "

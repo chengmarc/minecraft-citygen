@@ -15,7 +15,7 @@ class ClearPipelineArtifactsTests(unittest.TestCase):
     def test_wipes_pipeline_artifacts_but_keeps_saves(self):
         with tempfile.TemporaryDirectory() as root:
             saves = os.path.join(root, "05_world", "saves")
-            world = os.path.join(saves, "seed_5_world")
+            world = os.path.join(saves, "CityGen World 5")
             os.makedirs(world)
             open(os.path.join(world, "level.dat"), "wb").close()
 

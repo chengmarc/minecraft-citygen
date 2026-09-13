@@ -252,6 +252,7 @@ def write_world(
     spawn=None,
     source_world=None,
     region_dir=None,
+    world_name="CityGen World",
     progress=None,
 ):
     """Write ``grid`` (shape H,L,Z indexed [y][z][x]) into ``out_dir``.
@@ -327,7 +328,7 @@ def write_world(
     progress(3, WORLD_WRITE_STEPS, "Writing level.dat")
     if spawn is None:
         spawn = (anchor_x + origin[0], anchor_top + base_y + 1, anchor_z + origin[1])
-    _write_level_dat(out_dir, data_version, spawn, source_world)
+    _write_level_dat(out_dir, data_version, spawn, source_world, world_name)
     _write_world_icon(out_dir)
     progress(WORLD_WRITE_STEPS, WORLD_WRITE_STEPS, "World saved")
 
@@ -394,7 +395,7 @@ def _source_data_version(source_world):
     return HARD_FLOOR_DATA_VERSION
 
 
-def _write_level_dat(out_dir, data_version, spawn, source_world):
+def _write_level_dat(out_dir, data_version, spawn, source_world, world_name="CityGen World"):
     """Edit the copied world's ``level.dat`` in place.
 
     The copied save already has the source world's native structure, so only edit
@@ -410,7 +411,7 @@ def _write_level_dat(out_dir, data_version, spawn, source_world):
     level = nbtlib.load(src)
     data = level["Data"]
 
-    data["LevelName"] = String("CityGen World")
+    data["LevelName"] = String(world_name)
     data["SpawnX"], data["SpawnY"], data["SpawnZ"] = Int(spawn[0]), Int(spawn[1]), Int(spawn[2])
     data["DataVersion"] = Int(data_version)
     version = data.get("Version")
@@ -435,7 +436,7 @@ def _write_level_dat(out_dir, data_version, spawn, source_world):
     level.save(target)
 
 
-def schem_to_world(schem_path, out_dir, source_world=None, data_version=None, progress=None):
+def schem_to_world(schem_path, out_dir, source_world=None, data_version=None, world_name="CityGen World", progress=None):
     """Read a city ``.schem`` and write it into a copied world save at ``out_dir``.
 
     ``source_world`` defaults to the bundled world. The source save is copied
@@ -462,7 +463,7 @@ def schem_to_world(schem_path, out_dir, source_world=None, data_version=None, pr
     _copy_source_world(template_world, out_dir)
     region_dir = _prepare_output_region_dir(out_dir, template_world)
     return write_world(grid, inv, block_entities, out_dir, data_version, base_y,
-                       source_world=template_world, region_dir=region_dir, progress=progress)
+                       source_world=template_world, region_dir=region_dir, world_name=world_name, progress=progress)
 
 
 if __name__ == "__main__":

@@ -82,7 +82,7 @@ From [algo.py](algo.py):
 - `PAD_BIG` / `PAD_SMALL` — edge padding for big / small roads
 - `N_BIG_CORNERS` / `N_BIG_TEES` — forced avenue L-corners / T-intersections
 - `N_SMALL_CORNERS` / `N_SMALL_TEES` — forced street L-corners / T-intersections
-- `BANNED_BUILDINGS` — building IDs excluded from placement
+- `BANNED_BUILDINGS` — building IDs excluded from placement; empty by default
 - `TYPE1_TOP_FIT_CHOICES` — standard-building variation depth
 - `LANDMARK_SPACING` — minimum fine-cell distance between landmark footprints
 

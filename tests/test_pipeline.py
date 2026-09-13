@@ -92,6 +92,36 @@ def test_run_preview_stage_coerces_numeric_arguments(monkeypatch):
     assert result["stage"] == "grid"
 
 
+def test_world_export_uses_seeded_world_name_for_folder_and_level(monkeypatch, tmp_path):
+    schem_dir = tmp_path / "schem"
+    saves_dir = tmp_path / "saves"
+    source = tmp_path / "source"
+    schem_dir.mkdir()
+    saves_dir.mkdir()
+    source.mkdir()
+    (schem_dir / "seed_12.schem").write_bytes(b"schem")
+    calls = {}
+
+    def fake_schem_to_world(schem, out, **kwargs):
+        calls["schem"] = schem
+        calls["out"] = out
+        calls["kwargs"] = kwargs
+        return {"chunks": 1, "regions": 1, "block_entities": 0, "out_dir": out}
+
+    monkeypatch.setattr(world_export, "CITY_SCHEM", str(schem_dir))
+    monkeypatch.setattr(world_export, "SAVES", str(saves_dir))
+    monkeypatch.setattr(world_export, "SAVE", str(source))
+    monkeypatch.setattr(world_export, "schem_to_world", fake_schem_to_world)
+
+    result = world_export.run(seed=12)
+
+    expected_out = str(saves_dir / "CityGen World 12")
+    assert result["output_path"] == expected_out
+    assert calls["schem"] == str(schem_dir / "seed_12.schem")
+    assert calls["out"] == expected_out
+    assert calls["kwargs"]["world_name"] == "CityGen World 12"
+
+
 def test_run_builds_stage_tags_progress_with_stage_modules(monkeypatch):
     calls = []
     progress_events = []
@@ -137,6 +167,7 @@ builds_extract = importlib.import_module("pipeline.02_builds.extract")
 builds_render = importlib.import_module("pipeline.02_builds.render")
 roads_render = importlib.import_module("pipeline.01_roads.render")
 city_construct = importlib.import_module("pipeline.04_city.construct")
+world_export = importlib.import_module("pipeline.05_world.export")
 
 
 def _component(boundary, cuboid, *, ground_offset=0, emerald=(1, 64, 1)):
