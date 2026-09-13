@@ -18,37 +18,37 @@ This project turns a small handcrafted asset set into a complete city layout, pr
 
 ## Rendering Result
 
-![Isometric city render 1](docs/isometric1.png)
+![Isometric city render 1](docs/pics/isometric1.png)
 
-![Isometric city render 2](docs/isometric2.png)
+![Isometric city render 2](docs/pics/isometric2.png)
 
 ## In-Game Result
 
 The generated city can be brought back into Minecraft as a real build result:
 
-![In-game city result 1](docs/ingame1.png)
+![In-game city result 1](docs/pics/ingame1.png)
 
-![In-game city result 2](docs/ingame2.png)
+![In-game city result 2](docs/pics/ingame2.png)
 
-![In-game city result 3](docs/ingame3.png)
+![In-game city result 3](docs/pics/ingame3.png)
 
-![In-game city result 4](docs/ingame4.png)
+![In-game city result 4](docs/pics/ingame4.png)
 
 ## Built-in Assets
 
 These buildings come with the app by default:
 
-![Built-in Assets](docs/assets.png)
+![Built-in Assets](docs/pics/assets.png)
 
 ## Desktop Workflow
 
 The app includes extraction tools, previews, and a generation UI built for iteration:
 
-![Desktop UI 1](docs/ui1.png)
+![Desktop UI 1](docs/pics/ui1.png)
 
-![Desktop UI 2](docs/ui2.png)
+![Desktop UI 2](docs/pics/ui2.png)
 
-![Desktop UI 3](docs/ui3.png)
+![Desktop UI 3](docs/pics/ui3.png)
 
 ## Tutorial - Marking Your Own Assets
 
@@ -73,14 +73,14 @@ signs outside the captured cuboid if you do not want them in the finished city.
 **Type 1 — standard frontage buildings.** These fill ordinary street lots. They
 can be one-piece buildings or stackable three-piece buildings.
 
-![Type 1 convention](docs/type1.png)
+![Type 1 convention](docs/pics/type1.png)
 
 **Type 2 — landmarks.** These are placed first on big-road frontage and appear
 once per generated city. Larger landmark footprints are placed first, with a
 tunable fine-cell spacing between landmarks. They can also be one-piece or
 stackable three-piece buildings.
 
-![Type 2 convention](docs/type2.png)
+![Type 2 convention](docs/pics/type2.png)
 
 You can tune any three-piece building with a sign directive inside its footprint:
 
