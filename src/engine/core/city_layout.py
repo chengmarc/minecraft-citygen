@@ -5,7 +5,8 @@ The generator is intentionally simple:
   - buildings snap to the 9-block fine-cell grid
   - type-2 buildings are placed first along big-road frontage
   - type-1 buildings fill the remaining cells
-  - each frontage position picks randomly among the top fitting buildings
+  - landmarks are tried once each, largest footprint first
+  - each type-1 frontage position picks randomly among the top fitting buildings
   - optional rule hooks can reject catalog items or candidate placements
 """
 from __future__ import annotations
@@ -20,8 +21,8 @@ from typing import Any
 from config.algo import (
     BANNED_BUILDINGS,
     CELL,
+    LANDMARK_SPACING,
     TYPE1_TOP_FIT_CHOICES,
-    TYPE2_TOP_FIT_CHOICES,
 )
 from config.path import BUILD_CATALOG
 
@@ -144,6 +145,29 @@ def coarse_cells_of_rect(rect):
     return rect.coarse_cells()
 
 
+def rect_fits(avail, rect, fine):
+    x0, y0, cols, rows = rect.x0, rect.y0, rect.cols, rect.rows
+    if x0 < 0 or y0 < 0 or x0 + cols > fine or y0 + rows > fine:
+        return False
+    return all(p in avail for p in rect.cells())
+
+
+def rect_distance(a, b):
+    ax1 = a.x0 + a.cols - 1
+    ay1 = a.y0 + a.rows - 1
+    bx1 = b.x0 + b.cols - 1
+    by1 = b.y0 + b.rows - 1
+    dx = max(b.x0 - ax1, a.x0 - bx1, 0)
+    dy = max(b.y0 - ay1, a.y0 - by1, 0)
+    return max(dx, dy)
+
+
+def landmark_spacing_allows(rect, placements, spacing):
+    if spacing <= 0:
+        return True
+    return all(rect_distance(rect, placement.rect) >= spacing for placement in placements)
+
+
 def placement_origin(rect, facing, width, depth, cell_size=CELL_BLOCKS):
     x0, z0, cols, rows = rect.x0, rect.y0, rect.cols, rect.rows
     bx0, bz0 = x0 * cell_size, z0 * cell_size
@@ -258,13 +282,6 @@ def validate_placements(road_cells, placements, fine):
 def place_from_points(avail, points, facing, candidates, chooser, rules, rule_state,
                       top_fit_choices, fine):
     placed = []
-    n = fine
-
-    def fits(rect):
-        x0, y0, cols, rows = rect.x0, rect.y0, rect.cols, rect.rows
-        if x0 < 0 or y0 < 0 or x0 + cols > n or y0 + rows > n:
-            return False
-        return all(p in avail for p in rect.cells())
 
     def rules_allow(building, facing, rect):
         return rules is None or rules.can_place(building, facing, rect, rule_state)
@@ -275,7 +292,7 @@ def place_from_points(avail, points, facing, candidates, chooser, rules, rule_st
         options = []
         for building in candidates:
             rect = footprint(x, y, facing, building.fw, building.fd)
-            if fits(rect) and rules_allow(building, facing, rect):
+            if rect_fits(avail, rect, fine) and rules_allow(building, facing, rect):
                 options.append((building, rect))
                 if len(options) == top_fit_choices:
                     break
@@ -288,13 +305,38 @@ def place_from_points(avail, points, facing, candidates, chooser, rules, rule_st
     return placed
 
 
-def place_type2(avail, frontage_cells, catalog, chooser, rules, rule_state, fine):
-    """Place type-2 buildings by longest uninterrupted big-road frontage."""
+def place_type2(avail, frontage_cells, catalog, rules, rule_state, fine, landmark_spacing=LANDMARK_SPACING):
+    """Place each type-2 landmark once, largest footprint first."""
     placed = []
-    candidates = [b for b in catalog if b.type == 2]
-    for facing, run in frontage_runs(avail, frontage_cells, fine):
-        placed += place_from_points(avail, run, facing, candidates, chooser, rules, rule_state,
-                                    TYPE2_TOP_FIT_CHOICES, fine)
+    candidates = sorted(
+        (b for b in catalog if b.type == 2),
+        key=lambda b: (b.score, b.area, b.fw, b.fd, b.num),
+        reverse=True,
+    )
+    for building in candidates:
+        selected = None
+        for facing, run in frontage_runs(avail, frontage_cells, fine):
+            for x, y in run:
+                if (x, y) not in avail:
+                    continue
+                rect = footprint(x, y, facing, building.fw, building.fd)
+                if not rect_fits(avail, rect, fine):
+                    continue
+                if rules is not None and not rules.can_place(building, facing, rect, rule_state):
+                    continue
+                if not landmark_spacing_allows(rect, placed, landmark_spacing):
+                    continue
+                selected = (facing, rect)
+                break
+            if selected is not None:
+                break
+        if selected is None:
+            continue
+        facing, rect = selected
+        if rules is not None:
+            rules.record_placement(building, facing, rect, rule_state)
+        avail.difference_update(rect.cells())
+        placed.append(CityPlacement(building, facing, rect))
     return placed
 
 
@@ -317,7 +359,7 @@ def place_type1(avail, road_cells, lots, catalog, chooser, rules, rule_state, fi
 
 
 def place_city(road_cells, lots, catalog, fine, rng=None, rules=None, rule_state=None,
-               type2_frontage_cells=None):
+               type2_frontage_cells=None, landmark_spacing=LANDMARK_SPACING):
     """Place type-2 buildings by longest big-road frontage, then fill with type-1."""
     avail = {cell for lot in lots for cell in lot}
     chooser = rng if rng is not None else random
@@ -326,6 +368,6 @@ def place_city(road_cells, lots, catalog, fine, rng=None, rules=None, rule_state
 
     type2_frontage_cells = road_cells if type2_frontage_cells is None else type2_frontage_cells
     placed = []
-    placed += place_type2(avail, type2_frontage_cells, catalog, chooser, rules, rule_state, fine)
+    placed += place_type2(avail, type2_frontage_cells, catalog, rules, rule_state, fine, landmark_spacing)
     placed += place_type1(avail, road_cells, lots, catalog, chooser, rules, rule_state, fine)
     return placed

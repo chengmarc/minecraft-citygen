@@ -110,6 +110,8 @@ class WidgetTests(unittest.TestCase):
         self.assertEqual(env["MC_CITY_FINE"], common.CANVAS_SIZE_OPTIONS["Small"])
         self.assertEqual(env["MC_CITY_GAP_MIXED"], common.CLEARANCE_OPTIONS["Dense"])
         self.assertEqual(env["MC_CITY_GAP_BIG"], "7")
+        self.assertIn("MC_CITY_LANDMARK_SPACING", env)
+        self.assertNotIn("MC_CITY_TYPE2_TOP_FIT_CHOICES", env)
         self.assertTrue(all(key.startswith("MC_CITY_") for key in env))
 
     def test_algo_controls_seed_validator_present(self):
@@ -123,6 +125,8 @@ class WidgetTests(unittest.TestCase):
         labels = {label.text() for label in controls.findChildren(QtWidgets.QLabel)}
         self.assertIn("City Size", labels)
         self.assertIn("Road Density", labels)
+        self.assertIn("Landmark Spacing", labels)
+        self.assertNotIn("Landmark Style Variety", labels)
         self.assertEqual(controls.seed_edit.width(), 65)
         self.assertEqual(controls.advanced_toggle.minimumHeight(), controls.seed_edit.sizeHint().height())
         self.assertEqual(controls.advanced_toggle.maximumHeight(), controls.seed_edit.sizeHint().height())

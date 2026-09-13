@@ -83,7 +83,8 @@ From [algo.py](algo.py):
 - `N_BIG_CORNERS` / `N_BIG_TEES` — forced avenue L-corners / T-intersections
 - `N_SMALL_CORNERS` / `N_SMALL_TEES` — forced street L-corners / T-intersections
 - `BANNED_BUILDINGS` — building IDs excluded from placement
-- `TYPE1_TOP_FIT_CHOICES` / `TYPE2_TOP_FIT_CHOICES` — variation depth per type
+- `TYPE1_TOP_FIT_CHOICES` — standard-building variation depth
+- `LANDMARK_SPACING` — minimum fine-cell distance between landmark footprints
 
 From [world.py](world.py):
 
