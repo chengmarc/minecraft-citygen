@@ -126,7 +126,7 @@ class ExtractionTab(QtWidgets.QWidget, ProgressMixin):
         )
         header.addWidget(self.version_combo)
         header.addStretch(1)
-        self.extract_button = QtWidgets.QPushButton("Extract Assets", self)
+        self.extract_button = QtWidgets.QPushButton("Extract", self)
         self.extract_button.setObjectName("primaryButton")
         style_button(self.extract_button)
         apply_button_icon(self.extract_button, "extract.png")

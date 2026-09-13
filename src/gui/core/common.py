@@ -62,7 +62,7 @@ PREVIEW_CONFIG_LOOKUP = {name: (label, description) for name, label, description
 PREVIEW_CONFIG_GROUPS = [
     ("Avenue and Street Spacing", ["GAP_BIG", "PAD_BIG", "GAP_SMALL", "PAD_SMALL"]),
     ("Avenue and Street Shape", ["N_BIG_CORNERS", "N_BIG_TEES", "N_SMALL_CORNERS", "N_SMALL_TEES"]),
-    ("Building Mix", ["BANNED_BUILDINGS", "TYPE1_TOP_FIT_CHOICES", "LANDMARK_SPACING"]),
+    ("Building Mix", ["TYPE1_TOP_FIT_CHOICES", "LANDMARK_SPACING", "BANNED_BUILDINGS"]),
 ]
 
 PREVIEW_SLIDER_RANGES = {

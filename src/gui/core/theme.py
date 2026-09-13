@@ -12,6 +12,7 @@ from gui.core import common
 # APP_STYLESHEET, kept here for constructing QColor objects in code.
 ACCENT_RGB = (13, 110, 253)
 SHADOW_RGB = (23, 32, 43)
+BIG_BUTTON_WIDTH = 158
 
 APP_STYLESHEET = """
 QMainWindow, QWidget {
@@ -184,6 +185,8 @@ QLabel#viewerPlaceholder {
 
 
 def style_button(button) -> None:
+    if button.objectName() == "primaryButton" or button.property("bigButton"):
+        button.setFixedWidth(BIG_BUTTON_WIDTH)
     shadow = QtWidgets.QGraphicsDropShadowEffect(button)
     shadow.setBlurRadius(18)
     shadow.setOffset(0, 4)

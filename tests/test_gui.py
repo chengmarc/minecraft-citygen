@@ -38,7 +38,9 @@ class LauncherTests(unittest.TestCase):
         window = gui_app.CityGeneratorQtApp()
         tabs = window.centralWidget()
         tab_bar = tabs.tabBar()
-        self.assertEqual(tabs.tabText(0), "Extract Assets")
+        self.assertEqual(tabs.tabText(0), "Extract")
+        self.assertEqual(tabs.tabText(1), "Preview")
+        self.assertEqual(tabs.tabText(2), "Build")
         self.assertEqual(tab_bar.tabToolTip(0), "Step 1 of 3: Choose a Minecraft world and extract road, house, and landmark assets.")
         self.assertEqual(tab_bar.tabToolTip(1), "Step 2 of 3: Test seeds and Avenue/Street settings before the final build.")
         self.assertEqual(tab_bar.tabToolTip(2), "Step 3 of 3: Build the city, render it, and export the Minecraft world.")
@@ -143,6 +145,13 @@ class WidgetTests(unittest.TestCase):
         self.assertEqual(controls.advanced_toggle.minimumHeight(), controls.seed_edit.sizeHint().height())
         self.assertEqual(controls.advanced_toggle.maximumHeight(), controls.seed_edit.sizeHint().height())
 
+    def test_building_mix_orders_skip_ids_below_sliders(self):
+        groups = dict(common.PREVIEW_CONFIG_GROUPS)
+        self.assertEqual(
+            groups["Building Mix"],
+            ["TYPE1_TOP_FIT_CHOICES", "LANDMARK_SPACING", "BANNED_BUILDINGS"],
+        )
+
     def test_algo_controls_hide_advanced_by_default_and_toggle(self):
         state = common.default_algo_tab_config()
         controls = AlgoControlsWidget("Preview", lambda: None, state)
@@ -184,6 +193,8 @@ class ExtractionTabTests(unittest.TestCase):
     def test_extraction_cards_show_status_and_summary(self):
         state = common.default_extraction_tab_config()
         tab = ExtractionTab(_GuiOwner(extraction=state))
+        self.assertEqual(tab.extract_button.text().strip(), "Extract")
+        self.assertEqual(tab.extract_button.width(), 158)
         self.assertEqual(tab.findChildren(QtWidgets.QSplitter), [])
         self.assertEqual(tab.road_group.status_chip.text(), "Selected")
         self.assertIn("chunks selected", tab.road_group.detail_label.text())
@@ -313,8 +324,11 @@ class PreviewGenerationTabTests(unittest.TestCase):
         self.assertEqual(tab.findChildren(QtWidgets.QSplitter), [])
         self.assertTrue(tab.controls.advanced_panel.isHidden())
         self.assertEqual(tab.controls.advanced_toggle.text(), "Basic Settings")
-        self.assertEqual(tab.controls.action_button.text().strip(), "Preview Layout")
-        self.assertIn("Reset Default", {button.text().strip() for button in tab.findChildren(QtWidgets.QPushButton)})
+        self.assertEqual(tab.controls.action_button.text().strip(), "Preview")
+        self.assertEqual(tab.controls.action_button.width(), 158)
+        self.assertIn("Reset", {button.text().strip() for button in tab.findChildren(QtWidgets.QPushButton)})
+        reset = next(button for button in tab.findChildren(QtWidgets.QPushButton) if button.text().strip() == "Reset")
+        self.assertEqual(reset.width(), tab.controls.action_button.width())
         tab.close()
 
     def test_preview_reset_default_restores_algo_controls(self):
@@ -328,7 +342,7 @@ class PreviewGenerationTabTests(unittest.TestCase):
         reset = next(
             button
             for button in tab.findChildren(QtWidgets.QPushButton)
-            if button.text().strip() == "Reset Default"
+            if button.text().strip() == "Reset"
         )
         reset.click()
 
@@ -350,6 +364,10 @@ class PreviewGenerationTabTests(unittest.TestCase):
             extraction=common.default_extraction_tab_config(),
         )
         tab = GenerationTab(owner)
+        self.assertEqual(tab.controls.action_button.text().strip(), "Build")
+        self.assertIn("Copy", {button.text().strip() for button in tab.findChildren(QtWidgets.QPushButton)})
+        copy = next(button for button in tab.findChildren(QtWidgets.QPushButton) if button.text().strip() == "Copy")
+        self.assertEqual(copy.width(), tab.controls.action_button.width())
         tab._on_pipeline_progress(generation_module.services.CITY_RENDER, 1, 2, "ignored")
         self.assertEqual(tab.status_label.text(), "Rendering final city")
         self.assertNotIn("pipeline/", tab.status_label.text())

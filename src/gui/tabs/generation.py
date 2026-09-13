@@ -50,11 +50,11 @@ class GenerationTab(QtWidgets.QWidget, AlgoTabMixin, ProgressMixin):
         layout.addSpacing(20)
 
         self.controls = AlgoControlsWidget(
-            "Build City",
+            "Build",
             self._run_generate,
             state,
             action_icon_name="render.png",
-            extra_actions=[("Copy World", self._open_output_folder, "folder.png")],
+            extra_actions=[("Copy", self._open_output_folder, "folder.png")],
             show_seed=False,
             parent=self,
         )

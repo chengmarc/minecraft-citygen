@@ -61,8 +61,8 @@ application.pyw  ->  gui.launcher:main  ->  gui.app  (QApplication + main window
 - The tabs collect settings into `MC_CITY_*` env overrides and call
   [`pipeline.services`](../pipeline/README.md) functions from background workers,
   streaming progress back to the UI through the `workers` mixins.
-- The user-facing tab order maps to the numbered pipeline: Extract Assets runs
-  Stages 1 and 2, Preview Layout runs Stage 3, and Build City runs Stage 4
+- The user-facing tab order maps to the numbered pipeline: Extract runs
+  Stages 1 and 2, Preview runs Stage 3, and Build runs Stage 4
   followed by Stage 5.
 - The GUI passes only explicit `MC_CITY_*` overrides into the pipeline runtime.
   The runtime owns temporary environment mutation/reload/restore; GUI code should

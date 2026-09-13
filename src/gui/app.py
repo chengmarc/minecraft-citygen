@@ -33,9 +33,9 @@ class CityGeneratorQtApp(QtWidgets.QMainWindow):
         self.extraction_tab = ExtractionTab(self)
 
         tabs = QtWidgets.QTabWidget(self)
-        extraction_index = tabs.addTab(self.extraction_tab, "Extract Assets")
-        preview_index = tabs.addTab(self.preview_tab, "Preview Layout")
-        generation_index = tabs.addTab(self.generation_tab, "Build City")
+        extraction_index = tabs.addTab(self.extraction_tab, "Extract")
+        preview_index = tabs.addTab(self.preview_tab, "Preview")
+        generation_index = tabs.addTab(self.generation_tab, "Build")
         tab_bar = tabs.tabBar()
         tab_bar.setTabToolTip(
             extraction_index,
