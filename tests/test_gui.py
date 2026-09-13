@@ -114,6 +114,18 @@ class WidgetTests(unittest.TestCase):
         self.assertNotIn("MC_CITY_TYPE2_TOP_FIT_CHOICES", env)
         self.assertTrue(all(key.startswith("MC_CITY_") for key in env))
 
+    def test_algo_defaults_and_slider_ranges_use_uniform_midpoints(self):
+        algo = common.default_algo_tab_config()["algo"]
+        for name in ("GAP_BIG", "GAP_SMALL", "PAD_BIG", "PAD_SMALL"):
+            self.assertEqual(algo[name], "5")
+            self.assertEqual(common.PREVIEW_SLIDER_RANGES[name], (2, 10))
+        for name in ("N_BIG_CORNERS", "N_SMALL_CORNERS", "N_BIG_TEES", "N_SMALL_TEES"):
+            self.assertEqual(algo[name], "5")
+            self.assertEqual(common.PREVIEW_SLIDER_RANGES[name], (0, 10))
+        for name in ("TYPE1_TOP_FIT_CHOICES", "LANDMARK_SPACING"):
+            self.assertEqual(algo[name], "5")
+            self.assertEqual(common.PREVIEW_SLIDER_RANGES[name], (1, 10))
+
     def test_algo_controls_seed_validator_present(self):
         state = common.default_algo_tab_config()
         controls = AlgoControlsWidget("Preview", lambda: None, state)
@@ -302,6 +314,27 @@ class PreviewGenerationTabTests(unittest.TestCase):
         self.assertTrue(tab.controls.advanced_panel.isHidden())
         self.assertEqual(tab.controls.advanced_toggle.text(), "Basic Settings")
         self.assertEqual(tab.controls.action_button.text().strip(), "Preview Layout")
+        self.assertIn("Reset Default", {button.text().strip() for button in tab.findChildren(QtWidgets.QPushButton)})
+        tab.close()
+
+    def test_preview_reset_default_restores_algo_controls(self):
+        owner = _GuiOwner(algo=common.default_algo_tab_config())
+        tab = PreviewTab(owner)
+        tab.controls.set_advanced_visible(True)
+        tab.controls.widgets["FINE"].setCurrentText("Big")
+        tab.controls.widgets["GAP_BIG"].setValue(9)
+        tab.controls.widgets["TYPE1_TOP_FIT_CHOICES"].setValue(10)
+
+        reset = next(
+            button
+            for button in tab.findChildren(QtWidgets.QPushButton)
+            if button.text().strip() == "Reset Default"
+        )
+        reset.click()
+
+        defaults = {**common.default_algo_tab_config(), "advanced": False}
+        self.assertEqual(tab.controls.current_state(), defaults)
+        self.assertEqual(owner.get_saved_config_section("algo"), defaults)
         tab.close()
 
     def test_preview_progress_uses_measured_step_weights(self):

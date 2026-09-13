@@ -66,16 +66,16 @@ PREVIEW_CONFIG_GROUPS = [
 ]
 
 PREVIEW_SLIDER_RANGES = {
-    "GAP_BIG": (6, 10),
-    "GAP_SMALL": (2, 6),
-    "PAD_BIG": (2, 6),
-    "PAD_SMALL": (4, 8),
-    "N_BIG_CORNERS": (0, 12),
-    "N_SMALL_CORNERS": (0, 12),
-    "N_BIG_TEES": (0, 12),
-    "N_SMALL_TEES": (0, 12),
-    "TYPE1_TOP_FIT_CHOICES": (5, 9),
-    "LANDMARK_SPACING": (0, 16),
+    "GAP_BIG": (2, 10),
+    "GAP_SMALL": (2, 10),
+    "PAD_BIG": (2, 10),
+    "PAD_SMALL": (2, 10),
+    "N_BIG_CORNERS": (0, 10),
+    "N_SMALL_CORNERS": (0, 10),
+    "N_BIG_TEES": (0, 10),
+    "N_SMALL_TEES": (0, 10),
+    "TYPE1_TOP_FIT_CHOICES": (1, 10),
+    "LANDMARK_SPACING": (1, 10),
 }
 
 CANVAS_SIZE_OPTIONS = {

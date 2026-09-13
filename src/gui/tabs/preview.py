@@ -53,6 +53,7 @@ class PreviewTab(QtWidgets.QWidget, AlgoTabMixin, ProgressMixin):
             self._randomize_seed_and_run_preview,
             state,
             action_icon_name="refresh.png",
+            extra_actions=[("Reset Default", self._reset_defaults, "reset.png")],
             show_seed=False,
             parent=self,
         )
@@ -86,6 +87,10 @@ class PreviewTab(QtWidgets.QWidget, AlgoTabMixin, ProgressMixin):
             self._progress_soft_target = progress.soft_target(milestone, next_ms, "preview")
             self._progress_timer.start(progress.creep_tick_ms("preview"))
         self.set_status(label or "Generating previews")
+
+    def _reset_defaults(self):
+        self.controls.set_state(common.default_algo_tab_config())
+        self._save_algo_state()
 
     def _randomize_seed_and_run_preview(self):
         current_seed = self.controls.seed_edit.text().strip()
