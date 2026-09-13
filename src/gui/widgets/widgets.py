@@ -113,6 +113,7 @@ class AlgoControlsWidget(QtWidgets.QWidget):
         if extra_actions:
             for text, command, icon_name in extra_actions:
                 button = QtWidgets.QPushButton(text, self)
+                button.setProperty("bigButton", True)
                 style_button(button)
                 if icon_name:
                     apply_button_icon(button, icon_name)

@@ -49,11 +49,11 @@ class PreviewTab(QtWidgets.QWidget, AlgoTabMixin, ProgressMixin):
         layout.addSpacing(20)
 
         self.controls = AlgoControlsWidget(
-            "Preview Layout",
+            "Preview",
             self._randomize_seed_and_run_preview,
             state,
             action_icon_name="refresh.png",
-            extra_actions=[("Reset Default", self._reset_defaults, "reset.png")],
+            extra_actions=[("Reset", self._reset_defaults, "reset.png")],
             show_seed=False,
             parent=self,
         )
