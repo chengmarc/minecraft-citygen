@@ -121,21 +121,5 @@ configuration safely for one run at a time.
 
 ### Supported Minecraft Versions
 
-![26.1](https://img.shields.io/badge/26.1-404040)
-![26.1.1](https://img.shields.io/badge/26.1.1-404040)
 ![26.1.2](https://img.shields.io/badge/26.1.2-404040)
 ![26.2](https://img.shields.io/badge/26.2-404040)
-
-![1.21](https://img.shields.io/badge/1.21-707070)
-![1.21.1](https://img.shields.io/badge/1.21.1-707070)
-![1.21.2](https://img.shields.io/badge/1.21.2-707070)
-![1.21.3](https://img.shields.io/badge/1.21.3-707070)
-![1.21.4](https://img.shields.io/badge/1.21.4-707070)
-![1.21.5](https://img.shields.io/badge/1.21.5-707070)
-![1.21.6](https://img.shields.io/badge/1.21.6-707070)
-![1.21.7](https://img.shields.io/badge/1.21.7-707070)
-![1.21.8](https://img.shields.io/badge/1.21.8-707070)
-![1.21.9](https://img.shields.io/badge/1.21.9-707070)
-![1.21.10](https://img.shields.io/badge/1.21.10-707070)
-![1.21.11](https://img.shields.io/badge/1.21.11-707070)
-

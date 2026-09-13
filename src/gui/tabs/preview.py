@@ -35,12 +35,12 @@ class PreviewTab(QtWidgets.QWidget, AlgoTabMixin, ProgressMixin):
         viewer_row.setSpacing(12)
         self.grid_viewer = QtImageViewer(
             "Road Layout Preview",
-            "Use Preview Layout to see the road network before building the final city.",
+            "Preview layout to see the road network before building the final city.",
             viewer_shell,
         )
         self.city_viewer = QtImageViewer(
             "City Layout Preview",
-            "Use Preview Layout to see how buildings fit into the generated road network.",
+            "Preview layout to see how buildings fit into the generated road network.",
             viewer_shell,
         )
         viewer_row.addWidget(self.grid_viewer, 1)
