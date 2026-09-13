@@ -407,8 +407,8 @@ class ExtractionTab(QtWidgets.QWidget, ProgressMixin):
                     lambda stage, completed, total, label: signals.pipeline_progress.emit(stage, completed, total, label)
                 )
 
-                services.run_road_extraction_pipeline(env_overrides=env, progress=on_progress)
-                services.run_build_extraction_pipeline(env_overrides=env, progress=on_progress)
+                services.run_roads_stage(env_overrides=env, progress=on_progress)
+                services.run_builds_stage(env_overrides=env, progress=on_progress)
             except Exception as exc:  # boundary: report any extraction failure to the user
                 signals.failed.emit("Extract failed", str(exc).strip() or "Extract failed", "Extract failed")
             else:

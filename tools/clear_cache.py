@@ -18,14 +18,16 @@ if __package__ in (None, ""):
 
 from config.path import (
     BUILD_CATALOG,
-    BUILDS_PROD,
-    BUILDS_SIM,
-    CITY_PROD,
-    CITY_SIM,
-    GRID_PROD,
-    GRID_SIM,
-    ROADS_PROD,
-    ROADS_SIM,
+    BUILDS_RENDERS,
+    BUILDS_SCHEM,
+    CITY_RENDERS,
+    CITY_SCHEM,
+    PREVIEW_BUILDS,
+    PREVIEW_CITY,
+    PREVIEW_GRID,
+    PREVIEW_ROADS,
+    ROADS_RENDERS,
+    ROADS_SCHEM,
     ROOT,
 )
 
@@ -33,19 +35,17 @@ REPO_ROOT = Path(ROOT).resolve()
 
 # Generated pipeline artifacts (previews, renders, schematics, catalog).
 ARTIFACT_GLOBS = [
-    os.path.join(ROADS_SIM, "*.png"),
-    os.path.join(ROADS_PROD, "*.png"),
-    os.path.join(ROADS_PROD, "*.schem"),
-    os.path.join(BUILDS_SIM, "*.png"),
-    os.path.join(BUILDS_PROD, "*.png"),
-    os.path.join(BUILDS_PROD, "*.schem"),
+    os.path.join(ROADS_SCHEM, "*.schem"),
+    os.path.join(ROADS_RENDERS, "*.png"),
+    os.path.join(BUILDS_SCHEM, "*.schem"),
+    os.path.join(BUILDS_RENDERS, "*.png"),
     BUILD_CATALOG,
-    os.path.join(GRID_SIM, "seed_*_preview.png"),
-    os.path.join(GRID_PROD, "*_render.png"),
-    os.path.join(GRID_PROD, "seed_*.schem"),
-    os.path.join(CITY_SIM, "seed_*.png"),
-    os.path.join(CITY_PROD, "seed_*.png"),
-    os.path.join(CITY_PROD, "seed_*.schem"),
+    os.path.join(PREVIEW_ROADS, "*.png"),
+    os.path.join(PREVIEW_BUILDS, "*.png"),
+    os.path.join(PREVIEW_GRID, "seed_*.png"),
+    os.path.join(PREVIEW_CITY, "seed_*.png"),
+    os.path.join(CITY_SCHEM, "seed_*.schem"),
+    os.path.join(CITY_RENDERS, "seed_*.png"),
 ]
 
 # Build / packaging / test outputs that regenerate on the next build or test run.

@@ -11,7 +11,7 @@ from pathlib import Path
 if __package__ in (None, ""):
     sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
-from config.path import BUILD_CATALOG, BUILDS_PROD
+from config.path import BUILD_CATALOG, BUILDS_SCHEM
 from config.world import BUILD_MARKER_Y_RANGE, BUILD_TYPES, DATA_VERSION
 from engine.world.anvil_world_reader import World
 from engine.world.marker_extract import detect_marker_assets, extract_cuboid, iter_signs, parse_range
@@ -58,15 +58,15 @@ def write_schem(cells, block_entities, path):
 
 
 def remove_existing_schems():
-    for filename in os.listdir(BUILDS_PROD):
+    for filename in os.listdir(BUILDS_SCHEM):
         if filename.endswith(".schem"):
-            os.remove(os.path.join(BUILDS_PROD, filename))
+            os.remove(os.path.join(BUILDS_SCHEM, filename))
 
 
 def run(*, logger=None, progress=None):
     logger = logger or noop
     progress = progress or noop
-    os.makedirs(BUILDS_PROD, exist_ok=True)
+    os.makedirs(BUILDS_SCHEM, exist_ok=True)
     remove_existing_schems()
 
     region_data = [(r.build_type, *r.bounds.as_tuple()) for r in BUILD_TYPES]
@@ -102,14 +102,14 @@ def run(*, logger=None, progress=None):
         entry = {"type": build_type, "size": size, "origin": origin, "ground_offset": ground_offset, "pieces": {}}
         if len(cuboids) == 1:
             cells, bes = extract_cuboid(get_world(), cuboids[0], force_persistent_leaves=True)
-            write_schem(cells, bes, os.path.join(BUILDS_PROD, f"{key}.schem"))
+            write_schem(cells, bes, os.path.join(BUILDS_SCHEM, f"{key}.schem"))
             entry["pieces"]["whole"] = cuboids[0][3] - cuboids[0][2] + 1
         else:
             stack_rng = stack_sign(emerald)
             entry["stack"] = stack_rng if stack_rng is not None else [1, 1]
             for name, cuboid in zip(("bottom", "middle", "top"), cuboids):
                 cells, bes = extract_cuboid(get_world(), cuboid, force_persistent_leaves=True)
-                write_schem(cells, bes, os.path.join(BUILDS_PROD, f"{key}_{name}.schem"))
+                write_schem(cells, bes, os.path.join(BUILDS_SCHEM, f"{key}_{name}.schem"))
                 entry["pieces"][name] = cuboid[3] - cuboid[2] + 1
         catalog[key] = entry
         logger(f"extracted {key}")

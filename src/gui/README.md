@@ -52,15 +52,18 @@ application.pyw  ->  gui.launcher:main  ->  gui.app  (QApplication + main window
   gating helper for the preview and generation tabs.
 - [extraction.py](tabs/extraction.py) — source-world selection, region editing,
   and road/building extraction.
-- [preview.py](tabs/preview.py) — fast generated road-grid and city previews.
-- [generation.py](tabs/generation.py) — production schematic build, isometric
-  render, and standalone world export.
+- [preview.py](tabs/preview.py) — Stage 3 fast road-layout and city-layout previews.
+- [generation.py](tabs/generation.py) — Stage 4 production schematic/render plus
+  Stage 5 standalone world export.
 
 ## How it drives the pipeline
 
 - The tabs collect settings into `MC_CITY_*` env overrides and call
   [`pipeline.services`](../pipeline/README.md) functions from background workers,
   streaming progress back to the UI through the `workers` mixins.
+- The user-facing tab order maps to the numbered pipeline: Extract Assets runs
+  Stages 1 and 2, Preview Layout runs Stage 3, and Build City runs Stage 4
+  followed by Stage 5.
 - The GUI passes only explicit `MC_CITY_*` overrides into the pipeline runtime.
   The runtime owns temporary environment mutation/reload/restore; GUI code should
   not set process environment variables directly for a stage run.

@@ -8,7 +8,7 @@ import os
 import numpy as np
 
 from config.algo import CELL
-from config.path import ROADS_PROD
+from config.path import ROADS_SCHEM
 from config.world import DATA_VERSION
 from engine.core.road_network import (
     BIG_TILES,
@@ -27,7 +27,6 @@ from engine.schematic.reader import (
 from engine.schematic.transform import Tile, rot_tile, translate_block_entities
 from engine.schematic.writer import sponge_schem_from_grid
 
-ROADS_SCHEM = ROADS_PROD
 BLOCKS_PER_FINE_CELL = CELL
 
 # Fill props (e.g. 15_fill_1x1_A) share the road region and marker convention but

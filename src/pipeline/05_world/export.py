@@ -10,7 +10,7 @@ if __package__ in (None, ""):
     sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
 from config.algo import DEFAULT_SEED
-from config.path import CITY_PROD, SAVES
+from config.path import CITY_SCHEM, SAVES
 from config.world import SAVE
 from engine.world.writer import schem_to_world
 from pipeline.stages import noop, run_stage_cli
@@ -19,9 +19,9 @@ from pipeline.stages import noop, run_stage_cli
 def run(*, seed=DEFAULT_SEED, out=None, logger=None, progress=None):
     logger = logger or noop
 
-    schem = os.path.join(CITY_PROD, f"seed_{seed}.schem")
+    schem = os.path.join(CITY_SCHEM, f"seed_{seed}.schem")
     if not os.path.exists(schem):
-        raise FileNotFoundError(f"City schematic not found: {schem}. Run city construct first.")
+        raise FileNotFoundError(f"City schematic not found: {schem}. Run Stage 4 first.")
     out = out or os.path.join(SAVES, f"seed_{seed}_world")
 
     # Copy the source world and replace only the output overworld region files.

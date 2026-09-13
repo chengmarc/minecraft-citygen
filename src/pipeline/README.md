@@ -15,15 +15,16 @@ same way.
 | [services.py](services.py) | In-process pipeline services used by both the GUI and CLI |
 | [stages.py](stages.py) | Central registry of stage modules plus the shared stage runner |
 | [runtime.py](runtime.py) | `configured_environment` and the import-time config model helpers |
-| `01_roads/` | `extract`, `simulation`, `render` |
-| `02_builds/` | `extract`, `simulation`, `render` |
-| `03_grid/` | `simulation`, `construct`, `render` |
-| `04_city/` | `simulation`, `construct`, `render` |
-| `05_world/` | `world` |
+| `01_roads/` | public `stage`, internal `extract`, `render` |
+| `02_builds/` | public `stage`, internal `extract`, `render` |
+| `03_preview/` | public `stage`, internal `roads`, `builds`, `grid`, `city` |
+| `04_city/` | public `stage`, internal `construct`, `render` |
+| `05_world/` | public `stage`, internal `export` |
 
-`extract` pulls assets from the world, `simulation` renders fast PNG previews,
-`construct` builds production `.schem` output, `render` produces isometric PNGs,
-and `world` exports the final city as a standalone Minecraft save.
+`extract` pulls assets from the world, `render` produces isometric/contact-sheet
+PNGs, `preview` renders the fast road-layout and city-layout PNGs, `construct`
+builds the final city `.schem`, and `world` exports the final city as a
+standalone Minecraft save.
 
 ## Runtime boundary
 
@@ -42,31 +43,33 @@ model with explicit config objects.
 
 ## Pipeline stages
 
-**1. Roads.** [01_roads/extract.py](01_roads/extract.py) exports named road `.schem`
-pieces from the `ROAD_BOX` region, plus fill props. [01_roads/simulation.py](01_roads/simulation.py)
-draws the preview road PNGs.
+**1. Roads.** [01_roads/extract.py](01_roads/extract.py) exports named road
+`.schem` pieces from the `ROAD_BOX` region, plus fill props.
+[01_roads/render.py](01_roads/render.py) renders those extracted road pieces and
+writes the road contact sheet.
 
 **2. Builds.** [02_builds/extract.py](02_builds/extract.py) scans the `BUILD_TYPES`
 regions, exports individual `.schem` pieces, and writes
-`artifacts/builds/production/buildings.json` — the source of truth for placement.
+`artifacts/02_builds/buildings.json` — the source of truth for
+placement. [02_builds/render.py](02_builds/render.py) renders those extracted
+building pieces and writes the building contact sheet.
 
-**3. Grid.** [03_grid/simulation.py](03_grid/simulation.py) generates the road
-network from a seed and composites the top-down preview;
-[03_grid/construct.py](03_grid/construct.py) maps the same seed-driven network to
-extracted road schematics and writes a production schematic grid. Both share the
-same logical network (via [`engine.core.road_network`](../engine/README.md#how-the-road-grid-is-generated)),
-rendered differently.
+**3. Preview.** [03_preview/stage.py](03_preview/stage.py) is the unified
+preview stage. It generates the road preview assets, generates pseudo top-down
+building assets from the catalog, renders the seed-driven road-layout preview,
+and renders the city-layout preview. Internally it reuses the same road-network
+and placement logic as the final city build.
 
-**4. City.** [04_city/simulation.py](04_city/simulation.py) renders the full city
-preview; [04_city/construct.py](04_city/construct.py) assembles the final result —
-loads/regenerates the road grid, loads the catalog, generates placements from the
-seed, samples stack counts for three-piece buildings, assembles rotated building schematics, places
-roads and buildings into one master 3D grid, optionally fills non-road ground
-cells, and writes the Sponge `.schem` (with an offset so the schematic import
-origin lands correctly).
+**4. City.** [04_city/construct.py](04_city/construct.py) assembles the final
+result — builds the road grid, loads the catalog, generates placements from the
+seed, samples stack counts for three-piece buildings, assembles rotated building
+schematics, places roads and buildings into one master 3D grid, optionally fills
+non-road ground cells, and writes the Sponge `.schem` (with an offset so the
+schematic import origin lands correctly). [04_city/render.py](04_city/render.py)
+renders the final city schematic as an isometric PNG.
 
-**5. World.** [05_world/world.py](05_world/world.py) reads the final city `.schem`
-and writes a standalone, ready-to-play world to `artifacts/saves/seed_<n>_world/`
+**5. World.** [05_world/stage.py](05_world/stage.py) reads the final city `.schem`
+and writes a standalone, ready-to-play world to `artifacts/05_world/saves/seed_<n>_world/`
 (via [`engine.world.writer`](../engine/world/writer.py), the inverse of the Anvil
 reader). It copies the selected source save, purges only the copied overworld
 region files, writes generated city chunks back into that same layout, seats the
@@ -117,34 +120,36 @@ city; type-1 IDs have no repeat limit.
 
 ## Generated build catalog
 
-`artifacts/builds/production/buildings.json` is written by stage 02 and consumed
+`artifacts/02_builds/buildings.json` is written by stage 02 and consumed
 by both simulation stand-ins and production placement. Each entry contains: `type`,
 `size`, `origin`, `ground_offset`, and `pieces`, plus `stack` for three-layer
 buildings.
 
-## Simulation vs production
+## Preview vs city build
 
-- **Simulation** — road PNGs and pseudo-build PNGs generated from catalog
-  dimensions; fast iteration and layout validation.
-- **Production** — extracted road and building schematics, the final combined city
-  schematic, and the isometric render.
-
-Placement logic is shared; only the rendered representation differs.
+Stage 3 writes fast road-layout and city-layout PNGs for iteration and layout
+validation. Stage 4 writes the real combined city schematic and its isometric
+render. Placement logic is shared; only the rendered representation differs.
 
 ## Outputs
 
 ```text
-artifacts/roads/production/*.schem
-artifacts/builds/production/*.schem
-artifacts/builds/production/buildings.json
-artifacts/grid/production/seed_<n>.schem
-artifacts/city/production/seed_<n>.schem
-artifacts/saves/seed_<n>_world/                   # standalone playable world
-artifacts/*/*/*.png                        # preview and render images
+artifacts/01_roads/schem/*.schem
+artifacts/01_roads/renders/*.png
+artifacts/02_builds/schem/*.schem
+artifacts/02_builds/renders/*.png
+artifacts/02_builds/buildings.json
+artifacts/03_preview/roads/*.png
+artifacts/03_preview/builds/*.png
+artifacts/03_preview/grid/seed_<n>.png
+artifacts/03_preview/city/seed_<n>.png
+artifacts/04_city/schem/seed_<n>.schem
+artifacts/04_city/renders/seed_<n>.png
+artifacts/05_world/saves/seed_<n>_world/          # standalone playable world
 ```
 
-The final city schematic in `artifacts/city/production/` is a Sponge `.schem`;
-`artifacts/saves/seed_<n>_world/` is a copied source-world save with generated
+The final city schematic in `artifacts/04_city/schem/` is a Sponge `.schem`;
+`artifacts/05_world/saves/seed_<n>_world/` is a copied source-world save with generated
 city regions, ready to drop straight into `.minecraft/saves/`.
 
 ## Running stages
@@ -153,26 +158,23 @@ From a repo checkout, direct script execution works without installing the
 package:
 
 ```bash
-python src/pipeline/01_roads/extract.py
-python src/pipeline/02_builds/extract.py
-python src/pipeline/03_grid/simulation.py --seed 5
-python src/pipeline/03_grid/construct.py --seed 5
-python src/pipeline/04_city/simulation.py --seed 5
-python src/pipeline/04_city/construct.py --seed 5
-python src/pipeline/04_city/render.py
-python src/pipeline/05_world/world.py --seed 5
+python src/pipeline/01_roads/stage.py
+python src/pipeline/02_builds/stage.py
+python src/pipeline/03_preview/stage.py --seed 5
+python src/pipeline/04_city/stage.py --seed 5
+python src/pipeline/05_world/stage.py --seed 5
 ```
 
 Package-module execution is also supported when `src/` is on `PYTHONPATH` or the
 project is installed:
 
 ```bash
-python -m pipeline.01_roads.extract
-python -m pipeline.02_builds.extract
-python -m pipeline.03_grid.simulation --seed 5
-python -m pipeline.03_grid.construct --seed 5
-python -m pipeline.04_city.simulation --seed 5
-python -m pipeline.04_city.construct --seed 5
-python -m pipeline.04_city.render
-python -m pipeline.05_world.world --seed 5
+python -m pipeline.01_roads.stage
+python -m pipeline.02_builds.stage
+python -m pipeline.03_preview.stage --seed 5
+python -m pipeline.04_city.stage --seed 5
+python -m pipeline.05_world.stage --seed 5
 ```
+
+The lower-level extract/render/construct scripts remain runnable for debugging,
+but the five commands above are the canonical numbered pipeline.

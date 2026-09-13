@@ -10,18 +10,18 @@ from pathlib import Path
 if __package__ in (None, ""):
     sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
-from config.path import CITY_PROD
+from config.path import CITY_RENDERS, CITY_SCHEM
 from config.render import FULL_SCHEM_ISO_BLOCK_H, FULL_SCHEM_ISO_TILE_H, FULL_SCHEM_ISO_TILE_W
 from engine.render.isometric import render_schem_visible_iso
 from pipeline.stages import noop, run_stage_cli
 
-SCHEM = CITY_PROD
+SCHEM = CITY_SCHEM
 
 
 def run(*, logger=None, progress=None):
     logger = logger or noop
     progress = progress or noop
-    os.makedirs(CITY_PROD, exist_ok=True)
+    os.makedirs(CITY_RENDERS, exist_ok=True)
     outputs = []
     paths = sorted(glob.glob(os.path.join(SCHEM, "*.schem")))
     total = len(paths)
@@ -35,7 +35,7 @@ def run(*, logger=None, progress=None):
             tile_h=FULL_SCHEM_ISO_TILE_H,
             block_h=FULL_SCHEM_ISO_BLOCK_H,
         )
-        out = os.path.join(CITY_PROD, name + ".png")
+        out = os.path.join(CITY_RENDERS, name + ".png")
         im.save(out)
         outputs.append(out)
         logger(f"saved {out} ({im.width}x{im.height})")

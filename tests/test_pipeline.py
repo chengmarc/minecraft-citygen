@@ -23,9 +23,9 @@ from pipeline.stages import PIPELINE_STAGE_MODULES, RELOAD_ORDER, stage_module
 from engine.schematic.transform import Tile
 
 ROOT_DIR = Path(__file__).resolve().parents[1]
-BUILDS_EXTRACT = stage_module("builds_extract")
-BUILDS_RENDER = stage_module("builds_render")
-ROADS_RENDER = stage_module("roads_render")
+BUILDS_EXTRACT = services.BUILDS_EXTRACT
+BUILDS_RENDER = services.BUILDS_RENDER
+ROADS_RENDER = services.ROADS_RENDER
 
 
 # --- stage services -------------------------------------------------------
@@ -65,7 +65,7 @@ def test_configured_environment_restores_requested_keys(monkeypatch):
     assert "MC_CITY_GAP_BIG" not in os.environ
 
 
-def test_run_grid_simulation_stage_coerces_numeric_arguments(monkeypatch):
+def test_run_preview_stage_coerces_numeric_arguments(monkeypatch):
     calls = {}
 
     @contextmanager
@@ -84,15 +84,15 @@ def test_run_grid_simulation_stage_coerces_numeric_arguments(monkeypatch):
     monkeypatch.setattr(services, "configured_environment", fake_environment)
     monkeypatch.setattr(services.importlib, "import_module", fake_import_module)
 
-    result = services.run_grid_simulation_stage("7", "3", env_overrides={"MC_CITY_FINE": "3"}, logger="logger")
+    result = services.run_preview_stage("7", "3", env_overrides={"MC_CITY_FINE": "3"}, logger="logger")
 
     assert calls["env_overrides"] == {"MC_CITY_FINE": "3"}
-    assert calls["module_name"] == services.GRID_SIMULATION
-    assert calls["kwargs"] == {"seed": 7, "fine": 3, "logger": "logger"}
+    assert calls["module_name"] == services.PREVIEW
+    assert calls["kwargs"] == {"seed": 7, "fine": 3, "logger": "logger", "progress": None}
     assert result["stage"] == "grid"
 
 
-def test_run_build_extraction_pipeline_tags_progress_with_stage_modules(monkeypatch):
+def test_run_builds_stage_tags_progress_with_stage_modules(monkeypatch):
     calls = []
     progress_events = []
 
@@ -116,7 +116,7 @@ def test_run_build_extraction_pipeline_tags_progress_with_stage_modules(monkeypa
     monkeypatch.setattr(services, "configured_environment", fake_environment)
     monkeypatch.setattr(services.importlib, "import_module", fake_import_module)
 
-    result = services.run_build_extraction_pipeline(
+    result = services.run_builds_stage(
         env_overrides={"MC_CITY_SAVE": "world"},
         logger="logger",
         progress=lambda stage, completed, total, label: progress_events.append((stage, completed, total, label)),
@@ -235,7 +235,7 @@ class ContactRenderTests(unittest.TestCase):
 
             with mock.patch.object(builds_render, "CATALOG", str(catalog_path)), \
                  mock.patch.object(builds_render, "SCHEM", str(out_dir)), \
-                 mock.patch.object(builds_render, "BUILDS_PROD", str(out_dir)), \
+                 mock.patch.object(builds_render, "BUILDS_RENDERS", str(out_dir)), \
                  mock.patch.object(builds_render, "assemble", return_value=[[["minecraft:stone"]]]), \
                  mock.patch.object(builds_render, "render_cells_visible_iso", return_value=Image.new("RGBA", (16, 16))), \
                  mock.patch.object(builds_render, "write_contact", side_effect=checking_write_contact):
@@ -269,7 +269,7 @@ class ContactRenderTests(unittest.TestCase):
                 return real_write_contact(images, out, **kwargs)
 
             with mock.patch.object(roads_render, "SCHEM", str(out_dir)), \
-                 mock.patch.object(roads_render, "ROADS_PROD", str(out_dir)), \
+                 mock.patch.object(roads_render, "ROADS_RENDERS", str(out_dir)), \
                  mock.patch.object(roads_render, "decode_schem_cells", return_value=[[["minecraft:stone"]]]), \
                  mock.patch.object(roads_render, "render_cells_visible_iso", return_value=Image.new("RGBA", (16, 16))), \
                  mock.patch.object(roads_render, "write_contact", side_effect=checking_write_contact):

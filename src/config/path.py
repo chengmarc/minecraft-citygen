@@ -133,21 +133,28 @@ def _artifact_dir(*parts: str) -> str:
     return str(Path(ARTIFACTS).joinpath(*parts))
 
 
-ROADS_SIM = _artifact_dir("roads", "simulation")
-ROADS_PROD = _artifact_dir("roads", "production")
+STAGE_01_ROADS = _artifact_dir("01_roads")
+ROADS_SCHEM = _artifact_dir("01_roads", "schem")
+ROADS_RENDERS = _artifact_dir("01_roads", "renders")
 
-GRID_SIM = _artifact_dir("grid", "simulation")
-GRID_PROD = _artifact_dir("grid", "production")
+STAGE_02_BUILDS = _artifact_dir("02_builds")
+BUILDS_SCHEM = _artifact_dir("02_builds", "schem")
+BUILDS_RENDERS = _artifact_dir("02_builds", "renders")
+BUILD_CATALOG = str(Path(STAGE_02_BUILDS) / "buildings.json")
 
-BUILDS_SIM = _artifact_dir("builds", "simulation")
-BUILDS_PROD = _artifact_dir("builds", "production")
-BUILD_CATALOG = str(Path(BUILDS_PROD) / "buildings.json")
+STAGE_03_PREVIEW = _artifact_dir("03_preview")
+PREVIEW_ROADS = _artifact_dir("03_preview", "roads")
+PREVIEW_BUILDS = _artifact_dir("03_preview", "builds")
+PREVIEW_GRID = _artifact_dir("03_preview", "grid")
+PREVIEW_CITY = _artifact_dir("03_preview", "city")
 
-CITY_SIM = _artifact_dir("city", "simulation")
-CITY_PROD = _artifact_dir("city", "production")
+STAGE_04_CITY = _artifact_dir("04_city")
+CITY_SCHEM = _artifact_dir("04_city", "schem")
+CITY_RENDERS = _artifact_dir("04_city", "renders")
 
+STAGE_05_WORLD = _artifact_dir("05_world")
 # Standalone Minecraft worlds exported from the final city (one folder per seed).
-SAVES = _artifact_dir("saves")
+SAVES = _artifact_dir("05_world", "saves")
 
 COLOR_RENDER_CSV = str(Path(CONFIG) / "color_render.csv")
 

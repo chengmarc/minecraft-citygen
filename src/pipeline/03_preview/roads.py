@@ -1,5 +1,5 @@
 """
-Road grid tile generator (step 1: schematic PNG assets).
+Stage 3 helper: draw top-down road and fill-prop PNG assets.
 
 Conventions
 -----------
@@ -26,7 +26,7 @@ if __package__ in (None, ""):
     sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
 from config.algo import CELL
-from config.path import ROADS_SIM
+from config.path import PREVIEW_ROADS
 from config.render import CITY_GROUND_FILL_RGBA
 from pipeline.stages import noop, run_stage_cli
 
@@ -45,7 +45,7 @@ LINE_W = {"s": 1, "b": 2}
 DEADEND_EXT = 2
 DEADEND_PAD = 1
 
-OUT = ROADS_SIM
+OUT = PREVIEW_ROADS
 
 
 def line_span(center, width):

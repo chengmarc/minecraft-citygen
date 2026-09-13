@@ -1,4 +1,4 @@
-"""Sim pipeline: compose the vector road tiles into a grid preview."""
+"""Stage 3 helper: compose the vector road tiles into a grid preview."""
 
 from __future__ import annotations
 
@@ -12,7 +12,7 @@ if __package__ in (None, ""):
     sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
 from config.algo import DEFAULT_SEED, FINE as DEFAULT_FINE
-from config.path import GRID_SIM
+from config.path import PREVIEW_GRID
 from engine.core.road_network import compose, gen_networks, load_assets, make_size
 from pipeline.stages import noop, run_stage_cli
 
@@ -26,8 +26,8 @@ def run(*, seed=DEFAULT_SEED, fine=DEFAULT_FINE, preview=0, logger=None):
     grid = compose(net, load_assets())
     if preview:
         grid = grid.resize((preview, preview), Image.Resampling.NEAREST)
-    out = os.path.join(GRID_SIM, f"seed_{seed}_preview.png")
-    os.makedirs(GRID_SIM, exist_ok=True)
+    out = os.path.join(PREVIEW_GRID, f"seed_{seed}.png")
+    os.makedirs(PREVIEW_GRID, exist_ok=True)
     grid.save(out)
     logger(f"saved {out} {grid.size}")
     return {"output_path": out, "image_size": grid.size}
