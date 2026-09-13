@@ -5,11 +5,11 @@ from __future__ import annotations
 import json
 import os
 
-from config.path import BUILD_CATALOG, BUILDS_PROD
+from config.path import BUILD_CATALOG, BUILDS_SCHEM
 from engine.schematic.reader import decode_schem_block_entities, decode_schem_cells
 from engine.schematic.transform import Tile
 
-BUILDS = BUILDS_PROD
+BUILDS = BUILDS_SCHEM
 META = None
 
 _piece = {}

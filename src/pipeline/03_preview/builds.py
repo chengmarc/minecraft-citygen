@@ -1,4 +1,4 @@
-"""Sim pipeline: draw pseudo top-down building PNG assets."""
+"""Stage 3 helper: draw pseudo top-down building PNG assets."""
 
 from __future__ import annotations
 
@@ -13,7 +13,7 @@ from PIL import Image, ImageDraw, ImageFont
 if __package__ in (None, ""):
     sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
-from config.path import BUILD_CATALOG, BUILDS_SIM
+from config.path import BUILD_CATALOG, PREVIEW_BUILDS
 from config.render import BUILD_PREVIEW_COLORS, CONTACT_SHEET_BG
 from engine.core.city_layout import catalog_type
 from pipeline.stages import noop, run_stage_cli
@@ -114,7 +114,7 @@ def write_contact(images):
         thumb = im.resize((max(1, int(im.width * scale)), max(1, int(im.height * scale))), Image.Resampling.NEAREST)
         sheet.alpha_composite(thumb, (x0 + (cw - thumb.width) // 2, y0 + ch - thumb.height - 6))
         d.text((x0 + 6, y0 + 5), key, fill=(235, 235, 235, 255), font=label_font)
-    out = os.path.join(BUILDS_SIM, "_contact_sheet.png")
+    out = os.path.join(PREVIEW_BUILDS, "_contact_sheet.png")
     sheet.save(out)
     return out
 
@@ -125,7 +125,7 @@ def run(*, key=None, logger=None, progress=None):
     with open(CATALOG, encoding="utf-8") as fh:
         catalog = json.load(fh)
     keys = [key] if key else sorted(catalog)
-    os.makedirs(BUILDS_SIM, exist_ok=True)
+    os.makedirs(PREVIEW_BUILDS, exist_ok=True)
 
     images = []
     total = len(keys)
@@ -133,7 +133,7 @@ def run(*, key=None, logger=None, progress=None):
         if build_key not in catalog:
             raise SystemExit(f"unknown build key: {build_key}")
         im = render_building(build_key, catalog[build_key])
-        out = os.path.join(BUILDS_SIM, f"{build_key}.png")
+        out = os.path.join(PREVIEW_BUILDS, f"{build_key}.png")
         im.save(out)
         images.append((build_key, im))
         logger(f"saved {out} ({im.width}x{im.height})")

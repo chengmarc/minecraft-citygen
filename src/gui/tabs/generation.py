@@ -161,9 +161,8 @@ class GenerationTab(QtWidgets.QWidget, AlgoTabMixin, ProgressMixin):
 
         def worker():
             try:
-                services.run_city_construct_stage(seed, fine, env_overrides=env, progress=on_progress)
-                services.run_city_render_stage(env_overrides=env, progress=on_progress)
-                services.run_world_export_stage(seed, env_overrides=env, progress=on_progress)
+                services.run_city_stage(seed, fine, env_overrides=env, progress=on_progress)
+                services.run_world_stage(seed, env_overrides=env, progress=on_progress)
             except Exception as exc:  # boundary: surface any background failure to the UI
                 signals.failed.emit("Generation failed", str(exc).strip() or "Generation failed", "Generation failed")
             else:

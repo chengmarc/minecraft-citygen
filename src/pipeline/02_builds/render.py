@@ -10,12 +10,12 @@ from pathlib import Path
 if __package__ in (None, ""):
     sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
-from config.path import BUILD_CATALOG, BUILDS_PROD
+from config.path import BUILD_CATALOG, BUILDS_RENDERS, BUILDS_SCHEM
 from engine.render.isometric import render_cells_visible_iso, write_contact
 from engine.schematic.reader import decode_schem_cells
 from pipeline.stages import noop, run_stage_cli
 
-SCHEM = BUILDS_PROD
+SCHEM = BUILDS_SCHEM
 CATALOG = BUILD_CATALOG
 
 
@@ -34,20 +34,20 @@ def run(*, logger=None, progress=None):
     progress = progress or noop
     with open(CATALOG, encoding="utf-8") as fh:
         catalog = json.load(fh)
-    os.makedirs(BUILDS_PROD, exist_ok=True)
+    os.makedirs(BUILDS_RENDERS, exist_ok=True)
 
     images = []
     keys = sorted(catalog)
     total = len(keys) * 2 + 1
     for index, key in enumerate(keys, start=1):
         im = render_cells_visible_iso(assemble(key, catalog[key]))
-        out = os.path.join(BUILDS_PROD, f"{key}.png")
+        out = os.path.join(BUILDS_RENDERS, f"{key}.png")
         im.save(out)
         images.append((key, out))
         logger(f"saved {out} ({im.width}x{im.height})")
         progress(index, total, key)
 
-    contact = os.path.join(BUILDS_PROD, "_contact_sheet.png")
+    contact = os.path.join(BUILDS_RENDERS, "_contact_sheet.png")
     write_contact(
         images,
         contact,

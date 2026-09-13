@@ -111,7 +111,7 @@ python tools/clear_cache.py
 Pipeline stages can be run from their script paths in a checkout, for example:
 
 ```bash
-python src/pipeline/04_city/construct.py --seed 5
+python src/pipeline/04_city/stage.py --seed 5
 ```
 
 Use `MC_CITY_*` environment overrides through `pipeline.services` for in-process

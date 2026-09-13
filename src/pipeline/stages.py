@@ -36,24 +36,30 @@ PIPELINE_DEPENDENCY_MODULES = (
 )
 
 ORDERED_STAGE_SPECS = (
-    StageSpec("roads_simulation", "pipeline.01_roads.simulation"),
-    StageSpec("roads_extract", "pipeline.01_roads.extract"),
-    StageSpec("roads_render", "pipeline.01_roads.render"),
-    StageSpec("builds_simulation", "pipeline.02_builds.simulation"),
-    StageSpec("builds_extract", "pipeline.02_builds.extract"),
-    StageSpec("builds_render", "pipeline.02_builds.render"),
-    StageSpec("grid_simulation", "pipeline.03_grid.simulation"),
-    StageSpec("grid_construct", "pipeline.03_grid.construct"),
-    StageSpec("grid_render", "pipeline.03_grid.render"),
-    StageSpec("city_simulation", "pipeline.04_city.simulation"),
-    StageSpec("city_construct", "pipeline.04_city.construct"),
-    StageSpec("city_render", "pipeline.04_city.render"),
-    StageSpec("world_export", "pipeline.05_world.world"),
+    StageSpec("roads", "pipeline.01_roads.stage"),
+    StageSpec("builds", "pipeline.02_builds.stage"),
+    StageSpec("preview", "pipeline.03_preview.stage"),
+    StageSpec("city", "pipeline.04_city.stage"),
+    StageSpec("world", "pipeline.05_world.stage"),
+)
+
+PIPELINE_INTERNAL_MODULES = (
+    "pipeline.01_roads.extract",
+    "pipeline.01_roads.render",
+    "pipeline.02_builds.extract",
+    "pipeline.02_builds.render",
+    "pipeline.03_preview.roads",
+    "pipeline.03_preview.builds",
+    "pipeline.03_preview.grid",
+    "pipeline.03_preview.city",
+    "pipeline.04_city.construct",
+    "pipeline.04_city.render",
+    "pipeline.05_world.export",
 )
 
 STAGES = {spec.key: spec for spec in ORDERED_STAGE_SPECS}
 PIPELINE_STAGE_MODULES = tuple(spec.module for spec in ORDERED_STAGE_SPECS)
-RELOAD_ORDER = (*PIPELINE_DEPENDENCY_MODULES, *PIPELINE_STAGE_MODULES)
+RELOAD_ORDER = (*PIPELINE_DEPENDENCY_MODULES, *PIPELINE_INTERNAL_MODULES, *PIPELINE_STAGE_MODULES)
 
 
 def stage_module(stage_key: str) -> str:

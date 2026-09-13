@@ -14,7 +14,7 @@ if __package__ in (None, ""):
     sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
 from config.algo import DEFAULT_SEED, FINE as DEFAULT_FINE
-from config.path import BUILD_CATALOG, CITY_PROD, GRID_PROD
+from config.path import BUILD_CATALOG, CITY_SCHEM
 from config.render import CITY_ANCHOR_BLOCK, CITY_GROUND_Y
 from config.world import DATA_VERSION
 from engine.schematic.building import assemble
@@ -31,7 +31,6 @@ from engine.core.road_network import CELL, gen_networks, make_size
 from engine.schematic.road import build as build_road_grid
 from engine.schematic.road import load_fillers
 from engine.schematic.road import load_ground_fill_tile
-from engine.schematic.reader import decode_schem
 from engine.schematic.transform import rot_tile, translate_block_entities
 from engine.schematic.writer import write_sponge_schem_grid
 from pipeline.stages import noop, run_stage_cli
@@ -42,13 +41,8 @@ PLAYER_ANCHOR_MARGIN = 1
 
 
 def _resolve_fine(seed, fine):
-    """Pick the fine-cell grid edge, inferring it from a saved grid schematic when unset."""
-    if fine is not None:
-        return fine
-    grid_path = os.path.join(GRID_PROD, f"seed_{seed}.schem")
-    if os.path.exists(grid_path):
-        return decode_schem(grid_path)[0] // BLOCKS_PER_CELL
-    return DEFAULT_FINE
+    """Pick the fine-cell grid edge, falling back to the configured default."""
+    return DEFAULT_FINE if fine is None else fine
 
 
 def _plan_placements(seed, network, size):
@@ -291,7 +285,7 @@ def run(*, seed=DEFAULT_SEED, fine=None, out=None, no_ground_fill=False, logger=
     def _step(n, label):
         progress(n, 8, label)
 
-    out = out or os.path.join(CITY_PROD, f"seed_{seed}.schem")
+    out = out or os.path.join(CITY_SCHEM, f"seed_{seed}.schem")
     fine = _resolve_fine(seed, fine)
     size = make_size(fine)
 
@@ -322,7 +316,7 @@ def run(*, seed=DEFAULT_SEED, fine=None, out=None, no_ground_fill=False, logger=
     ground_fill_tile = None if no_ground_fill else load_ground_fill_tile()
     if not no_ground_fill and ground_fill_tile is None:
         raise FileNotFoundError(
-            "missing road ground-fill asset 18 in artifacts/roads/production; run road extraction first"
+            "missing road ground-fill asset 18 in artifacts/01_roads/schem; run Stage 1 first"
         )
     filler_top = max((_seat_y(ground_y, tile.ground_offset) + tile.height for tile in fillers), default=0)
     ground_fill_top = (

@@ -14,7 +14,7 @@ if __package__ in (None, ""):
     sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
 from config.algo import DEFAULT_SEED, FINE as DEFAULT_FINE
-from config.path import BUILDS_SIM, CITY_SIM, ROADS_SIM
+from config.path import PREVIEW_BUILDS, PREVIEW_CITY, PREVIEW_ROADS
 from config.render import CITY_GROUND_FILL_RGBA
 from engine.core.city_layout import (
     FACE_K,
@@ -29,7 +29,7 @@ from engine.core.road_network import CELL, compose, gen_networks, load_assets, m
 from engine.schematic.road import FILL_TOKEN
 from pipeline.stages import noop, run_stage_cli
 
-BUILDS = BUILDS_SIM
+BUILDS = PREVIEW_BUILDS
 _FONTS = {}
 
 
@@ -49,7 +49,7 @@ def font(size):
 def load_build_asset(key):
     path = os.path.join(BUILDS, f"{key}.png")
     if not os.path.exists(path):
-        raise FileNotFoundError(f"missing build asset {path}; run `python -m pipeline.02_builds.simulation` first")
+        raise FileNotFoundError(f"missing build asset {path}; run `python -m pipeline.03_preview.stage` first")
     with Image.open(path) as image:
         return image.convert("RGBA")
 
@@ -92,8 +92,8 @@ def fill_lots(road_cells, size):
 
 
 def load_fill_assets():
-    """Top-down fill-prop tiles produced by `pipeline.01_roads.simulation`."""
-    paths = sorted(glob.glob(os.path.join(ROADS_SIM, f"*{FILL_TOKEN}*.png")))
+    """Top-down fill-prop tiles produced by Stage 3's road preview helper."""
+    paths = sorted(glob.glob(os.path.join(PREVIEW_ROADS, f"*{FILL_TOKEN}*.png")))
     assets = []
     for path in paths:
         with Image.open(path) as image:
@@ -137,7 +137,7 @@ def render(net, placements, out, preview, fillers=None, rng=None):
 
 def run(*, seed=DEFAULT_SEED, fine=DEFAULT_FINE, preview=0, out=None, logger=None):
     logger = logger or noop
-    out = out or os.path.join(CITY_SIM, f"seed_{seed}.png")
+    out = out or os.path.join(PREVIEW_CITY, f"seed_{seed}.png")
     os.makedirs(os.path.dirname(out), exist_ok=True)
 
     size = make_size(fine, even=True)

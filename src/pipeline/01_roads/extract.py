@@ -10,7 +10,7 @@ from pathlib import Path
 if __package__ in (None, ""):
     sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
-from config.path import ROADS_PROD
+from config.path import ROADS_SCHEM
 from config.world import BUILD_MARKER_Y_RANGE, DATA_VERSION, ROAD_BOX
 from engine.world.anvil_world_reader import World
 from engine.world.marker_extract import detect_marker_assets, extract_cuboid, iter_signs
@@ -20,7 +20,7 @@ from pipeline.stages import noop, run_stage_cli
 (START_XYZ, END_XYZ) = ROAD_BOX.as_tuple()
 X0, Y0, Z0 = START_XYZ
 X1, Y1, Z1 = END_XYZ
-OUT = ROADS_PROD
+OUT = ROADS_SCHEM
 
 
 @lru_cache(maxsize=1)

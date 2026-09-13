@@ -93,28 +93,10 @@ class PreviewTab(QtWidgets.QWidget, AlgoTabMixin, WeightedTaskMixin):
         run_state = self.controls.current_state()
         tasks = [
             (
-                services.ROADS_SIMULATION,
-                "Preparing road pieces",
+                services.PREVIEW,
+                "Generating previews",
                 common.PREVIEW_PROGRESS_WEIGHTS[0][1],
-                lambda: services.run_roads_simulation_stage(env_overrides=env),
-            ),
-            (
-                services.BUILDS_SIMULATION,
-                "Preparing building pieces",
-                common.PREVIEW_PROGRESS_WEIGHTS[1][1],
-                lambda: services.run_builds_simulation_stage(env_overrides=env),
-            ),
-            (
-                services.GRID_SIMULATION,
-                "Generating avenue layout",
-                common.PREVIEW_PROGRESS_WEIGHTS[2][1],
-                lambda: services.run_grid_simulation_stage(seed, fine, env_overrides=env),
-            ),
-            (
-                services.CITY_SIMULATION,
-                "Placing buildings",
-                common.PREVIEW_PROGRESS_WEIGHTS[3][1],
-                lambda: services.run_city_simulation_stage(seed, fine, env_overrides=env),
+                lambda: services.run_preview_stage(seed, fine, env_overrides=env),
             ),
         ]
         self._run_weighted_tasks(

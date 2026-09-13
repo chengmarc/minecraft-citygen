@@ -10,19 +10,19 @@ from pathlib import Path
 if __package__ in (None, ""):
     sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
-from config.path import ROADS_PROD
+from config.path import ROADS_RENDERS, ROADS_SCHEM
 from config.render import ROAD_ASSET_ISO_BLOCK_H, ROAD_ASSET_ISO_TILE_H, ROAD_ASSET_ISO_TILE_W
 from engine.render.isometric import render_cells_visible_iso, write_contact
 from engine.schematic.reader import decode_schem_cells
 from pipeline.stages import noop, run_stage_cli
 
-SCHEM = ROADS_PROD
+SCHEM = ROADS_SCHEM
 
 
 def run(*, logger=None, progress=None):
     logger = logger or noop
     progress = progress or noop
-    os.makedirs(ROADS_PROD, exist_ok=True)
+    os.makedirs(ROADS_RENDERS, exist_ok=True)
     images = []
     paths = sorted(glob.glob(os.path.join(SCHEM, "*.schem")))
     total = len(paths) * 2 + 1
@@ -34,13 +34,13 @@ def run(*, logger=None, progress=None):
             tile_h=ROAD_ASSET_ISO_TILE_H,
             block_h=ROAD_ASSET_ISO_BLOCK_H,
         )
-        out = os.path.join(ROADS_PROD, name + ".png")
+        out = os.path.join(ROADS_RENDERS, name + ".png")
         im.save(out)
         images.append((name, out))
         logger(f"saved {out} ({im.width}x{im.height})")
         progress(index, total, name)
 
-    contact = os.path.join(ROADS_PROD, "_contact_sheet.png")
+    contact = os.path.join(ROADS_RENDERS, "_contact_sheet.png")
     write_contact(
         images,
         contact,

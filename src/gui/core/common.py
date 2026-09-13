@@ -12,8 +12,8 @@ import sys
 from config import algo
 from config.algo import DEFAULT_SEED
 from config.path import (
-    ARTIFACTS, BUILDS_PROD, CITY_PROD, CITY_SIM,
-    GRID_SIM, GUI, ROOT, ROADS_PROD, SAVES,
+    ARTIFACTS, BUILDS_RENDERS, CITY_RENDERS, PREVIEW_CITY,
+    PREVIEW_GRID, GUI, ROOT, ROADS_RENDERS, SAVES,
 )
 from config.world import BUILD_TYPES, ROAD_BOX, SAVE
 from config.models import BlockRegion, BuildRegion
@@ -32,8 +32,8 @@ ROOT_DIR = ROOT
 ICON_DIR = os.path.join(GUI, "icons")
 CONFIG_DIR = os.path.join(ROOT_DIR, "src", "config")
 APP_ICON_PATH = os.path.join(ICON_DIR, "app-icon.png")
-ROAD_CONTACT_SHEET = os.path.join(ROADS_PROD, "_contact_sheet.png")
-BUILD_CONTACT_SHEET = os.path.join(BUILDS_PROD, "_contact_sheet.png")
+ROAD_CONTACT_SHEET = os.path.join(ROADS_RENDERS, "_contact_sheet.png")
+BUILD_CONTACT_SHEET = os.path.join(BUILDS_RENDERS, "_contact_sheet.png")
 
 APP_WIDTH = 1366
 APP_HEIGHT = 768
@@ -93,10 +93,7 @@ CLEARANCE_OPTIONS = {
 }
 
 PREVIEW_PROGRESS_WEIGHTS = [
-    ("pipeline.01_roads.simulation", 15),
-    ("pipeline.02_builds.simulation", 20),
-    ("pipeline.03_grid.simulation", 30),
-    ("pipeline.04_city.simulation", 35),
+    ("pipeline.03_preview.stage", 100),
 ]
 
 # Per-step weights for the Generation-tab progress bar. The Generate button runs
@@ -149,15 +146,15 @@ def format_stage_status(step, total_steps, module, annotation=""):
 
 
 def grid_preview_path(seed):
-    return os.path.join(GRID_SIM, f"seed_{seed}_preview.png")
+    return os.path.join(PREVIEW_GRID, f"seed_{seed}.png")
 
 
 def city_preview_path(seed):
-    return os.path.join(CITY_SIM, f"seed_{seed}.png")
+    return os.path.join(PREVIEW_CITY, f"seed_{seed}.png")
 
 
 def city_render_path(seed):
-    return os.path.join(CITY_PROD, f"seed_{seed}.png")
+    return os.path.join(CITY_RENDERS, f"seed_{seed}.png")
 
 
 def extracted_assets_ready():
@@ -384,7 +381,7 @@ def clear_preview_cache():
 
 
 def clear_pipeline_artifacts():
-    """Wipe every pipeline artifact but keep exported worlds (saves/).
+    """Wipe every pipeline artifact but keep exported worlds (05_world/saves/).
 
     Shared by app launch and switching worlds so both start from the same clean
     slate; only the standalone worlds under saves/ survive.
@@ -394,9 +391,20 @@ def clear_pipeline_artifacts():
     keep = os.path.normpath(SAVES)
     for entry in os.listdir(ARTIFACTS):
         path = os.path.join(ARTIFACTS, entry)
-        if os.path.normpath(path) == keep:
+        normalized = os.path.normpath(path)
+        if normalized == keep:
             continue
         if os.path.isdir(path):
-            shutil.rmtree(path, ignore_errors=True)
+            if keep.startswith(normalized + os.sep):
+                for child in os.listdir(path):
+                    child_path = os.path.join(path, child)
+                    if os.path.normpath(child_path) == keep:
+                        continue
+                    if os.path.isdir(child_path):
+                        shutil.rmtree(child_path, ignore_errors=True)
+                    else:
+                        _remove_file(child_path)
+            else:
+                shutil.rmtree(path, ignore_errors=True)
         else:
             _remove_file(path)

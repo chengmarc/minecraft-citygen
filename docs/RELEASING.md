@@ -42,7 +42,7 @@ python packaging/build_windows_release.py --clean
 - Extraction tab opens and accepts a world path
 - Preview completes successfully
 - Generate completes successfully (city `.schem`, isometric render, and exported world)
-- the exported world appears under `artifacts/saves/` and "Copy World" opens that folder
+- the exported world appears under `artifacts/05_world/saves/` and "Copy World" opens that folder
 - the exported world loads in Minecraft and drops the player standing on the city
 - installer uninstall works cleanly
 

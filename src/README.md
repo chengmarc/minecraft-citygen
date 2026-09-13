@@ -21,20 +21,15 @@ tree.
 
 ## High-Level Model
 
-CityGen produces two parallel outputs from the same source assets:
-
-- **simulation** — fast PNG previews for iteration
-- **production** — real Sponge `.schem` output plus isometric renders for
-  Minecraft use, plus a ready-to-play copied source world
-
-Placement logic is shared between the two; only the rendered representation
-differs. The project flow runs in five numbered stages:
+CityGen runs one numbered pipeline from source assets to a playable exported
+world. Preview images are generated in the same sequence as an iteration step;
+they are not a separate parallel pipeline. The project flow runs in five stages:
 
 ```text
-01 roads   -> road assets            (extract from world)
-02 builds  -> building assets + catalog (extract from world)
-03 grid    -> generated road network  (seed -> network)
-04 city    -> roads + placed buildings (final assembly)
+01 roads   -> road assets + road asset render
+02 builds  -> building assets + catalog + build asset render
+03 preview -> generated road-layout and city-layout PNG previews
+04 city    -> final city schematic + isometric city render
 05 world   -> copied source save with generated city regions
 ```
 
@@ -68,7 +63,7 @@ defined by `CELL = 9` in [config/algo.py](config/algo.py). `buildings.json`
   vertically aligned gold/diamond pairs control whether the asset is exported as
   a whole schematic or `bottom`/`middle`/`top` pieces.
 - Footprints snap to the fine-cell grid; no freeform placement.
-- Simulation previews are layout-accurate stand-ins, not production-faithful
+- Stage 3 previews are layout-accurate stand-ins, not production-faithful
   visuals.
 
 Treat CityGen as a structured city *assembler*, not a fully general procedural
@@ -105,7 +100,7 @@ removes generated artifacts/build caches when you need a clean local run.
 - The road network is two layered Manhattan systems: big coarse avenues plus
   small fine streets.
 - Buildings are placed on the fine grid in two passes: type-2 first, then type-1.
-- Simulation and production share layout logic but render different assets.
+- Preview and city construction share layout logic but render different assets.
 - `buildings.json` is the bridge between extraction and placement.
 - World export copies the source save, replaces its overworld region files, and
   recenters spawn/player onto the generated city.

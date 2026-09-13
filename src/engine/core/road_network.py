@@ -2,7 +2,7 @@
 Road grid library -- shared helper for the grid pipelines.
 
 Holds network generation, the tile catalogue, and 2D vector compositing used by
-`pipeline.03_grid.simulation` (sim) and `pipeline.03_grid.construct` (prod).
+`pipeline.03_preview.grid` (preview) and `pipeline.04_city.construct` (city).
 Not a driver itself; import it, optionally call `make_size()`, then call
 `gen_networks()` / `compose()`.
 
@@ -41,9 +41,9 @@ from PIL import Image
 
 from config.algo import (CELL, FINE as DEFAULT_FINE, GAP_MIXED, GAP_BIG, GAP_SMALL, PAD_BIG, PAD_SMALL,
                                 N_BIG_CORNERS, N_SMALL_CORNERS, N_BIG_TEES, N_SMALL_TEES)
-from config.path import ROADS_SIM
+from config.path import PREVIEW_ROADS
 
-ASSET_DIR = ROADS_SIM   # sim pipeline: vector tiles
+ASSET_DIR = PREVIEW_ROADS   # Stage 3 preview road tiles
 
 # direction unit vectors, clockwise from north
 DIRS = {"N": (0, -1), "E": (1, 0), "S": (0, 1), "W": (-1, 0)}
