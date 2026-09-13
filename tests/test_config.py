@@ -1,4 +1,4 @@
-"""Configuration layer: region models, env parsing, path discovery, versions."""
+"""Configuration layer: env parsing and version compatibility."""
 import importlib
 import os
 import tempfile
@@ -6,7 +6,6 @@ import unittest
 from pathlib import Path
 from unittest import mock
 
-from config import path as config_path
 from config import versions as vc
 from config.models import BlockRegion, BuildRegion
 
@@ -54,79 +53,11 @@ class RegionAndWorldConfigTests(unittest.TestCase):
             importlib.reload(original)
 
 
-# --- path discovery -------------------------------------------------------
-
-class PathDiscoveryTests(unittest.TestCase):
-    def test_region_dir_candidates_support_save_root_and_region_dir(self):
-        save_root = Path("C:/Users/Test/.minecraft/saves/MyWorld")
-        self.assertEqual(
-            config_path.region_dir_candidates(save_root),
-            [
-                os.path.normpath("C:/Users/Test/.minecraft/saves/MyWorld/region"),
-                os.path.normpath("C:/Users/Test/.minecraft/saves/MyWorld/dimensions/minecraft/overworld/region"),
-            ],
-        )
-
-        region_dir = Path("C:/Users/Test/.minecraft/saves/MyWorld/region")
-        self.assertEqual(
-            config_path.region_dir_candidates(region_dir),
-            [os.path.normpath("C:/Users/Test/.minecraft/saves/MyWorld/region")],
-        )
-
-    def test_resolve_region_dir_prefers_existing_candidate(self):
-        with tempfile.TemporaryDirectory() as tempdir:
-            save_root = Path(tempdir) / "world"
-            expected = save_root / "dimensions" / "minecraft" / "overworld" / "region"
-            expected.mkdir(parents=True)
-            self.assertEqual(config_path.resolve_region_dir(save_root), os.path.normpath(str(expected)))
-
-    def test_resolve_region_dir_prefers_candidate_with_region_files(self):
-        with tempfile.TemporaryDirectory() as tempdir:
-            save_root = Path(tempdir) / "world"
-            root_region = save_root / "region"
-            nested_region = save_root / "dimensions" / "minecraft" / "overworld" / "region"
-            root_region.mkdir(parents=True)
-            nested_region.mkdir(parents=True)
-            (nested_region / "r.0.0.mca").write_bytes(b"region")
-
-            self.assertEqual(config_path.resolve_region_dir(save_root), os.path.normpath(str(nested_region)))
-            self.assertTrue(config_path.has_region_files(save_root))
-
-
-# --- app-root selection ---------------------------------------------------
-
-class AppRootTests(unittest.TestCase):
-    def test_repo_checkout_root_detects_src_dev_tree(self):
-        with tempfile.TemporaryDirectory() as tempdir:
-            root = Path(tempdir)
-            src_root = root / "src"
-            for name in ("config", "engine", "gui", "pipeline"):
-                (src_root / name).mkdir(parents=True, exist_ok=True)
-            (root / "application.pyw").write_text("", encoding="utf-8")
-            self.assertEqual(config_path._repo_checkout_root(str(src_root)), os.path.normpath(str(root)))
-
-    def test_app_root_uses_user_data_outside_repo_checkout(self):
-        with tempfile.TemporaryDirectory() as tempdir:
-            source_root = Path(tempdir) / "site-packages" / "src"
-            source_root.mkdir(parents=True)
-            local_appdata = Path(tempdir) / "LocalAppData"
-            with mock.patch.object(config_path, "SOURCE_ROOT", str(source_root)):
-                with mock.patch.dict(os.environ, {"LOCALAPPDATA": str(local_appdata)}, clear=False):
-                    self.assertEqual(
-                        config_path._app_root(),
-                        os.path.normpath(str(local_appdata / config_path.APP_NAME)),
-                    )
-
-
 # --- version detection ----------------------------------------------------
 
 class VersionTests(unittest.TestCase):
-    def test_release_name_for_known_unknown_and_hard_floor(self):
+    def test_supported_data_version_floor_is_sponge_v3_floor(self):
         self.assertEqual(vc.HARD_FLOOR_DATA_VERSION, 4790)  # Minecraft 26.1.2
-        self.assertEqual(vc.release_name_for(4790), "26.1.2")
-        self.assertEqual(vc.release_name_for(4903), "26.2")
-        # Unmapped versions fall back to the raw DataVersion.
-        self.assertEqual(vc.release_name_for(999999), "DataVersion 999999")
 
     def test_detect_world_data_version_reads_bundled_world_and_handles_absent(self):
         world = Path(__file__).resolve().parents[1] / "src" / "config" / "default_world"

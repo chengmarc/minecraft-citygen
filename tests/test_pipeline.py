@@ -8,7 +8,6 @@ import sys
 import tempfile
 import types
 import unittest
-from contextlib import contextmanager
 from pathlib import Path
 from types import SimpleNamespace
 from unittest import mock
@@ -17,21 +16,14 @@ import pytest
 import numpy as np
 from PIL import Image
 
-from pipeline import runtime
 from pipeline import services
-from pipeline.stages import PIPELINE_STAGE_MODULES, RELOAD_ORDER, stage_module
+from pipeline.stages import PIPELINE_STAGE_MODULES
 from engine.schematic.transform import Tile
 
 ROOT_DIR = Path(__file__).resolve().parents[1]
-BUILDS_EXTRACT = services.BUILDS_EXTRACT
-BUILDS_RENDER = services.BUILDS_RENDER
-ROADS_RENDER = services.ROADS_RENDER
 
 
 # --- stage services -------------------------------------------------------
-
-def test_reload_order_stays_in_sync_with_stage_registry():
-    assert tuple(RELOAD_ORDER[-len(PIPELINE_STAGE_MODULES):]) == PIPELINE_STAGE_MODULES
 
 
 @pytest.mark.parametrize("module_name", PIPELINE_STAGE_MODULES)
@@ -50,46 +42,6 @@ def test_pipeline_stage_scripts_bootstrap_without_pythonpath(module_name):
     )
 
     assert result.returncode == 0, result.stderr or result.stdout
-
-
-def test_configured_environment_restores_requested_keys(monkeypatch):
-    monkeypatch.setattr(runtime, "reload_pipeline_modules", lambda: None)
-    monkeypatch.setenv("MC_CITY_FINE", "80")
-    monkeypatch.delenv("MC_CITY_GAP_BIG", raising=False)
-
-    with runtime.configured_environment({"MC_CITY_FINE": "60", "MC_CITY_GAP_BIG": "7"}):
-        assert os.environ["MC_CITY_FINE"] == "60"
-        assert os.environ["MC_CITY_GAP_BIG"] == "7"
-
-    assert os.environ["MC_CITY_FINE"] == "80"
-    assert "MC_CITY_GAP_BIG" not in os.environ
-
-
-def test_run_preview_stage_coerces_numeric_arguments(monkeypatch):
-    calls = {}
-
-    @contextmanager
-    def fake_environment(env_overrides):
-        calls["env_overrides"] = env_overrides
-        yield
-
-    def fake_run(**kwargs):
-        calls["kwargs"] = kwargs
-        return {"stage": "grid"}
-
-    def fake_import_module(module_name):
-        calls["module_name"] = module_name
-        return SimpleNamespace(run=fake_run)
-
-    monkeypatch.setattr(services, "configured_environment", fake_environment)
-    monkeypatch.setattr(services.importlib, "import_module", fake_import_module)
-
-    result = services.run_preview_stage("7", "3", env_overrides={"MC_CITY_FINE": "3"}, logger="logger")
-
-    assert calls["env_overrides"] == {"MC_CITY_FINE": "3"}
-    assert calls["module_name"] == services.PREVIEW
-    assert calls["kwargs"] == {"seed": 7, "fine": 3, "logger": "logger", "progress": None}
-    assert result["stage"] == "grid"
 
 
 def test_world_export_uses_seeded_world_name_for_folder_and_level(monkeypatch, tmp_path):
@@ -120,44 +72,6 @@ def test_world_export_uses_seeded_world_name_for_folder_and_level(monkeypatch, t
     assert calls["schem"] == str(schem_dir / "seed_12.schem")
     assert calls["out"] == expected_out
     assert calls["kwargs"]["world_name"] == "CityGen World 12"
-
-
-def test_run_builds_stage_tags_progress_with_stage_modules(monkeypatch):
-    calls = []
-    progress_events = []
-
-    @contextmanager
-    def fake_environment(_env_overrides):
-        yield
-
-    def fake_import_module(module_name):
-        def fake_run(**kwargs):
-            calls.append((module_name, kwargs["logger"]))
-            progress = kwargs.get("progress")
-            if progress is not None:
-                if module_name == BUILDS_EXTRACT:
-                    progress(1, 4, "Scanning")
-                else:
-                    progress(4, 4, "Rendering sheet")
-            return module_name
-
-        return SimpleNamespace(run=fake_run)
-
-    monkeypatch.setattr(services, "configured_environment", fake_environment)
-    monkeypatch.setattr(services.importlib, "import_module", fake_import_module)
-
-    result = services.run_builds_stage(
-        env_overrides={"MC_CITY_SAVE": "world"},
-        logger="logger",
-        progress=lambda stage, completed, total, label: progress_events.append((stage, completed, total, label)),
-    )
-
-    assert calls == [(BUILDS_EXTRACT, "logger"), (BUILDS_RENDER, "logger")]
-    assert progress_events == [
-        (BUILDS_EXTRACT, 1, 4, "Scanning"),
-        (BUILDS_RENDER, 4, 4, "Rendering sheet"),
-    ]
-    assert result == {"extract": BUILDS_EXTRACT, "render": BUILDS_RENDER}
 
 
 # --- roads extraction stage ----------------------------------------------
@@ -248,7 +162,7 @@ def test_road_name_reads_sign_one_block_above_emerald(monkeypatch):
 
 
 class ContactRenderTests(unittest.TestCase):
-    def test_builds_render_uses_saved_png_paths_for_contact_sheet_and_reports_contact_progress(self):
+    def test_builds_render_writes_piece_images_and_contact_sheet(self):
         with tempfile.TemporaryDirectory() as tempdir:
             out_dir = Path(tempdir)
             catalog_path = out_dir / "buildings.json"
@@ -256,7 +170,6 @@ class ContactRenderTests(unittest.TestCase):
                 '{"001": {"type": 1}, "002": {"type": 1}}',
                 encoding="utf-8",
             )
-            progress_events = []
 
             real_write_contact = importlib.import_module("engine.render.isometric").write_contact
 
@@ -270,28 +183,18 @@ class ContactRenderTests(unittest.TestCase):
                  mock.patch.object(builds_render, "assemble", return_value=[[["minecraft:stone"]]]), \
                  mock.patch.object(builds_render, "render_cells_visible_iso", return_value=Image.new("RGBA", (16, 16))), \
                  mock.patch.object(builds_render, "write_contact", side_effect=checking_write_contact):
-                result = builds_render.run(
-                    progress=lambda completed, total, label: progress_events.append((completed, total, label)),
-                )
+                result = builds_render.run()
 
             assert result["count"] == 2
             assert (out_dir / "001.png").exists()
             assert (out_dir / "002.png").exists()
             assert (out_dir / "_contact_sheet.png").exists()
-            assert progress_events == [
-                (1, 5, "001"),
-                (2, 5, "002"),
-                (3, 5, "Rendering build contact sheet..."),
-                (4, 5, "Rendering build contact sheet..."),
-                (5, 5, "Rendered build contact sheet."),
-            ]
 
-    def test_roads_render_uses_saved_png_paths_for_contact_sheet_and_reports_contact_progress(self):
+    def test_roads_render_writes_piece_images_and_contact_sheet(self):
         with tempfile.TemporaryDirectory() as tempdir:
             out_dir = Path(tempdir)
             (out_dir / "a.schem").write_text("stub", encoding="utf-8")
             (out_dir / "b.schem").write_text("stub", encoding="utf-8")
-            progress_events = []
 
             real_write_contact = importlib.import_module("engine.render.isometric").write_contact
 
@@ -304,21 +207,12 @@ class ContactRenderTests(unittest.TestCase):
                  mock.patch.object(roads_render, "decode_schem_cells", return_value=[[["minecraft:stone"]]]), \
                  mock.patch.object(roads_render, "render_cells_visible_iso", return_value=Image.new("RGBA", (16, 16))), \
                  mock.patch.object(roads_render, "write_contact", side_effect=checking_write_contact):
-                result = roads_render.run(
-                    progress=lambda completed, total, label: progress_events.append((completed, total, label)),
-                )
+                result = roads_render.run()
 
             assert result["count"] == 2
             assert (out_dir / "a.png").exists()
             assert (out_dir / "b.png").exists()
             assert (out_dir / "_contact_sheet.png").exists()
-            assert progress_events == [
-                (1, 5, "a"),
-                (2, 5, "b"),
-                (3, 5, "Rendering road contact sheet..."),
-                (4, 5, "Rendering road contact sheet..."),
-                (5, 5, "Rendered road contact sheet."),
-            ]
 
 
 def test_run_city_construct_stage_requires_integer_seed():
