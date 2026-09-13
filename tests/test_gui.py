@@ -82,6 +82,7 @@ class ConfigureStyleTests(unittest.TestCase):
         self.assertIn("margin-left: 8px", self.app.styleSheet())
         self.assertIn("font-size: 10pt", self.app.styleSheet())
         self.assertIn("font-size: 16pt", self.app.styleSheet())
+        self.assertIn("stop:1 #b8cbe6", self.app.styleSheet())
         self.assertIn("min-width: 106px", self.app.styleSheet())
         self.assertIn("QToolButton#advancedToggle:checked:hover", self.app.styleSheet())
         self.app.setStyleSheet("")  # avoid leaking into other tests
@@ -210,7 +211,8 @@ class ExtractionTabTests(unittest.TestCase):
         self.assertEqual(tab.road_group.pick_button.sizePolicy().horizontalPolicy(), QtWidgets.QSizePolicy.Expanding)
         self.assertEqual(tab.road_group.pick_button.minimumHeight(), tab.road_group.pick_button.sizeHint().height())
         self.assertEqual(tab.road_group.pick_button.maximumHeight(), tab.road_group.pick_button.sizeHint().height())
-        self.assertIsNotNone(tab.road_group.pick_button.graphicsEffect())
+        self.assertIsNone(tab.road_group.pick_button.graphicsEffect())
+        self.assertIsNotNone(tab.extract_button.graphicsEffect())
         tab.close()
 
     def test_extract_button_requires_valid_world(self):
@@ -264,7 +266,7 @@ class ExtractionTabTests(unittest.TestCase):
             tab = ExtractionTab(_GuiOwner(extraction=state))
         self.assertEqual(tab.browse_button.minimumHeight(), tab.world_edit.sizeHint().height())
         self.assertEqual(tab.browse_button.maximumHeight(), tab.world_edit.sizeHint().height())
-        self.assertIsNotNone(tab.browse_button.graphicsEffect())
+        self.assertIsNone(tab.browse_button.graphicsEffect())
         tab.close()
 
     def test_browse_placeholder_keeps_contact_sheet_paths_for_success_reload(self):
@@ -524,6 +526,9 @@ class SavedGuiConfigTests(unittest.TestCase):
             self.assertIn(key, extraction)
         self.assertEqual(len(extraction["road"]["start"]), 3)
         self.assertEqual(len(extraction["road"]["end"]), 3)
+        self.assertEqual(extraction["road"], {"start": [-80, 65, 16], "end": [-17, 75, 127]})
+        self.assertEqual(extraction["house"], {"start": [-320, 64, -176], "end": [-17, 65, -17]})
+        self.assertEqual(extraction["landmark"], {"start": [16, 64, -304], "end": [287, 65, 191]})
 
 
 if __name__ == "__main__":

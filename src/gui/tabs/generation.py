@@ -43,7 +43,7 @@ class GenerationTab(QtWidgets.QWidget, AlgoTabMixin, ProgressMixin):
         layout.setSpacing(0)
         self.city_viewer = QtImageViewer(
             "Final City Render",
-            "Use Build City to create the schematic, the render, and the exported Minecraft world.",
+            "Build city to create the schematic, the render, and the exported Minecraft world.",
             self,
         )
         layout.addWidget(self.city_viewer, 1)

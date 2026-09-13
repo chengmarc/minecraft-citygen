@@ -30,9 +30,10 @@ COLOR = {
     "accent_soft": "#dbe8ff",
     "accent_border": "#7ea2ee",
     "accent_disabled": "#b8c4d6",
-    "button": "#dce8f7",
-    "button_hover": "#cdddf3",
-    "button_pressed": "#b9cee9",
+    "button_top": "#d2dfef",
+    "button": "#b8cbe6",
+    "button_hover": "#aac0df",
+    "button_pressed": "#98b0d2",
     "disabled": "#e4e9f1",
     "disabled_text": "#ffffff",
     "success_bg": "#dff4e8",
@@ -164,7 +165,7 @@ QPushButton {{
     padding: 8px 16px;
     min-height: {CONTROL_HEIGHT}px;
     background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
-        stop:0 {COLOR["surface_panel"]}, stop:1 {COLOR["button"]});
+        stop:0 {COLOR["button_top"]}, stop:1 {COLOR["button"]});
     color: {COLOR["accent_pressed"]};
     font-size: {NORMAL_BUTTON_FONT_SIZE}pt;
     font-weight: 700;
@@ -310,7 +311,7 @@ QToolButton#advancedToggle {{
     padding: 8px 16px;
     min-height: {CONTROL_HEIGHT}px;
     background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
-        stop:0 {COLOR["surface_panel"]}, stop:1 {COLOR["button"]});
+        stop:0 {COLOR["button_top"]}, stop:1 {COLOR["button"]});
     color: {COLOR["accent_pressed"]};
     font-weight: 700;
 }}
@@ -369,6 +370,9 @@ def style_button(button) -> None:
     is_big_action = button.objectName() == "primaryButton" or button.property("bigButton")
     if is_big_action:
         button.setFixedWidth(BIG_BUTTON_WIDTH)
+    if not is_big_action:
+        button.setGraphicsEffect(None)
+        return
     shadow = QtWidgets.QGraphicsDropShadowEffect(button)
     shadow.setBlurRadius(18)
     shadow.setOffset(0, 4)
