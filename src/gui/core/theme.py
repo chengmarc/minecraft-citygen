@@ -4,193 +4,375 @@ from __future__ import annotations
 
 import os
 
-from PySide6 import QtGui, QtWidgets
+from PySide6 import QtCore, QtGui, QtWidgets
 
 from gui.core import common
 
-# Brand palette. ACCENT_RGB is the accent (#0d6efd) used throughout
-# APP_STYLESHEET, kept here for constructing QColor objects in code.
-ACCENT_RGB = (13, 110, 253)
+# Design tokens for the Qt widget stylesheet. Keep colors semantic so the QSS
+# reads like a small design system instead of a pile of one-off hex values.
+COLOR = {
+    "app_bg": "#edf2f7",
+    "content_bg": "#e5edf7",
+    "surface": "#ffffff",
+    "surface_alt": "#f8fbff",
+    "surface_panel": "#eef5fc",
+    "surface_muted": "#d9e3ef",
+    "surface_sunken": "#cfdae8",
+    "viewer_bg": "#d7e4f2",
+    "border": "#d1dbe8",
+    "border_strong": "#a7b6c8",
+    "text": "#17202b",
+    "text_soft": "#334155",
+    "muted": "#657386",
+    "accent": "#1f5ed5",
+    "accent_hover": "#184fb8",
+    "accent_pressed": "#123d91",
+    "accent_soft": "#dbe8ff",
+    "accent_border": "#7ea2ee",
+    "accent_disabled": "#b8c4d6",
+    "button": "#dce8f7",
+    "button_hover": "#cdddf3",
+    "button_pressed": "#b9cee9",
+    "disabled": "#e4e9f1",
+    "disabled_text": "#ffffff",
+    "success_bg": "#dff4e8",
+    "success_border": "#afdcbc",
+    "success_text": "#1c6a45",
+}
+
+RADIUS = {
+    "sm": 4,
+    "md": 6,
+    "lg": 8,
+}
+
+CONTROL_HEIGHT = 22
+BIG_CONTROL_HEIGHT = 34
+NORMAL_BUTTON_FONT_SIZE = 10
+BIG_BUTTON_FONT_SIZE = 16
+STATUS_CHIP_FONT_SIZE = 11
+ICON_BUTTON_FONT_SCALE = 1.8
+
+# ACCENT_RGB is kept for non-QSS drawing code such as selection overlays.
+ACCENT_RGB = (36, 87, 197)
 SHADOW_RGB = (23, 32, 43)
 BIG_BUTTON_WIDTH = 158
 
-APP_STYLESHEET = """
-QMainWindow, QWidget {
-    background: #f4f5f8;
-    color: #17202b;
-}
-QLabel {
+APP_STYLESHEET = f"""
+QMainWindow, QDialog {{
+    background: {COLOR["app_bg"]};
+    color: {COLOR["text"]};
+    selection-background-color: {COLOR["accent"]};
+    selection-color: white;
+}}
+
+QWidget {{
+    background: {COLOR["app_bg"]};
+    color: {COLOR["text"]};
+}}
+
+QLabel {{
     background: transparent;
-}
-QTabWidget::pane {
-    border: 1px solid #d9dfeb;
-    border-radius: 0;
-    background: #fbfcfe;
-}
-QTabBar::tab {
-    background: #e8edf7;
-    color: #2a3340;
-    padding: 10px 18px;
+}}
+
+QTabWidget {{
+    background: {COLOR["app_bg"]};
+}}
+
+QTabBar {{
+    background: {COLOR["app_bg"]};
+}}
+
+QTabWidget::pane {{
+    border: 0;
+    border-radius: {RADIUS["lg"]}px;
+    background: {COLOR["content_bg"]};
+}}
+
+QTabBar::tab {{
+    background: {COLOR["surface_muted"]};
+    color: {COLOR["text_soft"]};
+    border: 1px solid {COLOR["border"]};
+    border-bottom-color: {COLOR["surface_muted"]};
+    border-top-left-radius: {RADIUS["md"]}px;
+    border-top-right-radius: {RADIUS["md"]}px;
+    padding: 10px 20px;
     margin-right: 6px;
-    border-top-left-radius: 0;
-    border-top-right-radius: 0;
-}
-QTabBar::tab:selected {
-    background: #ffffff;
-    color: #0d6efd;
-}
-QGroupBox {
-    border: 1px solid #d9dfeb;
-    border-radius: 0;
-    margin-top: 12px;
+    font-weight: 650;
+}}
+
+QTabBar::tab:first {{
+    margin-left: 8px;
+}}
+
+QTabBar::tab:hover {{
+    background: {COLOR["accent_soft"]};
+    color: {COLOR["accent_pressed"]};
+}}
+
+QTabBar::tab:selected {{
+    background: {COLOR["surface"]};
+    color: {COLOR["accent"]};
+    border-color: {COLOR["border"]};
+    border-bottom-color: {COLOR["surface"]};
+    font-weight: 750;
+}}
+
+QGroupBox {{
+    border: 1px solid {COLOR["border"]};
+    border-radius: {RADIUS["lg"]}px;
+    margin-top: 14px;
     font-weight: 600;
-    background: #ffffff;
-}
-QGroupBox::title {
+    background: {COLOR["surface_panel"]};
+}}
+
+QGroupBox::title {{
     subcontrol-origin: margin;
     left: 12px;
     padding: 0 4px;
-}
-QLineEdit, QComboBox, QSpinBox {
-    border: 1px solid #cfd7e6;
-    border-radius: 0;
+    color: {COLOR["text_soft"]};
+    background: {COLOR["surface_panel"]};
+}}
+
+QLineEdit, QComboBox, QSpinBox {{
+    border: 1px solid {COLOR["border_strong"]};
+    border-radius: {RADIUS["md"]}px;
     padding: 8px 8px;
     min-height: 22px;
-    background: #ffffff;
-}
-QLineEdit[readOnly="true"] {
-    background: #e7ebf0;
-    color: #556170;
-}
-QPushButton {
+    background: {COLOR["surface"]};
+    color: {COLOR["text"]};
+}}
+
+QLineEdit:focus, QComboBox:focus, QSpinBox:focus {{
+    border: 2px solid {COLOR["accent"]};
+    background: {COLOR["surface"]};
+}}
+
+QLineEdit[readOnly="true"] {{
+    background: {COLOR["surface_panel"]};
+    color: {COLOR["muted"]};
+}}
+
+QComboBox::drop-down {{
     border: 0;
-    border-radius: 0;
-    padding: 9px 14px;
-    background: #dde6f8;
-    color: #1e2b39;
-    font-weight: 600;
-}
-QPushButton:hover {
-    background: #d4def4;
-}
-QPushButton#primaryButton {
-    background: #0d6efd;
+    width: 26px;
+}}
+
+QPushButton {{
+    border: 1px solid {COLOR["border"]};
+    border-radius: {RADIUS["md"]}px;
+    padding: 8px 16px;
+    min-height: {CONTROL_HEIGHT}px;
+    background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+        stop:0 {COLOR["surface_panel"]}, stop:1 {COLOR["button"]});
+    color: {COLOR["accent_pressed"]};
+    font-size: {NORMAL_BUTTON_FONT_SIZE}pt;
+    font-weight: 700;
+}}
+
+QPushButton:hover {{
+    background: {COLOR["button_hover"]};
+    border-color: {COLOR["accent_border"]};
+}}
+
+QPushButton:pressed {{
+    background: {COLOR["button_pressed"]};
+}}
+
+QPushButton:focus {{
+    border: 2px solid {COLOR["accent"]};
+}}
+
+QPushButton#primaryButton,
+QPushButton[bigButton="true"] {{
+    background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+        stop:0 #3778ee, stop:1 {COLOR["accent"]});
+    border-color: {COLOR["accent"]};
     color: white;
-}
-QPushButton#primaryButton:hover {
-    background: #0a5fd7;
-}
-QPushButton:disabled {
-    background: #e3e8f0;
-    color: #ffffff;
-}
-QPushButton#primaryButton:disabled {
-    background: #c3ccd9;
-    color: #ffffff;
-}
-QProgressBar {
-    border: 1px solid #d3dbeb;
-    border-radius: 0;
-    background: #eef2f8;
+    font-size: {BIG_BUTTON_FONT_SIZE}pt;
+    min-height: {BIG_CONTROL_HEIGHT}px;
+}}
+
+QPushButton#primaryButton:hover,
+QPushButton[bigButton="true"]:hover {{
+    background: {COLOR["accent_hover"]};
+    border-color: {COLOR["accent_hover"]};
+}}
+
+QPushButton#primaryButton:pressed,
+QPushButton[bigButton="true"]:pressed {{
+    background: {COLOR["accent_pressed"]};
+    border-color: {COLOR["accent_pressed"]};
+}}
+
+QPushButton:disabled {{
+    background: {COLOR["disabled"]};
+    border-color: {COLOR["disabled"]};
+    color: {COLOR["disabled_text"]};
+}}
+
+QPushButton#primaryButton:disabled,
+QPushButton[bigButton="true"]:disabled {{
+    background: {COLOR["accent_disabled"]};
+    border-color: {COLOR["accent_disabled"]};
+    color: {COLOR["disabled_text"]};
+}}
+
+QSlider::groove:horizontal {{
+    height: 6px;
+    border-radius: 3px;
+    background: {COLOR["surface_sunken"]};
+}}
+
+QSlider::handle:horizontal {{
+    width: 16px;
+    height: 16px;
+    margin: -6px 0;
+    border-radius: 8px;
+    background: {COLOR["accent"]};
+}}
+
+QSlider::handle:horizontal:hover {{
+    background: {COLOR["accent_hover"]};
+}}
+
+QProgressBar {{
+    border: 1px solid {COLOR["border"]};
+    border-radius: {RADIUS["sm"]}px;
+    background: {COLOR["surface_muted"]};
     height: 12px;
     text-align: center;
-}
-QProgressBar::chunk {
-    border-radius: 0;
-    background: #0d6efd;
-}
-QLabel#statusLabel {
-    color: #4d5a69;
-}
-QLabel#sectionIntro {
-    color: #314052;
+}}
+
+QProgressBar::chunk {{
+    border-radius: {RADIUS["sm"]}px;
+    background: {COLOR["accent"]};
+}}
+
+QLabel#statusLabel {{
+    color: {COLOR["muted"]};
+}}
+
+QLabel#sectionIntro {{
+    color: {COLOR["text_soft"]};
     padding: 10px 0 6px 0;
-}
-QLabel#subtleLabel, QLabel#summaryLabel {
-    color: #556170;
-}
-QGroupBox#extractionAreaCard {
-    border: 1px solid #d9dfeb;
-    border-radius: 0;
+}}
+
+QLabel#subtleLabel, QLabel#summaryLabel {{
+    color: {COLOR["muted"]};
+}}
+
+QGroupBox#extractionAreaCard {{
+    border: 1px solid {COLOR["border"]};
+    border-radius: {RADIUS["lg"]}px;
     margin-top: 0;
-    background: #ffffff;
-}
-QGroupBox#extractionAreaCard::title {
+    background: {COLOR["surface_alt"]};
+}}
+
+QGroupBox#extractionAreaCard::title {{
     subcontrol-origin: margin;
     left: -9999px;
     width: 0;
     color: transparent;
     padding: 0;
-}
-QLabel#cardTitle {
+}}
+
+QLabel#cardTitle {{
     font-size: 14px;
     font-weight: 700;
-}
-QLabel#cardDetail {
-    color: #556170;
-}
-QLabel#statusChip {
-    min-width: 88px;
-    padding: 4px 10px;
-    border-radius: 0;
-    border: 1px solid #d3dbeb;
-    background: #eef2f8;
-    color: #556170;
+    color: {COLOR["text"]};
+}}
+
+QLabel#cardDetail {{
+    color: {COLOR["muted"]};
+}}
+
+QLabel#statusChip {{
+    min-width: 106px;
+    padding: 5px 12px;
+    border-radius: {RADIUS["sm"]}px;
+    border: 1px solid {COLOR["border"]};
+    background: {COLOR["surface_muted"]};
+    color: {COLOR["muted"]};
+    font-size: {STATUS_CHIP_FONT_SIZE}pt;
     font-weight: 700;
-}
-QLabel#statusChip[selected="true"] {
-    border-color: #b7e2c8;
-    background: #dff4e8;
-    color: #1a6a44;
-}
-QToolButton#advancedToggle {
-    border: 0;
-    border-radius: 0;
-    padding: 9px 14px;
-    background: #dde6f8;
-    color: #1e2b39;
-    font-weight: 600;
-}
-QToolButton#advancedToggle:hover {
-    background: #d4def4;
-}
-QToolButton#advancedToggle:checked {
-    background: #dde6f8;
-    color: #1e2b39;
-}
-QToolButton#advancedToggle:checked:hover {
-    background: #d4def4;
-}
-QToolButton#advancedToggle:disabled {
-    background: #e3e8f0;
-    color: #ffffff;
-}
-QFrame#qtImageViewer {
-    border: 1px solid #d9dfeb;
-    border-radius: 0;
-    background: #e3e8f0;
-}
-QWidget#viewerShell {
-    background: #e3e8f0;
-}
-QLabel#viewerTitle {
+}}
+
+QLabel#statusChip[selected="true"] {{
+    border-color: {COLOR["success_border"]};
+    background: {COLOR["success_bg"]};
+    color: {COLOR["success_text"]};
+}}
+
+QToolButton#advancedToggle {{
+    border: 1px solid {COLOR["border"]};
+    border-radius: {RADIUS["md"]}px;
+    padding: 8px 16px;
+    min-height: {CONTROL_HEIGHT}px;
+    background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+        stop:0 {COLOR["surface_panel"]}, stop:1 {COLOR["button"]});
+    color: {COLOR["accent_pressed"]};
+    font-weight: 700;
+}}
+
+QToolButton#advancedToggle:hover {{
+    background: {COLOR["button_hover"]};
+    border-color: {COLOR["accent_border"]};
+}}
+
+QToolButton#advancedToggle:pressed {{
+    background: {COLOR["button_pressed"]};
+}}
+
+QToolButton#advancedToggle:checked {{
+    background: {COLOR["accent_soft"]};
+    border-color: {COLOR["accent"]};
+    color: {COLOR["accent"]};
+}}
+
+QToolButton#advancedToggle:checked:hover {{
+    background: {COLOR["surface_alt"]};
+}}
+
+QToolButton#advancedToggle:disabled {{
+    background: {COLOR["disabled"]};
+    border-color: {COLOR["disabled"]};
+    color: {COLOR["disabled_text"]};
+}}
+
+QFrame#qtImageViewer {{
+    border: 1px solid {COLOR["border"]};
+    border-radius: {RADIUS["lg"]}px;
+    background: {COLOR["viewer_bg"]};
+}}
+
+QWidget#viewerShell {{
+    background: {COLOR["viewer_bg"]};
+    border-radius: {RADIUS["md"]}px;
+}}
+
+QLabel#viewerTitle {{
     font-size: 14px;
     font-weight: 700;
-}
-QLabel#viewerPlaceholder {
-    color: #4d5a69;
+    color: {COLOR["text"]};
+}}
+
+QLabel#viewerPlaceholder {{
+    color: {COLOR["muted"]};
     padding: 16px;
-}
+}}
 """
 
 
 def style_button(button) -> None:
-    if button.objectName() == "primaryButton" or button.property("bigButton"):
+    button.setCursor(QtCore.Qt.PointingHandCursor)
+    is_big_action = button.objectName() == "primaryButton" or button.property("bigButton")
+    if is_big_action:
         button.setFixedWidth(BIG_BUTTON_WIDTH)
     shadow = QtWidgets.QGraphicsDropShadowEffect(button)
     shadow.setBlurRadius(18)
     shadow.setOffset(0, 4)
-    shadow.setColor(QtGui.QColor(*SHADOW_RGB, 80))
+    shadow.setColor(QtGui.QColor(*SHADOW_RGB, 58))
     button.setGraphicsEffect(shadow)
 
 
@@ -212,7 +394,7 @@ def apply_button_icon(button, icon_name: str) -> None:
         base = font.pointSizeF() if font.pointSizeF() > 0 else float(font.pointSize())
         button.setProperty("_baseFontSize", base)
     if base > 0:
-        font.setPointSizeF(base * 1.5)
+        font.setPointSizeF(base * ICON_BUTTON_FONT_SCALE)
     font.setBold(True)
     button.setFont(font)
 
@@ -236,8 +418,3 @@ def configure_app_style(app, *, style_name: str | None = None, use_custom_theme:
         return
 
     app.setStyleSheet(APP_STYLESHEET)
-    families = set(QtGui.QFontDatabase.families())
-    for family in ("SF Pro Text", "Segoe UI Variable", "Segoe UI", "Inter", "Arial"):
-        if family in families:
-            app.setFont(QtGui.QFont(family, 10))
-            break
