@@ -38,6 +38,7 @@ BUILD_CONTACT_SHEET = os.path.join(BUILDS_RENDERS, "_contact_sheet.png")
 APP_WIDTH = 1366
 APP_HEIGHT = 768
 STARTUP_ERROR_LOG = os.path.join(ROOT_DIR, "application_startup_error.log")
+PROGRESS_TIMINGS_PATH = os.path.join(ARTIFACTS, "progress_timings.json")
 LEGACY_SAVED_GUI_CONFIG_PATH = os.path.join(ROOT_DIR, "citygen_saved_config.json")
 SAVED_GUI_CONFIG_PATH = os.path.join(CONFIG_DIR, "citygen.json")
 
@@ -92,30 +93,13 @@ CLEARANCE_OPTIONS = {
     "Very Sparse": "7",
 }
 
-PREVIEW_PROGRESS_WEIGHTS = [
-    ("pipeline.03_preview.stage", 100),
-]
-
 # Per-step weights for the Generation-tab progress bar. The Generate button runs
 # three stages back to back: construct the .schem, render the isometric PNG, then
 # export the standalone world. Eight entries cover the eight city_construct work
 # segments (steps 0→1 through 7→8); the other two cover the render and world stages.
-GENERATION_CONSTRUCT_WEIGHTS = [3, 4, 2, 8, 18, 12, 8, 8]   # sum = 63
-GENERATION_RENDER_WEIGHT = 37
-GENERATION_WORLD_WEIGHT = 20
-
-# Per-stage weights for the extraction-tab progress bar, in run order: roads
-# extract, roads render, builds extract, builds render. The scanning-heavy
-# extract passes carry more weight than the contact-sheet render passes. Used as
-# one continuous weighted bar so it advances across all four stages instead of
-# resetting per stage.
-EXTRACT_STAGE_WEIGHTS = [20, 10, 45, 25]   # sum = 100
-
-# A stage can run several work phases with different totals (e.g. a fast "scan"
-# then a slow "export"). Each phase fills this fraction of the segment room still
-# left, so a later phase always has room to keep advancing smoothly instead of
-# freezing at the segment top.
-EXTRACT_PHASE_FILL = 0.7
+GENERATION_CONSTRUCT_WEIGHTS = [1, 1, 1, 1, 22, 4, 4, 16]   # sum = 50
+GENERATION_RENDER_WEIGHT = 5
+GENERATION_WORLD_WEIGHT = 45
 
 # How far the animated ("fake") progress creeps into the current step's segment
 # before stalling to wait for the stage to actually finish.
@@ -344,6 +328,23 @@ def save_saved_gui_config(config):
     os.makedirs(os.path.dirname(SAVED_GUI_CONFIG_PATH), exist_ok=True)
     with open(SAVED_GUI_CONFIG_PATH, "w", encoding="utf-8") as fh:
         json.dump(config, fh, indent=2)
+
+
+def save_progress_timing(section, payload):
+    """Persist latest progress timing diagnostics for weight tuning."""
+    os.makedirs(os.path.dirname(PROGRESS_TIMINGS_PATH), exist_ok=True)
+    data = {}
+    if os.path.exists(PROGRESS_TIMINGS_PATH):
+        try:
+            with open(PROGRESS_TIMINGS_PATH, "r", encoding="utf-8") as fh:
+                loaded = json.load(fh)
+            if isinstance(loaded, dict):
+                data = loaded
+        except (OSError, ValueError):
+            data = {}
+    data[section] = payload
+    with open(PROGRESS_TIMINGS_PATH, "w", encoding="utf-8") as fh:
+        json.dump(data, fh, indent=2)
 
 
 def validate_seed(seed):

@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-import threading
-
 from PySide6 import QtCore, QtWidgets
 
 from gui.core import common
@@ -76,65 +74,3 @@ class ProgressMixin:
     def _cancel_progress_animation(self):
         if self._progress_timer.isActive():
             self._progress_timer.stop()
-
-
-class WeightedTaskMixin(ProgressMixin):
-    def _run_weighted_tasks(
-        self,
-        *,
-        button,
-        tasks,
-        start_status,
-        fail_title,
-        fail_status,
-        complete_status,
-        on_success,
-        success_payload,
-        status_formatter=None,
-        restore_button=None,
-    ):
-        self._start_progress()
-        button.setEnabled(False)
-        signals = WorkerSignals(self)
-        signals.status.connect(self.set_status)
-        signals.begin_progress.connect(self._begin_script_progress)
-        signals.set_progress.connect(self._complete_script_progress)
-        signals.success.connect(lambda payload: (on_success(payload), self._finish_progress(), self.set_status(complete_status)))
-        signals.failed.connect(self._show_failure)
-
-        def _restore():
-            self._stop_progress()
-            if restore_button is None:
-                button.setEnabled(True)
-            else:
-                restore_button()
-
-        signals.finished.connect(_restore)
-
-        def worker():
-            try:
-                completed_weight = 0.0
-                total_tasks = len(tasks)
-                signals.status.emit(start_status)
-                for index, (module, annotation, weight, func) in enumerate(tasks, start=1):
-                    status_text = (
-                        status_formatter(index, total_tasks, module, annotation)
-                        if status_formatter is not None
-                        else common.format_stage_status(index, total_tasks, module, annotation)
-                    )
-                    signals.begin_progress.emit(
-                        completed_weight,
-                        completed_weight + weight,
-                        status_text,
-                    )
-                    func()
-                    completed_weight += weight
-                    signals.set_progress.emit(completed_weight)
-            except Exception as exc:  # boundary: surface any background failure to the UI
-                signals.failed.emit(fail_title, str(exc).strip() or fail_status, fail_status)
-            else:
-                signals.success.emit(success_payload)
-            finally:
-                signals.finished.emit()
-
-        threading.Thread(target=worker, daemon=True).start()

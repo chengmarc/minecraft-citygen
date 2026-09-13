@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import threading
+import time
 
 from PySide6 import QtWidgets
 
@@ -13,17 +14,41 @@ from pipeline import services
 from gui.core import common
 from gui.core.theme import apply_button_icon, style_button
 from gui.core.workers import ProgressMixin, WorkerSignals
-from gui.tabs._progress import EXTRACT_STAGE_STEPS, PROGRESS_BAR_SCALE
+from gui.tabs._progress import PROGRESS_BAR_SCALE
 from gui.widgets.qt_viewer import QtImageViewer
 from gui.widgets.region_dialog import RegionSelectorDialog
 from gui.widgets.widgets import ExtractionAreaGroup
 
+EXTRACT_PHASE_WEIGHTS = [
+    (services.ROADS_EXTRACT, "scan", 3),
+    (services.ROADS_EXTRACT, "export", 1),
+    (services.ROADS_RENDER, "render", 1),
+    (services.BUILDS_EXTRACT, "scan", 80),
+    (services.BUILDS_EXTRACT, "export", 10),
+    (services.BUILDS_RENDER, "render", 5),
+]
+
 EXTRACT_STATUS_LABELS = {
-    services.ROADS_EXTRACT: "Extracting road pieces",
-    services.ROADS_RENDER: "Building road contact sheet",
-    services.BUILDS_EXTRACT: "Extracting building pieces",
-    services.BUILDS_RENDER: "Building asset sheet",
+    (services.ROADS_EXTRACT, "scan"): "Scanning road region",
+    (services.ROADS_EXTRACT, "export"): "Extracting road pieces",
+    (services.ROADS_RENDER, "render"): "Building road contact sheet",
+    (services.BUILDS_EXTRACT, "scan"): "Scanning build regions",
+    (services.BUILDS_EXTRACT, "export"): "Extracting building pieces",
+    (services.BUILDS_RENDER, "render"): "Building asset sheet",
 }
+
+_EXTRACT_PHASE_RANGES = {}
+_offset = 0
+for _stage, _phase, _weight in EXTRACT_PHASE_WEIGHTS:
+    _EXTRACT_PHASE_RANGES[(_stage, _phase)] = (_offset, _offset + _weight)
+    _offset += _weight
+EXTRACT_PHASE_TOTAL = _offset
+
+
+def _extract_phase(stage, label):
+    if stage in (services.ROADS_EXTRACT, services.BUILDS_EXTRACT):
+        return "scan" if (label or "").startswith("Scanning") else "export"
+    return "render"
 
 
 def coalesce_pipeline_progress(emit, *, buckets=100):
@@ -35,7 +60,7 @@ def coalesce_pipeline_progress(emit, *, buckets=100):
         total_i = max(int(total), 1)
         completed_i = max(0, min(int(completed), total_i))
         bucket = buckets if completed_i >= total_i else int((completed_i * buckets) / total_i)
-        key = (stage, total_i, bucket)
+        key = (stage, _extract_phase(stage, label), total_i, bucket)
         if key == last_key:
             return
         last_key = key
@@ -49,9 +74,9 @@ class ExtractionTab(QtWidgets.QWidget, ProgressMixin):
         super().__init__(owner)
         self.owner = owner
         self._init_progress_mixin()
-        self._extract_phase = None
-        self._phase_base = 0.0
-        self._phase_end = 0.0
+        self._extract_timing_started_at = None
+        self._extract_timing_last = None
+        self._extract_timing_events = []
         state = owner.get_saved_config_section("extraction") or common.default_extraction_tab_config()
         common.clear_preview_cache()
 
@@ -324,33 +349,109 @@ class ExtractionTab(QtWidgets.QWidget, ProgressMixin):
             self._save_state()
             self._refresh_extract_readiness()
 
-    def _on_pipeline_progress(self, stage, completed, total, _label):
-        step = EXTRACT_STAGE_STEPS[stage]
-        weights = common.EXTRACT_STAGE_WEIGHTS
-        scale = float(sum(weights))
-        seg_start = sum(weights[:step - 1]) / scale * PROGRESS_BAR_SCALE
-        seg_end = sum(weights[:step]) / scale * PROGRESS_BAR_SCALE
+    def _record_extract_timing(self, stage, phase, completed, total, label):
+        now = time.perf_counter()
+        if self._extract_timing_started_at is None:
+            self._extract_timing_started_at = now
 
+        completed_i = int(completed)
+        total_i = int(total)
+        label = label or ""
+        key = (stage, phase, completed_i, total_i, label)
+        last = self._extract_timing_last
+        if last is not None and last["key"] != key:
+            self._extract_timing_events.append(
+                {
+                    "stage": last["stage"],
+                    "phase": last["phase"],
+                    "completed": last["completed"],
+                    "total": last["total"],
+                    "label": last["label"],
+                    "seconds": round(now - last["time"], 4),
+                }
+            )
+        if last is None or last["key"] != key:
+            self._extract_timing_last = {
+                "key": key,
+                "stage": stage,
+                "phase": phase,
+                "completed": completed_i,
+                "total": total_i,
+                "label": label,
+                "time": now,
+            }
+
+    def _finish_extract_timing(self):
+        now = time.perf_counter()
+        last = self._extract_timing_last
+        if last is not None:
+            self._extract_timing_events.append(
+                {
+                    "stage": last["stage"],
+                    "phase": last["phase"],
+                    "completed": last["completed"],
+                    "total": last["total"],
+                    "label": last["label"],
+                    "seconds": round(now - last["time"], 4),
+                }
+            )
+        started_at = self._extract_timing_started_at or now
+        phase_seconds = {}
+        for event in self._extract_timing_events:
+            if event["stage"] == services.ROADS_EXTRACT:
+                prefix = "roads"
+            elif event["stage"] == services.ROADS_RENDER:
+                prefix = "roads"
+            elif event["stage"] == services.BUILDS_EXTRACT:
+                prefix = "builds"
+            elif event["stage"] == services.BUILDS_RENDER:
+                prefix = "builds"
+            else:
+                continue
+            key = f"{prefix}_{event['phase']}"
+            phase_seconds[key] = phase_seconds.get(key, 0.0) + event["seconds"]
+        payload = {
+            "total_seconds": round(now - started_at, 4),
+            "phase_seconds": {key: round(value, 4) for key, value in phase_seconds.items()},
+            "weights": {
+                f"{stage}:{phase}": weight
+                for stage, phase, weight in EXTRACT_PHASE_WEIGHTS
+            },
+            "events": self._extract_timing_events,
+        }
+        common.save_progress_timing("extraction", payload)
+        self._extract_timing_started_at = None
+        self._extract_timing_last = None
+        self._extract_timing_events = []
+
+    def _on_pipeline_progress(self, stage, completed, total, label):
+        phase = _extract_phase(stage, label)
+        self._record_extract_timing(stage, phase, completed, total, label)
+        phase_start, phase_end = _EXTRACT_PHASE_RANGES[(stage, phase)]
+        seg_start = phase_start / EXTRACT_PHASE_TOTAL * PROGRESS_BAR_SCALE
+        seg_end = phase_end / EXTRACT_PHASE_TOTAL * PROGRESS_BAR_SCALE
+        seg_span = seg_end - seg_start
+        total_f = float(total) if total > 0 else 1.0
+        completed_f = max(0.0, min(float(completed), total_f))
+        frac = completed_f / total_f
+        target = seg_start + frac * seg_span
+        status = EXTRACT_STATUS_LABELS.get((stage, phase), "Extracting assets")
         self._cancel_progress_animation()
 
-        if self._extract_phase != (stage, total):
-            self._extract_phase = (stage, total)
-            self._phase_base = max(float(self.progress_bar.value()), seg_start)
-            self._phase_end = self._phase_base + (seg_end - self._phase_base) * common.EXTRACT_PHASE_FILL
-
-        frac = max(0.0, min(float(completed) / float(total or 1), 1.0))
         if frac >= 1.0:
             self.progress_bar.setValue(int(round(seg_end)))
             self._progress_soft_target = float(seg_end)
-            self.set_status(EXTRACT_STATUS_LABELS.get(stage, "Extracting assets"))
+            self.set_status(status)
             return
-        target = self._phase_base + (self._phase_end - self._phase_base) * frac
+
         milestone = max(self.progress_bar.value(), int(round(target)))
         self.progress_bar.setValue(milestone)
-        ceiling = self._phase_end if frac < 1.0 else seg_end
-        self._progress_soft_target = milestone + (ceiling - milestone) * common.SCRIPT_PROGRESS_HEADROOM
+
+        next_frac = min((completed_f + 1.0) / total_f, 1.0)
+        next_target = seg_start + next_frac * seg_span
+        self._progress_soft_target = milestone + (next_target - milestone) * common.SCRIPT_PROGRESS_HEADROOM
         self._progress_timer.start(common.SCRIPT_PROGRESS_TICK_MS)
-        self.set_status(EXTRACT_STATUS_LABELS.get(stage, "Extracting assets"))
+        self.set_status(status)
 
     def _run_extract_all(self):
         try:
@@ -381,7 +482,9 @@ class ExtractionTab(QtWidgets.QWidget, ProgressMixin):
         self.progress_bar.setRange(0, PROGRESS_BAR_SCALE)
         self.progress_bar.setValue(0)
         self._progress_soft_target = 0.0
-        self._extract_phase = None
+        self._extract_timing_started_at = time.perf_counter()
+        self._extract_timing_last = None
+        self._extract_timing_events = []
 
         signals = WorkerSignals(self)
         run_context = {"succeeded": False}
@@ -421,6 +524,7 @@ class ExtractionTab(QtWidgets.QWidget, ProgressMixin):
     def _handle_extract_success(self, run_state):
         self.road_viewer.load_image(self.road_viewer.image_path)
         self.build_viewer.load_image(self.build_viewer.image_path)
+        self._finish_extract_timing()
         self._finish_progress()
         self.set_status("Extraction complete")
         if hasattr(self.owner, "mark_extraction_complete"):

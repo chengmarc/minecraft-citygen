@@ -3,19 +3,20 @@
 from __future__ import annotations
 
 import random
+import threading
 
 from PySide6 import QtWidgets
 
 from pipeline import services
 
 from gui.core import common
-from gui.core.workers import WeightedTaskMixin
+from gui.core.workers import ProgressMixin, WorkerSignals
 from gui.tabs._algo import AlgoTabMixin
 from gui.widgets.qt_viewer import QtImageViewer
 from gui.widgets.widgets import AlgoControlsWidget
 
 
-class PreviewTab(QtWidgets.QWidget, AlgoTabMixin, WeightedTaskMixin):
+class PreviewTab(QtWidgets.QWidget, AlgoTabMixin, ProgressMixin):
     legacy_state_sections = ("preview",)
     prerequisite_owner_method = "preview_prerequisite_met"
     ready_tooltip = "Generate a fast road and city layout preview."
@@ -67,6 +68,18 @@ class PreviewTab(QtWidgets.QWidget, AlgoTabMixin, WeightedTaskMixin):
         layout.addWidget(self.progress_bar)
         self.refresh_prerequisite_state()
 
+    def _on_pipeline_progress(self, _stage, completed, total, label):
+        total_f = float(total) if total > 0 else 1.0
+        completed_f = max(0.0, min(float(completed), total_f))
+        milestone = int(round(completed_f / total_f * self.progress_bar.maximum()))
+        self._cancel_progress_animation()
+        self.progress_bar.setValue(milestone)
+        if completed_f < total_f:
+            next_ms = int(round((completed_f + 1.0) / total_f * self.progress_bar.maximum()))
+            self._progress_soft_target = milestone + (next_ms - milestone) * 0.95
+            self._progress_timer.start(max(30, common.SCRIPT_PROGRESS_TICK_MS // 2))
+        self.set_status(label or "Generating previews")
+
     def _randomize_seed_and_run_preview(self):
         current_seed = self.controls.seed_edit.text().strip()
         seed = str(random.randint(0, 2_147_483_647))
@@ -91,26 +104,35 @@ class PreviewTab(QtWidgets.QWidget, AlgoTabMixin, WeightedTaskMixin):
         if hasattr(self.owner, "begin_preview_run"):
             self.owner.begin_preview_run()
         run_state = self.controls.current_state()
-        tasks = [
-            (
-                services.PREVIEW,
-                "Generating previews",
-                common.PREVIEW_PROGRESS_WEIGHTS[0][1],
-                lambda: services.run_preview_stage(seed, fine, env_overrides=env),
-            ),
-        ]
-        self._run_weighted_tasks(
-            button=self.controls.action_button,
-            tasks=tasks,
-            start_status="Preparing preview",
-            fail_title="Preview failed",
-            fail_status="Preview failed",
-            complete_status="Preview ready",
-            on_success=self._load_previews,
-            success_payload=(seed, run_state),
-            status_formatter=lambda _index, _total, _module, annotation: annotation,
-            restore_button=self.refresh_prerequisite_state,
-        )
+
+        self._start_progress()
+        self.controls.action_button.setEnabled(False)
+        self.set_status("Preparing preview")
+
+        signals = WorkerSignals(self)
+        signals.pipeline_progress.connect(self._on_pipeline_progress)
+        signals.failed.connect(self._show_failure)
+        signals.success.connect(lambda payload: (
+            self._load_previews(payload),
+            self._finish_progress(),
+            self.set_status("Preview ready"),
+        ))
+        signals.finished.connect(lambda: (self._stop_progress(), self.refresh_prerequisite_state()))
+
+        def on_progress(stage, completed, total, label):
+            signals.pipeline_progress.emit(stage, float(completed), float(total), label or "")
+
+        def worker():
+            try:
+                services.run_preview_stage(seed, fine, env_overrides=env, progress=on_progress)
+            except Exception as exc:  # boundary: surface any background failure to the UI
+                signals.failed.emit("Preview failed", str(exc).strip() or "Preview failed", "Preview failed")
+            else:
+                signals.success.emit((seed, run_state))
+            finally:
+                signals.finished.emit()
+
+        threading.Thread(target=worker, daemon=True).start()
 
     def _load_previews(self, payload):
         seed, run_state = payload
