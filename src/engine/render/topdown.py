@@ -61,7 +61,7 @@ def render_topdown_preview(save_path, *, max_size=2048, on_progress=None):
             for cx in cx_range:
                 if world.is_chunk_empty(cx, cz):
                     continue
-                entries = world.top_solid_blocks(cx, cz)
+                entries = world.heightmap_surface_blocks(cx, cz)
                 tile = np.array(
                     [block_color(e[0]) if e is not None else BACKGROUND for e in entries],
                     dtype=np.uint8,
@@ -82,7 +82,7 @@ def render_topdown_preview(save_path, *, max_size=2048, on_progress=None):
                 if world.is_chunk_empty(*key):
                     empty_chunks.add(key)
                     continue
-                result = world.top_solid_block(wx, wz)
+                result = world.heightmap_surface_block(wx, wz)
                 if result is not None:
                     image[iz, ix] = block_color(result[0])
             if on_progress is not None:

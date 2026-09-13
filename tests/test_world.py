@@ -57,6 +57,64 @@ class AnvilWorldReaderTests(unittest.TestCase):
         world.load_chunk = lambda cx, cz: None
         self.assertIsNone(world.top_solid_block(0, 0))
 
+    def _pack_heightmap(self, heights, bits=9):
+        per_long = 64 // bits
+        longs = [0] * ((256 + per_long - 1) // per_long)
+        for index, height in enumerate(heights):
+            longs[index // per_long] |= int(height) << ((index % per_long) * bits)
+        return longs
+
+    def _heightmap_world(self, heights, palette, indexes=None, key="WORLD_SURFACE"):
+        chunk = {
+            "yPos": -4,
+            "sections": [{"Y": y} for y in range(-4, 20)],
+            "Heightmaps": {key: self._pack_heightmap(heights)},
+        }
+        world = object.__new__(World)
+        world.load_chunk = lambda cx, cz: chunk
+        world._section = lambda cx, cz, sy: (palette, indexes) if sy == 3 else ([{"Name": "minecraft:air"}], None)
+        return world
+
+    def test_heightmap_surface_block_uses_world_min_y_offset(self):
+        palette = [{"Name": "minecraft:air"}, {"Name": "minecraft:grass_block"}]
+        indexes = [0] * 4096
+        indexes[15 * 256] = 1  # raw 128 + min_y -64 - 1 -> y 63, local y 15 in section 3
+        world = self._heightmap_world([128] * 256, palette, indexes)
+
+        self.assertEqual(world.heightmap_surface_block(0, 0), ("minecraft:grass_block", 63, None))
+
+    def test_heightmap_surface_blocks_decodes_whole_chunk(self):
+        world = self._heightmap_world([128] * 256, [{"Name": "minecraft:grass_block"}])
+
+        entries = world.heightmap_surface_blocks(2, -1)
+
+        self.assertEqual(len(entries), 256)
+        self.assertEqual(entries[0], ("minecraft:grass_block", 63))
+        self.assertEqual(entries[255], ("minecraft:grass_block", 63))
+
+    def test_heightmap_surface_block_accepts_worldgen_surface_heightmap(self):
+        world = self._heightmap_world(
+            [128] * 256,
+            [{"Name": "minecraft:grass_block"}],
+            key="WORLD_SURFACE_WG",
+        )
+
+        self.assertEqual(world.heightmap_surface_block(0, 0), ("minecraft:grass_block", 63, None))
+
+    def test_heightmap_surface_block_returns_none_when_heightmap_missing(self):
+        chunk = {"yPos": -4, "sections": [{"Y": y} for y in range(-4, 20)]}
+        world = object.__new__(World)
+        world.load_chunk = lambda cx, cz: chunk
+
+        self.assertIsNone(world.heightmap_surface_block(0, 0))
+        self.assertEqual(world.heightmap_surface_blocks(0, 0), [None] * 256)
+
+    def test_heightmap_surface_block_returns_none_for_absent_chunk(self):
+        world = object.__new__(World)
+        world.load_chunk = lambda cx, cz: None
+
+        self.assertIsNone(world.heightmap_surface_block(0, 0))
+
     def test_block_positions_in_section_skips_decode_when_palette_has_no_target(self):
         world = object.__new__(World)
         world.load_chunk = lambda cx, cz: {
