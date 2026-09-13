@@ -11,22 +11,18 @@ from config.path import has_region_files
 from config.world import SAVE
 from pipeline import services
 
-from gui.core import common
+from gui.core import common, progress
 from gui.core.theme import apply_button_icon, style_button
 from gui.core.workers import ProgressMixin, WorkerSignals
-from gui.tabs._progress import PROGRESS_BAR_SCALE
 from gui.widgets.qt_viewer import QtImageViewer
 from gui.widgets.region_dialog import RegionSelectorDialog
 from gui.widgets.widgets import ExtractionAreaGroup
 
-EXTRACT_PHASE_WEIGHTS = [
-    (services.ROADS_EXTRACT, "scan", 3),
-    (services.ROADS_EXTRACT, "export", 1),
-    (services.ROADS_RENDER, "render", 1),
-    (services.BUILDS_EXTRACT, "scan", 80),
-    (services.BUILDS_EXTRACT, "export", 10),
-    (services.BUILDS_RENDER, "render", 5),
-]
+EXTRACT_PHASE_INDEX = {
+    (stage, phase): index
+    for index, (stage, phase, _weight) in enumerate(progress.EXTRACTION_PHASE_WEIGHTS)
+}
+EXTRACT_PHASE_WEIGHT_VALUES = [weight for _stage, _phase, weight in progress.EXTRACTION_PHASE_WEIGHTS]
 
 EXTRACT_STATUS_LABELS = {
     (services.ROADS_EXTRACT, "scan"): "Scanning road region",
@@ -36,14 +32,6 @@ EXTRACT_STATUS_LABELS = {
     (services.BUILDS_EXTRACT, "export"): "Extracting building pieces",
     (services.BUILDS_RENDER, "render"): "Building asset sheet",
 }
-
-_EXTRACT_PHASE_RANGES = {}
-_offset = 0
-for _stage, _phase, _weight in EXTRACT_PHASE_WEIGHTS:
-    _EXTRACT_PHASE_RANGES[(_stage, _phase)] = (_offset, _offset + _weight)
-    _offset += _weight
-EXTRACT_PHASE_TOTAL = _offset
-
 
 def _extract_phase(stage, label):
     if stage in (services.ROADS_EXTRACT, services.BUILDS_EXTRACT):
@@ -196,7 +184,7 @@ class ExtractionTab(QtWidgets.QWidget, ProgressMixin):
         self.status_label.setObjectName("statusLabel")
         layout.addWidget(self.status_label)
         self.progress_bar = QtWidgets.QProgressBar(self)
-        self.progress_bar.setRange(0, PROGRESS_BAR_SCALE)
+        self.progress_bar.setRange(0, progress.PROGRESS_BAR_SCALE)
         layout.addWidget(self.progress_bar)
 
         self._refresh_detected_version()
@@ -415,7 +403,7 @@ class ExtractionTab(QtWidgets.QWidget, ProgressMixin):
             "phase_seconds": {key: round(value, 4) for key, value in phase_seconds.items()},
             "weights": {
                 f"{stage}:{phase}": weight
-                for stage, phase, weight in EXTRACT_PHASE_WEIGHTS
+                for stage, phase, weight in progress.EXTRACTION_PHASE_WEIGHTS
             },
             "events": self._extract_timing_events,
         }
@@ -427,14 +415,22 @@ class ExtractionTab(QtWidgets.QWidget, ProgressMixin):
     def _on_pipeline_progress(self, stage, completed, total, label):
         phase = _extract_phase(stage, label)
         self._record_extract_timing(stage, phase, completed, total, label)
-        phase_start, phase_end = _EXTRACT_PHASE_RANGES[(stage, phase)]
-        seg_start = phase_start / EXTRACT_PHASE_TOTAL * PROGRESS_BAR_SCALE
-        seg_end = phase_end / EXTRACT_PHASE_TOTAL * PROGRESS_BAR_SCALE
-        seg_span = seg_end - seg_start
+        phase_index = EXTRACT_PHASE_INDEX[(stage, phase)]
+        seg_start, seg_end = progress.weighted_segment(
+            EXTRACT_PHASE_WEIGHT_VALUES,
+            phase_index,
+            progress.PROGRESS_BAR_SCALE,
+        )
         total_f = float(total) if total > 0 else 1.0
         completed_f = max(0.0, min(float(completed), total_f))
         frac = completed_f / total_f
-        target = seg_start + frac * seg_span
+        target = progress.weighted_item_milestone(
+            EXTRACT_PHASE_WEIGHT_VALUES,
+            phase_index,
+            completed_f,
+            total_f,
+            progress.PROGRESS_BAR_SCALE,
+        )
         status = EXTRACT_STATUS_LABELS.get((stage, phase), "Extracting assets")
         self._cancel_progress_animation()
 
@@ -447,10 +443,15 @@ class ExtractionTab(QtWidgets.QWidget, ProgressMixin):
         milestone = max(self.progress_bar.value(), int(round(target)))
         self.progress_bar.setValue(milestone)
 
-        next_frac = min((completed_f + 1.0) / total_f, 1.0)
-        next_target = seg_start + next_frac * seg_span
-        self._progress_soft_target = milestone + (next_target - milestone) * common.SCRIPT_PROGRESS_HEADROOM
-        self._progress_timer.start(common.SCRIPT_PROGRESS_TICK_MS)
+        next_target = progress.weighted_item_milestone(
+            EXTRACT_PHASE_WEIGHT_VALUES,
+            phase_index,
+            completed_f + 1.0,
+            total_f,
+            progress.PROGRESS_BAR_SCALE,
+        )
+        self._progress_soft_target = progress.soft_target(milestone, next_target, "extraction")
+        self._progress_timer.start(progress.creep_tick_ms("extraction"))
         self.set_status(status)
 
     def _run_extract_all(self):
@@ -479,7 +480,7 @@ class ExtractionTab(QtWidgets.QWidget, ProgressMixin):
         self._save_state()
         self.extract_button.setEnabled(False)
         self.set_status("Preparing extraction")
-        self.progress_bar.setRange(0, PROGRESS_BAR_SCALE)
+        self.progress_bar.setRange(0, progress.PROGRESS_BAR_SCALE)
         self.progress_bar.setValue(0)
         self._progress_soft_target = 0.0
         self._extract_timing_started_at = time.perf_counter()

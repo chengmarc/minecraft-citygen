@@ -9,7 +9,7 @@ from PySide6 import QtWidgets
 
 from pipeline import services
 
-from gui.core import common
+from gui.core import common, progress
 from gui.core.workers import ProgressMixin, WorkerSignals
 from gui.tabs._algo import AlgoTabMixin
 from gui.widgets.qt_viewer import QtImageViewer
@@ -68,16 +68,23 @@ class PreviewTab(QtWidgets.QWidget, AlgoTabMixin, ProgressMixin):
         layout.addWidget(self.progress_bar)
         self.refresh_prerequisite_state()
 
+    def _preview_milestone(self, completed):
+        return progress.weighted_milestone(
+            progress.PREVIEW_STEP_WEIGHTS,
+            completed,
+            self.progress_bar.maximum(),
+        )
+
     def _on_pipeline_progress(self, _stage, completed, total, label):
-        total_f = float(total) if total > 0 else 1.0
-        completed_f = max(0.0, min(float(completed), total_f))
-        milestone = int(round(completed_f / total_f * self.progress_bar.maximum()))
+        total_i = max(int(total), 1)
+        completed_i = max(0, min(int(completed), total_i))
+        milestone = self._preview_milestone(completed_i)
         self._cancel_progress_animation()
         self.progress_bar.setValue(milestone)
-        if completed_f < total_f:
-            next_ms = int(round((completed_f + 1.0) / total_f * self.progress_bar.maximum()))
-            self._progress_soft_target = milestone + (next_ms - milestone) * 0.95
-            self._progress_timer.start(max(30, common.SCRIPT_PROGRESS_TICK_MS // 2))
+        if completed_i < min(total_i, len(progress.PREVIEW_STEP_WEIGHTS)):
+            next_ms = self._preview_milestone(completed_i + 1)
+            self._progress_soft_target = progress.soft_target(milestone, next_ms, "preview")
+            self._progress_timer.start(progress.creep_tick_ms("preview"))
         self.set_status(label or "Generating previews")
 
     def _randomize_seed_and_run_preview(self):

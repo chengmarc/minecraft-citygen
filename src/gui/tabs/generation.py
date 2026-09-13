@@ -12,10 +12,9 @@ from config.path import SAVES
 from config.world import SAVE
 from pipeline import services
 
-from gui.core import common
+from gui.core import common, progress
 from gui.core.workers import ProgressMixin, WorkerSignals
 from gui.tabs._algo import AlgoTabMixin
-from gui.tabs._progress import PROGRESS_BAR_SCALE
 from gui.widgets.qt_viewer import QtImageViewer
 from gui.widgets.widgets import AlgoControlsWidget
 
@@ -67,7 +66,7 @@ class GenerationTab(QtWidgets.QWidget, AlgoTabMixin, ProgressMixin):
         self.status_label.setObjectName("statusLabel")
         layout.addWidget(self.status_label)
         self.progress_bar = QtWidgets.QProgressBar(self)
-        self.progress_bar.setRange(0, PROGRESS_BAR_SCALE)
+        self.progress_bar.setRange(0, progress.PROGRESS_BAR_SCALE)
         layout.addWidget(self.progress_bar)
         self.refresh_prerequisite_state()
 
@@ -149,9 +148,9 @@ class GenerationTab(QtWidgets.QWidget, AlgoTabMixin, ProgressMixin):
             "total_seconds": round(now - started_at, 4),
             "phase_seconds": {key: round(value, 4) for key, value in phase_seconds.items()},
             "weights": {
-                "construct": list(common.GENERATION_CONSTRUCT_WEIGHTS),
-                "render": common.GENERATION_RENDER_WEIGHT,
-                "export": common.GENERATION_WORLD_WEIGHT,
+                "construct": list(progress.GENERATION_CONSTRUCT_WEIGHTS),
+                "render": progress.GENERATION_RENDER_WEIGHT,
+                "export": progress.GENERATION_WORLD_WEIGHT,
             },
             "events": self._generation_timing_events,
         }
@@ -163,41 +162,42 @@ class GenerationTab(QtWidgets.QWidget, AlgoTabMixin, ProgressMixin):
     def _on_pipeline_progress(self, stage, completed, total, label):
         self._record_generation_timing(stage, completed, total, label)
         n = int(completed)
-        c_weights = common.GENERATION_CONSTRUCT_WEIGHTS
-        r_weight = common.GENERATION_RENDER_WEIGHT
-        w_weight = common.GENERATION_WORLD_WEIGHT
-        scale = float(sum(c_weights) + r_weight + w_weight)
-
-        def bar(weight_prefix):
-            return int(round(weight_prefix / scale * PROGRESS_BAR_SCALE))
+        c_weights = progress.GENERATION_CONSTRUCT_WEIGHTS
+        weights = c_weights + [progress.GENERATION_RENDER_WEIGHT, progress.GENERATION_WORLD_WEIGHT]
 
         self._cancel_progress_animation()
 
         if stage == services.CITY_CONSTRUCT:
-            milestone = bar(sum(c_weights[:n]))
+            milestone = progress.weighted_milestone(weights, n, progress.PROGRESS_BAR_SCALE)
             self.progress_bar.setValue(milestone)
             if n < len(c_weights):
-                next_ms = bar(sum(c_weights[:n]) + c_weights[n])
-                self._progress_soft_target = milestone + int(
-                    (next_ms - milestone) * common.SCRIPT_PROGRESS_HEADROOM
-                )
-                self._progress_timer.start(common.SCRIPT_PROGRESS_TICK_MS)
+                next_ms = progress.weighted_milestone(weights, n + 1, progress.PROGRESS_BAR_SCALE)
+                self._progress_soft_target = progress.soft_target(milestone, next_ms, "generation")
+                self._progress_timer.start(progress.creep_tick_ms("generation"))
         else:
             if stage == services.CITY_RENDER:
-                seg_start, seg_weight = sum(c_weights), r_weight
+                segment_index = len(c_weights)
             else:
-                seg_start, seg_weight = sum(c_weights) + r_weight, w_weight
-            bar_start = bar(seg_start)
-            seg_span = bar(seg_start + seg_weight) - bar_start
+                segment_index = len(c_weights) + 1
             t = float(total) if total > 0 else 1.0
-            milestone = bar_start + int(round(n / t * seg_span))
+            milestone = int(round(progress.weighted_item_milestone(
+                weights,
+                segment_index,
+                n,
+                t,
+                progress.PROGRESS_BAR_SCALE,
+            )))
             self.progress_bar.setValue(milestone)
             if n < total:
-                next_ms = bar_start + int(round((n + 1) / t * seg_span))
-                self._progress_soft_target = milestone + int(
-                    (next_ms - milestone) * common.SCRIPT_PROGRESS_HEADROOM
+                next_ms = progress.weighted_item_milestone(
+                    weights,
+                    segment_index,
+                    n + 1,
+                    t,
+                    progress.PROGRESS_BAR_SCALE,
                 )
-                self._progress_timer.start(common.SCRIPT_PROGRESS_TICK_MS)
+                self._progress_soft_target = progress.soft_target(milestone, next_ms, "generation")
+                self._progress_timer.start(progress.creep_tick_ms("generation"))
 
         self.set_status(GENERATION_STATUS_LABELS.get(stage, "Building city"))
 
@@ -218,7 +218,7 @@ class GenerationTab(QtWidgets.QWidget, AlgoTabMixin, ProgressMixin):
 
         self.controls.action_button.setEnabled(False)
         self.set_status("Building city layout")
-        self.progress_bar.setRange(0, PROGRESS_BAR_SCALE)
+        self.progress_bar.setRange(0, progress.PROGRESS_BAR_SCALE)
         self.progress_bar.setValue(0)
         self._generation_timing_started_at = time.perf_counter()
         self._generation_timing_last = None
