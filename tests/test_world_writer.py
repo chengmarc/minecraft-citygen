@@ -255,35 +255,25 @@ class SchemToWorldTests(unittest.TestCase):
             data = nbtlib.load(os.path.join(out, "level.dat"))["Data"]
             self.assertEqual(int(data["DataVersion"]), world_writer.HARD_FLOOR_DATA_VERSION)
 
-    def test_export_rejects_output_inside_source_world(self):
+    def test_export_rejects_source_and_output_paths_that_overlap(self):
         with tempfile.TemporaryDirectory() as tmp:
-            source = self._fake_source_world(tmp, 4790)
-            schem = os.path.join(tmp, "city.schem")
-            out = os.path.join(source, "nested-output")
-            self._write_schem(schem)
-
-            with self.assertRaisesRegex(ValueError, "must not contain each other"):
-                world_writer.schem_to_world(schem, out, source_world=source)
-
-    def test_export_rejects_source_world_as_output_dir(self):
-        with tempfile.TemporaryDirectory() as tmp:
-            source = self._fake_source_world(tmp, 4790)
             schem = os.path.join(tmp, "city.schem")
             self._write_schem(schem)
 
-            with self.assertRaisesRegex(ValueError, "must be different"):
-                world_writer.schem_to_world(schem, source, source_world=source)
-
-    def test_export_rejects_source_world_inside_output_dir(self):
-        with tempfile.TemporaryDirectory() as tmp:
+            source = self._fake_source_world(tmp, 4790)
             output_parent = os.path.join(tmp, "output")
             os.makedirs(output_parent)
-            source = self._fake_source_world(output_parent, 4790)
-            schem = os.path.join(tmp, "city.schem")
-            self._write_schem(schem)
+            nested_source = self._fake_source_world(output_parent, 4790)
 
-            with self.assertRaisesRegex(ValueError, "must not contain each other"):
-                world_writer.schem_to_world(schem, output_parent, source_world=source)
+            cases = [
+                (source, os.path.join(source, "nested-output"), "must not contain each other"),
+                (source, source, "must be different"),
+                (nested_source, output_parent, "must not contain each other"),
+            ]
+            for source_world, out, message in cases:
+                with self.subTest(source_world=source_world, out=out):
+                    with self.assertRaisesRegex(ValueError, message):
+                        world_writer.schem_to_world(schem, out, source_world=source_world)
 
 
 if __name__ == "__main__":

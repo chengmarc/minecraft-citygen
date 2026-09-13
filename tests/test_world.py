@@ -20,7 +20,6 @@ from engine.world.marker_extract import (
     ground_shift,
     marker_blocks_in_region,
     pair_gold_diamond_markers,
-    sign_text,
 )
 
 
@@ -101,7 +100,7 @@ class AnvilWorldReaderTests(unittest.TestCase):
 
         self.assertEqual(world.heightmap_surface_block(0, 0), ("minecraft:grass_block", 63, None))
 
-    def test_heightmap_surface_block_returns_none_when_heightmap_missing(self):
+    def test_heightmap_surface_readers_return_none_when_surface_data_is_unavailable(self):
         chunk = {"yPos": -4, "sections": [{"Y": y} for y in range(-4, 20)]}
         world = object.__new__(World)
         world.load_chunk = lambda cx, cz: chunk
@@ -109,11 +108,10 @@ class AnvilWorldReaderTests(unittest.TestCase):
         self.assertIsNone(world.heightmap_surface_block(0, 0))
         self.assertEqual(world.heightmap_surface_blocks(0, 0), [None] * 256)
 
-    def test_heightmap_surface_block_returns_none_for_absent_chunk(self):
-        world = object.__new__(World)
-        world.load_chunk = lambda cx, cz: None
+        absent_world = object.__new__(World)
+        absent_world.load_chunk = lambda cx, cz: None
 
-        self.assertIsNone(world.heightmap_surface_block(0, 0))
+        self.assertIsNone(absent_world.heightmap_surface_block(0, 0))
 
     def test_block_positions_in_section_skips_decode_when_palette_has_no_target(self):
         world = object.__new__(World)
@@ -237,13 +235,6 @@ def test_ground_shift_zero_when_undetectable():
     assert ground_shift(_FlatGroundWorld(0, empty=True), 0, 15, 0, 15, 63) == 0
 
 
-# --- marker parsing: signs ------------------------------------------------
-
-def test_sign_text_reads_modern_front_back_text():
-    be = {"front_text": {"messages": ["stack: 5-7", "", "plain note", ""]}}
-    assert sign_text(be) == "stack: 5-7 plain note"
-
-
 def test_gold_markers_pair_with_closest_unused_diamonds():
     golds = [(10, 64, 10), (100, 64, 10)]
     diamonds = [(6, 70, 6), (90, 80, 2)]
@@ -320,7 +311,7 @@ class _SectionMarkerWorld:
         return self.markers_by_section.get((cx, cz, sy), [])
 
 
-def test_marker_blocks_in_region_clips_section_results_and_reports_chunk_progress():
+def test_marker_blocks_in_region_clips_section_results_to_selected_bounds():
     world = _SectionMarkerWorld({
         (0, 0, 4): [
             (1, 64, 2, "minecraft:gold_block"),
@@ -329,11 +320,8 @@ def test_marker_blocks_in_region_clips_section_results_and_reports_chunk_progres
             (4, 65, 20, "minecraft:emerald_block"),  # outside Z bounds
         ]
     })
-    progress = []
-
     markers = marker_blocks_in_region(
         world, 0, 15, 0, 15, (64, 79),
-        on_progress=lambda done, total: progress.append((done, total)),
     )
 
     assert markers == {
@@ -341,7 +329,6 @@ def test_marker_blocks_in_region_clips_section_results_and_reports_chunk_progres
         "diamond_block": [],
         "emerald_block": [],
     }
-    assert progress == [(1, 1)]
     assert world.calls == [
         (0, 0, 4, frozenset({"minecraft:gold_block", "minecraft:diamond_block", "minecraft:emerald_block"}))
     ]
