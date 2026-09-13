@@ -69,7 +69,7 @@ schematic import origin lands correctly). [04_city/render.py](04_city/render.py)
 renders the final city schematic as an isometric PNG.
 
 **5. World.** [05_world/stage.py](05_world/stage.py) reads the final city `.schem`
-and writes a standalone, ready-to-play world to `artifacts/05_world/saves/seed_<n>_world/`
+and writes a standalone, ready-to-play world to `artifacts/05_world/saves/CityGen World <n>/`
 (via [`engine.world.writer`](../engine/world/writer.py), the inverse of the Anvil
 reader). It copies the selected source save, purges only the copied overworld
 region files, writes generated city chunks back into that same layout, seats the
@@ -146,11 +146,11 @@ artifacts/03_preview/grid/seed_<n>.png
 artifacts/03_preview/city/seed_<n>.png
 artifacts/04_city/schem/seed_<n>.schem
 artifacts/04_city/renders/seed_<n>.png
-artifacts/05_world/saves/seed_<n>_world/          # standalone playable world
+artifacts/05_world/saves/CityGen World <n>/       # standalone playable world
 ```
 
 The final city schematic in `artifacts/04_city/schem/` is a Sponge `.schem`;
-`artifacts/05_world/saves/seed_<n>_world/` is a copied source-world save with generated
+`artifacts/05_world/saves/CityGen World <n>/` is a copied source-world save with generated
 city regions, ready to drop straight into `.minecraft/saves/`.
 
 ## Running stages

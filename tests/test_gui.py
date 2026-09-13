@@ -301,6 +301,7 @@ class PreviewGenerationTabTests(unittest.TestCase):
         self.assertEqual(tab.findChildren(QtWidgets.QSplitter), [])
         self.assertTrue(tab.controls.advanced_panel.isHidden())
         self.assertEqual(tab.controls.advanced_toggle.text(), "Basic Settings")
+        self.assertEqual(tab.controls.action_button.text().strip(), "Preview Layout")
         tab.close()
 
     def test_preview_progress_uses_measured_step_weights(self):

@@ -23,7 +23,7 @@ N_SMALL_CORNERS = env_int("N_SMALL_CORNERS", 8)
 N_BIG_TEES = env_int("N_BIG_TEES", 6)
 N_SMALL_TEES = env_int("N_SMALL_TEES", 8)
 
-BANNED_BUILDINGS = env_set("BANNED_BUILDINGS", {"001", "002"})  # building IDs to skip during placement
+BANNED_BUILDINGS = env_set("BANNED_BUILDINGS", set())  # building IDs to skip during placement
 
 LANDMARK_SPACING = env_int("LANDMARK_SPACING", 8)  # min fine-cell distance between landmark footprints
 TYPE1_TOP_FIT_CHOICES = env_int("TYPE1_TOP_FIT_CHOICES", 7)
