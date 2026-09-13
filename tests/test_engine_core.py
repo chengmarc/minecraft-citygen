@@ -73,6 +73,58 @@ class CityLayoutTests(unittest.TestCase):
 
         self.assertEqual(len([p for p in placements if p.building.num == "010"]), 1)
 
+    def test_type2_buildings_place_largest_first(self):
+        fine = 6
+        road_cells = {(0, y) for y in range(fine)}
+        lots = C.find_lots(road_cells, fine)
+        small = C.Building("010", 2, 9, 9, {"type": 2})
+        large = C.Building("020", 2, 18, 18, {"type": 2})
+        rules = C.PlacementRules(banned_buildings=set())
+        state = rules.new_state(random.Random(1))
+
+        placements = C.place_city(
+            road_cells,
+            lots,
+            [small, large],
+            fine,
+            rng=random.Random(5),
+            rules=rules,
+            rule_state=state,
+            type2_frontage_cells=road_cells,
+            landmark_spacing=0,
+        )
+
+        self.assertEqual([p.building.num for p in placements if p.building.type == 2], ["020", "010"])
+        self.assertEqual(placements[0].rect, C.PlacementRect(1, 0, 2, 2))
+
+    def test_type2_landmark_spacing_rejects_nearby_placements(self):
+        fine = 5
+        road_cells = {(0, y) for y in range(fine)}
+        lots = C.find_lots(road_cells, fine)
+        catalog = [
+            C.Building("010", 2, 9, 9, {"type": 2}),
+            C.Building("011", 2, 9, 9, {"type": 2}),
+            C.Building("012", 2, 9, 9, {"type": 2}),
+        ]
+        rules = C.PlacementRules(banned_buildings=set())
+        state = rules.new_state(random.Random(1))
+
+        placements = C.place_city(
+            road_cells,
+            lots,
+            catalog,
+            fine,
+            rng=random.Random(5),
+            rules=rules,
+            rule_state=state,
+            type2_frontage_cells=road_cells,
+            landmark_spacing=3,
+        )
+
+        type2 = [p for p in placements if p.building.type == 2]
+        self.assertEqual([p.building.num for p in type2], ["012", "011"])
+        self.assertEqual([p.rect for p in type2], [C.PlacementRect(1, 0, 1, 1), C.PlacementRect(1, 3, 1, 1)])
+
 
 class IsometricRendererTests(unittest.TestCase):
     def test_render_grid_visible_iso_returns_rgba_image(self):

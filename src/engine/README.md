@@ -75,10 +75,11 @@ size in fine cells, and sorts buildings descending by physical score
   longest uninterrupted frontage runs first.
 - *Pass 2* — type-1 buildings, using ordinary road adjacency on each lot.
 
-**Candidate selection.** At each frontage point, buildings are checked in sorted
-order, the first N fitting candidates collected, and one chosen randomly from that
-top-fit set (`TYPE1_TOP_FIT_CHOICES`, `TYPE2_TOP_FIT_CHOICES`) — variation without
-abandoning fit quality.
+**Candidate selection.** Type-2 landmarks are tried once each, largest footprint
+first, and each takes the first fitting big-road frontage position that respects
+`LANDMARK_SPACING`. Type-1 buildings still check each frontage point in sorted
+order, collect the first N fitting candidates, and choose randomly from that
+top-fit set (`TYPE1_TOP_FIT_CHOICES`) — variation without abandoning fit quality.
 
 **Repetition.** Type-2 buildings are landmarks and each catalog ID can be placed
 at most once in a generated city. Type-1 buildings have no repeat limit. Banned

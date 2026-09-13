@@ -76,8 +76,9 @@ can be one-piece buildings or stackable three-piece buildings.
 ![Type 1 convention](docs/type1.png)
 
 **Type 2 — landmarks.** These are placed first on big-road frontage and appear
-once per generated city. They can also be one-piece or stackable three-piece
-buildings.
+once per generated city. Larger landmark footprints are placed first, with a
+tunable fine-cell spacing between landmarks. They can also be one-piece or
+stackable three-piece buildings.
 
 ![Type 2 convention](docs/type2.png)
 

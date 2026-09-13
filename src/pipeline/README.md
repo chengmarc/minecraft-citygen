@@ -113,7 +113,8 @@ same X/Z footprint are grouped by vertical alignment.
 
 Type and layer count are independent: a type-1 building can have three layers,
 and a type-2 landmark can have one. Type-2 catalog IDs are placed exactly once per
-city; type-1 IDs have no repeat limit.
+city, largest footprints first with `LANDMARK_SPACING` between landmarks; type-1
+IDs have no repeat limit.
 
 **Sign directives** inside a build footprint add catalog metadata: `stack: n` or
 `stack: min-max` (how many middle sections a three-layer building can receive).
