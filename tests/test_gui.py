@@ -74,8 +74,15 @@ class ConfigureStyleTests(unittest.TestCase):
         configure_app_style(self.app, use_custom_theme=False)
         self.assertEqual(self.app.styleSheet(), "")
         configure_app_style(self.app, use_custom_theme=True)
-        self.assertIn("QPushButton", self.app.styleSheet())
-        self.assertIn("QPushButton:disabled {\n    background: #e3e8f0;\n    color: #ffffff;", self.app.styleSheet())
+        self.assertIn("QPushButton:pressed", self.app.styleSheet())
+        self.assertIn("QPushButton:focus", self.app.styleSheet())
+        self.assertIn("QLineEdit:focus, QComboBox:focus, QSpinBox:focus", self.app.styleSheet())
+        self.assertIn('QPushButton[bigButton="true"]', self.app.styleSheet())
+        self.assertIn("QTabBar::tab:first", self.app.styleSheet())
+        self.assertIn("margin-left: 8px", self.app.styleSheet())
+        self.assertIn("font-size: 10pt", self.app.styleSheet())
+        self.assertIn("font-size: 16pt", self.app.styleSheet())
+        self.assertIn("min-width: 106px", self.app.styleSheet())
         self.assertIn("QToolButton#advancedToggle:checked:hover", self.app.styleSheet())
         self.app.setStyleSheet("")  # avoid leaking into other tests
 
@@ -201,7 +208,9 @@ class ExtractionTabTests(unittest.TestCase):
         self.assertFalse(hasattr(tab.road_group, "details_button"))
         self.assertEqual(tab.road_group.findChildren(QtWidgets.QLineEdit), [])
         self.assertEqual(tab.road_group.pick_button.sizePolicy().horizontalPolicy(), QtWidgets.QSizePolicy.Expanding)
-        self.assertGreater(tab.road_group.pick_button.height(), tab.road_group.pick_button.sizeHint().height())
+        self.assertEqual(tab.road_group.pick_button.minimumHeight(), tab.road_group.pick_button.sizeHint().height())
+        self.assertEqual(tab.road_group.pick_button.maximumHeight(), tab.road_group.pick_button.sizeHint().height())
+        self.assertIsNotNone(tab.road_group.pick_button.graphicsEffect())
         tab.close()
 
     def test_extract_button_requires_valid_world(self):
@@ -255,6 +264,7 @@ class ExtractionTabTests(unittest.TestCase):
             tab = ExtractionTab(_GuiOwner(extraction=state))
         self.assertEqual(tab.browse_button.minimumHeight(), tab.world_edit.sizeHint().height())
         self.assertEqual(tab.browse_button.maximumHeight(), tab.world_edit.sizeHint().height())
+        self.assertIsNotNone(tab.browse_button.graphicsEffect())
         tab.close()
 
     def test_browse_placeholder_keeps_contact_sheet_paths_for_success_reload(self):

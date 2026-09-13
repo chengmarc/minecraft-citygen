@@ -7,6 +7,8 @@ from pathlib import Path
 
 from PySide6 import QtCore, QtGui, QtWidgets
 
+from gui.core.theme import COLOR
+
 
 class ImageGraphicsView(QtWidgets.QGraphicsView):
     def __init__(self, scene, parent=None):
@@ -18,7 +20,7 @@ class ImageGraphicsView(QtWidgets.QGraphicsView):
         self.setViewportUpdateMode(QtWidgets.QGraphicsView.SmartViewportUpdate)
         self.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOff)
         self.setVerticalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOff)
-        self.setBackgroundBrush(QtGui.QColor("#e3e8f0"))
+        self.setBackgroundBrush(QtGui.QColor(COLOR["viewer_bg"]))
         self.setFrameShape(QtWidgets.QFrame.NoFrame)
         self.setRenderHints(
             QtGui.QPainter.SmoothPixmapTransform | QtGui.QPainter.TextAntialiasing

@@ -266,7 +266,7 @@ class ExtractionAreaGroup(QtWidgets.QGroupBox):
         self.pick_button = QtWidgets.QPushButton("Choose on Map", self)
         style_button(self.pick_button)
         self.pick_button.setToolTip(description)
-        self.pick_button.setFixedHeight(self.pick_button.sizeHint().height() + 4)
+        self.pick_button.setFixedHeight(self.pick_button.sizeHint().height())
         self.pick_button.setSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Fixed)
         actions.addWidget(self.pick_button)
 
