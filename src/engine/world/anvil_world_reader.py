@@ -52,6 +52,7 @@ class World:
         self.save_path = save_path
         self._chunks = {}          # (cx,cz) -> chunk nbt (or None)
         self._sections = {}        # (cx,cz,sy) -> (palette, decoded index array or None)
+        self._heightmaps = {}      # (cx,cz,key) -> decoded 256-entry height array
         self._regions = {}         # (rx,rz) -> region file bytes (or None if absent)
         if not os.path.isdir(self.region_dir):
             checked = _checked_region_paths(self.region_dir, self.save_path, REGION_DIR_CANDIDATES)
@@ -139,6 +140,7 @@ class World:
         return result
 
     _AIR_BLOCKS = frozenset({"minecraft:air", "minecraft:cave_air", "minecraft:void_air"})
+    _SURFACE_HEIGHTMAPS = ("WORLD_SURFACE", "WORLD_SURFACE_WG")
 
     def block(self, x, y, z):
         """Return (name, properties_dict_or_None) or ('minecraft:air', None)."""
@@ -212,6 +214,116 @@ class World:
     def is_chunk_empty(self, cx, cz):
         """Return True when the chunk is absent from the region file."""
         return self.load_chunk(cx, cz) is None
+
+    @staticmethod
+    def _chunk_min_y(chunk):
+        y_pos = chunk.get("yPos")
+        if y_pos is not None:
+            return int(y_pos) << 4
+        sections = chunk.get("sections", [])
+        if not sections:
+            raise ValueError("Chunk has no sections; cannot derive heightmap origin.")
+        return min(int(section["Y"]) for section in sections) << 4
+
+    @staticmethod
+    def _chunk_height(chunk):
+        sections = chunk.get("sections", [])
+        if not sections:
+            raise ValueError("Chunk has no sections; cannot derive heightmap bit width.")
+        min_sy = min(int(section["Y"]) for section in sections)
+        max_sy = max(int(section["Y"]) for section in sections)
+        return (max_sy - min_sy + 1) << 4
+
+    def _surface_heightmap_key(self, chunk):
+        heightmaps = chunk.get("Heightmaps")
+        if heightmaps is None:
+            heightmaps = chunk.get("heightmaps")
+        if heightmaps is None:
+            return None
+        for key in self._SURFACE_HEIGHTMAPS:
+            if key in heightmaps:
+                return key
+        return None
+
+    def _decode_heightmap(self, chunk, key):
+        heightmaps = chunk.get("Heightmaps")
+        if heightmaps is None:
+            heightmaps = chunk.get("heightmaps")
+        if heightmaps is None or key not in heightmaps:
+            raise ValueError(f"Chunk is missing required {key} heightmap.")
+
+        longs = np.asarray(heightmaps[key], dtype=np.int64).view(np.uint64)
+        world_height = self._chunk_height(chunk)
+        bits = max(1, world_height.bit_length())
+        per_long = 64 // bits
+        if per_long <= 0:
+            raise ValueError(f"Invalid heightmap bit width: {bits}")
+
+        indexes = np.arange(256, dtype=np.intp)
+        required_longs = int((256 + per_long - 1) // per_long)
+        if longs.size < required_longs:
+            raise ValueError(f"{key} heightmap is truncated: expected {required_longs} longs, got {longs.size}.")
+
+        shifts = (indexes % per_long * bits).astype(np.uint64)
+        mask = np.uint64((1 << bits) - 1)
+        return ((longs[indexes // per_long] >> shifts) & mask).astype(np.int32)
+
+    def _heightmap_values(self, cx, cz, chunk, key):
+        if not hasattr(self, "_heightmaps"):
+            self._heightmaps = {}
+        cache_key = (cx, cz, key)
+        values = self._heightmaps.get(cache_key)
+        if values is None:
+            values = self._heightmaps[cache_key] = self._decode_heightmap(chunk, key)
+        return values
+
+    def heightmap_surface_blocks(self, cx, cz):
+        """Return WORLD_SURFACE top blocks for all 256 columns in a chunk.
+
+        Entries are indexed by ``z_local * 16 + x_local`` and each entry is
+        ``(name, world_y)``. Absent chunks return all ``None`` entries; malformed
+        generated chunks raise instead of falling back to a vertical scan.
+        """
+        chunk = self.load_chunk(cx, cz)
+        if chunk is None:
+            return [None] * 256
+
+        min_y = self._chunk_min_y(chunk)
+        heightmap_key = self._surface_heightmap_key(chunk)
+        if heightmap_key is None:
+            return [None] * 256
+        heights = self._heightmap_values(cx, cz, chunk, heightmap_key)
+        result = [None] * 256
+        for col, raw_height in enumerate(heights):
+            if raw_height <= 0:
+                continue
+            lx = col & 15
+            lz = col >> 4
+            y = int(raw_height) + min_y - 1
+            name, _props = self.block((cx << 4) + lx, y, (cz << 4) + lz)
+            if name not in self._AIR_BLOCKS:
+                result[col] = (name, y)
+        return result
+
+    def heightmap_surface_block(self, x, z):
+        """Return the WORLD_SURFACE block for one column, or None for empty air."""
+        cx, cz = x >> 4, z >> 4
+        chunk = self.load_chunk(cx, cz)
+        if chunk is None:
+            return None
+
+        lx, lz = x & 15, z & 15
+        heightmap_key = self._surface_heightmap_key(chunk)
+        if heightmap_key is None:
+            return None
+        raw_height = int(self._heightmap_values(cx, cz, chunk, heightmap_key)[lz * 16 + lx])
+        if raw_height <= 0:
+            return None
+        y = raw_height + self._chunk_min_y(chunk) - 1
+        name, props = self.block(x, y, z)
+        if name in self._AIR_BLOCKS:
+            return None
+        return name, y, props
 
     def top_solid_blocks(self, cx, cz):
         """Return the highest non-air block for all 256 columns in a chunk.
