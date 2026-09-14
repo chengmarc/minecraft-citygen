@@ -48,21 +48,20 @@ The app includes extraction tools, previews, and a generation UI built for itera
 
 ![Desktop UI 2](docs/pics/ui2.png)
 
-![Desktop UI 3](docs/pics/ui3.png)
-
 ## Tutorial - Marking Your Own Assets
 
 CityGen builds cities from structures you mark up inside your own Minecraft world,
 using a handful of marker blocks.
 
 For buildings, place a *gold block* and a *diamond block* at two opposite corners
-of each region you want captured. One gold/diamond pair creates a one-piece
-building. Three vertically aligned pairs with the same footprint create a
-stackable building with bottom, middle, and top pieces. A sign inside the
-building footprint can set stack options.
+of each region you want captured, then place an *emerald block* horizontally
+adjacent to the bottom gold block to mark the authored ground level. One
+gold/diamond pair creates a one-piece building. Three vertically aligned pairs
+with the same footprint create a stackable building with bottom, middle, and top
+pieces. A sign above the emerald can set stack options.
 
-Roads and fill props use the same marker format. Their sign names the exported
-road/fill asset.
+Roads and fill props use the same marker format. Their sign above the emerald
+names the exported road/fill asset.
 
 Marker blocks are stripped from the exported result automatically. In-cuboid
 signs and other block entities are preserved as real content, so put authoring
@@ -82,7 +81,7 @@ stackable three-piece buildings.
 
 ![Type 2 convention](docs/pics/type2.png)
 
-You can tune any three-piece building with a sign directive inside its footprint:
+You can tune any three-piece building with a sign directive above its emerald:
 
 - `stack: 3-7` — how many middle sections it may grow (min–max)
 
