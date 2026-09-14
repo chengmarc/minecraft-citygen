@@ -57,13 +57,16 @@ For buildings, place:
 
 One gold/diamond pair creates a one-piece building. Three vertically aligned pairs
 with the same footprint create a stackable building with bottom, middle, and top
-pieces. A sign above the emerald can set stack options.
+pieces. Placement type is independent from layer count: type-1 controls
+repeatable city buildings, type-2 controls unique landmarks, and either type can
+be authored as a one-piece or three-piece asset. A sign above the emerald can set
+stack options.
 
 You can tune any three-piece building with a sign directive above its emerald: `stack: 3-7` — how many middle sections it may grow (min–max)
 
-<img src="docs/pics/type1.png" alt="Unstackable Builds" width="100%">
+<img src="docs/pics/type1.png" alt="One-layer build marker convention" width="100%">
 
-<img src="docs/pics/type2.png" alt="Stackable Builds" width="100%">
+<img src="docs/pics/type2.png" alt="Three-layer build marker convention" width="100%">
 
 # For Technical Details
 
