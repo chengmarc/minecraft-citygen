@@ -11,16 +11,14 @@ requires-python = ">=3.10"
 dependencies = [
     "numpy>=1.26,<3",
     "nbtlib>=2.0.4,<3",
+    "numba>=0.59,<1",
     "PySide6>=6.7,<7",
     "Pillow>=10.0,<13",
 ]
 
 [project.optional-dependencies]
-speed = [
-    "numba>=0.59,<1",
-]
 build = [
-    "minecraft-city-generator[speed]",
+    "minecraft-city-generator",
     "pyinstaller>=6.10,<8",
 ]
 
