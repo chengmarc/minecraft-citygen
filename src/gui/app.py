@@ -63,22 +63,29 @@ class CityGeneratorQtApp(QtWidgets.QMainWindow):
     def _refresh_after_gui_change(self, *_args):
         self.refresh_prerequisite_buttons()
 
-    note_preview_inputs_changed = _refresh_after_gui_change
+    def note_preview_inputs_changed(self):
+        self._refresh_after_gui_change()
 
-    note_extraction_inputs_changed = _refresh_after_gui_change
-    begin_extraction_run = _refresh_after_gui_change
+    def note_extraction_inputs_changed(self):
+        self._refresh_after_gui_change()
+
+    def begin_extraction_run(self):
+        self._refresh_after_gui_change()
 
     def mark_extraction_complete(self, state):
         self.refresh_prerequisite_buttons()
 
-    def end_extraction_run(self):
+    def end_extraction_run(self, succeeded=True):
         self.refresh_prerequisite_buttons()
 
     def _assets_ready(self):
         return common.extracted_assets_ready()
 
-    preview_prerequisite_met = _assets_ready
-    generation_prerequisite_met = _assets_ready
+    def preview_prerequisite_met(self):
+        return self._assets_ready()
+
+    def generation_prerequisite_met(self):
+        return self._assets_ready()
 
     def refresh_prerequisite_buttons(self):
         for tab in (getattr(self, "preview_tab", None), getattr(self, "generation_tab", None)):

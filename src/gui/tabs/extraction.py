@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import threading
-import time
 
 from PySide6 import QtWidgets
 
@@ -13,7 +12,7 @@ from pipeline import services
 
 from gui.core import common, progress
 from gui.core.theme import apply_button_icon, style_button
-from gui.core.workers import ProgressMixin, WorkerSignals
+from gui.core.workers import ProgressMixin, start_background_job
 from gui.widgets.qt_viewer import QtImageViewer
 from gui.widgets.region_dialog import RegionSelectorDialog
 from gui.widgets.widgets import ExtractionAreaGroup
@@ -62,9 +61,7 @@ class ExtractionTab(QtWidgets.QWidget, ProgressMixin):
         super().__init__(owner)
         self.owner = owner
         self._init_progress_mixin()
-        self._extract_timing_started_at = None
-        self._extract_timing_last = None
-        self._extract_timing_events = []
+        self._extract_timing = progress.ProgressTimingRecorder()
         state = owner.get_saved_config_section("extraction") or common.default_extraction_tab_config()
         common.clear_preview_cache()
 
@@ -338,54 +335,10 @@ class ExtractionTab(QtWidgets.QWidget, ProgressMixin):
             self._refresh_extract_readiness()
 
     def _record_extract_timing(self, stage, phase, completed, total, label):
-        now = time.perf_counter()
-        if self._extract_timing_started_at is None:
-            self._extract_timing_started_at = now
-
-        completed_i = int(completed)
-        total_i = int(total)
-        label = label or ""
-        key = (stage, phase, completed_i, total_i, label)
-        last = self._extract_timing_last
-        if last is not None and last["key"] != key:
-            self._extract_timing_events.append(
-                {
-                    "stage": last["stage"],
-                    "phase": last["phase"],
-                    "completed": last["completed"],
-                    "total": last["total"],
-                    "label": last["label"],
-                    "seconds": round(now - last["time"], 4),
-                }
-            )
-        if last is None or last["key"] != key:
-            self._extract_timing_last = {
-                "key": key,
-                "stage": stage,
-                "phase": phase,
-                "completed": completed_i,
-                "total": total_i,
-                "label": label,
-                "time": now,
-            }
+        self._extract_timing.record(stage, completed, total, label, phase=phase)
 
     def _finish_extract_timing(self):
-        now = time.perf_counter()
-        last = self._extract_timing_last
-        if last is not None:
-            self._extract_timing_events.append(
-                {
-                    "stage": last["stage"],
-                    "phase": last["phase"],
-                    "completed": last["completed"],
-                    "total": last["total"],
-                    "label": last["label"],
-                    "seconds": round(now - last["time"], 4),
-                }
-            )
-        started_at = self._extract_timing_started_at or now
-        phase_seconds = {}
-        for event in self._extract_timing_events:
+        def phase_key(event):
             if event["stage"] == services.ROADS_EXTRACT:
                 prefix = "roads"
             elif event["stage"] == services.ROADS_RENDER:
@@ -395,22 +348,19 @@ class ExtractionTab(QtWidgets.QWidget, ProgressMixin):
             elif event["stage"] == services.BUILDS_RENDER:
                 prefix = "builds"
             else:
-                continue
-            key = f"{prefix}_{event['phase']}"
-            phase_seconds[key] = phase_seconds.get(key, 0.0) + event["seconds"]
-        payload = {
-            "total_seconds": round(now - started_at, 4),
-            "phase_seconds": {key: round(value, 4) for key, value in phase_seconds.items()},
-            "weights": {
-                f"{stage}:{phase}": weight
-                for stage, phase, weight in progress.EXTRACTION_PHASE_WEIGHTS
-            },
-            "events": self._extract_timing_events,
-        }
-        common.save_progress_timing("extraction", payload)
-        self._extract_timing_started_at = None
-        self._extract_timing_last = None
-        self._extract_timing_events = []
+                return None
+            return f"{prefix}_{event['phase']}"
+
+        common.save_progress_timing(
+            "extraction",
+            self._extract_timing.finish(
+                phase_key=phase_key,
+                weights={
+                    f"{stage}:{phase}": weight
+                    for stage, phase, weight in progress.EXTRACTION_PHASE_WEIGHTS
+                },
+            ),
+        )
 
     def _on_pipeline_progress(self, stage, completed, total, label):
         phase = _extract_phase(stage, label)
@@ -483,42 +433,37 @@ class ExtractionTab(QtWidgets.QWidget, ProgressMixin):
         self.progress_bar.setRange(0, progress.PROGRESS_BAR_SCALE)
         self.progress_bar.setValue(0)
         self._progress_soft_target = 0.0
-        self._extract_timing_started_at = time.perf_counter()
-        self._extract_timing_last = None
-        self._extract_timing_events = []
+        self._extract_timing.start()
 
-        signals = WorkerSignals(self)
-        signals.pipeline_progress.connect(self._on_pipeline_progress)
-        signals.failed.connect(self._show_failure)
+        succeeded = False
 
         def _handle_success(run_state):
+            nonlocal succeeded
+            succeeded = True
             self._handle_extract_success(run_state)
 
         def _handle_finished():
             self._stop_progress()
             if hasattr(self.owner, "end_extraction_run"):
-                self.owner.end_extraction_run()
+                self.owner.end_extraction_run(succeeded)
             self._refresh_extract_readiness()
 
-        signals.success.connect(_handle_success)
-        signals.finished.connect(_handle_finished)
+        def job(emit_progress):
+            on_progress = coalesce_pipeline_progress(emit_progress)
+            services.run_roads_stage(env_overrides=env, progress=on_progress)
+            services.run_builds_stage(env_overrides=env, progress=on_progress)
+            return run_state
 
-        def worker():
-            try:
-                on_progress = coalesce_pipeline_progress(
-                    lambda stage, completed, total, label: signals.pipeline_progress.emit(stage, completed, total, label)
-                )
-
-                services.run_roads_stage(env_overrides=env, progress=on_progress)
-                services.run_builds_stage(env_overrides=env, progress=on_progress)
-            except Exception as exc:  # boundary: report any extraction failure to the user
-                signals.failed.emit("Extract failed", str(exc).strip() or "Extract failed", "Extract failed")
-            else:
-                signals.success.emit(run_state)
-            finally:
-                signals.finished.emit()
-
-        threading.Thread(target=worker, daemon=True).start()
+        start_background_job(
+            self,
+            job,
+            on_progress=self._on_pipeline_progress,
+            on_success=_handle_success,
+            on_finished=_handle_finished,
+            failure_title="Extract failed",
+            failure_status="Extract failed",
+            thread_factory=threading.Thread,
+        )
 
     def _handle_extract_success(self, run_state):
         self.road_viewer.load_image(self.road_viewer.image_path)

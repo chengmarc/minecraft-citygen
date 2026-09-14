@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import time
+
 from pipeline import services
 
 PROGRESS_BAR_SCALE = 1000
@@ -61,3 +63,75 @@ def weighted_item_milestone(weights, index, completed, total, maximum):
 
 def soft_target(milestone, next_milestone, tab_name):
     return milestone + (next_milestone - milestone) * creep_headroom(tab_name)
+
+
+class ProgressTimingRecorder:
+    """Collect repeated progress states and emit a timing diagnostics payload."""
+
+    def __init__(self):
+        self.reset()
+
+    def reset(self):
+        self.started_at = None
+        self.last = None
+        self.events = []
+
+    def start(self):
+        self.reset()
+        self.started_at = time.perf_counter()
+
+    def record(self, stage, completed, total, label, *, phase=None):
+        now = time.perf_counter()
+        if self.started_at is None:
+            self.started_at = now
+
+        completed_i = int(completed)
+        total_i = int(total)
+        label = label or ""
+        key = (stage, phase, completed_i, total_i, label)
+        if self.last is not None and self.last["key"] != key:
+            self.events.append(self._event_from_last(now))
+        if self.last is None or self.last["key"] != key:
+            self.last = {
+                "key": key,
+                "stage": stage,
+                "phase": phase,
+                "completed": completed_i,
+                "total": total_i,
+                "label": label,
+                "time": now,
+            }
+
+    def finish(self, *, phase_key=None, weights=None):
+        now = time.perf_counter()
+        if self.last is not None:
+            self.events.append(self._event_from_last(now))
+
+        started_at = self.started_at or now
+        phase_seconds = {}
+        for event in self.events:
+            key = phase_key(event) if phase_key is not None else event.get("phase")
+            if key is None:
+                continue
+            phase_seconds[key] = phase_seconds.get(key, 0.0) + event["seconds"]
+
+        payload = {
+            "total_seconds": round(now - started_at, 4),
+            "phase_seconds": {key: round(value, 4) for key, value in phase_seconds.items()},
+            "events": self.events,
+        }
+        if weights is not None:
+            payload["weights"] = weights
+
+        self.reset()
+        return payload
+
+    def _event_from_last(self, now):
+        return {
+            "stage": self.last["stage"],
+            "phase": self.last["phase"],
+            "completed": self.last["completed"],
+            "total": self.last["total"],
+            "label": self.last["label"],
+            "seconds": round(now - self.last["time"], 4),
+        }

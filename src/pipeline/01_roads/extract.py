@@ -15,6 +15,7 @@ from config.world import BUILD_MARKER_Y_RANGE, DATA_VERSION, ROAD_BOX
 from engine.world.anvil_world_reader import World
 from engine.world.marker_extract import detect_marker_assets, extract_cuboid, iter_signs
 from engine.schematic.writer import write_sponge_schem_cells
+from pipeline.extraction import chunk_scan_count, remove_existing_schems
 from pipeline.stages import noop, run_stage_cli
 
 (START_XYZ, END_XYZ) = ROAD_BOX.as_tuple()
@@ -40,21 +41,12 @@ def name_for(emerald):
     return sign_text_at(ex, ey + 1, ez).replace(" ", "").strip() or None
 
 
-def remove_existing_schems():
-    for filename in os.listdir(OUT):
-        if filename.endswith(".schem"):
-            os.remove(os.path.join(OUT, filename))
-
-
 def run(*, logger=None, progress=None):
     logger = logger or noop
     progress = progress or noop
     os.makedirs(OUT, exist_ok=True)
-    remove_existing_schems()
-    total_scan_chunks = (
-        ((max(X0, X1) >> 4) - (min(X0, X1) >> 4) + 1) *
-        ((max(Z0, Z1) >> 4) - (min(Z0, Z1) >> 4) + 1)
-    )
+    remove_existing_schems(OUT)
+    total_scan_chunks = chunk_scan_count(X0, X1, Z0, Z1)
     progress(0, total_scan_chunks, "Scanning road region...")
 
     m_lo, m_hi = BUILD_MARKER_Y_RANGE.as_tuple()

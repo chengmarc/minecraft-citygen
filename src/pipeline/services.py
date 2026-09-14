@@ -11,6 +11,7 @@ ROADS_EXTRACT = "pipeline.01_roads.extract"
 ROADS_RENDER = "pipeline.01_roads.render"
 BUILDS_EXTRACT = "pipeline.02_builds.extract"
 BUILDS_RENDER = "pipeline.02_builds.render"
+PREVIEW = stage_module("preview")
 CITY_CONSTRUCT = "pipeline.04_city.construct"
 CITY_RENDER = "pipeline.04_city.render"
 WORLD_EXPORT = stage_module("world")

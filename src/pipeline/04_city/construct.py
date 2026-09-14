@@ -108,6 +108,11 @@ def _assemble_instances(seed, placements, catalog_meta, ground_y):
     return instances, building_top
 
 
+def _load_catalog_meta():
+    with open(BUILD_CATALOG, encoding="utf-8") as fh:
+        return json.load(fh)
+
+
 def _compose_grid(road_grid, road_palette, road_span, road_height, road_y0, out_span, max_height, instances, road_block_entities):
     """Blit the road grid and every building instance into one master voxel grid.
 
@@ -278,6 +283,81 @@ def _place_fillers(grid, master_palette, build_mask, road_cells, size, ground_y,
     return placed, block_entities
 
 
+def _load_fill_assets(no_ground_fill):
+    if no_ground_fill:
+        return [], None
+    fillers = load_fillers()
+    ground_fill_tile = load_ground_fill_tile()
+    if ground_fill_tile is None:
+        raise FileNotFoundError(
+            "missing road ground-fill asset 18 in artifacts/01_roads/schem; run Stage 1 first"
+        )
+    return fillers, ground_fill_tile
+
+
+def _max_grid_height(road_y0, road_height, building_top, ground_y, fillers, ground_fill_tile):
+    filler_top = max((_seat_y(ground_y, tile.ground_offset) + tile.height for tile in fillers), default=0)
+    ground_fill_top = (
+        _seat_y(ground_y, ground_fill_tile.ground_offset) + ground_fill_tile.height
+        if ground_fill_tile is not None
+        else 0
+    )
+    return max(road_y0 + road_height, building_top, filler_top, ground_fill_top)
+
+
+def _place_lot_fill(grid, master_palette, build_mask, road_cells, size, ground_y, fillers, ground_fill_tile, seed):
+    if ground_fill_tile is None:
+        return 0, []
+
+    block_entities = []
+    tree_cells = set()
+    if fillers:
+        filler_rng = random.Random(seed * 7 + 3)
+        tree_cells, filler_block_entities = _place_fillers(
+            grid, master_palette, build_mask, road_cells, size, ground_y, fillers, filler_rng
+        )
+        block_entities += filler_block_entities
+    block_entities += _place_ground_fill(
+        grid, master_palette, build_mask, road_cells, size, ground_y, ground_fill_tile, tree_cells
+    )
+    return len(tree_cells), block_entities
+
+
+def _write_city_schematic(
+    grid,
+    master_palette,
+    block_entities,
+    out,
+    city_ground_y,
+    seed,
+    fine,
+    tile_count,
+    building_count,
+    filler_count,
+    filler_kind_count,
+    logger,
+):
+    anchor_idx = _palette_index(master_palette, CITY_ANCHOR_BLOCK)
+    for y in range(city_ground_y + 1):
+        grid[y, 0, 0] = anchor_idx
+
+    block_entities = _finalize_block_entities(block_entities, grid.shape)
+    max_height, out_span, _out_span_x = grid.shape
+    summary = (
+        f"seed={seed}, fine={fine}: roads={tile_count} tiles, buildings={building_count}, "
+        f"fillers={filler_count} ({filler_kind_count} kinds), "
+        f"grid {out_span}x{max_height}x{out_span}, palette={len(master_palette)}, "
+        f"block_entities={len(block_entities)}"
+    )
+    logger(summary)
+    write_sponge_schem_grid(
+        grid, master_palette, out, DATA_VERSION,
+        offset=(0, -(city_ground_y + 1), 0),
+        block_entities=block_entities,
+    )
+    return summary
+
+
 def run(*, seed=DEFAULT_SEED, fine=None, out=None, no_ground_fill=False, logger=None, progress=None):
     logger = logger or noop
     progress = progress or noop
@@ -296,8 +376,7 @@ def run(*, seed=DEFAULT_SEED, fine=None, out=None, no_ground_fill=False, logger=
     network = gen_networks(seed, size=size)
 
     _step(2, "Loading building catalog")
-    with open(BUILD_CATALOG, encoding="utf-8") as fh:
-        catalog_meta = json.load(fh)
+    catalog_meta = _load_catalog_meta()
 
     _step(3, "Planning placements")
     placements = _plan_placements(seed, network, size)
@@ -312,55 +391,33 @@ def run(*, seed=DEFAULT_SEED, fine=None, out=None, no_ground_fill=False, logger=
     instances, building_top = _assemble_instances(seed, placements, catalog_meta, ground_y)
 
     _step(5, "Composing voxel grid")
-    fillers = [] if no_ground_fill else load_fillers()
-    ground_fill_tile = None if no_ground_fill else load_ground_fill_tile()
-    if not no_ground_fill and ground_fill_tile is None:
-        raise FileNotFoundError(
-            "missing road ground-fill asset 18 in artifacts/01_roads/schem; run Stage 1 first"
-        )
-    filler_top = max((_seat_y(ground_y, tile.ground_offset) + tile.height for tile in fillers), default=0)
-    ground_fill_top = (
-        _seat_y(ground_y, ground_fill_tile.ground_offset) + ground_fill_tile.height
-        if ground_fill_tile is not None
-        else 0
-    )
-    max_height = max(road_y0 + road_height, building_top, filler_top, ground_fill_top)
+    fillers, ground_fill_tile = _load_fill_assets(no_ground_fill)
+    max_height = _max_grid_height(road_y0, road_height, building_top, ground_y, fillers, ground_fill_tile)
     road_cells = network["road_cells"]
     grid, master_palette, build_mask, block_entities = _compose_grid(
         road_grid, road_palette, road_span, road_height, road_y0, out_span, max_height, instances, road_block_entities
     )
 
     _step(6, "Placing trees and filling lots")
-    tree_cells = set()
-    if not no_ground_fill:
-        if fillers:
-            filler_rng = random.Random(seed * 7 + 3)
-            tree_cells, filler_block_entities = _place_fillers(
-                grid, master_palette, build_mask, road_cells, size, ground_y, fillers, filler_rng
-            )
-            block_entities += filler_block_entities
-        block_entities += _place_ground_fill(
-            grid, master_palette, build_mask, road_cells, size, ground_y, ground_fill_tile, tree_cells
-        )
+    filler_count, filler_block_entities = _place_lot_fill(
+        grid, master_palette, build_mask, road_cells, size, ground_y, fillers, ground_fill_tile, seed
+    )
+    block_entities += filler_block_entities
 
     _step(7, "Writing schematic")
-    filler_count = len(tree_cells)
-    anchor_idx = _palette_index(master_palette, CITY_ANCHOR_BLOCK)
-    for y in range(city_ground_y + 1):
-        grid[y, 0, 0] = anchor_idx
-
-    block_entities = _finalize_block_entities(block_entities, grid.shape)
-    summary = (
-        f"seed={seed}, fine={fine}: roads={tile_count} tiles, buildings={len(instances)}, "
-        f"fillers={filler_count} ({len(fillers)} kinds), "
-        f"grid {out_span}x{max_height}x{out_span}, palette={len(master_palette)}, "
-        f"block_entities={len(block_entities)}"
-    )
-    logger(summary)
-    write_sponge_schem_grid(
-        grid, master_palette, out, DATA_VERSION,
-        offset=(0, -(city_ground_y + 1), 0),
-        block_entities=block_entities,
+    summary = _write_city_schematic(
+        grid,
+        master_palette,
+        block_entities,
+        out,
+        city_ground_y,
+        seed,
+        fine,
+        tile_count,
+        len(instances),
+        filler_count,
+        len(fillers),
+        logger,
     )
     _step(8, "Schematic saved")
     logger(f"saved {out}")

@@ -10,7 +10,7 @@ from PySide6 import QtWidgets
 from pipeline import services
 
 from gui.core import common, progress
-from gui.core.workers import ProgressMixin, WorkerSignals
+from gui.core.workers import ProgressMixin, start_background_job
 from gui.tabs._algo import AlgoTabMixin
 from gui.widgets.qt_viewer import QtImageViewer
 from gui.widgets.widgets import AlgoControlsWidget
@@ -121,30 +121,29 @@ class PreviewTab(QtWidgets.QWidget, AlgoTabMixin, ProgressMixin):
         self.controls.action_button.setEnabled(False)
         self.set_status("Preparing preview")
 
-        signals = WorkerSignals(self)
-        signals.pipeline_progress.connect(self._on_pipeline_progress)
-        signals.failed.connect(self._show_failure)
-        signals.success.connect(lambda payload: (
-            self._load_previews(payload),
-            self._finish_progress(),
-            self.set_status("Preview ready"),
-        ))
-        signals.finished.connect(lambda: (self._stop_progress(), self.refresh_prerequisite_state()))
+        def handle_success(payload):
+            self._load_previews(payload)
+            self._finish_progress()
+            self.set_status("Preview ready")
 
-        def on_progress(stage, completed, total, label):
-            signals.pipeline_progress.emit(stage, float(completed), float(total), label or "")
+        def handle_finished():
+            self._stop_progress()
+            self.refresh_prerequisite_state()
 
-        def worker():
-            try:
-                services.run_preview_stage(seed, fine, env_overrides=env, progress=on_progress)
-            except Exception as exc:  # boundary: surface any background failure to the UI
-                signals.failed.emit("Preview failed", str(exc).strip() or "Preview failed", "Preview failed")
-            else:
-                signals.success.emit((seed, run_state))
-            finally:
-                signals.finished.emit()
+        def job(on_progress):
+            services.run_preview_stage(seed, fine, env_overrides=env, progress=on_progress)
+            return seed, run_state
 
-        threading.Thread(target=worker, daemon=True).start()
+        start_background_job(
+            self,
+            job,
+            on_progress=self._on_pipeline_progress,
+            on_success=handle_success,
+            on_finished=handle_finished,
+            failure_title="Preview failed",
+            failure_status="Preview failed",
+            thread_factory=threading.Thread,
+        )
 
     def _load_previews(self, payload):
         seed, run_state = payload

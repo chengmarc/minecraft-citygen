@@ -73,6 +73,24 @@ def noop(*args, **kwargs) -> None:
     """A logger/progress callback that discards its arguments."""
 
 
+def run_steps(steps, *, logger=None, progress=None, done_label=None):
+    """Run labelled stage steps and return their results by key.
+
+    Each step is ``(result_key, progress_label, callable, kwargs)``; the callable
+    is invoked with the shared ``logger`` plus its own keyword arguments.
+    """
+    logger = logger or noop
+    progress = progress or noop
+    results = {}
+    total = len(steps)
+    for index, (key, label, run, kwargs) in enumerate(steps):
+        progress(index, total, label)
+        results[key] = run(logger=logger, **kwargs)
+    if done_label is not None:
+        progress(total, total, done_label)
+    return results
+
+
 # CLI option specs shared by the stage runners. Defaults are pulled from each
 # stage's own ``run`` signature, so only the arg *type*/action and help live here.
 # Keys match ``run`` keyword names; underscores map to hyphenated CLI flags.
