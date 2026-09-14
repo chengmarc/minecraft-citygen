@@ -1,4 +1,4 @@
-# CityGen 0.4.1 Release Notes
+# Minecraft CityGen 0.4.1 Release Notes
 
 Released on August 20, 2026.
 

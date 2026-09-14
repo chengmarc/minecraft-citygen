@@ -45,7 +45,7 @@ schematic, so block *content* is version-transparent. The one thing that is not
 is the `DataVersion` stamped on the schematic: an older schematic can be upgraded
 forward into a newer world, but a newer one cannot be downgraded safely.
 
-CityGen commits to **forward-only** compatibility. The export target is always
+Minecraft CityGen commits to **forward-only** compatibility. The export target is always
 the source world's own version or newer, so every block in the palette is
 guaranteed to exist in the target. Forward upgrade is left to downstream import
 or load tooling, and there is no downgrade or "missing block" computation.

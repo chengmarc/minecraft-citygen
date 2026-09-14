@@ -1,8 +1,8 @@
-# CityGen 1.0.1 Release Notes
+# Minecraft CityGen 1.0.1 Release Notes
 
 Released on August 25, 2026.
 
-CityGen 1.0.1 is a follow-up patch for the road-region empty-space fill change.
+Minecraft CityGen 1.0.1 is a follow-up patch for the road-region empty-space fill change.
 It wires the new authored asset `18` into the bundled default world, corrects
 how that asset is applied in production outputs, and keeps the simulation
 preview intentionally lightweight.

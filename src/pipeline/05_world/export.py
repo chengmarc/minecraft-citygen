@@ -17,7 +17,7 @@ from pipeline.stages import noop, run_stage_cli
 
 
 def exported_world_name(seed):
-    return f"CityGen World {seed}"
+    return f"Minecraft CityGen World {seed}"
 
 
 def run(*, seed=DEFAULT_SEED, out=None, logger=None, progress=None):

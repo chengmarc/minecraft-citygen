@@ -30,7 +30,7 @@ def _print_path(label: str, value: str, *, exists: bool | None = None) -> None:
 
 
 def main() -> int:
-    print("CityGen environment doctor")
+    print("Minecraft CityGen environment doctor")
     print(f"python: {sys.version.split()[0]} ({platform.platform()})")
     print(f"executable: {sys.executable}")
     _print_path("app root", ROOT, exists=os.path.isdir(ROOT))

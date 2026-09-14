@@ -98,13 +98,13 @@ class SchemToWorldTests(unittest.TestCase):
             out = os.path.join(tmp, "world")
             self._write_schem(schem)
 
-            summary = world_writer.schem_to_world(schem, out, world_name="CityGen World 5")
+            summary = world_writer.schem_to_world(schem, out, world_name="Minecraft CityGen World 5")
             self.assertGreater(summary["chunks"], 0)
 
             data = nbtlib.load(os.path.join(out, "level.dat"))["Data"]
             # World version matches the schematic's own stamp, not the ambient env.
             self.assertEqual(int(data["DataVersion"]), DATA_VERSION)
-            self.assertEqual(str(data["LevelName"]), "CityGen World 5")
+            self.assertEqual(str(data["LevelName"]), "Minecraft CityGen World 5")
 
             # The saved player sits one block above a solid column (no void drop).
             px, py, pz = (float(v) for v in data["Player"]["Pos"])
@@ -171,7 +171,7 @@ class SchemToWorldTests(unittest.TestCase):
             out = os.path.join(tmp, "world")
             self._write_schem(schem)
 
-            world_writer.schem_to_world(schem, out, source_world=source, world_name="CityGen World 7")
+            world_writer.schem_to_world(schem, out, source_world=source, world_name="Minecraft CityGen World 7")
 
             data = nbtlib.load(os.path.join(out, "level.dat"))["Data"]
             self.assertEqual(int(data["DataVersion"]), 4790)            # native, not floor
@@ -180,7 +180,7 @@ class SchemToWorldTests(unittest.TestCase):
             self.assertEqual(int(wgs["seed"]), 12345)                   # native seed preserved
             self.assertIn("minecraft:the_nether", wgs["dimensions"])    # native dims preserved
             self.assertEqual([str(p) for p in data["DataPacks"]["Enabled"]], ["vanilla", "myworldpack"])
-            self.assertEqual(str(data["LevelName"]), "CityGen World 7")
+            self.assertEqual(str(data["LevelName"]), "Minecraft CityGen World 7")
             gen = wgs["dimensions"]["minecraft:overworld"]["generator"]
             self.assertEqual(str(gen["type"]), "minecraft:noise")       # native worldgen preserved
             self.assertEqual(str(data["Player"]["Dimension"]), "minecraft:overworld")
@@ -195,10 +195,10 @@ class SchemToWorldTests(unittest.TestCase):
             out = os.path.join(tmp, "world")
             self._write_schem(schem)
 
-            world_writer.schem_to_world(schem, out, source_world=source, world_name="CityGen World 9")  # must not raise
+            world_writer.schem_to_world(schem, out, source_world=source, world_name="Minecraft CityGen World 9")  # must not raise
 
             data = nbtlib.load(os.path.join(out, "level.dat"))["Data"]
-            self.assertEqual(str(data["LevelName"]), "CityGen World 9")
+            self.assertEqual(str(data["LevelName"]), "Minecraft CityGen World 9")
             self.assertEqual(str(data["Player"]["Dimension"]), "minecraft:overworld")
             self.assertEqual((int(data["SpawnX"]), int(data["SpawnY"]), int(data["SpawnZ"])), (0, 65, 0))
 

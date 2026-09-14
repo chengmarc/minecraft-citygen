@@ -1,8 +1,8 @@
-# CityGen 1.0.0 Release Notes
+# Minecraft CityGen 1.0.0 Release Notes
 
 Released on August 25, 2026.
 
-CityGen 1.0.0 is the stable world-export release. In addition to the
+Minecraft CityGen 1.0.0 is the stable world-export release. In addition to the
 WorldEdit-ready `.schem`, the app now exports a standalone Minecraft world that
 opens directly on the generated city.
 
@@ -46,7 +46,7 @@ opens directly on the generated city.
 
 ### Version compatibility
 
-- CityGen now follows a forward-only compatibility model: outputs target the
+- Minecraft CityGen now follows a forward-only compatibility model: outputs target the
   selected source world's version or newer.
 - The Target Version selector is informational. It helps users confirm their
   paste/load target but does not rewrite the schematic stamp.
@@ -56,9 +56,9 @@ opens directly on the generated city.
 
 ### Release artifacts
 
-- The default release publishes both `CityGen-setup.exe` and
-  `CityGen-portable-windows.zip`.
-- The standalone one-file `CityGen.exe` remains an optional testing artifact via
+- The default release publishes both `Minecraft CityGen-setup.exe` and
+  `Minecraft CityGen-portable-windows.zip`.
+- The standalone one-file `Minecraft CityGen.exe` remains an optional testing artifact via
   `python packaging/build_windows_release.py --clean --include-standalone`.
 
 ## Upgrade Notes
@@ -68,7 +68,7 @@ opens directly on the generated city.
   persistent leaves, source `DataVersion`, and current road/building metadata
   are all present.
 - If you use a custom source world, select the world folder itself or a valid
-  region directory. CityGen now fails fast for missing or unsafe paths instead
+  region directory. Minecraft CityGen now fails fast for missing or unsafe paths instead
   of falling back silently.
 
 ## Verification

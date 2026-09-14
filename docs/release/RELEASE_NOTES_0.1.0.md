@@ -1,12 +1,12 @@
-# CityGen 0.1.0 Release Notes
+# Minecraft CityGen 0.1.0 Release Notes
 
 Released on August 19, 2026.
 
 ## Highlights
 
 - The project now uses a `src/` package layout, which makes packaging and installs cleaner.
-- CityGen can now be installed and launched with command entry points instead of relying on repo-local execution only.
-- CityGen now ships with a bundled default Minecraft world and a fixed default export target.
+- Minecraft CityGen can now be installed and launched with command entry points instead of relying on repo-local execution only.
+- Minecraft CityGen now ships with a bundled default Minecraft world and a fixed default export target.
 - Windows release packaging now has a defined installer flow built around PyInstaller and Inno Setup.
 - The isometric renderer now works even when `numba` is not installed, while still using CPU `numba` acceleration when available.
 
@@ -31,7 +31,7 @@ Released on August 19, 2026.
 - Added a Windows installer build script.
 - Added PyInstaller hooks for Tcl/Tk so the GUI can start reliably in frozen builds.
 - Standardized release output under `dist/release/`.
-- Set `CityGen-setup.exe` as the primary release artifact.
+- Set `Minecraft CityGen-setup.exe` as the primary release artifact.
 
 ### Documentation
 

@@ -1,11 +1,11 @@
-"""Build Windows release artifacts for CityGen.
+"""Build Windows release artifacts for Minecraft CityGen.
 
 Default output:
-- dist/release/CityGen-setup.exe
-- dist/release/CityGen-portable-windows.zip
+- dist/release/Minecraft CityGen-setup.exe
+- dist/release/Minecraft CityGen-portable-windows.zip
 
 Optional outputs:
-- dist/release/CityGen.exe
+- dist/release/Minecraft CityGen.exe
 """
 
 from __future__ import annotations
@@ -26,8 +26,8 @@ DIST_ROOT = ROOT / "dist"
 PORTABLE_DIST = DIST_ROOT / "portable"
 ONEFILE_DIST = DIST_ROOT / "onefile"
 RELEASE_DIST = DIST_ROOT / "release"
-APP_NAME = "CityGen"
-ZIP_BASENAME = "CityGen-portable-windows"
+APP_NAME = "Minecraft CityGen"
+ZIP_BASENAME = "Minecraft CityGen-portable-windows"
 ZIP_PATH = RELEASE_DIST / f"{ZIP_BASENAME}.zip"
 ONEFILE_EXE = RELEASE_DIST / f"{APP_NAME}.exe"
 INSTALLER_EXE = RELEASE_DIST / f"{APP_NAME}-setup.exe"
@@ -194,7 +194,7 @@ def build_installer(version: str, app_dir: Path) -> Path:
     ]
     run(command)
     if not INSTALLER_EXE.exists():
-        raise SystemExit("Installer build completed without producing CityGen-setup.exe.")
+        raise SystemExit("Installer build completed without producing Minecraft CityGen-setup.exe.")
     return INSTALLER_EXE
 
 
@@ -222,7 +222,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--include-standalone",
         action="store_true",
-        help="also publish the standalone CityGen.exe to dist/release",
+        help="also publish the standalone Minecraft CityGen.exe to dist/release",
     )
     return parser.parse_args()
 

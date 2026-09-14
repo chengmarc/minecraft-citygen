@@ -28,7 +28,7 @@ VERSION_MANIFEST_URL = "https://piston-meta.mojang.com/mc/game/version_manifest_
 HTTP_TIMEOUT_SECONDS = 120
 
 # Historical block ids that were renamed in later versions. The generator scans a
-# single (modern) client JAR, which no longer carries the old ids -- but CityGen
+# single (modern) client JAR, which no longer carries the old ids -- but Minecraft CityGen
 # copies block strings verbatim from the *source* world, so an export from an
 # older world still contains e.g. `minecraft:grass` (now `short_grass`). We emit
 # an alias row for each, reusing the current block's colour, so the renderer
@@ -396,7 +396,7 @@ class MinecraftTopColorExtractor:
 
 
 def load_json_url(url: str) -> dict:
-    request = urllib.request.Request(url, headers={"User-Agent": "CityGen render palette updater"})
+    request = urllib.request.Request(url, headers={"User-Agent": "Minecraft CityGen render palette updater"})
     with urllib.request.urlopen(request, timeout=HTTP_TIMEOUT_SECONDS) as response:
         return json.load(response)
 
@@ -434,7 +434,7 @@ def download_client_jar(version: str | None) -> tuple[str, Path]:
     if jar_path.is_file() and expected_sha1 and sha1_file(jar_path) == expected_sha1:
         return version_id, jar_path
 
-    request = urllib.request.Request(download_url, headers={"User-Agent": "CityGen render palette updater"})
+    request = urllib.request.Request(download_url, headers={"User-Agent": "Minecraft CityGen render palette updater"})
     with urllib.request.urlopen(request, timeout=HTTP_TIMEOUT_SECONDS) as response:
         with temp_path.open("wb") as fh:
             shutil.copyfileobj(response, fh)

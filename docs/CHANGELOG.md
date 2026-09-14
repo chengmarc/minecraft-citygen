@@ -36,7 +36,7 @@ No unreleased changes.
 
 ## [1.0.0] - 2026-08-25
 
-The world-export milestone. Alongside the WorldEdit-ready `.schem`, CityGen now
+The world-export milestone. Alongside the WorldEdit-ready `.schem`, Minecraft CityGen now
 exports the finished city as a standalone, ready-to-play Minecraft world, so a
 city can be explored in-game with no mods.
 
@@ -255,7 +255,7 @@ byte-identical results (decoded) against the previous implementation.
 - hard-coded machine-specific default paths were replaced with bundled defaults and explicit environment overrides
 - frozen builds now package Tcl/Tk explicitly instead of relying on PyInstaller's broken auto-detection on this Python install
 - the isometric renderer now works without `numba`, while using CPU `numba` acceleration when it is available
-- release artifacts are now published to `dist/release`, with `CityGen-setup.exe` as the primary deliverable
+- release artifacts are now published to `dist/release`, with `Minecraft CityGen-setup.exe` as the primary deliverable
 
 ### Fixed
 

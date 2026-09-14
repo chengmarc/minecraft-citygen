@@ -77,11 +77,11 @@ def test_world_export_uses_seeded_world_name_for_folder_and_level(monkeypatch, t
 
     result = world_export.run(seed=12)
 
-    expected_out = str(saves_dir / "CityGen World 12")
+    expected_out = str(saves_dir / "Minecraft CityGen World 12")
     assert result["output_path"] == expected_out
     assert calls["schem"] == str(schem_dir / "seed_12.schem")
     assert calls["out"] == expected_out
-    assert calls["kwargs"]["world_name"] == "CityGen World 12"
+    assert calls["kwargs"]["world_name"] == "Minecraft CityGen World 12"
 
 
 # --- roads extraction stage ----------------------------------------------
