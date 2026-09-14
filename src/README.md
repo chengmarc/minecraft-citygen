@@ -44,8 +44,8 @@ defined by `CELL = 9` in [config/algo.py](config/algo.py). `buildings.json`
 
 ## Requirements & Assumptions
 
-- Python `>= 3.10`; runtime deps: `numpy`, `nbtlib`, `PySide6`, `Pillow`
-  (optional `numba` for speed). Declared in [pyproject.toml](../pyproject.toml).
+- Python `>= 3.10`; runtime deps: `numpy`, `nbtlib`, `numba`, `PySide6`,
+  `Pillow`. Declared in [pyproject.toml](../pyproject.toml).
 - Source world: Minecraft **Java Edition**, 1.18+ Anvil region/chunk format.
   Not a Bedrock pipeline; older world formats are not supported.
 - Output: Sponge `.schem` (v3 container) plus standalone world exports. The

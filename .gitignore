@@ -1,6 +1,5 @@
 __pycache__/
 .pytest_cache/
-.pytest_tmp/
 *.egg-info/
 
 .claude/
