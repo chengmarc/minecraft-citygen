@@ -18,16 +18,16 @@ This project turns a small handcrafted asset set into a complete city layout, pr
 
 # Rendering Result
 
-![Isometric city render 1](docs/pics/modern.gif)
+| Modern City | Medieval City |
+| --- | --- |
+| <img src="docs/pics/modern.gif" alt="Modern City" width="100%"> | <img src="docs/pics/medieval.gif" alt="Medieval City" width="100%"> | 
 
-![Isometric city render 2](docs/pics/medieval.gif)
-
-# In-Game Result (Modern + Medieval)
+# In-Game Result
 
 | Modern City| Medieval City |
 | --- | --- |
-| <img src="docs/pics/ingame1.png" alt="Modern built-in asset sheet" width="100%"> | <img src="docs/pics/ingame3.png" alt="Modern built-in assets animated preview" width="100%"> | 
-| <img src="docs/pics/ingame2.png" alt="Medieval built-in asset sheet" width="100%"> | <img src="docs/pics/ingame4.png" alt="Medieval built-in assets animated preview" width="100%"> | 
+| <img src="docs/pics/ingame1.png" alt="Modern City" width="100%"> | <img src="docs/pics/ingame3.png" alt="Medieval City" width="100%"> | 
+| <img src="docs/pics/ingame2.png" alt="Modern City" width="100%"> | <img src="docs/pics/ingame4.png" alt="Medieval City" width="100%"> | 
 
 # Built-in Assets (Modern + Medieval)
 
