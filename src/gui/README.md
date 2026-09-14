@@ -79,5 +79,5 @@ application.pyw  ->  gui.launcher:main  ->  gui.app  (QApplication + main window
 
 ## Platform notes
 
-A few behaviors are Windows-oriented — most notably opening the output folder via
-`os.startfile(...)`.
+Opening the output folder uses the platform file manager: `os.startfile(...)` on
+Windows, `open` on macOS, and `xdg-open` on Linux.

@@ -52,7 +52,8 @@ defined by `CELL = 9` in [config/algo.py](config/algo.py). `buildings.json`
   supported floor is Minecraft **26.1.2**; versioning is **forward-only** — see
   the [config guide](config/README.md#version-compatibility).
 - Local filesystem access to the Minecraft save and the export directory is
-  assumed. A few GUI behaviors are Windows-oriented (e.g. `os.startfile`).
+  assumed. Opening output folders uses the platform file manager (`os.startfile`,
+  `open`, or `xdg-open`).
 
 ## Limitations
 
@@ -61,7 +62,8 @@ defined by `CELL = 9` in [config/algo.py](config/algo.py). `buildings.json`
 - Extraction depends on strict in-world marker conventions; malformed markers
   skip the build. Building type controls placement, while one or three
   vertically aligned gold/diamond pairs control whether the asset is exported as
-  a whole schematic or `bottom`/`middle`/`top` pieces.
+  a whole schematic or `bottom`/`middle`/`top` pieces. Each asset also needs an
+  emerald block next to the bottom gold block to mark its authored ground level.
 - Footprints snap to the fine-cell grid; no freeform placement.
 - Stage 3 previews are layout-accurate stand-ins, not production-faithful
   visuals.

@@ -88,23 +88,29 @@ Extraction is driven by explicit marker blocks, not guesswork.
 ### Roads & fill props
 
 Roads are scanned inside `ROAD_BOX` with the shared marker extractor. A
-one-layer asset becomes one road schematic, and the sign above the emerald
-provides the exported name (e.g. `02_big_2x2_I`). Because markers define the
-cuboid directly, a tile taller than `ROAD_BOX`'s Y span is still captured in full
-(markers are searched over `BUILD_MARKER_Y_RANGE`).
+one-layer gold/diamond asset with an emerald ground marker becomes one road
+schematic, and the sign above the emerald provides the exported name (e.g.
+`02_big_2x2_I`). Because markers define the cuboid directly, a tile taller than
+`ROAD_BOX`'s Y span is still captured in full (markers are searched over
+`BUILD_MARKER_Y_RANGE`).
 
 Fill props are authored in the road region and named with a `fill` token
 (`15_fill_1x1_A`, ...). Each is a self-contained 9x9 (one fine cell) asset
 carrying its own ground. `engine.schematic.road` keeps them out of the road tile
 set and exposes them via `load_fillers()`; `04_city/construct.py` drops a random,
-randomly-rotated fill prop into every fully-empty non-road lot cell.
+randomly-rotated fill prop into every fully-empty non-road lot cell. The
+dedicated road-region ground-fill asset `18` is also required for ordinary empty
+lot ground; it is repeated across empty non-road, non-building columns and skips
+cells already occupied by self-contained fill props.
 
 ### Builds
 
 Each build region in `BUILD_TYPES` carries a placement `type`. Builds are detected
 from direct gold/diamond marker pairs: each gold is paired with the closest unused
 diamond, and each pair defines one cuboid's opposite corners. Cuboids with the
-same X/Z footprint are grouped by vertical alignment.
+same X/Z footprint are grouped by vertical alignment. Each grouped asset must
+also have an emerald marker horizontally adjacent to the bottom gold; that
+emerald marks the asset ground level and anchors the metadata sign above it.
 
 - **One layer** — one gold/diamond pair; exported as one complete schematic.
 
@@ -121,7 +127,7 @@ and a type-2 landmark can have one. Type-2 catalog IDs are placed exactly once p
 city, largest footprints first with `LANDMARK_SPACING` between landmarks; type-1
 IDs have no repeat limit.
 
-**Sign directives** inside a build footprint add catalog metadata: `stack: n` or
+**Sign directives** above the emerald marker add catalog metadata: `stack: n` or
 `stack: min-max` (how many middle sections a three-layer building can receive).
 
 ## Generated build catalog
