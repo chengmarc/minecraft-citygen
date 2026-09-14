@@ -22,26 +22,23 @@ This project turns a small handcrafted asset set into a complete city layout, pr
 
 ![Isometric city render 2](docs/pics/medieval.gif)
 
+# In-Game Result (Modern + Medieval)
+
+| Modern City| Medieval City |
+| --- | --- |
+| <img src="docs/pics/ingame1.png" alt="Modern built-in asset sheet" width="100%"> | <img src="docs/pics/ingame3.png" alt="Modern built-in assets animated preview" width="100%"> | 
+| <img src="docs/pics/ingame2.png" alt="Medieval built-in asset sheet" width="100%"> | <img src="docs/pics/ingame4.png" alt="Medieval built-in assets animated preview" width="100%"> | 
+
 # Built-in Assets (Modern + Medieval)
 
-| | |
+| Assets Overview | Individual Asset |
 | --- | --- |
 | <img src="docs/pics/assets_modern.png" alt="Modern built-in asset sheet" width="100%"> | <img src="docs/pics/assets_modern.gif" alt="Modern built-in assets animated preview" width="100%"> | 
 | <img src="docs/pics/assets_medieval.png" alt="Medieval built-in asset sheet" width="100%"> | <img src="docs/pics/assets_medieval.gif" alt="Medieval built-in assets animated preview" width="100%"> | 
 
-# In-Game Result
-
-![In-game city result 1](docs/pics/ingame1.png)
-
-![In-game city result 2](docs/pics/ingame2.png)
-
-![In-game city result 3](docs/pics/ingame3.png)
-
-![In-game city result 4](docs/pics/ingame4.png)
-
 # User Interface
 
-| | |
+| Extraction | Preview & Generation |
 | --- | --- |
 | <img src="docs/pics/ui1.png" alt="UI Image 1" width="100%"> | <img src="docs/pics/ui2.png" alt="UI Image 2" width="100%"> |
 
