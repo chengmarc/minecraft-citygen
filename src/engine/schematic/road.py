@@ -9,7 +9,6 @@ import numpy as np
 
 from config.algo import CELL
 from config.path import ROADS_SCHEM
-from config.world import DATA_VERSION
 from engine.core.road_network import (
     BIG_TILES,
     MIXED_TILES,
@@ -25,7 +24,6 @@ from engine.schematic.reader import (
     decode_schem_offset,
 )
 from engine.schematic.transform import Tile, rot_tile, translate_block_entities
-from engine.schematic.writer import sponge_schem_from_grid
 
 BLOCKS_PER_FINE_CELL = CELL
 
@@ -164,10 +162,3 @@ def build(fine, seed):
         block_entities += translate_block_entities(tile.block_entities, bx, 0, bz)
         count += 1
     return grid, palette, (span, max_height, span), count, road_ground_offset, block_entities
-
-
-def to_schem(grid, palette, dims, ground_offset=0, block_entities=None):
-    _width, _height, _length = dims
-    return sponge_schem_from_grid(
-        grid, palette, DATA_VERSION, offset=(0, -ground_offset, 0), block_entities=block_entities
-    )

@@ -9,8 +9,6 @@ from gui.core import progress
 
 class WorkerSignals(QtCore.QObject):
     status = QtCore.Signal(str)
-    begin_progress = QtCore.Signal(float, float, str)
-    set_progress = QtCore.Signal(float)
     pipeline_progress = QtCore.Signal(str, float, float, str)
     success = QtCore.Signal(object)
     failed = QtCore.Signal(str, str, str)
@@ -49,18 +47,6 @@ class ProgressMixin:
 
     def _stop_progress(self):
         self._cancel_progress_animation()
-
-    def _begin_script_progress(self, start_value, end_value, status):
-        self._cancel_progress_animation()
-        self.progress_bar.setValue(int(start_value))
-        segment = max(float(end_value) - float(start_value), 0.0)
-        self._progress_soft_target = float(start_value) + segment * progress.creep_headroom("default")
-        self.set_status(status)
-        self._progress_timer.start(progress.creep_tick_ms("default"))
-
-    def _complete_script_progress(self, value):
-        self._cancel_progress_animation()
-        self.progress_bar.setValue(int(round(value)))
 
     def _progress_tick(self):
         current = float(self.progress_bar.value())

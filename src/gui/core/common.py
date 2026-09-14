@@ -93,25 +93,6 @@ CLEARANCE_OPTIONS = {
     "Very Sparse": "7",
 }
 
-def stage_script_label(module):
-    """Stage module path -> script path for status display.
-
-    ``'pipeline.04_city.construct'`` -> ``'pipeline/04_city/construct.py'``.
-    """
-    return module.replace(".", "/") + ".py"
-
-
-def format_stage_status(step, total_steps, module, annotation=""):
-    """Consistent progress status shared by the Preview and Generation tabs.
-
-    ``'Stage 1/2 - pipeline/04_city/construct.py - Writing schematic'``. The
-    trailing annotation is omitted when empty.
-    """
-    status = f"Stage {step}/{total_steps} - {stage_script_label(module)}"
-    annotation = (annotation or "").strip()
-    return f"{status} - {annotation}" if annotation else status
-
-
 def grid_preview_path(seed):
     return os.path.join(PREVIEW_GRID, f"seed_{seed}.png")
 

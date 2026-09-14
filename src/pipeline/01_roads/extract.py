@@ -18,8 +18,8 @@ from engine.schematic.writer import write_sponge_schem_cells
 from pipeline.stages import noop, run_stage_cli
 
 (START_XYZ, END_XYZ) = ROAD_BOX.as_tuple()
-X0, Y0, Z0 = START_XYZ
-X1, Y1, Z1 = END_XYZ
+X0, _Y0, Z0 = START_XYZ
+X1, _Y1, Z1 = END_XYZ
 OUT = ROADS_SCHEM
 
 

@@ -133,7 +133,6 @@ def _artifact_dir(*parts: str) -> str:
     return str(Path(ARTIFACTS).joinpath(*parts))
 
 
-STAGE_01_ROADS = _artifact_dir("01_roads")
 ROADS_SCHEM = _artifact_dir("01_roads", "schem")
 ROADS_RENDERS = _artifact_dir("01_roads", "renders")
 
@@ -142,17 +141,14 @@ BUILDS_SCHEM = _artifact_dir("02_builds", "schem")
 BUILDS_RENDERS = _artifact_dir("02_builds", "renders")
 BUILD_CATALOG = str(Path(STAGE_02_BUILDS) / "buildings.json")
 
-STAGE_03_PREVIEW = _artifact_dir("03_preview")
 PREVIEW_ROADS = _artifact_dir("03_preview", "roads")
 PREVIEW_BUILDS = _artifact_dir("03_preview", "builds")
 PREVIEW_GRID = _artifact_dir("03_preview", "grid")
 PREVIEW_CITY = _artifact_dir("03_preview", "city")
 
-STAGE_04_CITY = _artifact_dir("04_city")
 CITY_SCHEM = _artifact_dir("04_city", "schem")
 CITY_RENDERS = _artifact_dir("04_city", "renders")
 
-STAGE_05_WORLD = _artifact_dir("05_world")
 # Standalone Minecraft worlds exported from the final city (one folder per seed).
 SAVES = _artifact_dir("05_world", "saves")
 

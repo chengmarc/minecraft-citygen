@@ -7,21 +7,13 @@ import importlib
 from pipeline.runtime import configured_environment
 from pipeline.stages import stage_module
 
-# Stage module paths used directly by the GUI tabs. Other callers
-# resolve stage modules on demand via stage_module(<key>).
-ROADS = stage_module("roads")
-BUILDS = stage_module("builds")
-PREVIEW = stage_module("preview")
-CITY = stage_module("city")
-WORLD = stage_module("world")
-
 ROADS_EXTRACT = "pipeline.01_roads.extract"
 ROADS_RENDER = "pipeline.01_roads.render"
 BUILDS_EXTRACT = "pipeline.02_builds.extract"
 BUILDS_RENDER = "pipeline.02_builds.render"
 CITY_CONSTRUCT = "pipeline.04_city.construct"
 CITY_RENDER = "pipeline.04_city.render"
-WORLD_EXPORT = WORLD
+WORLD_EXPORT = stage_module("world")
 
 
 def _load_stage_runner(stage_key):
@@ -42,10 +34,6 @@ def _coerce_int(value, name):
 def call_with_env(fn, *, env_overrides=None, **kwargs):
     with configured_environment(env_overrides):
         return fn(**kwargs)
-
-
-def _run_stage(stage_key, *, env_overrides=None, **kwargs):
-    return call_with_env(_load_stage_runner(stage_key), env_overrides=env_overrides, **kwargs)
 
 
 def _progress_adapter(progress, stage_key):
@@ -162,9 +150,3 @@ def run_city_stage(seed, fine, *, env_overrides=None, logger=None, progress=None
 
 def run_world_stage(seed, *, env_overrides=None, logger=None, progress=None):
     return run_world_export_stage(seed, env_overrides=env_overrides, logger=logger, progress=progress)
-
-
-# Backward-compatible names for callers that still use the old extraction
-# service labels. The public pipeline model is stage-based above.
-run_road_extraction_pipeline = run_roads_stage
-run_build_extraction_pipeline = run_builds_stage
