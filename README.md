@@ -1,6 +1,11 @@
 <div align="center">
+<<<<<<< HEAD
   <h1>Minecraft CityGen - Customizable City Generator</h1>
   <img src="src/gui/icons/app-icon.svg" alt="Minecraft CityGen app icon" width="180">
+=======
+  <h1><strong>CityGen</strong> - Customizable Minecraft City Generator</h1>
+  <img src="src/gui/icons/app-icon.svg" alt="CityGen app icon" width="180">
+>>>>>>> f532ad814caa8119955545e0c292b02bb755dc7f
   <br><br>
   <img src="https://img.shields.io/badge/Version-1.1.0-6495ED?style=for-the-badge&amp;logo=data%3Aimage%2Fsvg%2Bxml%3Bbase64%2CPHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCI%2BPHBhdGggZmlsbD0id2hpdGUiIGZpbGwtcnVsZT0iZXZlbm9kZCIgZD0iTTMgM2g4bDEwIDEwLTggOEwzIDExWk04LjUgN2ExLjUgMS41IDAgMSAwLTMgMCAxLjUgMS41IDAgMCAwIDMgMFoiLz48L3N2Zz4%3D" alt="Release 1.1.0">
   <!-- Minecraft badge logo: Pictogrammers Material Design Icons (Apache-2.0), https://github.com/Templarian/MaterialDesign/blob/master/svg/minecraft.svg -->
