@@ -17,7 +17,7 @@ from engine.core.road_network import compose, gen_networks, load_assets, make_si
 from pipeline.stages import noop, run_stage_cli
 
 
-def run(*, seed=DEFAULT_SEED, fine=DEFAULT_FINE, preview=0, logger=None):
+def run(*, seed=DEFAULT_SEED, fine=DEFAULT_FINE, preview=0, logger=None, progress=None):
     logger = logger or noop
     size = make_size(fine, even=True)
     net = gen_networks(seed, size=size)
