@@ -135,7 +135,7 @@ def render(net, placements, out, preview, fillers=None, rng=None):
     return canvas.width, canvas.height
 
 
-def run(*, seed=DEFAULT_SEED, fine=DEFAULT_FINE, preview=0, out=None, logger=None):
+def run(*, seed=DEFAULT_SEED, fine=DEFAULT_FINE, preview=0, out=None, logger=None, progress=None):
     logger = logger or noop
     out = out or os.path.join(PREVIEW_CITY, f"seed_{seed}.png")
     os.makedirs(os.path.dirname(out), exist_ok=True)
