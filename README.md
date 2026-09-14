@@ -18,9 +18,13 @@ This project turns a small handcrafted asset set into a complete city layout, pr
 
 # Rendering Result
 
-| Modern City | Medieval City |
-| --- | --- |
-| <img src="docs/pics/modern.gif" alt="Modern City" width="100%"> | <img src="docs/pics/medieval.gif" alt="Medieval City" width="100%"> | 
+<table>
+  <tr><th>Modern City</th><th>Medieval City</th></tr>
+  <tr>
+    <td valign="bottom" align="center"><img src="docs/pics/modern.gif" alt="Modern City" width="100%"></td>
+    <td valign="bottom" align="center"><img src="docs/pics/medieval.gif" alt="Medieval City" width="100%"></td>
+  </tr>
+</table>
 
 # In-Game Result
 
