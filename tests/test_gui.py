@@ -16,10 +16,12 @@ from PySide6 import QtWidgets  # noqa: E402
 from gui import app as gui_app  # noqa: E402
 from gui import launcher  # noqa: E402
 from gui.core import common  # noqa: E402
-from gui.tabs import ExtractionTab, GenerationTab, PreviewTab  # noqa: E402
 from gui.tabs import extraction as extraction_module  # noqa: E402
 from gui.tabs import generation as generation_module  # noqa: E402
 from gui.tabs import preview as preview_module  # noqa: E402
+from gui.tabs.extraction import ExtractionTab  # noqa: E402
+from gui.tabs.generation import GenerationTab  # noqa: E402
+from gui.tabs.preview import PreviewTab  # noqa: E402
 
 
 def _qapp():

@@ -7,15 +7,13 @@ import threading
 from PySide6 import QtWidgets
 
 from config.path import has_region_files
-from config.world import SAVE
 from pipeline import services
 
 from gui.core import common, progress
-from gui.core.theme import apply_button_icon, style_button
 from gui.core.workers import ProgressMixin, start_background_job
+from gui.tabs.control import ExtractionControlPanel
 from gui.widgets.qt_viewer import QtImageViewer
 from gui.widgets.region_dialog import RegionSelectorDialog
-from gui.widgets.widgets import ExtractionAreaGroup
 
 EXTRACT_PHASE_INDEX = {
     (stage, phase): index
@@ -88,93 +86,29 @@ class ExtractionTab(QtWidgets.QWidget, ProgressMixin):
         layout.addWidget(viewer_shell, 1)
         layout.addSpacing(20)
 
-        shell = QtWidgets.QWidget(self)
-        shell_layout = QtWidgets.QVBoxLayout(shell)
-        shell_layout.setContentsMargins(0, 0, 0, 0)
+        self.controls = ExtractionControlPanel(state, self)
+        self.world_edit = self.controls.world_edit
+        self.browse_button = self.controls.browse_button
+        self.detected_version_edit = self.controls.detected_version_edit
+        self.version_combo = self.controls.version_combo
+        self.extract_button = self.controls.extract_button
+        self.road_group = self.controls.road_group
+        self.house_group = self.controls.house_group
+        self.landmark_group = self.controls.landmark_group
+        self.controls.browse_requested.connect(self._browse_world)
+        self.controls.extract_requested.connect(self._run_extract_all)
+        self.controls.set_pick_commands(
+            road=lambda: self._open_region_selector(self.road_group, "road", "Road Region Selector"),
+            house=lambda: self._open_region_selector(self.house_group, "house", "House Region Selector"),
+            landmark=lambda: self._open_region_selector(self.landmark_group, "landmark", "Landmark Region Selector"),
+        )
 
-        header = QtWidgets.QHBoxLayout()
-        shell_layout.addLayout(header)
-        header.addWidget(QtWidgets.QLabel("Minecraft World"))
-        self.world_edit = QtWidgets.QLineEdit(str(state.get("world_path", SAVE)), self)
-        self.world_edit.setPlaceholderText("Select a Minecraft world folder")
-        self.world_edit.setFixedWidth(420)
-        header.addWidget(self.world_edit)
-        self.browse_button = QtWidgets.QPushButton("Browse...", self)
-        style_button(self.browse_button)
-        self.browse_button.setFixedHeight(self.world_edit.sizeHint().height())
-        self.browse_button.clicked.connect(self._browse_world)
-        header.addWidget(self.browse_button)
-        header.addSpacing(12)
-        header.addWidget(QtWidgets.QLabel("Source Version"))
-        self.detected_version_edit = QtWidgets.QLineEdit(self)
-        self.detected_version_edit.setReadOnly(True)
-        self.detected_version_edit.setPlaceholderText("-")
-        self.detected_version_edit.setToolTip("The Minecraft version of the world you selected.")
-        header.addWidget(self.detected_version_edit)
-        header.addSpacing(12)
-        header.addWidget(QtWidgets.QLabel("Target Version"))
-        self.version_combo = QtWidgets.QComboBox(self)
-        for label, value in common.version_selector_items():
-            self.version_combo.addItem(label, value)
-        self._select_version(state.get("target_version", common.AUTO_VERSION))
-        self.version_combo.setToolTip(
-            "Lets you confirm which Minecraft version you plan to paste into. "
-            "CityGen still stamps the exported files to the source world's version."
-        )
-        header.addWidget(self.version_combo)
-        header.addStretch(1)
-        self.extract_button = QtWidgets.QPushButton("Extract", self)
-        self.extract_button.setObjectName("primaryButton")
-        style_button(self.extract_button)
-        apply_button_icon(self.extract_button, "extract.png")
-        self.extract_button.clicked.connect(self._run_extract_all)
-        header.addWidget(self.extract_button)
-
-        shell_layout.addSpacing(10)
-        groups = QtWidgets.QHBoxLayout()
-        shell_layout.addLayout(groups)
-        road_region = self._region_from_state(state.get("road"), area_kind="road")
-        house_region = self._region_from_state(state.get("house"), area_kind="house")
-        landmark_region = self._region_from_state(state.get("landmark"), area_kind="landmark")
-        self.road_group = ExtractionAreaGroup(
-            "Road Area",
-            "Choose an area that contains the road pieces you want CityGen to reuse.",
-            "road",
-            road_region,
-            self,
-        )
-        self.house_group = ExtractionAreaGroup(
-            "House Area",
-            "Choose a sample area with your standard houses or smaller buildings.",
-            "house",
-            house_region,
-            self,
-        )
-        self.landmark_group = ExtractionAreaGroup(
-            "Landmark Area",
-            "Choose a sample area with taller or special buildings that should stand out in the city.",
-            "landmark",
-            landmark_region,
-            self,
-        )
-        self.road_group.set_pick_command(lambda: self._open_region_selector(self.road_group, "road", "Road Region Selector"))
-        self.house_group.set_pick_command(lambda: self._open_region_selector(self.house_group, "house", "House Region Selector"))
-        self.landmark_group.set_pick_command(
-            lambda: self._open_region_selector(self.landmark_group, "landmark", "Landmark Region Selector")
-        )
-        for group in (self.road_group, self.house_group, self.landmark_group):
-            groups.addWidget(group, 1)
-
-        self.world_edit.textChanged.connect(self._save_state)
+        self.controls.connect_change_handler(self._save_state)
         self.world_edit.textChanged.connect(self._refresh_detected_version)
-        self.version_combo.currentIndexChanged.connect(self._save_state)
-        self.road_group.connect_change_handler(self._save_state)
-        self.house_group.connect_change_handler(self._save_state)
-        self.landmark_group.connect_change_handler(self._save_state)
         self.road_group.connect_change_handler(self._refresh_extract_readiness)
         self.house_group.connect_change_handler(self._refresh_extract_readiness)
         self.landmark_group.connect_change_handler(self._refresh_extract_readiness)
-        layout.addWidget(shell)
+        layout.addWidget(self.controls)
 
         layout.addSpacing(8)
         self.status_label = QtWidgets.QLabel("", self)
@@ -202,8 +136,7 @@ class ExtractionTab(QtWidgets.QWidget, ProgressMixin):
         }
 
     def _select_version(self, value):
-        index = self.version_combo.findData(value)
-        self.version_combo.setCurrentIndex(index if index >= 0 else 0)
+        self.controls.select_version(value)
 
     def _refresh_detected_version(self):
         path = self.world_edit.text().strip()
@@ -228,18 +161,11 @@ class ExtractionTab(QtWidgets.QWidget, ProgressMixin):
 
     def _refresh_extract_readiness(self):
         world_ready = self._world_is_ready()
-        for group in (self.road_group, self.house_group, self.landmark_group):
-            group.set_world_ready(world_ready)
-        self.extract_button.setEnabled(world_ready and self._areas_are_ready())
+        self.controls.set_world_ready(world_ready)
+        self.controls.set_extract_enabled(world_ready and self._areas_are_ready())
 
     def _rebuild_version_combo(self, min_data_version):
-        current = self.version_combo.currentData()
-        self.version_combo.blockSignals(True)
-        self.version_combo.clear()
-        for label, value in common.version_selector_items(min_data_version):
-            self.version_combo.addItem(label, value)
-        self._select_version(current or common.AUTO_VERSION)
-        self.version_combo.blockSignals(False)
+        self.controls.rebuild_version_combo(min_data_version)
 
     def _current_config_state(self):
         return {
@@ -255,19 +181,6 @@ class ExtractionTab(QtWidgets.QWidget, ProgressMixin):
             return {"start": None, "end": None}
         start, end = group.get_xyz_pair(label)
         return {"start": list(start), "end": list(end)}
-
-    def _region_from_state(self, region_state, *, area_kind):
-        if not isinstance(region_state, dict):
-            return None
-        start = region_state.get("start")
-        end = region_state.get("end")
-        if not (isinstance(start, list) and isinstance(end, list) and len(start) == 3 and len(end) == 3):
-            return None
-        bounds = common.BlockRegion.from_xyz_pair(tuple(start), tuple(end))
-        if area_kind == "road":
-            return bounds
-        build_type = 1 if area_kind == "house" else 2
-        return common.BuildRegion(build_type, bounds)
 
     def _default_xyz_pair(self, key):
         defaults = common.default_extraction_tab_config()
@@ -291,8 +204,7 @@ class ExtractionTab(QtWidgets.QWidget, ProgressMixin):
             )
             return
         self.world_edit.setText(folder)
-        for group in (self.road_group, self.house_group, self.landmark_group):
-            group.clear_selection()
+        self.controls.clear_area_selections()
         common.clear_pipeline_artifacts()
         self.road_viewer.set_message(
             "Extract assets to scan the selected road sample area and build a road contact sheet."

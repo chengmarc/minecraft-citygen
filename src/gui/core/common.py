@@ -15,9 +15,10 @@ from config.path import (
     ARTIFACTS, BUILDS_RENDERS, CITY_RENDERS, PREVIEW_CITY,
     PREVIEW_GRID, GUI, ROOT, ROADS_RENDERS, SAVES,
 )
-from config.world import BUILD_TYPES, ROAD_BOX, SAVE
-from config.models import BlockRegion, BuildRegion
-from config.versions import HARD_FLOOR_DATA_VERSION, RELEASE_NAMES, detect_world_data_version, release_name_for
+from config.world import (
+    BUILD_TYPES, HARD_FLOOR_DATA_VERSION, RELEASE_NAMES, ROAD_BOX, SAVE,
+    BlockRegion, BuildRegion, detect_world_data_version, release_name_for,
+)
 
 
 class SeedError(ValueError):

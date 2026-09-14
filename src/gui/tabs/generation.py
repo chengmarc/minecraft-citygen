@@ -14,8 +14,8 @@ from pipeline import services
 from gui.core import common, progress
 from gui.core.workers import ProgressMixin, start_background_job
 from gui.tabs._algo import AlgoTabMixin
+from gui.tabs.control import GenerationControlPanel
 from gui.widgets.qt_viewer import QtImageViewer
-from gui.widgets.widgets import AlgoControlsWidget
 
 GENERATION_STATUS_LABELS = {
     services.CITY_CONSTRUCT: "Building city layout",
@@ -46,15 +46,7 @@ class GenerationTab(QtWidgets.QWidget, AlgoTabMixin, ProgressMixin):
         layout.addWidget(self.city_viewer, 1)
         layout.addSpacing(20)
 
-        self.controls = AlgoControlsWidget(
-            "Build",
-            self._run_generate,
-            state,
-            action_icon_name="render.png",
-            extra_actions=[("Copy", self._open_output_folder, "folder.png")],
-            show_seed=False,
-            parent=self,
-        )
+        self.controls = GenerationControlPanel(state, self._run_generate, self._open_output_folder, self)
         self.controls.connect_change_handler(self._save_algo_state)
         layout.addWidget(self.controls)
 

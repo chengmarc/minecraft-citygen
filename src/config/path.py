@@ -1,20 +1,4 @@
-"""Config primitives: environment overrides and runtime path helpers.
-
-Three base-layer concerns live here so the rest of :mod:`config` builds on one
-module:
-
-* ``env_*`` -- typed readers for ``MC_CITY_*`` overrides. Every tunable in
-  :mod:`config` can be overridden by ``MC_CITY_<NAME>``; these helpers apply the
-  same contract (unset or blank falls back to the default) and hold no state, so
-  the in-process reload mechanism (see :mod:`pipeline.runtime`) picks up
-  overrides simply by re-importing the config module that calls them.
-* path constants for source, installed, and frozen CityGen runtimes. Path
-  building uses ``pathlib``; the public constants are exported as normalized
-  ``str`` values because the rest of the codebase joins onto them with
-  ``os.path.join``. ``os`` is used only for ``os.environ``, ``os.access``, and
-  ``os.path.normpath`` (pure normalization, which has no ``pathlib`` equivalent).
-* world-save discovery helpers that locate a save's region directory.
-"""
+"""Environment overrides, runtime paths, and world-save path helpers."""
 
 from __future__ import annotations
 
@@ -47,11 +31,7 @@ def env_int(name: str, default: int) -> int:
 
 
 def env_set(name: str, default) -> set[str]:
-    """Comma/semicolon-separated string set, falling back to ``default``.
-
-    ``default`` is copied into a fresh set so callers can pass a literal without
-    it being shared across reloads.
-    """
+    """Comma/semicolon-separated string set, falling back to ``default``."""
     value = env_raw(name)
     if value is None:
         return set(default)
