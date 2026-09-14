@@ -37,6 +37,9 @@ No unreleased changes.
 
 ### Fixed
 
+- Windows release bundles now explicitly include the numbered pipeline stage
+  modules, so frozen extraction can import `pipeline.01_roads` and the other
+  stage packages at runtime
 - optimized top-down preview generation with heightmap-backed world reads
 - removed stale package `__init__` files, legacy configuration modules, and
   unused tool/test surfaces left over from older pipeline layouts

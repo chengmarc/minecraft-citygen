@@ -38,6 +38,19 @@ README_FILES = (
     (ROOT / "README.md", "README.md"),
 )
 WINDOWS_DATA_SEP = ";"
+PIPELINE_STAGE_HIDDEN_IMPORTS = (
+    "pipeline.01_roads.extract",
+    "pipeline.01_roads.render",
+    "pipeline.02_builds.extract",
+    "pipeline.02_builds.render",
+    "pipeline.03_preview.roads",
+    "pipeline.03_preview.builds",
+    "pipeline.03_preview.grid",
+    "pipeline.03_preview.city",
+    "pipeline.04_city.construct",
+    "pipeline.04_city.render",
+    "pipeline.05_world.export",
+)
 
 
 def load_version() -> str:
@@ -115,6 +128,8 @@ def base_pyinstaller_command(*, onefile: bool, icon_path: Path | None) -> list[s
         "--add-data",
         data_arg(DEFAULT_WORLD_DIR, "config/default_world"),
     ]
+    for module_name in PIPELINE_STAGE_HIDDEN_IMPORTS:
+        command.extend(["--hidden-import", module_name])
     if onefile:
         command.append("--onefile")
     if icon_path is not None and icon_path.exists():
