@@ -71,7 +71,7 @@ class CityGeneratorQtApp(QtWidgets.QMainWindow):
     def mark_extraction_complete(self, state):
         self.refresh_prerequisite_buttons()
 
-    def end_extraction_run(self, succeeded):
+    def end_extraction_run(self):
         self.refresh_prerequisite_buttons()
 
     def _assets_ready(self):

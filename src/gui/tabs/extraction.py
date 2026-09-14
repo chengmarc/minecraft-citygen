@@ -416,11 +416,11 @@ class ExtractionTab(QtWidgets.QWidget, ProgressMixin):
         phase = _extract_phase(stage, label)
         self._record_extract_timing(stage, phase, completed, total, label)
         phase_index = EXTRACT_PHASE_INDEX[(stage, phase)]
-        seg_start, seg_end = progress.weighted_segment(
+        seg_end = progress.weighted_segment(
             EXTRACT_PHASE_WEIGHT_VALUES,
             phase_index,
             progress.PROGRESS_BAR_SCALE,
-        )
+        )[1]
         total_f = float(total) if total > 0 else 1.0
         completed_f = max(0.0, min(float(completed), total_f))
         frac = completed_f / total_f
@@ -488,18 +488,16 @@ class ExtractionTab(QtWidgets.QWidget, ProgressMixin):
         self._extract_timing_events = []
 
         signals = WorkerSignals(self)
-        run_context = {"succeeded": False}
         signals.pipeline_progress.connect(self._on_pipeline_progress)
         signals.failed.connect(self._show_failure)
 
         def _handle_success(run_state):
-            run_context["succeeded"] = True
             self._handle_extract_success(run_state)
 
         def _handle_finished():
             self._stop_progress()
             if hasattr(self.owner, "end_extraction_run"):
-                self.owner.end_extraction_run(run_context["succeeded"])
+                self.owner.end_extraction_run()
             self._refresh_extract_readiness()
 
         signals.success.connect(_handle_success)

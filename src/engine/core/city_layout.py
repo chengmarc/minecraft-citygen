@@ -60,15 +60,6 @@ class PlacementRect:
     def cells(self):
         return [(self.x0 + i, self.y0 + j) for i in range(self.cols) for j in range(self.rows)]
 
-    def coarse_cells(self):
-        x1 = self.x0 + self.cols - 1
-        y1 = self.y0 + self.rows - 1
-        return [
-            (cx, cy)
-            for cx in range(self.x0 // 2, x1 // 2 + 1)
-            for cy in range(self.y0 // 2, y1 // 2 + 1)
-        ]
-
 
 @dataclass(frozen=True, slots=True)
 class CityPlacement:
@@ -139,10 +130,6 @@ def footprint(cx, cy, facing, fw, fd):
     if facing == "E":
         return PlacementRect(cx - fd + 1, cy, fd, fw)
     return PlacementRect(cx, cy, fd, fw)
-
-
-def coarse_cells_of_rect(rect):
-    return rect.coarse_cells()
 
 
 def rect_fits(avail, rect, fine):

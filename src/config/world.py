@@ -71,6 +71,3 @@ BUILD_TYPE2_REGION = BuildRegion(2, BlockRegion.from_xyz_pair((16, 64, -304), (2
 
 BUILD_MARKER_Y_RANGE = VerticalRange(60, 230)
 BUILD_TYPES = _env_build_regions("BUILD_TYPES", (BUILD_TYPE1_REGION, BUILD_TYPE2_REGION))
-
-# Source-world ground plane retained for legacy marker helpers.
-REFERENCE_GROUND_Y = 63
