@@ -22,7 +22,7 @@ application.pyw  ->  gui.launcher:main  ->  gui.app  (QApplication + main window
 |---|---|
 | [launcher.py](launcher.py) | Installed GUI entry point; routes to the Qt app |
 | [app.py](app.py) | PySide6 host shell: main window, arg parsing, theme wiring, top-level error handling |
-| `tabs/` | The three main tabs: **Extraction**, **Preview**, **Generation** |
+| `tabs/` | The three main tabs: **Extract**, **Preview**, **Build** |
 | `core/` | Non-widget GUI support (below) |
 | `widgets/` | Custom input and viewer widgets (below) |
 
@@ -35,6 +35,8 @@ application.pyw  ->  gui.launcher:main  ->  gui.app  (QApplication + main window
 - [common.py](core/common.py) — shared constants and non-widget helpers: loading
   and saving the GUI config (`citygen.json`), default tab configs, algo-value ↔
   env mapping, and version display helpers.
+- [progress.py](core/progress.py) — progress-message formatting shared by
+  worker-driven tabs.
 
 `widgets/`:
 
@@ -50,6 +52,8 @@ application.pyw  ->  gui.launcher:main  ->  gui.app  (QApplication + main window
 
 - [_algo.py](tabs/_algo.py) — shared saved-state, peer-sync, and prerequisite
   gating helper for the preview and generation tabs.
+- [control.py](tabs/control.py) — shared action/control panels for extraction
+  and build workflows.
 - [extraction.py](tabs/extraction.py) — source-world selection, region editing,
   and road/building extraction.
 - [preview.py](tabs/preview.py) — Stage 3 fast road-layout and city-layout previews.

@@ -91,8 +91,8 @@ build/ dist/   packaging outputs
 .pytest_cache/ test-run cache
 ```
 
-These directories are git-ignored and can be regenerated. `tools/clear_cache.py`
-removes generated artifacts/build caches when you need a clean local run.
+These directories are git-ignored and can be regenerated. Remove the generated
+directories directly when you need a clean local run.
 
 ## Mental Model Summary
 
