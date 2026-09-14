@@ -190,6 +190,7 @@ class ContactRenderTests(unittest.TestCase):
             with mock.patch.object(builds_render, "CATALOG", str(catalog_path)), \
                  mock.patch.object(builds_render, "SCHEM", str(out_dir)), \
                  mock.patch.object(builds_render, "BUILDS_RENDERS", str(out_dir)), \
+                 mock.patch.object(builds_render, "BUILDS_GIF", str(out_dir / "buildings.gif")), \
                  mock.patch.object(builds_render, "assemble", return_value=[[["minecraft:stone"]]]), \
                  mock.patch.object(builds_render, "render_cells_visible_iso", return_value=Image.new("RGBA", (16, 16))), \
                  mock.patch.object(builds_render, "write_contact", side_effect=checking_write_contact):
@@ -199,6 +200,8 @@ class ContactRenderTests(unittest.TestCase):
             assert (out_dir / "001.png").exists()
             assert (out_dir / "002.png").exists()
             assert (out_dir / "_contact_sheet.png").exists()
+            assert result["gif"] == str(out_dir / "buildings.gif")
+            assert (out_dir / "buildings.gif").exists()
 
     def test_roads_render_writes_piece_images_and_contact_sheet(self):
         with tempfile.TemporaryDirectory() as tempdir:

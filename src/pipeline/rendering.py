@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import os
 
+from PIL import Image, ImageSequence
+
 from engine.render.isometric import write_contact as _write_contact
 from pipeline.stages import noop
 
@@ -56,3 +58,45 @@ def render_contact_sheet(
     )
     logger(f"rendered {len(images)} {item_label} -> {contact}")
     return {"count": len(images), "contact_sheet": contact}
+
+
+def write_image_sequence_gif(
+    images,
+    out,
+    *,
+    duration=500,
+    loop=0,
+):
+    """Write image paths as a same-canvas animated GIF."""
+    images = list(images)
+    if not images:
+        raise ValueError("cannot write a GIF with no images")
+
+    frames = [Image.open(path).convert("RGBA") for path in images]
+    try:
+        max_w = max(frame.width for frame in frames)
+        max_h = max(frame.height for frame in frames)
+        prepared = []
+        for frame in frames:
+            canvas = Image.new("RGBA", (max_w, max_h), (255, 255, 255, 0))
+            canvas.alpha_composite(frame, ((max_w - frame.width) // 2, (max_h - frame.height) // 2))
+            prepared.append(canvas.convert("P", palette=Image.Palette.ADAPTIVE, colors=256))
+
+        os.makedirs(os.path.dirname(out), exist_ok=True)
+        prepared[0].save(
+            out,
+            save_all=True,
+            append_images=prepared[1:],
+            duration=duration,
+            loop=loop,
+            disposal=2,
+            optimize=False,
+        )
+    finally:
+        for frame in frames:
+            frame.close()
+
+    with Image.open(out) as gif:
+        frame_count = sum(1 for _frame in ImageSequence.Iterator(gif))
+        width, height = gif.size
+    return {"path": out, "count": frame_count, "width": width, "height": height, "duration": duration}
