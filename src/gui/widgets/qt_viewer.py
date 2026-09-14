@@ -151,5 +151,5 @@ def ensure_application(argv=None):
     app = QtWidgets.QApplication.instance()
     if app is None:
         app = QtWidgets.QApplication(list(argv or [sys.argv[0]]))
-        app.setApplicationName("CityGen")
+        app.setApplicationName("Minecraft CityGen")
     return app

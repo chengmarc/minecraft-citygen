@@ -252,7 +252,7 @@ def write_world(
     spawn=None,
     source_world=None,
     region_dir=None,
-    world_name="CityGen World",
+    world_name="Minecraft CityGen World",
     progress=None,
 ):
     """Write ``grid`` (shape H,L,Z indexed [y][z][x]) into ``out_dir``.
@@ -395,7 +395,7 @@ def _source_data_version(source_world):
     return HARD_FLOOR_DATA_VERSION
 
 
-def _write_level_dat(out_dir, data_version, spawn, source_world, world_name="CityGen World"):
+def _write_level_dat(out_dir, data_version, spawn, source_world, world_name="Minecraft CityGen World"):
     """Edit the copied world's ``level.dat`` in place.
 
     The copied save already has the source world's native structure, so only edit
@@ -436,7 +436,7 @@ def _write_level_dat(out_dir, data_version, spawn, source_world, world_name="Cit
     level.save(target)
 
 
-def schem_to_world(schem_path, out_dir, source_world=None, data_version=None, world_name="CityGen World", progress=None):
+def schem_to_world(schem_path, out_dir, source_world=None, data_version=None, world_name="Minecraft CityGen World", progress=None):
     """Read a city ``.schem`` and write it into a copied world save at ``out_dir``.
 
     ``source_world`` defaults to the bundled world. The source save is copied

@@ -39,7 +39,7 @@ def env_set(name: str, default) -> set[str]:
 
 
 # ------------------------------------------------------------ path constants
-APP_NAME = "CityGen"
+APP_NAME = "Minecraft CityGen"
 SOURCE_ROOT = str(Path(__file__).resolve().parents[1])
 _REQUIRED_PACKAGE_DIRS = ("config", "engine", "gui", "pipeline")
 _REPO_MARKERS = (".git", "application.pyw", "pyproject.toml")

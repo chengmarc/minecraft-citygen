@@ -1,10 +1,10 @@
-# CityGen Source Architecture
+# Minecraft CityGen Source Architecture
 
-This is the engineering entry point for CityGen's source tree. It explains how the
+This is the engineering entry point for Minecraft CityGen's source tree. It explains how the
 app is structured and links out to a per-package guide for the details. Start
 here, then follow the link into the package you care about.
 
-CityGen turns a small, handcrafted asset set — roads and buildings marked up
+Minecraft CityGen turns a small, handcrafted asset set — roads and buildings marked up
 inside a Minecraft world — into a complete, paste-ready city. Everything under
 `src/` is one of four packages:
 
@@ -21,7 +21,7 @@ tree.
 
 ## High-Level Model
 
-CityGen runs one numbered pipeline from source assets to a playable exported
+Minecraft CityGen runs one numbered pipeline from source assets to a playable exported
 world. Preview images are generated in the same sequence as an iteration step;
 they are not a separate parallel pipeline. The project flow runs in five stages:
 
@@ -68,7 +68,7 @@ defined by `CELL = 9` in [config/algo.py](config/algo.py). `buildings.json`
 - Stage 3 previews are layout-accurate stand-ins, not production-faithful
   visuals.
 
-Treat CityGen as a structured city *assembler*, not a fully general procedural
+Treat Minecraft CityGen as a structured city *assembler*, not a fully general procedural
 urban simulator: it is strongest when the source world and asset kit follow the
 expected conventions exactly.
 

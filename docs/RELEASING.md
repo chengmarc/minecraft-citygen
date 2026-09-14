@@ -5,14 +5,14 @@ end-user deliverables.
 
 The default release artifacts are:
 
-- `dist/release/CityGen-setup.exe`
-- `dist/release/CityGen-portable-windows.zip`
+- `dist/release/Minecraft CityGen-setup.exe`
+- `dist/release/Minecraft CityGen-portable-windows.zip`
 
 ## Release Rules
 
 - publish only the curated files under `dist/release`, not the raw `dist/portable`
   or `dist/onefile` build directories
-- do not publish the standalone `CityGen.exe` unless there is a specific testing reason
+- do not publish the standalone `Minecraft CityGen.exe` unless there is a specific testing reason
 - do not show a version number inside the app UI; the git tag is the release version of record
 - keep packaging metadata intentional, but do not treat it as user-facing release branding
 
@@ -34,7 +34,7 @@ python packaging/build_windows_release.py --clean
 ```
 
 6. Confirm the only published artifacts in `dist/release` are
-   `CityGen-setup.exe` and `CityGen-portable-windows.zip`.
+   `Minecraft CityGen-setup.exe` and `Minecraft CityGen-portable-windows.zip`.
 7. Install the generated installer on a non-dev machine or a clean VM.
 8. Smoke-test the real user flow:
 
@@ -80,7 +80,7 @@ python packaging/build_windows_release.py --clean --include-standalone
 
 This can additionally produce:
 
-- `dist/release/CityGen.exe`
+- `dist/release/Minecraft CityGen.exe`
 
 ## Recommended Release Sequence
 
@@ -90,4 +90,4 @@ This can additionally produce:
 4. Build release artifacts.
 5. Install and smoke-test installer.
 6. Tag release.
-7. Publish `CityGen-setup.exe` and `CityGen-portable-windows.zip`.
+7. Publish `Minecraft CityGen-setup.exe` and `Minecraft CityGen-portable-windows.zip`.

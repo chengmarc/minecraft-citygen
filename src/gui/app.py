@@ -1,4 +1,4 @@
-"""PySide6 host shell for CityGen: main window and process entry point."""
+"""PySide6 host shell for Minecraft CityGen: main window and process entry point."""
 
 from __future__ import annotations
 
@@ -19,7 +19,7 @@ from gui.core.theme import configure_app_style
 class CityGeneratorQtApp(QtWidgets.QMainWindow):
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("CityGen")
+        self.setWindowTitle("Minecraft CityGen")
         self.resize(common.APP_WIDTH, common.APP_HEIGHT)
         self.setMinimumSize(960, 720)
         if os.path.exists(common.APP_ICON_PATH):
@@ -96,7 +96,7 @@ class CityGeneratorQtApp(QtWidgets.QMainWindow):
 
 
 def _parse_args(argv: list[str]) -> tuple[argparse.Namespace, list[str]]:
-    parser = argparse.ArgumentParser(prog="citygen", description="CityGen Qt application.")
+    parser = argparse.ArgumentParser(prog="citygen", description="Minecraft CityGen Qt application.")
     parser.add_argument(
         "--qt-style",
         dest="style_name",
@@ -107,7 +107,7 @@ def _parse_args(argv: list[str]) -> tuple[argparse.Namespace, list[str]]:
         "--no-custom-theme",
         dest="use_custom_theme",
         action="store_false",
-        help="Use the plain Qt style instead of the bundled CityGen theme.",
+        help="Use the plain Qt style instead of the bundled Minecraft CityGen theme.",
     )
     parser.set_defaults(use_custom_theme=True)
     # Unrecognized args (e.g. Qt platform flags) are forwarded to QApplication.
@@ -132,7 +132,7 @@ def main(argv: list[str] | None = None) -> int:
             pass
         QtWidgets.QMessageBox.critical(
             None,
-            "CityGen",
+            "Minecraft CityGen",
             f"GUI startup failed.\n\nDetails were written to:\n{common.STARTUP_ERROR_LOG}",
         )
         raise

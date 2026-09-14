@@ -51,7 +51,7 @@ class ExtractionControlPanel(QtWidgets.QWidget):
         self.select_version(state.get("target_version", common.AUTO_VERSION))
         self.version_combo.setToolTip(
             "Lets you confirm which Minecraft version you plan to paste into. "
-            "CityGen still stamps the exported files to the source world's version."
+            "Minecraft CityGen still stamps the exported files to the source world's version."
         )
         header.addWidget(self.version_combo)
 
@@ -69,7 +69,7 @@ class ExtractionControlPanel(QtWidgets.QWidget):
 
         self.road_group = ExtractionAreaGroup(
             "Road Area",
-            "Choose an area that contains the road pieces you want CityGen to reuse.",
+            "Choose an area that contains the road pieces you want Minecraft CityGen to reuse.",
             "road",
             self._region_from_state(state.get("road"), area_kind="road"),
             self,

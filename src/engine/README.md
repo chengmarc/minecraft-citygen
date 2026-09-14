@@ -1,6 +1,6 @@
 # engine — generation & transforms
 
-The engine is CityGen's pure logic layer: no GUI, no stage orchestration, no
+The engine is Minecraft CityGen's pure logic layer: no GUI, no stage orchestration, no
 side effects beyond reading/writing schematic and image files it is handed. The
 [pipeline](../pipeline/README.md) stages import these modules and drive them.
 
