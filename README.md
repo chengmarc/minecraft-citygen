@@ -1,11 +1,6 @@
 <div align="center">
-<<<<<<< HEAD
   <h1>Minecraft CityGen - Customizable City Generator</h1>
   <img src="src/gui/icons/app-icon.svg" alt="Minecraft CityGen app icon" width="180">
-=======
-  <h1><strong>CityGen</strong> - Customizable Minecraft City Generator</h1>
-  <img src="src/gui/icons/app-icon.svg" alt="CityGen app icon" width="180">
->>>>>>> f532ad814caa8119955545e0c292b02bb755dc7f
   <br><br>
   <img src="https://img.shields.io/badge/Version-1.1.0-6495ED?style=for-the-badge&amp;logo=data%3Aimage%2Fsvg%2Bxml%3Bbase64%2CPHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCI%2BPHBhdGggZmlsbD0id2hpdGUiIGZpbGwtcnVsZT0iZXZlbm9kZCIgZD0iTTMgM2g4bDEwIDEwLTggOEwzIDExWk04LjUgN2ExLjUgMS41IDAgMSAwLTMgMCAxLjUgMS41IDAgMCAwIDMgMFoiLz48L3N2Zz4%3D" alt="Release 1.1.0">
   <!-- Minecraft badge logo: Pictogrammers Material Design Icons (Apache-2.0), https://github.com/Templarian/MaterialDesign/blob/master/svg/minecraft.svg -->
@@ -52,40 +47,22 @@ This project turns a small handcrafted asset set into a complete city layout, pr
 
 # Tutorial - Marking Your Own Assets
 
-Minecraft CityGen builds cities from structures you mark up inside your own Minecraft world,
+**Minecraft CityGen** builds cities from structures you mark up inside your own Minecraft world,
 using a handful of marker blocks.
 
-For buildings, place a *gold block* and a *diamond block* at two opposite corners
-of each region you want captured, then place an *emerald block* horizontally
-adjacent to the bottom gold block to mark the authored ground level. One
-gold/diamond pair creates a one-piece building. Three vertically aligned pairs
+For buildings, place: 
+- a **Gold block** and a **Diamond block** at two opposite corners of each region you want captured.
+- an **Emerald block** horizontally adjacent to the bottom gold block to mark the authored ground level. 
+
+One gold/diamond pair creates a one-piece building. Three vertically aligned pairs
 with the same footprint create a stackable building with bottom, middle, and top
 pieces. A sign above the emerald can set stack options.
 
-Roads and fill props use the same marker format. Their sign above the emerald
-names the exported road/fill asset.
+You can tune any three-piece building with a sign directive above its emerald: `stack: 3-7` — how many middle sections it may grow (min–max)
 
-Marker blocks are stripped from the exported result automatically. In-cuboid
-signs and other block entities are preserved as real content, so put authoring
-signs outside the captured cuboid if you do not want them in the finished city.
+<img src="docs/pics/type1.png" alt="Unstackable Builds" width="100%">
 
-## Building Types And Layers
-
-**Type 1 — standard frontage buildings.** These fill ordinary street lots. They
-can be one-piece buildings or stackable three-piece buildings.
-
-![Type 1 convention](docs/pics/type1.png)
-
-**Type 2 — landmarks.** These are placed first on big-road frontage and appear
-once per generated city. Larger landmark footprints are placed first, with a
-tunable fine-cell spacing between landmarks. They can also be one-piece or
-stackable three-piece buildings.
-
-![Type 2 convention](docs/pics/type2.png)
-
-You can tune any three-piece building with a sign directive above its emerald:
-
-- `stack: 3-7` — how many middle sections it may grow (min–max)
+<img src="docs/pics/type2.png" alt="Stackable Builds" width="100%">
 
 # For Technical Details
 
