@@ -8,6 +8,41 @@ The format is based on Keep a Changelog, and versions should match the release v
 
 No unreleased changes.
 
+## [1.1.0] - 2026-09-15
+
+### Added
+
+- building layer count is now decoupled from placement type: one-layer and
+  three-layer assets can be used as either repeatable type-1 buildings or unique
+  type-2 landmarks
+- a refreshed Minecraft CityGen brand pass, including the new app icon, README
+  badge/download links, and organized screenshot/GIF gallery assets
+- a Control tab for centralized generation settings and preview defaults reset
+  controls
+- building render GIFs and expanded built-in modern/medieval asset showcase
+  documentation
+
+### Changed
+
+- simplified the pipeline and GUI orchestration around shared stage services,
+  preview stages, rendering helpers, and centralized progress reporting
+- updated the bundled default world and extraction marker workflow to support
+  the independent building type/layer authoring flow
+- made `numba` a required rendering dependency so packaged builds use the
+  accelerated renderer path consistently
+- refined GUI theming, action controls, export naming, preview seed
+  randomization, and user-facing documentation
+- reorganized release notes under `docs/release/` and tightened the release
+  checklist around publishing only curated installer and portable artifacts
+
+### Fixed
+
+- optimized top-down preview generation with heightmap-backed world reads
+- removed stale package `__init__` files, legacy configuration modules, and
+  unused tool/test surfaces left over from older pipeline layouts
+- cleaned up README image paths and release download links after the
+  `doubletrends` repository move
+
 ## [1.0.1] - 2026-08-24
 
 ### Added
