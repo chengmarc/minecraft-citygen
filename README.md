@@ -103,16 +103,12 @@ pythonw application.pyw
 The source tree is organized as four packages under `src/`: `config`, `engine`,
 `gui`, and `pipeline`. Generated previews, schematics, renders, exported worlds,
 test caches, and packaging outputs live in git-ignored directories such as
-`artifacts/`, `build/`, and `dist/`. To clear regenerated local outputs:
+`artifacts/`, `build/`, `dist/`, and `.pytest_cache/`.
+
+Pipeline stages can be run through the stage registry in a checkout, for example:
 
 ```bash
-python tools/clear_cache.py
-```
-
-Pipeline stages can be run from their script paths in a checkout, for example:
-
-```bash
-python src/pipeline/04_city/stage.py --seed 5
+python src/pipeline/stages.py city --seed 5
 ```
 
 Use `MC_CITY_*` environment overrides through `pipeline.services` for in-process

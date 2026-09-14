@@ -13,10 +13,8 @@ a stage's behavior is fixed once its config module is imported.
 |---|---|
 | [path.py](path.py) | Base layer: `env_*` typed override readers and runtime path/artifact discovery |
 | [algo.py](algo.py) | Road-generation and city-placement tuning knobs |
-| [world.py](world.py) | Source world path, extraction regions, marker Y range, schematic `DATA_VERSION` |
+| [world.py](world.py) | Source world path, extraction regions, marker Y range, domain region models, version labels, schematic `DATA_VERSION` |
 | [render.py](render.py) | Render and preview style constants (tile sizes, ground fill) |
-| [models.py](models.py) | Typed domain models shared across stages (`BlockRegion`, `BuildRegion`) |
-| [versions.py](versions.py) | DataVersion detection, release-name labels, and the hard floor |
 | [doctor.py](doctor.py) | Environment diagnostics for first-run setup (`citygen-doctor`) |
 
 Non-code assets that ship in this package:
@@ -52,7 +50,7 @@ the source world's own version or newer, so every block in the palette is
 guaranteed to exist in the target. Forward upgrade is left to downstream import
 or load tooling, and there is no downgrade or "missing block" computation.
 
-Handled by [versions.py](versions.py):
+Handled by [world.py](world.py):
 
 - Outputs are **always stamped with the source world's `DataVersion`** (read from
   its `level.dat`, else the **26.1.2 hard floor**, and clamped up to that floor).

@@ -13,13 +13,13 @@ same way.
 | Module / package | Responsibility |
 |---|---|
 | [services.py](services.py) | In-process pipeline services used by both the GUI and CLI |
-| [stages.py](stages.py) | Central registry of stage modules plus the shared stage runner |
+| [stages.py](stages.py) | Central registry of stage modules plus the stage registry CLI |
 | [runtime.py](runtime.py) | `configured_environment` and the import-time config model helpers |
-| `01_roads/` | public `stage`, internal `extract`, `render` |
-| `02_builds/` | public `stage`, internal `extract`, `render` |
-| `03_preview/` | public `stage`, internal `roads`, `builds`, `grid`, `city` |
-| `04_city/` | public `stage`, internal `construct`, `render` |
-| `05_world/` | public `stage`, internal `export` |
+| `01_roads/` | road extraction and road contact-sheet rendering |
+| `02_builds/` | building extraction, catalog writing, and building contact-sheet rendering |
+| `03_preview/` | road assets, build stand-ins, road-layout preview, and city-layout preview |
+| `04_city/` | final city schematic construction and isometric render |
+| `05_world/` | standalone Minecraft world export |
 
 `extract` pulls assets from the world, `render` produces isometric/contact-sheet
 PNGs, `preview` renders the fast road-layout and city-layout PNGs, `construct`
@@ -54,11 +54,15 @@ regions, exports individual `.schem` pieces, and writes
 placement. [02_builds/render.py](02_builds/render.py) renders those extracted
 building pieces and writes the building contact sheet.
 
-**3. Preview.** [03_preview/stage.py](03_preview/stage.py) is the unified
-preview stage. It generates the road preview assets, generates pseudo top-down
-building assets from the catalog, renders the seed-driven road-layout preview,
-and renders the city-layout preview. Internally it reuses the same road-network
-and placement logic as the final city build.
+**3. Preview.** `stages.py run_preview` is the unified preview stage. It runs
+[03_preview/roads.py](03_preview/roads.py),
+[03_preview/builds.py](03_preview/builds.py),
+[03_preview/grid.py](03_preview/grid.py), and
+[03_preview/city.py](03_preview/city.py): generating road preview assets,
+generating pseudo top-down building assets from the catalog, rendering the
+seed-driven road-layout preview, and rendering the city-layout preview.
+Internally it reuses the same road-network and placement logic as the final city
+build.
 
 **4. City.** [04_city/construct.py](04_city/construct.py) assembles the final
 result — builds the road grid, loads the catalog, generates placements from the
@@ -68,9 +72,10 @@ non-road ground cells, and writes the Sponge `.schem` (with an offset so the
 schematic import origin lands correctly). [04_city/render.py](04_city/render.py)
 renders the final city schematic as an isometric PNG.
 
-**5. World.** [05_world/stage.py](05_world/stage.py) reads the final city `.schem`
-and writes a standalone, ready-to-play world to `artifacts/05_world/saves/CityGen World <n>/`
-(via [`engine.world.writer`](../engine/world/writer.py), the inverse of the Anvil
+**5. World.** [05_world/export.py](05_world/export.py) reads the final city
+`.schem` and writes a standalone, ready-to-play world to
+`artifacts/05_world/saves/CityGen World <n>/` (via
+[`engine.world.writer`](../engine/world/writer.py), the inverse of the Anvil
 reader). It copies the selected source save, purges only the copied overworld
 region files, writes generated city chunks back into that same layout, seats the
 ground near y=64, centres the city on the world origin, and pins the player spawn
@@ -103,13 +108,13 @@ same X/Z footprint are grouped by vertical alignment.
 
 - **One layer** — one gold/diamond pair; exported as one complete schematic.
 
-  ![Type 1 convention](../../docs/type1.png)
+  ![Type 1 convention](../../docs/pics/type1.png)
 
 - **Three layers** — three vertically aligned gold/diamond pairs; exported as
   `bottom`/`middle`/`top` pieces. City generation can repeat the middle piece to
   vary height.
 
-  ![Type 2 convention](../../docs/type2.png)
+  ![Type 2 convention](../../docs/pics/type2.png)
 
 Type and layer count are independent: a type-1 building can have three layers,
 and a type-2 landmark can have one. Type-2 catalog IDs are placed exactly once per
@@ -155,27 +160,27 @@ city regions, ready to drop straight into `.minecraft/saves/`.
 
 ## Running stages
 
-From a repo checkout, direct script execution works without installing the
+From a repo checkout, the stage registry CLI works without installing the
 package:
 
 ```bash
-python src/pipeline/01_roads/stage.py
-python src/pipeline/02_builds/stage.py
-python src/pipeline/03_preview/stage.py --seed 5
-python src/pipeline/04_city/stage.py --seed 5
-python src/pipeline/05_world/stage.py --seed 5
+python src/pipeline/stages.py roads
+python src/pipeline/stages.py builds
+python src/pipeline/stages.py preview --seed 5
+python src/pipeline/stages.py city --seed 5
+python src/pipeline/stages.py world --seed 5
 ```
 
 Package-module execution is also supported when `src/` is on `PYTHONPATH` or the
 project is installed:
 
 ```bash
-python -m pipeline.01_roads.stage
-python -m pipeline.02_builds.stage
-python -m pipeline.03_preview.stage --seed 5
-python -m pipeline.04_city.stage --seed 5
-python -m pipeline.05_world.stage --seed 5
+python -m pipeline.stages roads
+python -m pipeline.stages builds
+python -m pipeline.stages preview --seed 5
+python -m pipeline.stages city --seed 5
+python -m pipeline.stages world --seed 5
 ```
 
-The lower-level extract/render/construct scripts remain runnable for debugging,
-but the five commands above are the canonical numbered pipeline.
+The lower-level extract/render/construct/export modules remain runnable for
+debugging, but the five commands above are the canonical numbered pipeline.

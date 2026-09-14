@@ -11,7 +11,7 @@ side effects beyond reading/writing schematic and image files it is handed. The
 | Subpackage | Modules | Responsibility |
 |---|---|---|
 | `core/` | [road_network.py](core/road_network.py), [city_layout.py](core/city_layout.py) | Road-network generation & tile compositing; lot finding & building placement |
-| `world/` | [anvil_world_reader.py](world/anvil_world_reader.py), [marker_extract.py](world/marker_extract.py) | Read Anvil worlds; the shared marker-based extraction geometry pass |
+| `world/` | [anvil_world_reader.py](world/anvil_world_reader.py), [marker_extract.py](world/marker_extract.py), [writer.py](world/writer.py) | Read Anvil worlds; extract marker-defined cuboids; write standalone exported worlds |
 | `schematic/` | [transform.py](schematic/transform.py), [reader.py](schematic/reader.py), [writer.py](schematic/writer.py), [road.py](schematic/road.py), [building.py](schematic/building.py) | Sponge `.schem` I/O, tile transforms, road/building assembly |
 | `render/` | [isometric.py](render/isometric.py), [topdown.py](render/topdown.py), [palette.py](render/palette.py) | Isometric and top-down PNG rendering |
 
