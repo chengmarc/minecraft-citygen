@@ -4,21 +4,21 @@ from __future__ import annotations
 
 import importlib
 
+from pipeline import stages
 from pipeline.runtime import configured_environment
-from pipeline.stages import stage_module
 
-ROADS_EXTRACT = "pipeline.01_roads.extract"
-ROADS_RENDER = "pipeline.01_roads.render"
-BUILDS_EXTRACT = "pipeline.02_builds.extract"
-BUILDS_RENDER = "pipeline.02_builds.render"
-PREVIEW = stage_module("preview")
-CITY_CONSTRUCT = "pipeline.04_city.construct"
-CITY_RENDER = "pipeline.04_city.render"
-WORLD_EXPORT = stage_module("world")
+ROADS_EXTRACT = stages.ROADS_EXTRACT
+ROADS_RENDER = stages.ROADS_RENDER
+BUILDS_EXTRACT = stages.BUILDS_EXTRACT
+BUILDS_RENDER = stages.BUILDS_RENDER
+PREVIEW = stages.stage_module("preview")
+CITY_CONSTRUCT = stages.CITY_CONSTRUCT
+CITY_RENDER = stages.CITY_RENDER
+WORLD_EXPORT = stages.stage_module("world")
 
 
 def _load_stage_runner(stage_key):
-    return importlib.import_module(stage_module(stage_key)).run
+    return stages.stage_runner(stage_key)
 
 
 def _load_module_runner(module):
@@ -45,7 +45,7 @@ def _progress_adapter(progress, stage_key):
     """
     if progress is None:
         return None
-    module = stage_module(stage_key)
+    module = stages.stage_module(stage_key)
     return lambda completed, total, detail: progress(module, completed, total, detail)
 
 

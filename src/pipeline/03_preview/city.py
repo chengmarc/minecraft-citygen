@@ -49,7 +49,7 @@ def font(size):
 def load_build_asset(key):
     path = os.path.join(BUILDS, f"{key}.png")
     if not os.path.exists(path):
-        raise FileNotFoundError(f"missing build asset {path}; run `python -m pipeline.03_preview.stage` first")
+        raise FileNotFoundError(f"missing build asset {path}; run `python -m pipeline.stages preview` first")
     with Image.open(path) as image:
         return image.convert("RGBA")
 

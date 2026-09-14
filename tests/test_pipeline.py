@@ -17,7 +17,7 @@ import numpy as np
 from PIL import Image
 
 from pipeline import services
-from pipeline.stages import PIPELINE_STAGE_MODULES
+from pipeline.stages import PIPELINE_STAGE_COMMANDS, PIPELINE_STAGE_MODULES
 from engine.schematic.transform import Tile
 
 ROOT_DIR = Path(__file__).resolve().parents[1]
@@ -26,14 +26,12 @@ ROOT_DIR = Path(__file__).resolve().parents[1]
 # --- stage services -------------------------------------------------------
 
 
-@pytest.mark.parametrize("module_name", PIPELINE_STAGE_MODULES)
-def test_pipeline_stage_scripts_bootstrap_without_pythonpath(module_name):
-    script = ROOT_DIR / "src" / Path(*module_name.split(".")).with_suffix(".py")
+def _run_script_help(script, *args):
     env = os.environ.copy()
     env.pop("PYTHONPATH", None)
 
     result = subprocess.run(
-        [sys.executable, str(script), "--help"],
+        [sys.executable, str(script), *args, "--help"],
         cwd=ROOT_DIR,
         env=env,
         capture_output=True,
@@ -42,6 +40,18 @@ def test_pipeline_stage_scripts_bootstrap_without_pythonpath(module_name):
     )
 
     assert result.returncode == 0, result.stderr or result.stdout
+
+
+@pytest.mark.parametrize("module_name", PIPELINE_STAGE_MODULES)
+def test_pipeline_stage_script_bootstraps_without_pythonpath(module_name):
+    script = ROOT_DIR / "src" / Path(*module_name.split(".")).with_suffix(".py")
+    _run_script_help(script)
+
+
+@pytest.mark.parametrize("stage_key", PIPELINE_STAGE_COMMANDS)
+def test_pipeline_stage_subcommands_bootstrap_without_pythonpath(stage_key):
+    script = ROOT_DIR / "src" / "pipeline" / "stages.py"
+    _run_script_help(script, stage_key)
 
 
 def test_world_export_uses_seeded_world_name_for_folder_and_level(monkeypatch, tmp_path):

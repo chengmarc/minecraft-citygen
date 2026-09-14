@@ -26,7 +26,7 @@ import nbtlib
 from nbtlib import Byte, Compound, Double, Float, Int, List, Long, LongArray, String
 
 from config.path import DEFAULT_WORLD, GUI, region_dir_candidates, resolve_region_dir
-from config.versions import HARD_FLOOR_DATA_VERSION, release_name_for
+from config.world import HARD_FLOOR_DATA_VERSION, release_name_for
 from engine.schematic.reader import (
     decode_schem_array,
     decode_schem_block_entities,

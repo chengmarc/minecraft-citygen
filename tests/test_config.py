@@ -6,13 +6,19 @@ import unittest
 from pathlib import Path
 from unittest import mock
 
-from config import versions as vc
-from config.models import BlockRegion, BuildRegion
+from config import path as config_path
+from config import world as config_world
+from config.world import BlockRegion, BuildRegion
 
 
 # --- region models & config.world env parsing -----------------------------
 
 class RegionAndWorldConfigTests(unittest.TestCase):
+    def test_path_module_owns_runtime_helpers(self):
+        self.assertEqual(config_path.env_int("__TEST_UNKNOWN__", 7), 7)
+        self.assertTrue(config_path.ROOT)
+        self.assertEqual(config_path.region_dir_candidates("world")[0], os.path.normpath("world/region"))
+
     def test_block_and_build_regions_round_trip_through_xyz_and_env(self):
         block = BlockRegion.from_xyz_pair((1, 2, 3), (4, 5, 6))
         self.assertEqual(block.as_tuple(), ((1, 2, 3), (4, 5, 6)))
@@ -57,17 +63,17 @@ class RegionAndWorldConfigTests(unittest.TestCase):
 
 class VersionTests(unittest.TestCase):
     def test_supported_data_version_floor_is_sponge_v3_floor(self):
-        self.assertEqual(vc.HARD_FLOOR_DATA_VERSION, 4790)  # Minecraft 26.1.2
+        self.assertEqual(config_world.HARD_FLOOR_DATA_VERSION, 4790)  # Minecraft 26.1.2
 
     def test_detect_world_data_version_reads_bundled_world_and_handles_absent(self):
         world = Path(__file__).resolve().parents[1] / "src" / "config" / "default_world"
-        self.assertEqual(vc.detect_world_data_version(str(world)), 4790)  # bundled world is 26.1.2
+        self.assertEqual(config_world.detect_world_data_version(str(world)), 4790)  # bundled world is 26.1.2
 
         with tempfile.TemporaryDirectory() as tempdir:
-            self.assertIsNone(vc.detect_world_data_version(tempdir))  # no level.dat
-            self.assertIsNone(vc.detect_world_data_version(""))
+            self.assertIsNone(config_world.detect_world_data_version(tempdir))  # no level.dat
+            self.assertIsNone(config_world.detect_world_data_version(""))
             (Path(tempdir) / "level.dat").write_bytes(b"not a real nbt file")
-            self.assertIsNone(vc.detect_world_data_version(tempdir))  # corrupt
+            self.assertIsNone(config_world.detect_world_data_version(tempdir))  # corrupt
 
 
 if __name__ == "__main__":

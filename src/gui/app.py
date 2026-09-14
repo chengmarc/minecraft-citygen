@@ -10,7 +10,9 @@ from PySide6 import QtGui, QtWidgets
 
 from gui.core import common
 from gui.widgets.qt_viewer import ensure_application
-from gui.tabs import ExtractionTab, GenerationTab, PreviewTab
+from gui.tabs.extraction import ExtractionTab
+from gui.tabs.generation import GenerationTab
+from gui.tabs.preview import PreviewTab
 from gui.core.theme import configure_app_style
 
 
