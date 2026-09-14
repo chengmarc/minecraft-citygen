@@ -61,6 +61,9 @@ release artifacts.
 
 - Rebuilt the README around the current Minecraft CityGen brand, screenshots,
   asset showcases, and release links.
+- Explicitly included the numbered pipeline stage modules in Windows release
+  bundles, so frozen extraction can import `pipeline.01_roads` and the rest of
+  the stage packages at runtime.
 - Moved historical release notes under `docs/release/`.
 - Tightened the release checklist to publish only the installer and portable zip
   from `dist/release`.
