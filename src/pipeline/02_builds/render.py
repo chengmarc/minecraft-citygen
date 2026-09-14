@@ -13,7 +13,8 @@ if __package__ in (None, ""):
 from config.path import BUILD_CATALOG, BUILDS_RENDERS, BUILDS_SCHEM
 from engine.render.isometric import render_cells_visible_iso, write_contact
 from engine.schematic.reader import decode_schem_cells
-from pipeline.stages import noop, run_stage_cli
+from pipeline.rendering import render_contact_sheet
+from pipeline.stages import run_stage_cli
 
 SCHEM = BUILDS_SCHEM
 CATALOG = BUILD_CATALOG
@@ -30,38 +31,28 @@ def assemble(key, meta):
 
 
 def run(*, logger=None, progress=None):
-    logger = logger or noop
-    progress = progress or noop
     with open(CATALOG, encoding="utf-8") as fh:
         catalog = json.load(fh)
-    os.makedirs(BUILDS_RENDERS, exist_ok=True)
 
-    images = []
     keys = sorted(catalog)
-    total = len(keys) * 2 + 1
-    for index, key in enumerate(keys, start=1):
-        im = render_cells_visible_iso(assemble(key, catalog[key]))
-        out = os.path.join(BUILDS_RENDERS, f"{key}.png")
-        im.save(out)
-        images.append((key, out))
-        logger(f"saved {out} ({im.width}x{im.height})")
-        progress(index, total, key)
 
-    contact = os.path.join(BUILDS_RENDERS, "_contact_sheet.png")
-    write_contact(
-        images,
-        contact,
+    def render_key(key):
+        return key, render_cells_visible_iso(assemble(key, catalog[key]))
+
+    return render_contact_sheet(
+        keys,
+        output_dir=BUILDS_RENDERS,
+        render_item=render_key,
         cols=8,
         cell_w=180,
         cell_h=180,
-        on_progress=lambda done, _contact_total: progress(
-            len(keys) + done,
-            total,
-            "Rendered build contact sheet." if done == len(images) + 1 else "Rendering build contact sheet...",
-        ),
+        contact_progress_label="Rendering build contact sheet...",
+        contact_done_label="Rendered build contact sheet.",
+        logger=logger,
+        progress=progress,
+        item_label="builds",
+        contact_writer=write_contact,
     )
-    logger(f"rendered {len(images)} builds -> {contact}")
-    return {"count": len(images), "contact_sheet": contact}
 
 
 if __name__ == "__main__":

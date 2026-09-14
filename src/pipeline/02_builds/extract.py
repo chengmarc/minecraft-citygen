@@ -16,6 +16,7 @@ from config.world import BUILD_MARKER_Y_RANGE, BUILD_TYPES, DATA_VERSION
 from engine.world.anvil_world_reader import World
 from engine.world.marker_extract import detect_marker_assets, extract_cuboid, iter_signs, parse_range
 from engine.schematic.writer import write_sponge_schem_cells
+from pipeline.extraction import chunk_scan_count, remove_existing_schems
 from pipeline.stages import noop, run_stage_cli
 
 CATALOG = BUILD_CATALOG
@@ -57,21 +58,15 @@ def write_schem(cells, block_entities, path):
     write_sponge_schem_cells(cells, path, DATA_VERSION, block_entities=block_entities)
 
 
-def remove_existing_schems():
-    for filename in os.listdir(BUILDS_SCHEM):
-        if filename.endswith(".schem"):
-            os.remove(os.path.join(BUILDS_SCHEM, filename))
-
-
 def run(*, logger=None, progress=None):
     logger = logger or noop
     progress = progress or noop
     os.makedirs(BUILDS_SCHEM, exist_ok=True)
-    remove_existing_schems()
+    remove_existing_schems(BUILDS_SCHEM)
 
     region_data = [(r.build_type, *r.bounds.as_tuple()) for r in BUILD_TYPES]
     chunk_counts = [
-        ((max(xa, xb) >> 4) - (min(xa, xb) >> 4) + 1) * ((max(za, zb) >> 4) - (min(za, zb) >> 4) + 1)
+        chunk_scan_count(xa, xb, za, zb)
         for _, (xa, _y0, za), (xb, _y1, zb) in region_data
     ]
     total_scan_chunks = sum(chunk_counts)

@@ -8,7 +8,7 @@ from pathlib import Path
 if __package__ in (None, ""):
     sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
-from pipeline.stages import noop, run_stage_cli
+from pipeline.stages import run_stage_cli, run_steps
 
 if __package__ in (None, ""):
     import importlib
@@ -20,14 +20,15 @@ else:
 
 
 def run(*, logger=None, progress=None):
-    logger = logger or noop
-    progress = progress or noop
-    progress(0, 2, "Extracting road pieces")
-    extract_result = extract.run(logger=logger)
-    progress(1, 2, "Rendering road contact sheet")
-    render_result = render.run(logger=logger)
-    progress(2, 2, "Road assets ready")
-    return {"extract": extract_result, "render": render_result}
+    return run_steps(
+        (
+            ("extract", "Extracting road pieces", extract.run, {}),
+            ("render", "Rendering road contact sheet", render.run, {}),
+        ),
+        logger=logger,
+        progress=progress,
+        done_label="Road assets ready",
+    )
 
 
 if __name__ == "__main__":

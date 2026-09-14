@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import threading
+
 from PySide6 import QtCore, QtWidgets
 
 from gui.core import progress
@@ -19,6 +21,67 @@ class RegionPreviewSignals(QtCore.QObject):
     loaded = QtCore.Signal(object, object)
     failed = QtCore.Signal(str)
     progress = QtCore.Signal(int, int)  # (completed, total)
+
+
+def start_background_job(
+    parent,
+    job,
+    *,
+    on_progress=None,
+    on_success=None,
+    on_failed=None,
+    on_finished=None,
+    failure_title="Job failed",
+    failure_status=None,
+    thread_factory=threading.Thread,
+):
+    """Run ``job(progress)`` on a daemon thread and relay results over Qt signals."""
+    signals = WorkerSignals(parent)
+    failure_status = failure_status or failure_title
+
+    if on_progress is not None:
+        signals.pipeline_progress.connect(on_progress)
+    if on_success is not None:
+        signals.success.connect(on_success)
+    if on_failed is not None:
+        signals.failed.connect(on_failed)
+    elif hasattr(parent, "_show_failure"):
+        signals.failed.connect(parent._show_failure)
+    if on_finished is not None:
+        signals.finished.connect(on_finished)
+
+    def emit_progress(stage, completed, total, label):
+        signals.pipeline_progress.emit(stage, float(completed), float(total), label or "")
+
+    def worker():
+        try:
+            result = job(emit_progress)
+        except Exception as exc:  # boundary: report background failures to the UI thread
+            message = str(exc).strip() or failure_status
+            signals.failed.emit(failure_title, message, failure_status)
+        else:
+            signals.success.emit(result)
+        finally:
+            signals.finished.emit()
+
+    active = getattr(parent, "_background_jobs", None)
+    if active is None:
+        active = []
+        parent._background_jobs = active
+
+    thread = thread_factory(target=worker, daemon=True)
+    job_ref = (signals, thread)
+    active.append(job_ref)
+
+    def forget_job():
+        try:
+            active.remove(job_ref)
+        except ValueError:
+            pass
+
+    signals.finished.connect(forget_job)
+    thread.start()
+    return thread
 
 
 class ProgressMixin:

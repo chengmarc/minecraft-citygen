@@ -14,47 +14,39 @@ from config.path import ROADS_RENDERS, ROADS_SCHEM
 from config.render import ROAD_ASSET_ISO_BLOCK_H, ROAD_ASSET_ISO_TILE_H, ROAD_ASSET_ISO_TILE_W
 from engine.render.isometric import render_cells_visible_iso, write_contact
 from engine.schematic.reader import decode_schem_cells
-from pipeline.stages import noop, run_stage_cli
+from pipeline.rendering import render_contact_sheet
+from pipeline.stages import run_stage_cli
 
 SCHEM = ROADS_SCHEM
 
 
 def run(*, logger=None, progress=None):
-    logger = logger or noop
-    progress = progress or noop
-    os.makedirs(ROADS_RENDERS, exist_ok=True)
-    images = []
     paths = sorted(glob.glob(os.path.join(SCHEM, "*.schem")))
-    total = len(paths) * 2 + 1
-    for index, path in enumerate(paths, start=1):
+
+    def render_path(path):
         name = os.path.splitext(os.path.basename(path))[0]
-        im = render_cells_visible_iso(
+        image = render_cells_visible_iso(
             decode_schem_cells(path),
             tile_w=ROAD_ASSET_ISO_TILE_W,
             tile_h=ROAD_ASSET_ISO_TILE_H,
             block_h=ROAD_ASSET_ISO_BLOCK_H,
         )
-        out = os.path.join(ROADS_RENDERS, name + ".png")
-        im.save(out)
-        images.append((name, out))
-        logger(f"saved {out} ({im.width}x{im.height})")
-        progress(index, total, name)
+        return name, image
 
-    contact = os.path.join(ROADS_RENDERS, "_contact_sheet.png")
-    write_contact(
-        images,
-        contact,
+    return render_contact_sheet(
+        paths,
+        output_dir=ROADS_RENDERS,
+        render_item=render_path,
         cols=5,
         cell_w=220,
         cell_h=190,
-        on_progress=lambda done, _contact_total: progress(
-            len(paths) + done,
-            total,
-            "Rendered road contact sheet." if done == len(images) + 1 else "Rendering road contact sheet...",
-        ),
+        contact_progress_label="Rendering road contact sheet...",
+        contact_done_label="Rendered road contact sheet.",
+        logger=logger,
+        progress=progress,
+        item_label="roads",
+        contact_writer=write_contact,
     )
-    logger(f"rendered {len(images)} roads -> {contact}")
-    return {"count": len(images), "contact_sheet": contact}
 
 
 if __name__ == "__main__":

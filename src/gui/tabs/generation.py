@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import os
 import threading
-import time
 
 from PySide6 import QtWidgets
 
@@ -13,7 +12,7 @@ from config.world import SAVE
 from pipeline import services
 
 from gui.core import common, progress
-from gui.core.workers import ProgressMixin, WorkerSignals
+from gui.core.workers import ProgressMixin, start_background_job
 from gui.tabs._algo import AlgoTabMixin
 from gui.widgets.qt_viewer import QtImageViewer
 from gui.widgets.widgets import AlgoControlsWidget
@@ -34,9 +33,7 @@ class GenerationTab(QtWidgets.QWidget, AlgoTabMixin, ProgressMixin):
         super().__init__(owner)
         self._init_algo_tab(owner)
         self._init_progress_mixin()
-        self._generation_timing_started_at = None
-        self._generation_timing_last = None
-        self._generation_timing_events = []
+        self._generation_timing = progress.ProgressTimingRecorder()
         state = self._load_algo_state()
 
         layout = QtWidgets.QVBoxLayout(self)
@@ -90,74 +87,29 @@ class GenerationTab(QtWidgets.QWidget, AlgoTabMixin, ProgressMixin):
             QtWidgets.QMessageBox.critical(self, "Could not open worlds folder", str(exc))
 
     def _record_generation_timing(self, stage, completed, total, label):
-        now = time.perf_counter()
-        if self._generation_timing_started_at is None:
-            self._generation_timing_started_at = now
-
-        completed_i = int(completed)
-        total_i = int(total)
-        label = label or ""
-        key = (stage, completed_i, total_i, label)
-        last = self._generation_timing_last
-        if last is not None and last["key"] != key:
-            self._generation_timing_events.append(
-                {
-                    "stage": last["stage"],
-                    "completed": last["completed"],
-                    "total": last["total"],
-                    "label": last["label"],
-                    "seconds": round(now - last["time"], 4),
-                }
-            )
-        if last is None or last["key"] != key:
-            self._generation_timing_last = {
-                "key": key,
-                "stage": stage,
-                "completed": completed_i,
-                "total": total_i,
-                "label": label,
-                "time": now,
-            }
+        self._generation_timing.record(stage, completed, total, label)
 
     def _finish_generation_timing(self):
-        now = time.perf_counter()
-        last = self._generation_timing_last
-        if last is not None:
-            self._generation_timing_events.append(
-                {
-                    "stage": last["stage"],
-                    "completed": last["completed"],
-                    "total": last["total"],
-                    "label": last["label"],
-                    "seconds": round(now - last["time"], 4),
-                }
-            )
-        started_at = self._generation_timing_started_at or now
-        phase_seconds = {"construct": 0.0, "render": 0.0, "export": 0.0}
-        for event in self._generation_timing_events:
+        def phase_key(event):
             if event["stage"] == services.CITY_CONSTRUCT:
-                phase = "construct"
-            elif event["stage"] == services.CITY_RENDER:
-                phase = "render"
-            elif event["stage"] == services.WORLD_EXPORT:
-                phase = "export"
-            else:
-                continue
-            phase_seconds[phase] += event["seconds"]
-        payload = {
-            "total_seconds": round(now - started_at, 4),
-            "phase_seconds": {key: round(value, 4) for key, value in phase_seconds.items()},
-            "weights": {
-                "construct": list(progress.GENERATION_CONSTRUCT_WEIGHTS),
-                "render": progress.GENERATION_RENDER_WEIGHT,
-                "export": progress.GENERATION_WORLD_WEIGHT,
-            },
-            "events": self._generation_timing_events,
-        }
-        common.save_progress_timing("generation", payload)
-        self._generation_timing_started_at = None
-        self._generation_timing_last = None
-        self._generation_timing_events = []
+                return "construct"
+            if event["stage"] == services.CITY_RENDER:
+                return "render"
+            if event["stage"] == services.WORLD_EXPORT:
+                return "export"
+            return None
+
+        common.save_progress_timing(
+            "generation",
+            self._generation_timing.finish(
+                phase_key=phase_key,
+                weights={
+                    "construct": list(progress.GENERATION_CONSTRUCT_WEIGHTS),
+                    "render": progress.GENERATION_RENDER_WEIGHT,
+                    "export": progress.GENERATION_WORLD_WEIGHT,
+                },
+            ),
+        )
 
     def _on_pipeline_progress(self, stage, completed, total, label):
         self._record_generation_timing(stage, completed, total, label)
@@ -220,33 +172,30 @@ class GenerationTab(QtWidgets.QWidget, AlgoTabMixin, ProgressMixin):
         self.set_status("Building city layout")
         self.progress_bar.setRange(0, progress.PROGRESS_BAR_SCALE)
         self.progress_bar.setValue(0)
-        self._generation_timing_started_at = time.perf_counter()
-        self._generation_timing_last = None
-        self._generation_timing_events = []
+        self._generation_timing.start()
 
-        signals = WorkerSignals(self)
-        signals.pipeline_progress.connect(self._on_pipeline_progress)
-        signals.failed.connect(self._show_failure)
-        signals.success.connect(lambda payload: (
-            self.city_viewer.load_image(common.city_render_path(payload)),
-            self._finish_generation_timing(),
-            self._finish_progress(),
-            self.set_status("Build complete"),
-        ))
-        signals.finished.connect(lambda: (self._stop_progress(), self.refresh_prerequisite_state()))
+        def handle_success(payload):
+            self.city_viewer.load_image(common.city_render_path(payload))
+            self._finish_generation_timing()
+            self._finish_progress()
+            self.set_status("Build complete")
 
-        def on_progress(stage, completed, total, label):
-            signals.pipeline_progress.emit(stage, float(completed), float(total), label or "")
+        def handle_finished():
+            self._stop_progress()
+            self.refresh_prerequisite_state()
 
-        def worker():
-            try:
-                services.run_city_stage(seed, fine, env_overrides=env, progress=on_progress)
-                services.run_world_stage(seed, env_overrides=env, progress=on_progress)
-            except Exception as exc:  # boundary: surface any background failure to the UI
-                signals.failed.emit("Generation failed", str(exc).strip() or "Generation failed", "Generation failed")
-            else:
-                signals.success.emit(seed)
-            finally:
-                signals.finished.emit()
+        def job(on_progress):
+            services.run_city_stage(seed, fine, env_overrides=env, progress=on_progress)
+            services.run_world_stage(seed, env_overrides=env, progress=on_progress)
+            return seed
 
-        threading.Thread(target=worker, daemon=True).start()
+        start_background_job(
+            self,
+            job,
+            on_progress=self._on_pipeline_progress,
+            on_success=handle_success,
+            on_finished=handle_finished,
+            failure_title="Generation failed",
+            failure_status="Generation failed",
+            thread_factory=threading.Thread,
+        )
