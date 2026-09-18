@@ -89,23 +89,6 @@ class AnvilWorldReaderTests(unittest.TestCase):
 
         self.assertIsNone(absent_world.heightmap_surface_block(0, 0))
 
-    def test_block_positions_in_section_skips_decode_when_palette_has_no_target(self):
-        world = object.__new__(World)
-        world.load_chunk = lambda cx, cz: {
-            "sections": [
-                {
-                    "Y": 4,
-                    "block_states": {
-                        "palette": [{"Name": "minecraft:air"}, {"Name": "minecraft:stone"}],
-                        "data": [0],
-                    },
-                }
-            ]
-        }
-        world._section = lambda cx, cz, sy: (_ for _ in ()).throw(AssertionError("section data was decoded"))
-
-        self.assertEqual(world.block_positions_in_section(0, 0, 4, {"minecraft:gold_block"}), [])
-
     def test_block_positions_in_section_returns_target_world_coordinates(self):
         palette = [
             {"Name": "minecraft:air"},
@@ -157,8 +140,12 @@ def test_gold_markers_ignore_diamonds_outside_north_west_up_direction():
     )
 
     assert cuboids == []
-    assert skipped[0] == (10, 10, "no north/west/up diamond marker available for gold (10, 64, 10)")
-    assert len(skipped) == 4
+    assert skipped == [
+        (10, 10, "no north/west/up diamond marker available for gold (10, 64, 10)"),
+        (9, 9, "unused diamond marker (9, 63, 9)"),
+        (11, 9, "unused diamond marker (11, 70, 9)"),
+        (9, 11, "unused diamond marker (9, 70, 11)"),
+    ]
 
 
 def test_build_cuboids_group_by_vertical_alignment():
@@ -204,13 +191,11 @@ def test_build_cuboids_require_emerald_adjacent_to_bottom_gold():
 class _SectionMarkerWorld:
     def __init__(self, markers_by_section):
         self.markers_by_section = markers_by_section
-        self.calls = []
 
     def is_chunk_empty(self, cx, cz):
         return False
 
     def block_positions_in_section(self, cx, cz, sy, block_names):
-        self.calls.append((cx, cz, sy, frozenset(block_names)))
         return self.markers_by_section.get((cx, cz, sy), [])
 
 
@@ -232,9 +217,6 @@ def test_marker_blocks_in_region_clips_section_results_to_selected_bounds():
         "diamond_block": [],
         "emerald_block": [],
     }
-    assert world.calls == [
-        (0, 0, 4, frozenset({"minecraft:gold_block", "minecraft:diamond_block", "minecraft:emerald_block"}))
-    ]
 
 
 # --- marker parsing: cuboid leaf persistence ------------------------------

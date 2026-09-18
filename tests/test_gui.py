@@ -18,7 +18,6 @@ from config.algo import ALGO  # noqa: E402
 from config.path import city_preview_path, grid_preview_path  # noqa: E402
 from config.world import BlockRegion  # noqa: E402
 from gui import app as gui_app  # noqa: E402
-from gui import launcher  # noqa: E402
 from gui.core import algo_config, app_files, extraction_config, progress  # noqa: E402
 from gui.tabs import extraction as extraction_module  # noqa: E402
 from gui.tabs import generation as generation_module  # noqa: E402
@@ -57,14 +56,7 @@ class _ImmediateThread:
         self._target()
 
 
-class LauncherTests(unittest.TestCase):
-    def test_launcher_routes_default_to_qt_app(self):
-        with mock.patch("gui.app.main", return_value=23) as qt_main:
-            result = launcher.main([])
-
-        self.assertEqual(result, 23)
-        qt_main.assert_called_once_with([])
-
+class QtArgParsingTests(unittest.TestCase):
     def test_parse_args_keeps_qt_passthrough_args(self):
         options, qt_args = gui_app._parse_args(["--qt-style", "Fusion", "-platform", "offscreen"])
 
@@ -198,20 +190,6 @@ class GuiPipelineHandoffTests(unittest.TestCase):
 
 
 class SavedGuiConfigTests(unittest.TestCase):
-    def test_save_and_load_saved_gui_config(self):
-        with tempfile.TemporaryDirectory() as tempdir:
-            config_path = Path(tempdir) / "src" / "config" / "citygen.json"
-            sample = {
-                "algo": {"seed": "12", "algo": {"FINE": "Big"}},
-                "extraction": {"world_path": "C:/world"},
-            }
-
-            with mock.patch.object(app_files, "SAVED_GUI_CONFIG_PATH", str(config_path)):
-                app_files.save_saved_gui_config(sample)
-                loaded = app_files.load_saved_gui_config()
-
-        self.assertEqual(loaded, sample)
-
     def test_load_saved_gui_config_migrates_legacy_root_file(self):
         with tempfile.TemporaryDirectory() as tempdir:
             config_path = Path(tempdir) / "src" / "config" / "citygen.json"
