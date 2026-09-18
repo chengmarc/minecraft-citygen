@@ -183,3 +183,14 @@ def render_cells_visible_iso(
 ):
     _W, _H, _L, inv, grid = cells_to_grid(cells)
     return render_grid_visible_iso(grid, inv, tile_w, tile_h, block_h, margin)
+
+
+def warm_up():
+    """Compile the numba rasterizer now instead of on the first real render.
+
+    The first call in a process imports numba and JIT-compiles (or loads the
+    on-disk cache for) ``_raster_visible_iso``, which takes seconds. The warm-up
+    renders a one-block grid through the same entry point as real renders, so
+    it compiles the same specialization.
+    """
+    render_grid_visible_iso(np.ones((1, 1, 1), dtype=np.int32), {0: "minecraft:air", 1: "minecraft:stone"})
