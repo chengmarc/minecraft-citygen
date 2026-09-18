@@ -12,7 +12,7 @@ from PIL import Image, ImageDraw
 if __package__ in (None, ""):
     sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
-from config.path import PREVIEW_BUILDS, PREVIEW_BUILDS_CONTACT_SHEET
+from config.path import BUILD_CATALOG, PREVIEW_BUILDS, PREVIEW_BUILDS_CONTACT_SHEET
 from config.render import BUILD_PREVIEW_COLORS
 from engine.render.contact_sheet import write_contact
 from engine.schematic.building import read_catalog
@@ -92,7 +92,7 @@ def render_building(key, meta):
 def run(*, key=None, logger=None, progress=None):
     logger = logger or noop
     progress = progress or noop
-    catalog = read_catalog()
+    catalog = read_catalog(BUILD_CATALOG)
     keys = [key] if key else sorted(catalog)
     os.makedirs(PREVIEW_BUILDS, exist_ok=True)
 

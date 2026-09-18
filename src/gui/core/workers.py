@@ -23,6 +23,10 @@ class RegionPreviewSignals(QtCore.QObject):
     progress = QtCore.Signal(int, int)  # (completed, total)
 
 
+# Running jobs' (signals, thread) pairs, held so neither is collected mid-run.
+_active_jobs = []
+
+
 def start_background_job(
     parent,
     job,
@@ -45,8 +49,6 @@ def start_background_job(
         signals.success.connect(on_success)
     if on_failed is not None:
         signals.failed.connect(on_failed)
-    elif hasattr(parent, "_show_failure"):
-        signals.failed.connect(parent._show_failure)
     if on_finished is not None:
         signals.finished.connect(on_finished)
 
@@ -64,18 +66,13 @@ def start_background_job(
         finally:
             signals.finished.emit()
 
-    active = getattr(parent, "_background_jobs", None)
-    if active is None:
-        active = []
-        parent._background_jobs = active
-
     thread = thread_factory(target=worker, daemon=True)
     job_ref = (signals, thread)
-    active.append(job_ref)
+    _active_jobs.append(job_ref)
 
     def forget_job():
         try:
-            active.remove(job_ref)
+            _active_jobs.remove(job_ref)
         except ValueError:
             pass
 
@@ -93,7 +90,7 @@ class ProgressMixin:
     def set_status(self, status):
         self.status_label.setText(status)
 
-    def _show_failure(self, title, message, status):
+    def show_failure(self, title, message, status):
         self.set_status(status)
         QtWidgets.QMessageBox.critical(self, title, message)
 

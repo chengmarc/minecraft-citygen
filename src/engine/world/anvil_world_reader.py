@@ -16,23 +16,16 @@ import numpy as np
 import nbtlib
 
 from config.path import region_dir_candidates
-from config.world import REGION_DIR, REGION_DIR_CANDIDATES, SAVE
 from engine.blocks import AIR_BLOCKS
 
 
-def _checked_region_paths(region_dir, save_path, fallback_candidates):
+def _checked_region_paths(region_dir, save_path):
     checked = []
     if region_dir:
         checked.append(region_dir)
     for candidate in region_dir_candidates(save_path):
         if candidate not in checked:
             checked.append(candidate)
-    if not checked:
-        checked.extend(fallback_candidates)
-    elif region_dir == REGION_DIR and save_path == SAVE:
-        for candidate in fallback_candidates:
-            if candidate not in checked:
-                checked.append(candidate)
     return tuple(checked)
 
 
@@ -48,7 +41,7 @@ def _missing_region_dir_message(save_path, checked_paths):
 
 
 class World:
-    def __init__(self, region_dir=REGION_DIR, save_path=SAVE):
+    def __init__(self, region_dir, save_path):
         self.region_dir = region_dir
         self.save_path = save_path
         self._chunks = {}          # (cx,cz) -> chunk nbt (or None)
@@ -56,7 +49,7 @@ class World:
         self._heightmaps = {}      # (cx,cz,key) -> decoded 256-entry height array
         self._regions = {}         # (rx,rz) -> region file bytes (or None if absent)
         if not os.path.isdir(self.region_dir):
-            checked = _checked_region_paths(self.region_dir, self.save_path, REGION_DIR_CANDIDATES)
+            checked = _checked_region_paths(self.region_dir, self.save_path)
             raise FileNotFoundError(_missing_region_dir_message(self.save_path, checked))
 
     def _region_bytes(self, rx, rz):

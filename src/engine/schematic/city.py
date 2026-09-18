@@ -39,7 +39,7 @@ def seat_y(ground_y, ground_offset):
     return ground_y - ground_offset
 
 
-def assemble_instances(seed, placements, catalog_meta, ground_y):
+def assemble_instances(seed, placements, catalog_meta, ground_y, builds_dir):
     """Rotate and position each placed building; return (instances, tallest building top)."""
     height_rng = seeded_rng(seed, STACK_HEIGHT_STREAM)
     instances = []
@@ -48,7 +48,7 @@ def assemble_instances(seed, placements, catalog_meta, ground_y):
         building = placement.building
         entry = catalog_meta[building.num]
         mid_sections = height_rng.randint(*entry.get("stack", [1, 1])) if is_stacked(entry) else 0
-        tile = rot_tile(assemble(building.num, mid_sections, catalog_meta), FACE_K[placement.facing])
+        tile = rot_tile(assemble(builds_dir, building.num, mid_sections, catalog_meta), FACE_K[placement.facing])
         px, pz = placement_origin(placement.rect, placement.facing, tile.width, tile.length, CELL)
         px += PLAYER_ANCHOR_MARGIN
         pz += PLAYER_ANCHOR_MARGIN

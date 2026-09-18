@@ -11,7 +11,7 @@ if __package__ in (None, ""):
     sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
 from config.path import BUILD_CATALOG, BUILDS_SCHEM
-from config.world import BUILD_MARKER_Y_RANGE, BUILD_TYPES, DATA_VERSION
+from config.world import BUILD_MARKER_Y_RANGE, BUILD_TYPES, DATA_VERSION, REGION_DIR, SAVE
 from engine.world.anvil_world_reader import World
 from engine.world.marker_extract import detect_marker_assets, extract_cuboid, parse_range, sign_text_above
 from engine.schematic.building import STACK_PARTS, WHOLE, piece_path, write_catalog
@@ -22,7 +22,7 @@ from pipeline.stages import noop, run_stage_cli
 
 @lru_cache(maxsize=1)
 def get_world():
-    return World()
+    return World(REGION_DIR, SAVE)
 
 
 def detect_builds(build_type, x_a, x_b, z_a, z_b, *, on_scan_progress=None):
@@ -89,13 +89,13 @@ def run(*, logger=None, progress=None):
             entry["stack"] = stack_rng if stack_rng is not None else [1, 1]
         for part, cuboid in zip(parts, cuboids):
             cells, bes = extract_cuboid(get_world(), cuboid, force_persistent_leaves=True)
-            write_sponge_schem_cells(cells, piece_path(key, part), DATA_VERSION, block_entities=bes)
+            write_sponge_schem_cells(cells, piece_path(BUILDS_SCHEM, key, part), DATA_VERSION, block_entities=bes)
             entry["pieces"][part] = cuboid[3] - cuboid[2] + 1
         catalog[key] = entry
         logger(f"extracted {key}")
         progress(i + 1, total, key)
 
-    write_catalog(catalog)
+    write_catalog(catalog, BUILD_CATALOG)
     logger(f"wrote {len(catalog)} builds to {BUILD_CATALOG}")
     return {
         "count": len(catalog),

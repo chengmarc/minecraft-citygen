@@ -149,7 +149,7 @@ def test_reader_round_trips_written_cells(tmp_path):
     assert decode_schem_offset(str(path)) == (0, 0, 0)
 
 
-def test_road_asset_loaders_keep_network_tiles_fill_props_and_ground_fill_separate(tmp_path, monkeypatch):
+def test_road_asset_loaders_keep_network_tiles_fill_props_and_ground_fill_separate(tmp_path):
     write_sponge_schem_cells(
         [[["minecraft:stone"]]],
         str(tmp_path / "02_big_2x2_I.schem"),
@@ -168,11 +168,9 @@ def test_road_asset_loaders_keep_network_tiles_fill_props_and_ground_fill_separa
         V2612,
         offset=(0, -3, 0),
     )
-    monkeypatch.setattr(road_schem, "ROADS_SCHEM", str(tmp_path))
-
-    tiles = road_schem.load_tiles()
-    fillers = road_schem.load_fillers()
-    ground_fill = road_schem.load_ground_fill_tile()
+    tiles = road_schem.load_tiles(str(tmp_path))
+    fillers = road_schem.load_fillers(str(tmp_path))
+    ground_fill = road_schem.load_ground_fill_tile(str(tmp_path))
 
     assert set(tiles) == {"02"}
     assert tiles["02"].ground_offset == 1
@@ -182,19 +180,16 @@ def test_road_asset_loaders_keep_network_tiles_fill_props_and_ground_fill_separa
     assert ground_fill.ground_offset == 3
 
 
-def test_building_assembly_uses_piece_shape_not_placement_type(tmp_path, monkeypatch):
-    monkeypatch.setattr(building_schem, "BUILDS_SCHEM", str(tmp_path))
-    monkeypatch.setattr(building_schem, "_piece", {})
-
+def test_building_assembly_uses_piece_shape_not_placement_type(tmp_path):
     write_sponge_schem_cells([[["minecraft:bottom"]]], str(tmp_path / "001_bottom.schem"), V2612)
     write_sponge_schem_cells([[["minecraft:middle"]]], str(tmp_path / "001_middle.schem"), V2612)
     write_sponge_schem_cells([[["minecraft:top"]]], str(tmp_path / "001_top.schem"), V2612)
     write_sponge_schem_cells([[["minecraft:whole"]]], str(tmp_path / "002.schem"), V2612)
 
-    stacked = building_schem.assemble("001", 2, {
+    stacked = building_schem.assemble(str(tmp_path), "001", 2, {
         "001": {"type": 1, "pieces": {"bottom": 1, "middle": 1, "top": 1}},
     })
-    whole = building_schem.assemble("002", 0, {
+    whole = building_schem.assemble(str(tmp_path), "002", 0, {
         "002": {"type": 2, "pieces": {"whole": 1}},
     })
 

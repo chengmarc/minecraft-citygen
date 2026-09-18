@@ -52,7 +52,7 @@ collinear along a big corridor.
 
 [schematic/road.py](schematic/road.py) maps the generated tile layout to extracted
 road `.schem` pieces for production, and keeps fill props out of the road tile set
-(exposing them via `load_fillers()` instead).
+(exposing them via `load_fillers(roads_dir)` instead).
 
 ## How building placement works
 

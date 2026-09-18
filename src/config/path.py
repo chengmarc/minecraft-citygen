@@ -75,6 +75,8 @@ RESOURCE_ROOT = _resource_root()
 ROOT = _app_root()
 CONFIG = str(Path(RESOURCE_ROOT) / "config")
 GUI = str(Path(RESOURCE_ROOT) / "gui")
+GUI_ICONS = str(Path(GUI) / "icons")
+APP_ICON = str(Path(GUI_ICONS) / "app-icon.png")  # window icon and exported worlds' save-list icon
 DEFAULT_WORLD = str(Path(RESOURCE_ROOT) / "config" / "default_world")
 ARTIFACTS = str(Path(ROOT) / "artifacts")
 

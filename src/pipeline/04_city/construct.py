@@ -9,14 +9,14 @@ if __package__ in (None, ""):
     sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
 from config.algo import DEFAULT_SEED, FINE as DEFAULT_FINE
-from config.path import city_schem_path
+from config.path import BUILD_CATALOG, BUILDS_SCHEM, ROADS_SCHEM, city_schem_path
 from config.world import DATA_VERSION
 from engine.core.city_layout import FILLER_STREAM, plan_city, seeded_rng
 from engine.core.road_network import gen_networks, make_size
 from engine.schematic import city
 from engine.schematic.building import read_catalog
 from engine.schematic.road import build as build_road_grid
-from engine.schematic.road import load_fillers, load_ground_fill_tile
+from engine.schematic.road import load_fillers, load_ground_fill_tile, load_tiles
 from engine.schematic.writer import write_sponge_schem_grid
 from pipeline.stages import noop, run_stage_cli
 
@@ -36,8 +36,8 @@ STEPS = (
 def _load_fill_assets(no_ground_fill):
     if no_ground_fill:
         return [], None
-    fillers = load_fillers()
-    ground_fill_tile = load_ground_fill_tile()
+    fillers = load_fillers(ROADS_SCHEM)
+    ground_fill_tile = load_ground_fill_tile(ROADS_SCHEM)
     if ground_fill_tile is None:
         raise FileNotFoundError(
             "missing road ground-fill asset 18 in artifacts/01_roads/schem; run Stage 1 first"
@@ -59,10 +59,10 @@ def run(*, seed=DEFAULT_SEED, fine=DEFAULT_FINE, out=None, no_ground_fill=False,
     network = gen_networks(seed, size=size)
 
     _step(1)
-    road_grid, road_palette, (road_span, road_height, _), tile_count, road_ground_offset, road_block_entities = build_road_grid(network)
+    road_grid, road_palette, (road_span, road_height, _), tile_count, road_ground_offset, road_block_entities = build_road_grid(network, load_tiles(ROADS_SCHEM))
 
     _step(2)
-    catalog_meta = read_catalog()
+    catalog_meta = read_catalog(BUILD_CATALOG)
 
     _step(3)
     _lots, placements = plan_city(seed, network, catalog_meta)
@@ -74,7 +74,7 @@ def run(*, seed=DEFAULT_SEED, fine=DEFAULT_FINE, out=None, no_ground_fill=False,
     out_span = road_span + city.PLAYER_ANCHOR_MARGIN
 
     _step(4)
-    instances, building_top = city.assemble_instances(seed, placements, catalog_meta, ground_y)
+    instances, building_top = city.assemble_instances(seed, placements, catalog_meta, ground_y, BUILDS_SCHEM)
 
     _step(5)
     fillers, ground_fill_tile = _load_fill_assets(no_ground_fill)
