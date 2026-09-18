@@ -65,37 +65,10 @@ class CityGeneratorQtApp(QtWidgets.QMainWindow):
         self._saved_gui_config[section] = value
         app_files.save_saved_gui_config(self._saved_gui_config)
 
-    def _refresh_after_gui_change(self, *_args):
-        self.refresh_prerequisite_buttons()
-
-    def note_preview_inputs_changed(self):
-        self._refresh_after_gui_change()
-
-    def note_extraction_inputs_changed(self):
-        self._refresh_after_gui_change()
-
-    def begin_extraction_run(self):
-        self._refresh_after_gui_change()
-
-    def mark_extraction_complete(self, state):
-        self.refresh_prerequisite_buttons()
-
-    def end_extraction_run(self, succeeded=True):
-        self.refresh_prerequisite_buttons()
-
-    def _assets_ready(self):
-        return app_files.extracted_assets_ready()
-
-    def preview_prerequisite_met(self):
-        return self._assets_ready()
-
-    def generation_prerequisite_met(self):
-        return self._assets_ready()
-
     def refresh_prerequisite_buttons(self):
-        for tab in (getattr(self, "preview_tab", None), getattr(self, "generation_tab", None)):
-            if tab is not None and hasattr(tab, "refresh_prerequisite_state"):
-                tab.refresh_prerequisite_state()
+        """Re-gate Preview/Build on extracted assets; call after artifacts change."""
+        self.preview_tab.refresh_prerequisite_state()
+        self.generation_tab.refresh_prerequisite_state()
 
 
 def _parse_args(argv: list[str]) -> tuple[argparse.Namespace, list[str]]:

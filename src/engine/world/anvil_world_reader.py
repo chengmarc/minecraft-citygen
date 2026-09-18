@@ -152,48 +152,6 @@ class World:
         entry = palette[v]
         return str(entry["Name"]), self._block_properties(entry)
 
-    def top_solid_block(self, x, z):
-        """Return the highest non-air block in one column, or None if absent."""
-        cx, cz = x >> 4, z >> 4
-        chunk = self.load_chunk(cx, cz)
-        if chunk is None:
-            return None
-
-        lx, lz = x & 15, z & 15
-        section_ys = sorted((int(section["Y"]) for section in chunk.get("sections", [])), reverse=True)
-        for sy in section_ys:
-            palette, indexes = self._section(cx, cz, sy)
-            if not palette:
-                continue
-            if indexes is None:
-                entry = palette[0]
-                name = str(entry["Name"])
-                if name not in AIR_BLOCKS:
-                    return name, (sy << 4) + 15, self._block_properties(entry)
-                continue
-            for ly in range(15, -1, -1):
-                index = indexes[ly * 256 + lz * 16 + lx]
-                entry = palette[index]
-                name = str(entry["Name"])
-                if name not in AIR_BLOCKS:
-                    return name, (sy << 4) + ly, self._block_properties(entry)
-        return None
-
-    def top_solid_blocks(self, cx, cz):
-        """Return top non-air blocks for all 256 columns in a chunk."""
-        result = self.heightmap_surface_blocks(cx, cz)
-        if any(entry is not None for entry in result):
-            return result
-        if self.load_chunk(cx, cz) is None:
-            return [None] * 256
-        scanned = []
-        for col in range(256):
-            x = (cx << 4) + (col & 15)
-            z = (cz << 4) + (col >> 4)
-            top = self.top_solid_block(x, z)
-            scanned.append(None if top is None else (top[0], top[1]))
-        return scanned
-
     def block_positions_in_section(self, cx, cz, sy, block_names):
         """Return world positions for target block names in one chunk section.
 

@@ -22,7 +22,6 @@ PREVIEW_STEPS = {step.module: (index, step.label) for index, step in enumerate(s
 
 class PreviewTab(QtWidgets.QWidget, AlgoTabMixin, ProgressMixin):
     legacy_state_sections = ("preview",)
-    prerequisite_owner_method = "preview_prerequisite_met"
     ready_tooltip = "Generate a fast road and city layout preview."
 
     def __init__(self, owner):
@@ -123,16 +122,12 @@ class PreviewTab(QtWidgets.QWidget, AlgoTabMixin, ProgressMixin):
             QtWidgets.QMessageBox.critical(self, "Invalid preview config", str(exc))
             return
 
-        if hasattr(self.owner, "begin_preview_run"):
-            self.owner.begin_preview_run()
-        run_state = self.controls.current_state()
-
         self._start_progress()
         self.controls.action_button.setEnabled(False)
         self.set_status("Preparing preview")
 
-        def handle_success(payload):
-            self._load_previews(payload)
+        def handle_success(seed):
+            self._load_previews(seed)
             self._finish_progress()
             self.set_status("Preview ready")
 
@@ -142,7 +137,7 @@ class PreviewTab(QtWidgets.QWidget, AlgoTabMixin, ProgressMixin):
 
         def job(on_progress):
             services.run_stage("preview", seed=seed, fine=fine, env_overrides=env, progress=on_progress)
-            return seed, run_state
+            return seed
 
         start_background_job(
             self,
@@ -155,9 +150,6 @@ class PreviewTab(QtWidgets.QWidget, AlgoTabMixin, ProgressMixin):
             thread_factory=threading.Thread,
         )
 
-    def _load_previews(self, payload):
-        seed, run_state = payload
+    def _load_previews(self, seed):
         self.grid_viewer.load_image(grid_preview_path(seed))
         self.city_viewer.load_image(city_preview_path(seed))
-        if hasattr(self.owner, "mark_preview_complete"):
-            self.owner.mark_preview_complete(run_state)

@@ -10,7 +10,6 @@ from __future__ import annotations
 
 import json
 import re
-from collections import Counter
 from dataclasses import dataclass
 
 from nbtlib import Compound
@@ -22,7 +21,6 @@ MARKER_BLOCKS = {"gold_block", "diamond_block", "emerald_block"}
 MARKER_BLOCK_NAMES = {f"minecraft:{name}" for name in MARKER_BLOCKS}
 # Chunk block-entity keys that describe position/identity rather than payload.
 _BE_META_KEYS = ("id", "x", "y", "z", "keepPacked")
-GROUND_MIN_SUPPORT_FRACTION = 0.05
 
 
 @dataclass(frozen=True)
@@ -40,38 +38,6 @@ def _cuboid_from_pair(gold, diamond):
     y0, y1 = sorted((gold[1], diamond[1]))
     z0, z1 = sorted((gold[2], diamond[2]))
     return x0, x1, y0, y1, z0, z1
-
-
-def detect_source_ground_y(world, x_a, x_b, z_a, z_b):
-    """Detect the lowest broadly present top-surface Y in an X/Z region."""
-    xlo, xhi = min(x_a, x_b), max(x_a, x_b)
-    zlo, zhi = min(z_a, z_b), max(z_a, z_b)
-    counts = Counter()
-    samples = 0
-    for cx in range(xlo >> 4, (xhi >> 4) + 1):
-        for cz in range(zlo >> 4, (zhi >> 4) + 1):
-            if world.is_chunk_empty(cx, cz):
-                continue
-            for col, top in enumerate(world.top_solid_blocks(cx, cz)):
-                if top is None:
-                    continue
-                x = (cx << 4) + (col & 15)
-                z = (cz << 4) + (col >> 4)
-                if not (xlo <= x <= xhi and zlo <= z <= zhi):
-                    continue
-                counts[int(top[1])] += 1
-                samples += 1
-    if not counts:
-        return None
-    min_support = max(1, int(samples * GROUND_MIN_SUPPORT_FRACTION))
-    supported = [y for y, count in counts.items() if count >= min_support]
-    return min(supported) if supported else None
-
-
-def ground_shift(world, x_a, x_b, z_a, z_b, reference_y):
-    """Delta from the authored reference ground Y to the detected source ground."""
-    ground_y = detect_source_ground_y(world, x_a, x_b, z_a, z_b)
-    return 0 if ground_y is None else ground_y - int(reference_y)
 
 
 def marker_blocks_in_region(world, x_a, x_b, z_a, z_b, y_range, *, on_progress=None):

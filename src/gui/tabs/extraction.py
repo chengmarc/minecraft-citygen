@@ -124,20 +124,6 @@ class ExtractionTab(QtWidgets.QWidget, ProgressMixin):
 
     def _save_state(self):
         self.owner.set_saved_config_section("extraction", self._current_config_state())
-        if hasattr(self.owner, "note_extraction_inputs_changed"):
-            self.owner.note_extraction_inputs_changed()
-
-    def prerequisite_state(self):
-        state = self._current_config_state()
-        return {
-            "world_path": state["world_path"],
-            "road": state["road"],
-            "house": state["house"],
-            "landmark": state["landmark"],
-        }
-
-    def _select_version(self, value):
-        self.controls.select_version(value)
 
     def _refresh_detected_version(self):
         path = self.world_edit.text().strip()
@@ -147,7 +133,7 @@ class ExtractionTab(QtWidgets.QWidget, ProgressMixin):
         fm = self.detected_version_edit.fontMetrics()
         measure = text if text else self.detected_version_edit.placeholderText()
         self.detected_version_edit.setFixedWidth(fm.horizontalAdvance(measure) + 20)
-        self._rebuild_version_combo(version)
+        self.controls.rebuild_version_combo(version)
         self._refresh_extract_readiness()
 
     def _world_is_ready(self):
@@ -164,9 +150,6 @@ class ExtractionTab(QtWidgets.QWidget, ProgressMixin):
         world_ready = self._world_is_ready()
         self.controls.set_world_ready(world_ready)
         self.controls.set_extract_enabled(world_ready and self._areas_are_ready())
-
-    def _rebuild_version_combo(self, min_data_version):
-        self.controls.rebuild_version_combo(min_data_version)
 
     def _current_config_state(self):
         return {
@@ -207,6 +190,7 @@ class ExtractionTab(QtWidgets.QWidget, ProgressMixin):
         self.world_edit.setText(folder)
         self.controls.clear_area_selections()
         app_files.clear_pipeline_artifacts()
+        self.owner.refresh_prerequisite_buttons()
         self.road_viewer.set_message(
             "Extract assets to scan the selected road sample area and build a road contact sheet."
         )
@@ -251,18 +235,16 @@ class ExtractionTab(QtWidgets.QWidget, ProgressMixin):
         self._extract_timing.record(stage, completed, total, label, phase=phase)
 
     def _finish_extract_timing(self):
+        prefixes = {
+            stages.ROADS_EXTRACT: "roads",
+            stages.ROADS_RENDER: "roads",
+            stages.BUILDS_EXTRACT: "builds",
+            stages.BUILDS_RENDER: "builds",
+        }
+
         def phase_key(event):
-            if event["stage"] == stages.ROADS_EXTRACT:
-                prefix = "roads"
-            elif event["stage"] == stages.ROADS_RENDER:
-                prefix = "roads"
-            elif event["stage"] == stages.BUILDS_EXTRACT:
-                prefix = "builds"
-            elif event["stage"] == stages.BUILDS_RENDER:
-                prefix = "builds"
-            else:
-                return None
-            return f"{prefix}_{event['phase']}"
+            prefix = prefixes.get(event["stage"])
+            return None if prefix is None else f"{prefix}_{event['phase']}"
 
         app_files.save_progress_timing(
             "extraction",
@@ -337,9 +319,6 @@ class ExtractionTab(QtWidgets.QWidget, ProgressMixin):
             ]
         )
 
-        if hasattr(self.owner, "begin_extraction_run"):
-            self.owner.begin_extraction_run()
-        run_state = self.prerequisite_state()
         self._save_state()
         self.extract_button.setEnabled(False)
         self.set_status("Preparing extraction")
@@ -348,41 +327,30 @@ class ExtractionTab(QtWidgets.QWidget, ProgressMixin):
         self._progress_soft_target = 0.0
         self._extract_timing.start()
 
-        succeeded = False
-
-        def _handle_success(run_state):
-            nonlocal succeeded
-            succeeded = True
-            self._handle_extract_success(run_state)
-
         def _handle_finished():
             self._stop_progress()
-            if hasattr(self.owner, "end_extraction_run"):
-                self.owner.end_extraction_run(succeeded)
+            self.owner.refresh_prerequisite_buttons()
             self._refresh_extract_readiness()
 
         def job(emit_progress):
             on_progress = coalesce_pipeline_progress(emit_progress)
             services.run_stage("roads", env_overrides=env, progress=on_progress)
             services.run_stage("builds", env_overrides=env, progress=on_progress)
-            return run_state
 
         start_background_job(
             self,
             job,
             on_progress=self._on_pipeline_progress,
-            on_success=_handle_success,
+            on_success=lambda _result: self._handle_extract_success(),
             on_finished=_handle_finished,
             failure_title="Extract failed",
             failure_status="Extract failed",
             thread_factory=threading.Thread,
         )
 
-    def _handle_extract_success(self, run_state):
+    def _handle_extract_success(self):
         self.road_viewer.load_image(self.road_viewer.image_path)
         self.build_viewer.load_image(self.build_viewer.image_path)
         self._finish_extract_timing()
         self._finish_progress()
         self.set_status("Extraction complete")
-        if hasattr(self.owner, "mark_extraction_complete"):
-            self.owner.mark_extraction_complete(run_state)
