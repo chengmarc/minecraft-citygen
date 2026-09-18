@@ -12,10 +12,6 @@
   <br>
 </div>
 
-**Build a TheoTown style Minecraft city from your own roads and buildings in minutes.**
-
-This project turns a small handcrafted asset set into a complete city layout, preview, and paste-ready in-game result. It is designed for creators who want large-scale city generation without giving up the look and feel of their own Minecraft builds.
-
 ### AI Disclaimer
 
 > Every asset in this app was hand-built by the author, placed block by block, over a development period spanning 2017 to 2026. Code and implementation were developed with AI assistance from **Claude Fable** and **GPT Astra**.
