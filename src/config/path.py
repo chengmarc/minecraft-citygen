@@ -54,9 +54,8 @@ def _user_data_root() -> str:
     return _norm(base / APP_NAME)
 
 
-def _frozen_app_root(executable: str | None = None) -> str:
-    executable = executable or sys.executable
-    exe_root = Path(executable).resolve().parent
+def _frozen_app_root() -> str:
+    exe_root = Path(sys.executable).resolve().parent
     if os.access(exe_root, os.W_OK):
         return _norm(exe_root)
     return _user_data_root()
