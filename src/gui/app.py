@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import os
+import threading
 import traceback
 
 from PySide6 import QtGui, QtWidgets
@@ -90,6 +91,20 @@ def _parse_args(argv: list[str]) -> tuple[argparse.Namespace, list[str]]:
     return parser.parse_known_args(list(argv))
 
 
+def _warm_up_renderer():
+    """Pay the isometric renderer's numba import/JIT cost off the UI thread.
+
+    Otherwise the first extraction stalls at the start of its render step.
+    A failure here is ignored: the real render reports it.
+    """
+    try:
+        from engine.render.isometric import warm_up
+
+        warm_up()
+    except Exception:  # boundary: warm-up is best-effort
+        pass
+
+
 def main(argv: list[str] | None = None) -> int:
     options, qt_args = _parse_args(list(argv or []))
 
@@ -98,6 +113,7 @@ def main(argv: list[str] | None = None) -> int:
     try:
         window = CityGeneratorQtApp()
         window.show()
+        threading.Thread(target=_warm_up_renderer, daemon=True).start()
         return app.exec()
     except Exception:  # top-level crash boundary: log details and surface a dialog
         message = traceback.format_exc()
