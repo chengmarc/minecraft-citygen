@@ -78,8 +78,8 @@ pythonw application.pyw
 
 Start at the [source architecture overview](src/README.md), then follow the
 package guides: [config](src/config/README.md), [engine](src/engine/README.md),
-[pipeline](src/pipeline/README.md), [gui](src/gui/README.md), and
-[packaging](packaging/README.md) for releases.
+[pipeline](src/pipeline/README.md), and [gui](src/gui/README.md). Releases
+follow the [release guide](docs/RELEASING.md).
 
 ## AI Disclaimer
 

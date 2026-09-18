@@ -47,7 +47,7 @@ python src/pipeline/03_preview/city.py --seed 5 --out /tmp/city.png
    `CLI_OPTIONS` ([step.py](step.py)), and an integer the GUI sends as text
    needs one in `_INTEGER_PARAMS` ([services.py](services.py)).
 3. Mirror the module in the packaging hidden imports
-   ([packaging guide](../../packaging/README.md#keep-the-build-in-step-with-a-new-pipeline-step)).
+   ([release guide](../../docs/RELEASING.md#keep-the-build-in-step-with-a-new-pipeline-step)).
 4. Give the step a progress weight in the GUI
    ([gui guide](../gui/README.md#re-tune-a-progress-bar)).
 5. A new numbered package (`06_…`) also needs a layer in `PART_LAYERS` in

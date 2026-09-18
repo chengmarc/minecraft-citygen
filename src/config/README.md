@@ -147,7 +147,7 @@ How [world.py](world.py) applies it:
 Shipped data: `default_world/` (the bundled Minecraft 26.1.2 source world) and
 `color_render.csv` (the renderer palette). Both are listed in
 `[tool.setuptools.package-data]` in [pyproject.toml](../../pyproject.toml) and in
-the [PyInstaller data set](../../packaging/README.md#explanation).
+the [PyInstaller data set](../../docs/RELEASING.md#explanation).
 
 ### Overrides
 

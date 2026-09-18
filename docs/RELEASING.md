@@ -1,7 +1,8 @@
-# packaging — Windows release builds
+# Releasing — Windows builds
 
-Turns the source tree into the two end-user deliverables: a Windows installer
-and a portable Windows zip. Nothing here ships inside the app.
+How the source tree becomes the two end-user deliverables — a Windows installer
+and a portable Windows zip — built by [packaging/](../packaging). Nothing in
+`packaging/` ships inside the app.
 
 ← Back to the [source architecture overview](../src/README.md).
 
@@ -16,7 +17,7 @@ and a portable Windows zip. Nothing here ships inside the app.
      passes it to the installer as `AppVersion`
    - the version badge and the two download URLs in the root
      [README.md](../README.md)
-3. Update [docs/CHANGELOG.md](../docs/CHANGELOG.md) with the release date and
+3. Update [CHANGELOG.md](CHANGELOG.md) with the release date and
    the final changes, and add `docs/release/RELEASE_NOTES_<version>.md`.
 4. Run the test suite:
 
@@ -62,7 +63,7 @@ Stage step modules are loaded by name through `importlib`, so PyInstaller
 cannot see them. When you add or rename a step in
 [`pipeline.stages.STAGES`](../src/pipeline/stages.py), mirror it in
 `PIPELINE_STAGE_HIDDEN_IMPORTS` in
-[build_windows_release.py](build_windows_release.py).
+[build_windows_release.py](../packaging/build_windows_release.py).
 `tests/test_packaging.py` fails until the two match.
 
 ## Explanation
@@ -109,5 +110,5 @@ not required.
 
 | File | Role |
 |---|---|
-| [build_windows_release.py](build_windows_release.py) | Builds the portable app, zip, installer, and optional one-file exe (`--clean`, `--include-standalone`) |
-| [windows_installer.iss](windows_installer.iss) | Inno Setup script; receives version and output directory from the build script |
+| [build_windows_release.py](../packaging/build_windows_release.py) | Builds the portable app, zip, installer, and optional one-file exe (`--clean`, `--include-standalone`) |
+| [windows_installer.iss](../packaging/windows_installer.iss) | Inno Setup script; receives version and output directory from the build script |
