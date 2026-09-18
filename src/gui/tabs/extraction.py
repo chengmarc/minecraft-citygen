@@ -6,7 +6,7 @@ import threading
 
 from PySide6 import QtWidgets
 
-from config.path import has_region_files
+from config.path import BUILDS_CONTACT_SHEET, ROADS_CONTACT_SHEET, has_region_files
 from config.world import BlockRegion, BuildRegion, detect_world_data_version, release_name_for
 from pipeline import services, stages
 
@@ -75,13 +75,13 @@ class ExtractionTab(QtWidgets.QWidget, ProgressMixin):
             "Extract assets to scan the selected road sample area and build a road contact sheet.",
             viewer_shell,
         )
-        self.road_viewer.image_path = app_files.ROAD_CONTACT_SHEET
+        self.road_viewer.image_path = ROADS_CONTACT_SHEET
         self.build_viewer = QtImageViewer(
             "Building Pieces Found",
             "Extract assets to scan the selected house and landmark areas and build a building contact sheet.",
             viewer_shell,
         )
-        self.build_viewer.image_path = app_files.BUILD_CONTACT_SHEET
+        self.build_viewer.image_path = BUILDS_CONTACT_SHEET
         viewer_row.addWidget(self.road_viewer, 1)
         viewer_row.addWidget(self.build_viewer, 1)
         layout.addWidget(viewer_shell, 1)

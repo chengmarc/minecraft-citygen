@@ -12,7 +12,7 @@ import json
 import os
 
 from config.path import BUILD_CATALOG, BUILDS_SCHEM
-from engine.schematic.reader import decode_schem_block_entities, decode_schem_cells
+from engine.schematic.reader import read_tile
 from engine.schematic.transform import Tile
 
 WHOLE = "whole"
@@ -41,28 +41,23 @@ def piece_path(key, part=WHOLE):
     return os.path.join(BUILDS_SCHEM, name + ".schem")
 
 
-def load_piece(path):
-    cells = decode_schem_cells(path)
-    height, length, width = len(cells), len(cells[0]), len(cells[0][0])
-    return width, height, length, cells, decode_schem_block_entities(path)
-
-
 def piece(key, part=WHOLE):
+    """One piece's Tile, cached by path."""
     path = piece_path(key, part)
     if path not in _piece:
-        _piece[path] = load_piece(path)
+        _piece[path] = read_tile(path)
     return _piece[path]
 
 
 def assemble(key, n_mid, catalog):
     """One building as a Tile, with ``n_mid`` middle sections when stacked."""
     if WHOLE in catalog[key].get("pieces", {}):
-        width, height, length, cells, bes = piece(key)
-        return Tile(width, height, length, cells, block_entities=tuple(bes))
-    layers, block_entities, width, length, y_offset = [], [], None, None, 0
+        whole = piece(key)
+        return Tile(whole.width, whole.height, whole.length, whole.cells, block_entities=whole.block_entities)
+    layers, block_entities, y_offset = [], [], 0
     for part in [STACK_PARTS[0]] + [STACK_PARTS[1]] * n_mid + [STACK_PARTS[2]]:
-        width, height, length, cells, bes = piece(key, part)
-        block_entities += [be._replace(y=be.y + y_offset) for be in bes]
-        layers += cells
-        y_offset += height
-    return Tile(width, len(layers), length, layers, block_entities=tuple(block_entities))
+        tile = piece(key, part)
+        block_entities += [be._replace(y=be.y + y_offset) for be in tile.block_entities]
+        layers += tile.cells
+        y_offset += tile.height
+    return Tile(tile.width, len(layers), tile.length, layers, block_entities=tuple(block_entities))

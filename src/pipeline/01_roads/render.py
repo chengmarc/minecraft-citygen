@@ -10,7 +10,7 @@ from pathlib import Path
 if __package__ in (None, ""):
     sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
-from config.path import ROADS_RENDERS, ROADS_SCHEM
+from config.path import ROADS_CONTACT_SHEET, ROADS_RENDERS, ROADS_SCHEM
 from config.render import ROAD_ASSET_ISO_BLOCK_H, ROAD_ASSET_ISO_TILE_H, ROAD_ASSET_ISO_TILE_W
 from engine.render.isometric import render_cells_visible_iso
 from engine.schematic.reader import decode_schem_cells
@@ -33,6 +33,7 @@ def run(*, logger=None, progress=None):
     return render_contact_sheet(
         paths,
         output_dir=ROADS_RENDERS,
+        contact_sheet=ROADS_CONTACT_SHEET,
         render_item=render_path,
         cols=5,
         cell_w=220,

@@ -12,7 +12,8 @@ side effects beyond reading/writing schematic and image files it is handed. The
 |---|---|---|
 | `core/` | [road_network.py](core/road_network.py), [city_layout.py](core/city_layout.py) | Road-network generation and tile catalogue; lot finding & building placement (`plan_city`) |
 | `world/` | [anvil_world_reader.py](world/anvil_world_reader.py), [marker_extract.py](world/marker_extract.py), [writer.py](world/writer.py) | Read Anvil worlds; extract marker-defined cuboids; write standalone exported worlds |
-| `schematic/` | [transform.py](schematic/transform.py), [reader.py](schematic/reader.py), [writer.py](schematic/writer.py), [road.py](schematic/road.py), [building.py](schematic/building.py) | Sponge `.schem` I/O, tile transforms, road assembly; the building catalog and its pieces |
+| `schematic/` | [transform.py](schematic/transform.py), [reader.py](schematic/reader.py), [writer.py](schematic/writer.py), [grid.py](schematic/grid.py), [road.py](schematic/road.py), [building.py](schematic/building.py) | Sponge `.schem` I/O, tile transforms, stamping tiles into palette-indexed voxel grids, road assembly; the building catalog and its pieces |
+| (top level) | [blocks.py](blocks.py) | Block-state strings: `name[prop=val]` parsing/formatting and the air check |
 | `render/` | [isometric.py](render/isometric.py), [road_layout.py](render/road_layout.py), [contact_sheet.py](render/contact_sheet.py), [topdown.py](render/topdown.py), [palette.py](render/palette.py), [fonts.py](render/fonts.py) | Isometric, road-layout, contact-sheet, and top-down PNG rendering |
 
 ## How the road grid is generated

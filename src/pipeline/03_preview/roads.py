@@ -26,8 +26,9 @@ if __package__ in (None, ""):
     sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
 from config.algo import CELL
-from config.path import PREVIEW_ROADS
+from config.path import PREVIEW_ROADS, PREVIEW_ROADS_CONTACT_SHEET
 from config.render import CITY_GROUND_FILL_RGBA
+from engine.core.road_network import iter_tile_catalogue, tile_footprint
 from engine.render.contact_sheet import write_contact
 from pipeline.stages import noop, run_stage_cli
 
@@ -178,21 +179,12 @@ def make_tile(w, h, conns):
     return img
 
 
+# One top-down tile per road-network catalogue entry, drawn in its base
+# orientation: (width_px, height_px, {edge: size}).
 TILES = {
-    "01_big_2x2_deadend": (CELL * 2, CELL * 2, {"S": "b"}),
-    "02_big_2x2_I": (CELL * 2, CELL * 2, {"N": "b", "S": "b"}),
-    "03_big_2x2_L": (CELL * 2, CELL * 2, {"N": "b", "E": "b"}),
-    "04_big_2x2_T": (CELL * 2, CELL * 2, {"S": "b", "E": "b", "W": "b"}),
-    "05_big_2x2_X": (CELL * 2, CELL * 2, {"N": "b", "S": "b", "E": "b", "W": "b"}),
-    "06_small_1x1_deadend": (CELL, CELL, {"S": "s"}),
-    "07_small_1x1_I": (CELL, CELL, {"N": "s", "S": "s"}),
-    "08_small_1x1_L": (CELL, CELL, {"N": "s", "E": "s"}),
-    "09_small_1x1_T": (CELL, CELL, {"S": "s", "E": "s", "W": "s"}),
-    "10_small_1x1_X": (CELL, CELL, {"N": "s", "S": "s", "E": "s", "W": "s"}),
-    "11_mix_1x2_L": (CELL * 2, CELL, {"N": "b", "E": "s"}),
-    "12_mix_1x2_T_small_main": (CELL * 2, CELL, {"S": "b", "E": "s", "W": "s"}),
-    "13_mix_1x2_T_big_main": (CELL, CELL * 2, {"S": "s", "E": "b", "W": "b"}),
-    "14_mix_1x2_X": (CELL * 2, CELL, {"N": "b", "S": "b", "E": "s", "W": "s"}),
+    name: (cols * CELL, rows * CELL, dict(base))
+    for layer, base, name in sorted(iter_tile_catalogue(), key=lambda entry: entry[2])
+    for cols, rows in [tile_footprint(layer, base)]
 }
 
 
@@ -248,18 +240,17 @@ def run(*, logger=None, progress=None):
         progress(len(TILES) + offset + 1, total, name)
 
     zoom = 8
-    contact_sheet = os.path.join(PREVIEW_ROADS, "_contact_sheet.png")
     write_contact(
         list(imgs.items()),
-        contact_sheet,
+        PREVIEW_ROADS_CONTACT_SHEET,
         cols=5,
         cell_w=CELL * 2 * zoom + 12,
         cell_h=CELL * 2 * zoom + 40,
         max_scale=zoom,
         resample=Image.Resampling.NEAREST,
     )
-    logger("saved _contact_sheet.png")
-    return {"count": total, "contact_sheet": contact_sheet}
+    logger(f"saved {PREVIEW_ROADS_CONTACT_SHEET}")
+    return {"count": total, "contact_sheet": PREVIEW_ROADS_CONTACT_SHEET}
 
 
 if __name__ == "__main__":

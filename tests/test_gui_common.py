@@ -40,8 +40,8 @@ class ExtractedAssetsReadyTests(unittest.TestCase):
             os.makedirs(os.path.dirname(build_sheet))
 
             with (
-                mock.patch.object(app_files, "ROAD_CONTACT_SHEET", road_sheet),
-                mock.patch.object(app_files, "BUILD_CONTACT_SHEET", build_sheet),
+                mock.patch.object(app_files, "ROADS_CONTACT_SHEET", road_sheet),
+                mock.patch.object(app_files, "BUILDS_CONTACT_SHEET", build_sheet),
             ):
                 self.assertFalse(app_files.extracted_assets_ready())
 

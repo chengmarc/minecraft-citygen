@@ -13,7 +13,7 @@ if __package__ in (None, ""):
 from config.path import BUILD_CATALOG, BUILDS_SCHEM
 from config.world import BUILD_MARKER_Y_RANGE, BUILD_TYPES, DATA_VERSION
 from engine.world.anvil_world_reader import World
-from engine.world.marker_extract import detect_marker_assets, extract_cuboid, iter_signs, parse_range
+from engine.world.marker_extract import detect_marker_assets, extract_cuboid, parse_range, sign_text_above
 from engine.schematic.building import STACK_PARTS, WHOLE, piece_path, write_catalog
 from engine.schematic.writer import write_sponge_schem_cells
 from pipeline.extraction import chunk_scan_count, remove_existing_schems
@@ -39,17 +39,9 @@ def detect_builds(build_type, x_a, x_b, z_a, z_b, *, on_scan_progress=None):
     return builds, skipped
 
 
-def sign_text_at(x, y, z):
-    for sx, sy, sz, text in iter_signs(get_world(), x, x, z, z):
-        if sx == x and sy == y and sz == z:
-            return text
-    return ""
-
-
 def stack_sign(emerald):
-    ex, ey, ez = emerald
     stack_labels = (r"stack\s*:\s*",)
-    return parse_range(sign_text_at(ex, ey + 1, ez), stack_labels)
+    return parse_range(sign_text_above(get_world(), emerald), stack_labels)
 
 
 def run(*, logger=None, progress=None):

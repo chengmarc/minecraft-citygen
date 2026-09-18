@@ -25,9 +25,9 @@ import numpy as np
 import nbtlib
 from nbtlib import Byte, Compound, Double, Float, Int, List, Long, LongArray, String
 
-from config.path import DEFAULT_WORLD, GUI, region_dir_candidates, resolve_region_dir
-from config.world import HARD_FLOOR_DATA_VERSION, release_name_for
-from engine.blocks import AIR_BLOCKS
+from config.path import DEFAULT_WORLD, EXPORTED_WORLD_NAME, GUI, region_dir_candidates, resolve_region_dir
+from config.world import release_name_for, source_data_version
+from engine.blocks import is_air, parse_state
 from engine.schematic.reader import (
     decode_schem_array,
     decode_schem_block_entities,
@@ -52,18 +52,6 @@ WORLD_WRITE_STEPS = 4
 
 def _noop(*_args, **_kwargs):
     pass
-
-
-def parse_state(state):
-    """Split ``name[prop=val,...]`` into (name, properties_dict_or_None)."""
-    if "[" not in state:
-        return state, None
-    name, rest = state.split("[", 1)
-    props = {}
-    for pair in rest.rstrip("]").split(","):
-        key, _, value = pair.partition("=")
-        props[key] = value
-    return name, props
 
 
 def _palette_entry(state):
@@ -252,7 +240,7 @@ def write_world(
     spawn=None,
     source_world=None,
     region_dir=None,
-    world_name="Minecraft CityGen World",
+    world_name=EXPORTED_WORLD_NAME,
     progress=None,
 ):
     """Write ``grid`` (shape H,L,Z indexed [y][z][x]) into ``out_dir``.
@@ -264,7 +252,7 @@ def write_world(
     """
     progress = progress or _noop
     progress(1, WORLD_WRITE_STEPS, "Composing chunks")
-    air_idx = np.array([i for i, s in inv.items() if s.split("[", 1)[0] in AIR_BLOCKS], dtype=grid.dtype)
+    air_idx = np.array([i for i, s in inv.items() if is_air(s)], dtype=grid.dtype)
     mask = ~np.isin(grid, air_idx) if air_idx.size else np.ones(grid.shape, bool)
     ys, zs, xs = np.nonzero(mask)
     if ys.size == 0:
@@ -383,19 +371,7 @@ def _write_world_icon(out_dir):
         icon.save(os.path.join(out_dir, "icon.png"))
 
 
-def _source_data_version(source_world):
-    """The source world's own DataVersion (from its level.dat), or the floor."""
-    if source_world:
-        candidate = os.path.join(source_world, "level.dat")
-        if os.path.isfile(candidate):
-            try:
-                return max(int(nbtlib.load(candidate)["Data"]["DataVersion"]), HARD_FLOOR_DATA_VERSION)
-            except Exception:
-                pass
-    return HARD_FLOOR_DATA_VERSION
-
-
-def _write_level_dat(out_dir, data_version, spawn, source_world, world_name="Minecraft CityGen World"):
+def _write_level_dat(out_dir, data_version, spawn, source_world, world_name=EXPORTED_WORLD_NAME):
     """Edit the copied world's ``level.dat`` in place.
 
     The copied save already has the source world's native structure, so only edit
@@ -436,7 +412,7 @@ def _write_level_dat(out_dir, data_version, spawn, source_world, world_name="Min
     level.save(target)
 
 
-def schem_to_world(schem_path, out_dir, source_world=None, data_version=None, world_name="Minecraft CityGen World", progress=None):
+def schem_to_world(schem_path, out_dir, source_world=None, data_version=None, world_name=EXPORTED_WORLD_NAME, progress=None):
     """Read a city ``.schem`` and write it into a copied world save at ``out_dir``.
 
     ``source_world`` defaults to the bundled world. The source save is copied
@@ -457,7 +433,7 @@ def schem_to_world(schem_path, out_dir, source_world=None, data_version=None, wo
 
     # Match chunks + level.dat to the source world's own version (native load).
     if data_version is None:
-        data_version = _source_data_version(source_world)
+        data_version = source_data_version(source_world)
 
     template_world = _source_world_root(source_world)
     _copy_source_world(template_world, out_dir)

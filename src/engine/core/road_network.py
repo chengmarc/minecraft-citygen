@@ -112,14 +112,31 @@ def _compile_tile_lookup(catalogue):
     return lookup
 
 
-BIG_TILE_LOOKUP = _compile_tile_lookup(BIG_TILES)
-SMALL_TILE_LOOKUP = _compile_tile_lookup(SMALL_TILES)
-MIXED_TILE_LOOKUP = _compile_tile_lookup(MIXED_TILES)
-_LOOKUP_BY_LAYER = {
-    "big": BIG_TILE_LOOKUP,
-    "small": SMALL_TILE_LOOKUP,
-    "mixed": MIXED_TILE_LOOKUP,
-}
+TILES_BY_LAYER = {"big": BIG_TILES, "small": SMALL_TILES, "mixed": MIXED_TILES}
+
+
+def iter_tile_catalogue():
+    """Yield ``(layer, base_ports, tile_name)`` for every road tile, in layer order."""
+    for layer, catalogue in TILES_BY_LAYER.items():
+        for base, name in catalogue:
+            yield layer, base, name
+
+
+def tile_footprint(layer, base):
+    """Fine-cell (cols, rows) of a tile in its base orientation.
+
+    Big tiles are 2x2 and small tiles 1x1. A mixed tile is 1x2 along the big road
+    it carries: 2 cells wide when the big road runs N-S, 2 tall when it runs E-W.
+    """
+    if layer == "big":
+        return 2, 2
+    if layer == "small":
+        return 1, 1
+    big_dirs = {direction for direction, size in base if size == "b"}
+    return (2, 1) if big_dirs & {"N", "S"} else (1, 2)
+
+
+_LOOKUP_BY_LAYER = {layer: _compile_tile_lookup(catalogue) for layer, catalogue in TILES_BY_LAYER.items()}
 
 
 # ---------------------------------------------------------------- generation

@@ -14,6 +14,8 @@ from config.algo import CELL, DEFAULT_SEED, FINE as DEFAULT_FINE
 from config.path import city_schem_path
 from config.render import CITY_ANCHOR_BLOCK, CITY_GROUND_Y
 from config.world import DATA_VERSION
+from engine.blocks import is_air
+from engine.schematic.grid import intern_state, new_palette, stamp_tile
 from engine.schematic.building import assemble, is_stacked, read_catalog
 from engine.core.city_layout import (
     FACE_K,
@@ -33,6 +35,18 @@ from pipeline.stages import noop, run_stage_cli
 
 BUILD_SNAP_DROP = 1
 PLAYER_ANCHOR_MARGIN = 1
+
+# Progress steps reported by run(), in order; the GUI weights mirror this.
+STEPS = (
+    "Generating road network",
+    "Building road grid",
+    "Loading building catalog",
+    "Planning placements",
+    "Assembling building instances",
+    "Composing voxel grid",
+    "Placing trees and filling lots",
+    "Writing schematic",
+)
 
 
 def _city_ground_y(placements, catalog_meta):
@@ -78,7 +92,7 @@ def _compose_grid(road_grid, road_palette, road_span, road_height, road_y0, out_
     repositioned into master-grid coordinates (roads shifted by the road seat and
     anchor margin; each building by its placement origin).
     """
-    master_palette = {"minecraft:air": 0}
+    master_palette = new_palette()
     for state in road_palette:
         master_palette.setdefault(state, len(master_palette))
     grid = np.zeros((max_height, out_span, out_span), dtype=np.int16)
@@ -95,44 +109,9 @@ def _compose_grid(road_grid, road_palette, road_span, road_height, road_y0, out_
     )
     build_mask = np.zeros((out_span, out_span), dtype=bool)
     for tile, px, pz, y0 in instances:
-        _blit_tile(grid, master_palette, tile, px, pz, y0, build_mask)
+        stamp_tile(grid, master_palette, tile, px, y0, pz, build_mask)
         block_entities += translate_block_entities(tile.block_entities, px, y0, pz)
     return grid, master_palette, build_mask, block_entities
-
-
-def _blit_tile(grid, master_palette, tile, px, pz, y0, build_mask=None):
-    """Blit a tile's non-air cells into the master grid at (px, y0, pz).
-
-    Palette states are interned into ``master_palette`` on demand; when a
-    ``build_mask`` is given, every written column is marked occupied.
-    """
-    max_height, span_z, span_x = grid.shape
-    for y in range(tile.height):
-        gy = y0 + y
-        if not (0 <= gy < max_height):
-            continue
-        for z in range(tile.length):
-            gz = pz + z
-            if not (0 <= gz < span_z):
-                continue
-            row = tile.cells[y][z]
-            for x in range(tile.width):
-                state = row[x]
-                if state.startswith("minecraft:air"):
-                    continue
-                gx = px + x
-                if not (0 <= gx < span_x):
-                    continue
-                if build_mask is not None:
-                    build_mask[gz, gx] = True
-                grid[gy, gz, gx] = _palette_index(master_palette, state)
-
-
-def _palette_index(master_palette, state):
-    idx = master_palette.get(state)
-    if idx is None:
-        idx = master_palette[state] = len(master_palette)
-    return idx
 
 
 def _finalize_block_entities(block_entities, grid_shape):
@@ -176,7 +155,7 @@ def _place_ground_fill(
             column = [
                 (dy, ground_fill_tile.cells[dy][pz][px])
                 for dy in range(ground_fill_tile.height)
-                if not ground_fill_tile.cells[dy][pz][px].startswith("minecraft:air")
+                if not is_air(ground_fill_tile.cells[dy][pz][px])
             ]
             if column:
                 pattern_columns[(px, pz)] = column
@@ -204,7 +183,7 @@ def _place_ground_fill(
                     else:
                         for dy, state in column:
                             gy = y0 + dy
-                            grid[gy, gz, gx] = _palette_index(master_palette, state)
+                            grid[gy, gz, gx] = intern_state(master_palette, state)
     return []
 
 
@@ -229,7 +208,7 @@ def _place_fillers(grid, master_palette, build_mask, road_cells, size, ground_y,
                 continue
             tile = rot_tile(rng.choice(fillers), rng.randint(0, 3))
             y0 = _seat_y(ground_y, tile.ground_offset)
-            _blit_tile(grid, master_palette, tile, x0, z0, y0)
+            stamp_tile(grid, master_palette, tile, x0, y0, z0)
             block_entities += translate_block_entities(tile.block_entities, x0, y0, z0)
             placed.add((fx, fy))
     return placed, block_entities
@@ -289,7 +268,7 @@ def _write_city_schematic(
     filler_kind_count,
     logger,
 ):
-    anchor_idx = _palette_index(master_palette, CITY_ANCHOR_BLOCK)
+    anchor_idx = intern_state(master_palette, CITY_ANCHOR_BLOCK)
     for y in range(city_ground_y + 1):
         grid[y, 0, 0] = anchor_idx
 
@@ -314,22 +293,22 @@ def run(*, seed=DEFAULT_SEED, fine=DEFAULT_FINE, out=None, no_ground_fill=False,
     logger = logger or noop
     progress = progress or noop
 
-    def _step(n, label):
-        progress(n, 8, label)
+    def _step(n):
+        progress(n, len(STEPS), STEPS[n] if n < len(STEPS) else "Schematic saved")
 
     out = out or city_schem_path(seed)
     size = make_size(fine)
 
-    _step(0, "Generating road network")
+    _step(0)
     network = gen_networks(seed, size=size)
 
-    _step(1, "Building road grid")
+    _step(1)
     road_grid, road_palette, (road_span, road_height, _), tile_count, road_ground_offset, road_block_entities = build_road_grid(network)
 
-    _step(2, "Loading building catalog")
+    _step(2)
     catalog_meta = read_catalog()
 
-    _step(3, "Planning placements")
+    _step(3)
     _lots, placements = plan_city(seed, network, catalog_meta)
     city_ground_y = _city_ground_y(placements, catalog_meta)
     # `ground_y` is the shared plane roads, buildings, the dedicated lot
@@ -338,10 +317,10 @@ def run(*, seed=DEFAULT_SEED, fine=DEFAULT_FINE, out=None, no_ground_fill=False,
     road_y0 = _seat_y(ground_y, road_ground_offset)
     out_span = road_span + PLAYER_ANCHOR_MARGIN
 
-    _step(4, "Assembling building instances")
+    _step(4)
     instances, building_top = _assemble_instances(seed, placements, catalog_meta, ground_y)
 
-    _step(5, "Composing voxel grid")
+    _step(5)
     fillers, ground_fill_tile = _load_fill_assets(no_ground_fill)
     max_height = _max_grid_height(road_y0, road_height, building_top, ground_y, fillers, ground_fill_tile)
     road_cells = network["road_cells"]
@@ -349,13 +328,13 @@ def run(*, seed=DEFAULT_SEED, fine=DEFAULT_FINE, out=None, no_ground_fill=False,
         road_grid, road_palette, road_span, road_height, road_y0, out_span, max_height, instances, road_block_entities
     )
 
-    _step(6, "Placing trees and filling lots")
+    _step(6)
     filler_count, filler_block_entities = _place_lot_fill(
         grid, master_palette, build_mask, road_cells, size, ground_y, fillers, ground_fill_tile, seed
     )
     block_entities += filler_block_entities
 
-    _step(7, "Writing schematic")
+    _step(7)
     summary = _write_city_schematic(
         grid,
         master_palette,
@@ -370,7 +349,7 @@ def run(*, seed=DEFAULT_SEED, fine=DEFAULT_FINE, out=None, no_ground_fill=False,
         len(fillers),
         logger,
     )
-    _step(8, "Schematic saved")
+    _step(len(STEPS))
     logger(f"saved {out}")
     return {
         "output_path": out,

@@ -63,7 +63,7 @@ STAGES = {
     ),
     "city": (
         Step("construct", "Building city schematic", CITY_CONSTRUCT, ("seed", "fine")),
-        Step("render", "Rendering final city", CITY_RENDER),
+        Step("render", "Rendering final city", CITY_RENDER, ("seed",)),
     ),
     "world": (
         Step("export", "Exporting Minecraft world", WORLD_EXPORT, ("seed", "out")),

@@ -12,7 +12,7 @@ from PIL import Image, ImageDraw
 if __package__ in (None, ""):
     sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
-from config.path import PREVIEW_BUILDS
+from config.path import PREVIEW_BUILDS, PREVIEW_BUILDS_CONTACT_SHEET
 from config.render import BUILD_PREVIEW_COLORS
 from engine.render.contact_sheet import write_contact
 from engine.schematic.building import read_catalog
@@ -110,7 +110,7 @@ def run(*, key=None, logger=None, progress=None):
 
     contact = None
     if not key:
-        contact = os.path.join(PREVIEW_BUILDS, "_contact_sheet.png")
+        contact = PREVIEW_BUILDS_CONTACT_SHEET
         write_contact(images, contact, cols=8, cell_w=180, cell_h=150, max_scale=6.0, resample=Image.Resampling.NEAREST)
         logger(f"rendered {len(images)} pseudo builds -> {contact}")
     return {"count": len(images), "contact_sheet": contact}

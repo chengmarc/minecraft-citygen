@@ -17,10 +17,12 @@ import numpy as np
 from PIL import Image
 
 from config.algo import CELL
+from config.path import exported_world_name
 from pipeline import services
 from pipeline import stages
 from pipeline.stages import PIPELINE_STAGE_COMMANDS, PIPELINE_STAGE_MODULES
 from engine.schematic.transform import Tile
+from engine.world import marker_extract
 
 ROOT_DIR = Path(__file__).resolve().parents[1]
 
@@ -73,7 +75,7 @@ def test_world_export_uses_seeded_world_name_for_folder_and_level(monkeypatch, t
         return {"chunks": 1, "regions": 1, "block_entities": 0, "out_dir": out}
 
     monkeypatch.setattr(world_export, "city_schem_path", lambda seed: str(schem_dir / f"seed_{seed}.schem"))
-    monkeypatch.setattr(world_export, "SAVES", str(saves_dir))
+    monkeypatch.setattr(world_export, "exported_world_path", lambda seed: str(saves_dir / exported_world_name(seed)))
     monkeypatch.setattr(world_export, "SAVE", str(source))
     monkeypatch.setattr(world_export, "schem_to_world", fake_schem_to_world)
 
@@ -147,7 +149,7 @@ class RoadsExtractTests(unittest.TestCase):
 
 def test_build_stack_sign_reads_sign_one_block_above_emerald(monkeypatch):
     monkeypatch.setattr(
-        builds_extract,
+        marker_extract,
         "iter_signs",
         lambda _world, _xa, _xb, _za, _zb: [
             (4, 70, 8, "stack: 9"),
@@ -161,7 +163,7 @@ def test_build_stack_sign_reads_sign_one_block_above_emerald(monkeypatch):
 
 def test_road_name_reads_sign_one_block_above_emerald(monkeypatch):
     monkeypatch.setattr(
-        roads_extract,
+        marker_extract,
         "iter_signs",
         lambda _world, _xa, _xb, _za, _zb: [
             (4, 70, 8, "wrong"),
@@ -197,6 +199,7 @@ class ContactRenderTests(unittest.TestCase):
 
             with mock.patch.object(builds_render, "read_catalog", return_value={"001": {"type": 1}, "002": {"type": 1}}), \
                  mock.patch.object(builds_render, "BUILDS_RENDERS", str(out_dir)), \
+                 mock.patch.object(builds_render, "BUILDS_CONTACT_SHEET", str(out_dir / "_contact_sheet.png")), \
                  mock.patch.object(builds_render, "BUILDS_GIF", str(out_dir / "buildings.gif")), \
                  mock.patch.object(builds_render, "assemble", return_value=Tile(1, 1, 1, [[["minecraft:stone"]]])), \
                  mock.patch.object(builds_render, "render_cells_visible_iso", return_value=Image.new("RGBA", (16, 16))), \
@@ -218,6 +221,7 @@ class ContactRenderTests(unittest.TestCase):
 
             with mock.patch.object(roads_render, "ROADS_SCHEM", str(out_dir)), \
                  mock.patch.object(roads_render, "ROADS_RENDERS", str(out_dir)), \
+                 mock.patch.object(roads_render, "ROADS_CONTACT_SHEET", str(out_dir / "_contact_sheet.png")), \
                  mock.patch.object(roads_render, "decode_schem_cells", return_value=[[["minecraft:stone"]]]), \
                  mock.patch.object(roads_render, "render_cells_visible_iso", return_value=Image.new("RGBA", (16, 16))), \
                  _checking_write_contact():
@@ -250,7 +254,7 @@ def test_run_stage_forwards_params_and_tags_progress_by_step_module(monkeypatch)
 
     results = stages.run_stage("city", seed=3, progress=lambda *tick: ticks.append(tick))
 
-    assert calls == [(stages.CITY_CONSTRUCT, {"seed": 3}), (stages.CITY_RENDER, {})]
+    assert calls == [(stages.CITY_CONSTRUCT, {"seed": 3}), (stages.CITY_RENDER, {"seed": 3})]
     assert results == {"construct": stages.CITY_CONSTRUCT, "render": stages.CITY_RENDER}
     assert ticks == [(stages.CITY_CONSTRUCT, 1, 1, "done"), (stages.CITY_RENDER, 1, 1, "done")]
 

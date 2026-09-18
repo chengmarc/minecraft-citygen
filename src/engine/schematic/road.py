@@ -9,41 +9,17 @@ import numpy as np
 
 from config.algo import CELL
 from config.path import ROADS_SCHEM
-from engine.core.road_network import (
-    BIG_TILES,
-    MIXED_TILES,
-    SMALL_TILES,
-    iter_placements,
-    rot_ports,
-)
-from engine.schematic.reader import (
-    decode_schem_block_entities,
-    decode_schem_cells,
-    decode_schem_offset,
-)
-from engine.schematic.transform import Tile, rot_tile, translate_block_entities
+from engine.core.road_network import iter_placements, iter_tile_catalogue, rot_ports
+from engine.schematic.grid import new_palette, stamp_tile
+from engine.schematic.reader import read_tile
+from engine.schematic.transform import rot_tile, translate_block_entities
 
 # Fill props (e.g. 15_fill_1x1_A) share the road region and marker convention but
 # are not road-network tiles: they fill empty lot cells in the city, so they are
 # kept out of the road-grid tile set and loaded separately.
 FILL_TOKEN = "fill"
 GROUND_FILL_PREFIX = "18"
-ROAD_TILE_PREFIXES = frozenset(
-    name[:2]
-    for catalogue in (BIG_TILES, SMALL_TILES, MIXED_TILES)
-    for _base, name in catalogue
-)
-
-
-def _tile_from_schem(path):
-    cells = decode_schem_cells(path)
-    height, length, width = len(cells), len(cells[0]), len(cells[0][0])
-    _x, y, _z = decode_schem_offset(path)
-    return Tile(
-        width, height, length, cells,
-        ground_offset=max(0, -y),
-        block_entities=tuple(decode_schem_block_entities(path)),
-    )
+ROAD_TILE_PREFIXES = frozenset(name[:2] for _layer, _base, name in iter_tile_catalogue())
 
 
 def load_tiles():
@@ -52,14 +28,14 @@ def load_tiles():
         name = os.path.basename(path)
         if name[:2] not in ROAD_TILE_PREFIXES:
             continue
-        tiles[name[:2]] = _tile_from_schem(path)
+        tiles[name[:2]] = read_tile(path)
     return tiles
 
 
 def load_fillers():
     """Load the fill-prop tiles (self-contained, ground-seated cell fillers)."""
     return [
-        _tile_from_schem(path)
+        read_tile(path)
         for path in sorted(glob.glob(os.path.join(ROADS_SCHEM, "*.schem")))
         if FILL_TOKEN in os.path.basename(path) and os.path.basename(path)[:2] != GROUND_FILL_PREFIX
     ]
@@ -69,7 +45,7 @@ def load_ground_fill_tile():
     """Load the dedicated empty-lot ground filler authored as road asset 18."""
     for path in sorted(glob.glob(os.path.join(ROADS_SCHEM, "*.schem"))):
         if os.path.basename(path)[:2] == GROUND_FILL_PREFIX:
-            return _tile_from_schem(path)
+            return read_tile(path)
     return None
 
 
@@ -96,11 +72,7 @@ def tile_port_dirs(tile):
 
 def schem_offsets(tiles):
     """How far each built .schem road tile is rotated from its vector base."""
-    vector_base = {
-        name[:2]: base
-        for catalogue in (BIG_TILES, SMALL_TILES, MIXED_TILES)
-        for base, name in catalogue
-    }
+    vector_base = {name[:2]: base for _layer, base, name in iter_tile_catalogue()}
     offsets = {}
     for prefix, tile in tiles.items():
         detected = tile_port_dirs(tile)
@@ -130,7 +102,7 @@ def build(net):
     span = net["size"].span
     max_height = max(tile.height for tile in tiles.values())
     grid = np.zeros((max_height, span, span), dtype=np.int16)
-    palette = {"minecraft:air": 0}
+    palette = new_palette()
     rotated_cache = {}
     block_entities = []
 
@@ -143,17 +115,7 @@ def build(net):
                 tiles[prefix], corrected_rotation
             )
         grid[:, bz:bz + tile.length, bx:bx + tile.width] = 0
-        for y in range(tile.height):
-            for z in range(tile.length):
-                row = tile.cells[y][z]
-                for x in range(tile.width):
-                    state = row[x]
-                    if state.startswith("minecraft:air"):
-                        continue
-                    idx = palette.get(state)
-                    if idx is None:
-                        idx = palette[state] = len(palette)
-                    grid[y, bz + z, bx + x] = idx
+        stamp_tile(grid, palette, tile, bx, 0, bz)
         block_entities += translate_block_entities(tile.block_entities, bx, 0, bz)
         count += 1
     return grid, palette, (span, max_height, span), count, road_ground_offset, block_entities

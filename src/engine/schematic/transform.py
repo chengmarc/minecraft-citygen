@@ -5,6 +5,7 @@ from __future__ import annotations
 from collections import namedtuple
 from dataclasses import dataclass, field
 
+from engine.blocks import format_state, parse_state
 
 FACING_CW = {"north": "east", "east": "south", "south": "west", "west": "north"}
 CONN_SRC = {"east": "north", "south": "east", "west": "south", "north": "west"}
@@ -38,10 +39,9 @@ class Tile:
 
 def rot_state(state: str, k: int) -> str:
     k %= 4
-    if k == 0 or "[" not in state:
+    base, props = parse_state(state)
+    if k == 0 or not props:
         return state
-    base, inner = state[:state.index("[")], state[state.index("[") + 1:-1]
-    props = dict(kv.split("=") for kv in inner.split(","))
     for _ in range(k):
         rotated = {}
         for key, val in props.items():
@@ -60,7 +60,7 @@ def rot_state(state: str, k: int) -> str:
                 if old_direction in props:
                     rotated[new_direction] = props[old_direction]
         props = rotated
-    return base + "[" + ",".join(f"{key}={props[key]}" for key in sorted(props)) + "]"
+    return format_state(base, props)
 
 
 def rot_tile(tile: Tile, k: int) -> Tile:

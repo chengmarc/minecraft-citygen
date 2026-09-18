@@ -14,11 +14,11 @@ def render_contact_sheet(
     items,
     *,
     output_dir,
+    contact_sheet,
     render_item,
     cols,
     cell_w,
     cell_h,
-    contact_name="_contact_sheet.png",
     contact_progress_label="Rendering contact sheet...",
     contact_done_label="Rendered contact sheet.",
     logger=None,
@@ -41,10 +41,9 @@ def render_contact_sheet(
         logger(f"saved {out} ({image.width}x{image.height})")
         progress(index, total, name)
 
-    contact = os.path.join(output_dir, contact_name)
     write_contact(
         images,
-        contact,
+        contact_sheet,
         cols=cols,
         cell_w=cell_w,
         cell_h=cell_h,
@@ -54,8 +53,8 @@ def render_contact_sheet(
             contact_done_label if done == len(images) + 1 else contact_progress_label,
         ),
     )
-    logger(f"rendered {len(images)} {item_label} -> {contact}")
-    return {"count": len(images), "contact_sheet": contact}
+    logger(f"rendered {len(images)} {item_label} -> {contact_sheet}")
+    return {"count": len(images), "contact_sheet": contact_sheet}
 
 
 def write_image_sequence_gif(
