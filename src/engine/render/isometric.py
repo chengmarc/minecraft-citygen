@@ -146,16 +146,15 @@ def render_grid_visible_iso(
     tile_w=FULL_SCHEM_ISO_TILE_W,
     tile_h=FULL_SCHEM_ISO_TILE_H,
     block_h=FULL_SCHEM_ISO_BLOCK_H,
-    margin=ISO_MARGIN,
 ):
     H, L, W = grid.shape
     solid, colors = _palette_arrays(inv)
     hw = tile_w // 2
     hh = tile_h // 2
-    width = (W + L) * hw + margin * 2
-    height = (W + L) * hh + H * block_h + tile_h + margin * 2
-    ox = margin + L * hw
-    oy = margin + H * block_h
+    width = (W + L) * hw + ISO_MARGIN * 2
+    height = (W + L) * hh + H * block_h + tile_h + ISO_MARGIN * 2
+    ox = ISO_MARGIN + L * hw
+    oy = ISO_MARGIN + H * block_h
     img = np.zeros((int(height), int(width), 4), dtype=np.uint8)
     depth = np.full((int(height), int(width)), -1.0e20, dtype=np.float32)
     _raster_visible_iso(grid.astype(np.int32, copy=False), solid, colors, img, depth,
@@ -163,24 +162,14 @@ def render_grid_visible_iso(
     return Image.fromarray(img, "RGBA")
 
 
-def render_schem_visible_iso(
-    path,
-    tile_w=FULL_SCHEM_ISO_TILE_W,
-    tile_h=FULL_SCHEM_ISO_TILE_H,
-    block_h=FULL_SCHEM_ISO_BLOCK_H,
-):
+def render_schem_visible_iso(path):
     _W, _H, _L, inv, grid = decode_schem_array(path)
-    return render_grid_visible_iso(grid, inv, tile_w, tile_h, block_h)
+    return render_grid_visible_iso(grid, inv, FULL_SCHEM_ISO_TILE_W, FULL_SCHEM_ISO_TILE_H, FULL_SCHEM_ISO_BLOCK_H)
 
 
-def render_cells_visible_iso(
-    cells,
-    tile_w=ROAD_ASSET_ISO_TILE_W,
-    tile_h=ROAD_ASSET_ISO_TILE_H,
-    block_h=ROAD_ASSET_ISO_BLOCK_H,
-):
+def render_cells_visible_iso(cells):
     _W, _H, _L, inv, grid = cells_to_grid(cells)
-    return render_grid_visible_iso(grid, inv, tile_w, tile_h, block_h)
+    return render_grid_visible_iso(grid, inv, ROAD_ASSET_ISO_TILE_W, ROAD_ASSET_ISO_TILE_H, ROAD_ASSET_ISO_BLOCK_H)
 
 
 def warm_up():

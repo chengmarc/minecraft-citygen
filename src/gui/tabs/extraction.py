@@ -16,6 +16,8 @@ from gui.tabs.control import ExtractionControlPanel
 from gui.widgets.qt_viewer import QtImageViewer
 from gui.widgets.region_dialog import RegionSelectorDialog
 
+PROGRESS_BUCKETS = 100
+
 EXTRACT_PHASE_INDEX = {
     (stage, phase): index
     for index, (stage, phase, _weight) in enumerate(progress.EXTRACTION_PHASE_WEIGHTS)
@@ -37,7 +39,7 @@ def _extract_phase(stage, label):
     return "render"
 
 
-def coalesce_pipeline_progress(emit, *, buckets=100):
+def coalesce_pipeline_progress(emit):
     """Reduce redundant cross-thread progress events while preserving completion."""
     last_key = None
 
@@ -45,7 +47,7 @@ def coalesce_pipeline_progress(emit, *, buckets=100):
         nonlocal last_key
         total_i = max(int(total), 1)
         completed_i = max(0, min(int(completed), total_i))
-        bucket = buckets if completed_i >= total_i else int((completed_i * buckets) / total_i)
+        bucket = PROGRESS_BUCKETS if completed_i >= total_i else int((completed_i * PROGRESS_BUCKETS) / total_i)
         key = (stage, _extract_phase(stage, label), total_i, bucket)
         if key == last_key:
             return

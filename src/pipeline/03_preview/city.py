@@ -33,7 +33,7 @@ def load_build_asset(key):
 
 def paste_building(canvas, asset, key, facing, rect):
     t = rot_img(asset, FACE_K[facing])
-    px, py = placement_origin(rect, facing, t.width, t.height, CELL)
+    px, py = placement_origin(rect, facing, t.width, t.height)
     canvas.alpha_composite(t, (px, py))
     draw_label(canvas, key, px, py, t.width, t.height)
 

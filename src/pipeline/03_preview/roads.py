@@ -46,6 +46,8 @@ LINE = {"s": WHITE, "b": YELLOW}
 LINE_W = {"s": 1, "b": 2}
 DEADEND_EXT = 2
 DEADEND_PAD = 1
+DASH = 4
+GAP = 3
 
 
 
@@ -56,7 +58,7 @@ def line_span(center, width):
     return center - width // 2, center + width // 2 - 1
 
 
-def dashed(draw, p0, p1, color, width, dash=4, gap=3):
+def dashed(draw, p0, p1, color, width):
     (x0, y0), (x1, y1) = p0, p1
     if x0 == x1:
         lo, hi = line_span(x0, width)
@@ -64,11 +66,11 @@ def dashed(draw, p0, p1, color, width, dash=4, gap=3):
         d = 0
         total = abs(y1 - y0)
         while d <= total:
-            seg = min(dash - 1, total - d)
+            seg = min(DASH - 1, total - d)
             ya = y0 + step * d
             yb = y0 + step * (d + seg)
             draw.rectangle([lo, min(ya, yb), hi, max(ya, yb)], fill=color)
-            d += dash + gap
+            d += DASH + GAP
         return
     if y0 == y1:
         lo, hi = line_span(y0, width)
@@ -76,11 +78,11 @@ def dashed(draw, p0, p1, color, width, dash=4, gap=3):
         d = 0
         total = abs(x1 - x0)
         while d <= total:
-            seg = min(dash - 1, total - d)
+            seg = min(DASH - 1, total - d)
             xa = x0 + step * d
             xb = x0 + step * (d + seg)
             draw.rectangle([min(xa, xb), lo, max(xa, xb), hi], fill=color)
-            d += dash + gap
+            d += DASH + GAP
         return
 
     dx, dy = x1 - x0, y1 - y0
@@ -90,11 +92,11 @@ def dashed(draw, p0, p1, color, width, dash=4, gap=3):
     ux, uy = dx / length, dy / length
     d = 0.0
     while d < length:
-        seg = min(dash, length - d)
+        seg = min(DASH, length - d)
         a = (x0 + ux * d, y0 + uy * d)
         b = (x0 + ux * (d + seg), y0 + uy * (d + seg))
         draw.line([a, b], fill=color, width=width, joint="curve")
-        d += dash + gap
+        d += DASH + GAP
 
 
 def span(center, width):

@@ -58,9 +58,9 @@ def load_version() -> str:
         return tomllib.load(fh)["project"]["version"]
 
 
-def run(command: list[str], *, cwd: Path | None = None) -> None:
+def run(command: list[str]) -> None:
     print(">", " ".join(command))
-    subprocess.run(command, cwd=cwd or ROOT, env=build_environment(), check=True)
+    subprocess.run(command, cwd=ROOT, env=build_environment(), check=True)
 
 
 def build_environment() -> dict[str, str]:

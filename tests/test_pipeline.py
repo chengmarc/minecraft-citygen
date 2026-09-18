@@ -20,7 +20,7 @@ from config.algo import CELL
 from config.path import exported_world_name
 from pipeline import services
 from pipeline import stages
-from pipeline.stages import PIPELINE_STAGE_COMMANDS, PIPELINE_STAGE_MODULES
+from pipeline.stages import PIPELINE_STAGE_COMMANDS
 from engine.schematic.transform import Tile
 from engine.schematic import city as city_grid
 from engine.world import marker_extract
@@ -47,10 +47,8 @@ def _run_script_help(script, *args):
     assert result.returncode == 0, result.stderr or result.stdout
 
 
-@pytest.mark.parametrize("module_name", PIPELINE_STAGE_MODULES)
-def test_pipeline_stage_script_bootstraps_without_pythonpath(module_name):
-    script = ROOT_DIR / "src" / Path(*module_name.split(".")).with_suffix(".py")
-    _run_script_help(script)
+def test_pipeline_stage_script_bootstraps_without_pythonpath():
+    _run_script_help(ROOT_DIR / "src" / "pipeline" / "stages.py")
 
 
 @pytest.mark.parametrize("stage_key", PIPELINE_STAGE_COMMANDS)

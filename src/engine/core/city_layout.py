@@ -79,7 +79,7 @@ def normalize_building_id(value):
     return f"{int(text):03d}" if text.isdigit() else text
 
 
-def load_catalog(catalog_meta, banned_buildings=DEFAULT_ALGO.banned_buildings):
+def load_catalog(catalog_meta, banned_buildings):
     """Placeable Buildings from raw ``buildings.json`` entries, best-scoring first."""
     banned = {normalize_building_id(value) for value in banned_buildings}
     buildings = []
@@ -125,23 +125,23 @@ def landmark_spacing_allows(rect, placements, spacing):
     return all(rect_distance(rect, placement.rect) >= spacing for placement in placements)
 
 
-def placement_origin(rect, facing, width, depth, cell_size=CELL):
+def placement_origin(rect, facing, width, depth):
     x0, z0, cols, rows = rect.x0, rect.y0, rect.cols, rect.rows
-    bx0, bz0 = x0 * cell_size, z0 * cell_size
+    bx0, bz0 = x0 * CELL, z0 * CELL
 
     if facing == "S":
-        pz = bz0 + rows * cell_size - depth
+        pz = bz0 + rows * CELL - depth
     elif facing == "N":
         pz = bz0
     else:
-        pz = bz0 + (rows * cell_size - depth) // 2
+        pz = bz0 + (rows * CELL - depth) // 2
 
     if facing == "E":
-        px = bx0 + cols * cell_size - width
+        px = bx0 + cols * CELL - width
     elif facing == "W":
         px = bx0
     else:
-        px = bx0 + (cols * cell_size - width) // 2
+        px = bx0 + (cols * CELL - width) // 2
 
     return px, pz
 
@@ -255,7 +255,7 @@ def place_from_points(avail, points, facing, candidates, chooser, top_fit_choice
     return placed
 
 
-def place_type2(avail, frontage_cells, catalog, fine, landmark_spacing=DEFAULT_ALGO.landmark_spacing):
+def place_type2(avail, frontage_cells, catalog, fine, landmark_spacing):
     """Place each type-2 landmark at most once, largest footprint first."""
     placed = []
     candidates = sorted(
@@ -286,7 +286,7 @@ def place_type2(avail, frontage_cells, catalog, fine, landmark_spacing=DEFAULT_A
     return placed
 
 
-def place_type1(avail, road_cells, lots, catalog, chooser, fine, top_fit_choices=DEFAULT_ALGO.type1_top_fit_choices):
+def place_type1(avail, road_cells, lots, catalog, chooser, fine, top_fit_choices):
     """Fill remaining lot frontage with type-1 buildings."""
     placed = []
     candidates = [b for b in catalog if b.type == 1]

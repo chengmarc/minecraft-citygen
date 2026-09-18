@@ -66,8 +66,6 @@ STAGES = {
 }
 
 PIPELINE_STAGE_COMMANDS = tuple(STAGES)
-PIPELINE_INTERNAL_MODULES = tuple(step.module for steps in STAGES.values() for step in steps)
-PIPELINE_STAGE_MODULES = ("pipeline.stages",)
 
 
 def stage_params(stage_key):

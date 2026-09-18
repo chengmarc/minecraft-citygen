@@ -85,8 +85,8 @@ def _tint_for_block(block_name: str) -> tuple[int, int, int] | None:
     return None
 
 
-def _is_grayish(rgb: tuple[int, int, int], tolerance: int = _GRAYSCALE_TOLERANCE) -> bool:
-    return max(rgb) - min(rgb) <= tolerance
+def _is_grayish(rgb: tuple[int, int, int]) -> bool:
+    return max(rgb) - min(rgb) <= _GRAYSCALE_TOLERANCE
 
 
 def _apply_tint(rgb: tuple[int, int, int], tint: tuple[int, int, int]) -> tuple[int, int, int]:
