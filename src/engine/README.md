@@ -1,135 +1,165 @@
 # engine — generation & transforms
 
-The engine is Minecraft CityGen's pure logic layer: no GUI, no stage orchestration, no
-side effects beyond reading/writing schematic and image files it is handed. The
-[pipeline](../pipeline/README.md) stages import these modules and drive them.
+The pure logic layer: road networks, building placement, schematic and world
+I/O, and rendering. It has no GUI, no stage orchestration, and no side effects
+beyond reading and writing the files it is handed. The
+[pipeline](../pipeline/README.md) decides which files and settings; the engine
+takes them as arguments.
 
 ← Back to the [source architecture overview](../README.md).
 
-## Subpackages
+## How-to guides
 
-| Subpackage | Modules | Responsibility |
-|---|---|---|
-| `core/` | [road_network.py](core/road_network.py), [city_layout.py](core/city_layout.py) | Road-network generation and tile catalogue; lot finding & building placement (`plan_city`) |
-| `world/` | [anvil_world_reader.py](world/anvil_world_reader.py), [marker_extract.py](world/marker_extract.py), [writer.py](world/writer.py) | Read Anvil worlds; extract marker-defined cuboids; write standalone exported worlds |
-| `schematic/` | [transform.py](schematic/transform.py), [reader.py](schematic/reader.py), [writer.py](schematic/writer.py), [grid.py](schematic/grid.py), [road.py](schematic/road.py), [building.py](schematic/building.py), [city.py](schematic/city.py) | Sponge `.schem` I/O, tile transforms, stamping tiles into palette-indexed voxel grids, road assembly; the building catalog and its pieces; the final city voxel grid |
-| (top level) | [blocks.py](blocks.py) | Block-state strings: `name[prop=val]` parsing/formatting and the air check |
-| `render/` | [isometric.py](render/isometric.py), [road_layout.py](render/road_layout.py), [contact_sheet.py](render/contact_sheet.py), [topdown.py](render/topdown.py), [palette.py](render/palette.py), [fonts.py](render/fonts.py) | Isometric, road-layout, contact-sheet, and top-down PNG rendering |
+### Change how roads are laid out
 
-## How the road grid is generated
+Edit `gen_networks` in [core/road_network.py](core/road_network.py). Keep the two
+[overlap rules](#how-the-road-grid-is-generated) — every road tile's art assumes
+them. If the change needs a new tuning value, add it as an `Algo` field
+([config guide](../config/README.md#add-a-generation-knob)) and read it from the
+`algo` argument. Check with:
 
-Road generation lives in [core/road_network.py](core/road_network.py). It uses an
-overlay model with two independent Manhattan networks:
+```bash
+python -m pytest -q tests/test_engine_core.py
+python src/pipeline/stages.py preview --seed 5   # then open artifacts/03_preview/grid/seed_5.png
+```
 
-- a **big-road** network on the coarse grid
-- a **small-road** network on the fine grid
+### Change building placement
 
-**Fine grid vs coarse grid.** The fine grid is the real city cell grid used for
-building placement; the coarse grid is `fine // 2`, so one coarse cell covers a
-`2x2` block of fine cells. That is why big roads are effectively 2 cells wide and
-small roads 1 cell wide.
+Edit [core/city_layout.py](core/city_layout.py). `plan_city` is the one entry
+point for both the Stage 3 preview and the Stage 4 build, so a change there
+shows up in the preview exactly as it will be built. Draw new randomness from
+`seeded_rng(seed, stream)` with its own stream constant rather than reusing an
+existing stream: sharing one would shift every later draw and change existing
+cities for the same seed. `validate_placements` and the type-2 tests in
+`tests/test_engine_core.py` guard overlap, once-only landmarks, and spacing.
 
-**Three road layers** are composited: big `2x2`, small `1x1`, and mixed `1x2`.
-Mixed pieces exist because a small road can cross a big corridor transversely; the
-overlap occupies exactly two fine cells, so the mixed art is `1x2`.
+### Add a road tile shape
 
-**Big roads are generated first:** avenue positions are chosen on the coarse grid,
-spaced by `gap_big` with `pad_big` edge padding (knobs of the `config.algo.Algo` passed to
-`gen_networks`), evenly stepped then jittered by
-`-1/0/+1`, with nearby duplicates collapsed to preserve minimum spacing. Some
-full-span roads are truncated into T-intersections and some pairs into L-corners
+1. Add `(ports, "NN_<name>")` to `BIG_TILES`, `SMALL_TILES`, or `MIXED_TILES` in
+   [core/road_network.py](core/road_network.py), with a new two-digit prefix.
+   Ports are listed in the tile's unrotated orientation; the catalogue derives
+   the rotations.
+2. Author the matching road asset in the world, named with that prefix
+   (conventions in the [pipeline guide](../pipeline/README.md#roads--fill-props)).
+   [schematic/road.py](schematic/road.py) matches schematics to tiles by the
+   prefix alone.
+
+### Carry a new kind of block data through the pipeline
+
+Block states (`name[prop=val]`) and block-entity NBT already travel unchanged
+from extraction to export (see [Block entities](#block-entities)). If a block's
+state has a direction the rotation doesn't turn yet, extend `rot_state` in
+[schematic/transform.py](schematic/transform.py) and add a case to
+`tests/test_schematic.py`.
+
+## Explanation
+
+### How the road grid is generated
+
+[core/road_network.py](core/road_network.py) overlays two independent Manhattan
+networks:
+
+- a **big-road** network on the **coarse** grid, where one coarse cell covers a
+  `2x2` block of fine cells — so big roads are 2 cells wide;
+- a **small-road** network on the **fine** grid, the real cell grid buildings
+  are placed on — so small roads are 1 cell wide.
+
+Where a small road crosses a big corridor, the overlap is exactly two fine
+cells, so that crossing uses a third, **mixed** `1x2` tile.
+
+Big roads come first: avenue positions on the coarse grid are evenly stepped by
+`gap_big` inside `pad_big`, jittered by `-1/0/+1`, and de-duplicated to keep the
+spacing. Some full-span roads are then cut into T-intersections and L-corners
 (`n_big_tees`, `n_big_corners`).
 
-**Small roads come next:** streets on the fine grid, spaced by `gap_small` with
-`pad_small` padding, filtered so they don't sit too close to big-road bands. The
-critical clearance rule is `gap_mixed` — the minimum fine-cell clearance between a
-small street and a big corridor band. Small roads also receive forced L-corners
-and T-intersections (`n_small_corners`, `n_small_tees`), and their endpoints snap
-either to another small road or to the edge of a big corridor.
+Small roads follow on the fine grid (`gap_small`, `pad_small`), filtered by
+`gap_mixed` — the minimum clearance between a small street and a big corridor.
+They get their own T's and L's, and their ends snap to another small road or to
+a big corridor's edge.
 
-**Overlap rules** keep compositing predictable: a small road never lives inside a
-big-road footprint except as a transverse mixed crossing, and never runs
-collinear along a big corridor.
+Two rules hold by construction, and the tile art relies on them:
 
-[schematic/road.py](schematic/road.py) maps the generated tile layout to extracted
-road `.schem` pieces for production, and keeps fill props out of the road tile set
-(exposing them via `load_fillers(roads_dir)` instead).
+1. A small road never lies inside a big footprint except as a transverse mixed
+   crossing.
+2. A small road never runs collinear along a big corridor.
 
-## How building placement works
+[schematic/road.py](schematic/road.py) turns the tile layout into blocks. Fill
+props are kept out of the road tile set and loaded separately
+(`load_fillers`).
 
-Placement lives in [core/city_layout.py](core/city_layout.py). `plan_city()` is
-the single entry point for both the Stage 3 preview and the Stage 4 build, so the
-preview always shows the city that gets built. It is deterministic for a given
-seed; `seeded_rng(seed, stream)` derives the independent placement, stack-height,
-and filler random streams:
+### How building placement works
 
-- roads define forbidden cells; all remaining fine cells are lots
-- buildings snap to the 9-block fine-cell grid
-- type-2 buildings are placed first; type-1 fill the remaining frontage
+[core/city_layout.py](core/city_layout.py):
 
-**Lot detection.** `find_lots()` flood-fills all non-road fine cells into
-connected lots, each processed for frontage placement.
+- Road cells are forbidden; `find_lots` flood-fills the rest into lots.
+- `load_catalog` reads the `buildings.json` entries, drops banned IDs, and
+  sorts buildings by physical size (`width * depth`), then area, dimensions, and
+  ID.
+- **Pass 1: type-2 landmarks.** Only big-road frontage, longest uninterrupted
+  runs first. Each landmark is tried once, largest first, and takes the first
+  fitting position at least `landmark_spacing` from other landmarks. So each
+  landmark ID appears at most once per city.
+- **Pass 2: type-1 buildings.** Ordinary road frontage on every lot. At each
+  frontage point the first `type1_top_fit_choices` fitting buildings are
+  collected and one is picked at random — variety without giving up fit. No
+  repeat limit.
 
-**Catalog loading** takes the `buildings.json` entries (read through
-[schematic/building.py](schematic/building.py), which owns the catalog file and
-its piece naming), filters banned IDs, computes footprint
-size in fine cells, and sorts buildings descending by physical score
-(`width * depth`), area, footprint dimensions, then ID.
+Everything is deterministic for a seed: placement, stack heights, and filler
+props each draw from their own `seeded_rng` stream.
 
-**Two-pass placement** (`place_city()`):
-
-- *Pass 1* — type-2 buildings, using only big-road frontage, processing the
-  longest uninterrupted frontage runs first.
-- *Pass 2* — type-1 buildings, using ordinary road adjacency on each lot.
-
-**Candidate selection.** Type-2 landmarks are tried once each, largest footprint
-first, and each takes the first fitting big-road frontage position that respects
-`landmark_spacing`. Type-1 buildings still check each frontage point in sorted
-order, collect the first N fitting candidates, and choose randomly from that
-top-fit set (`type1_top_fit_choices`) — variation without abandoning fit quality.
-
-**Repetition.** Type-2 buildings are landmarks and each catalog ID can be placed
-at most once in a generated city. Type-1 buildings have no repeat limit. Banned
-IDs (`banned_buildings`) are filtered before placement.
-
-## Schematic I/O
+### Schematic I/O
 
 [schematic/writer.py](schematic/writer.py) and
 [schematic/reader.py](schematic/reader.py) handle the Sponge `.schem` container.
-Because the hard floor is Minecraft 26.1.2, every output stamp lands in the v3
-window, so **both are v3-only**: the writer always emits the v3 container and the
-reader assumes the v3 layout. Versioning rationale lives in the
+Every output stamp is at or above the 26.1.2 floor, which is inside the Sponge v3
+range, so **both are v3-only**. Why the floor exists is in the
 [config guide](../config/README.md#version-compatibility).
 
 ### Block entities
 
-Signs, banners, chests, barrels, beds, furnaces, skulls, etc. carry their state in
-*block-entity NBT*, separate from the block id. The pipeline preserves that NBT
-end to end:
+Signs, banners, chests, beds, skulls, etc. keep their state in *block-entity
+NBT*, separate from the block id. The engine carries it end to end without
+interpreting it, so downstream tooling can preserve or upgrade it normally:
 
-- `marker_extract.extract_cuboid` returns `(cells, block_entities)`; each
+- `marker_extract.extract_cuboid` returns `(cells, block_entities)`. Each
   `BlockEntity` ([schematic/transform.py](schematic/transform.py)) holds a local
-  `(x, y, z)`, the id, and a `Data` compound copied verbatim. Authoring markers
-  live outside the extracted cuboid, so in-cuboid signs stay as real content.
-- `writer.py` emits them into the Sponge v3 `BlockEntities` list, nested under
-  `Data`; `reader.decode_schem_block_entities` reads them back.
-- Positions ride along with their blocks through assembly: `rot_tile` rotates a
-  block entity to its cell's new coordinate (and `rot_state` turns the block's own
+  `(x, y, z)`, the id, and the `Data` compound copied verbatim. Authoring markers
+  sit outside the extracted cuboid, so signs inside it are real content.
+- The writer emits them into the v3 `BlockEntities` list;
+  `reader.decode_schem_block_entities` reads them back.
+- Positions travel with their blocks: `rot_tile` moves each block entity to its
+  cell's rotated coordinate (and `rot_state` turns the block's own
   `facing`/`rotation`), `building.assemble` offsets stacked pieces, and
-  [schematic/city.py](schematic/city.py) translates each into master-grid coordinates, clipping to
-  bounds and collapsing duplicates (one per cell).
+  [schematic/city.py](schematic/city.py) translates them to city coordinates,
+  clipping to bounds and keeping one per cell.
 
-The NBT is carried unchanged so downstream import/load tooling can preserve or
-upgrade block-entity payloads normally.
+### One ground plane
 
-## Rendering
+[schematic/city.py](schematic/city.py) seats every road, building, and fill tile
+against one shared ground height. Each asset's bottom row goes at
+`ground_y - ground_offset`, where `ground_offset` is the height of the asset's
+emerald marker. That is why extraction rejects an asset without an emerald:
+there would be no way to line its floor up with its neighbours'.
 
-- [render/isometric.py](render/isometric.py) renders `.schem` files (and raw block
-  grids) to isometric PNGs, using the color palette via
-  [render/palette.py](render/palette.py) (`color_render.csv` from `config`).
-- [render/road_layout.py](render/road_layout.py) composes the Stage 3 road tile
-  PNGs into a top-down road-layout image.
-- [render/contact_sheet.py](render/contact_sheet.py) grids labelled thumbnails
-  into the contact sheets every asset stage writes.
-- [render/topdown.py](render/topdown.py) renders a top-down world preview, used by
-  the GUI region dialog.
+## Reference
+
+| Subpackage | Modules | Responsibility |
+|---|---|---|
+| `core/` | [road_network.py](core/road_network.py), [city_layout.py](core/city_layout.py) | Road networks and the tile catalogue; lots and building placement (`plan_city`) |
+| `schematic/` | [transform.py](schematic/transform.py), [reader.py](schematic/reader.py), [writer.py](schematic/writer.py), [grid.py](schematic/grid.py), [road.py](schematic/road.py), [building.py](schematic/building.py), [city.py](schematic/city.py) | Sponge `.schem` I/O, tile rotation, stamping into palette-indexed voxel grids, road assembly, the building catalog and its pieces, the final city grid |
+| `world/` | [anvil_world_reader.py](world/anvil_world_reader.py), [marker_extract.py](world/marker_extract.py), [writer.py](world/writer.py) | Read Anvil worlds, extract marker-defined cuboids, write exported worlds |
+| `render/` | [isometric.py](render/isometric.py), [road_layout.py](render/road_layout.py), [contact_sheet.py](render/contact_sheet.py), [topdown.py](render/topdown.py), [palette.py](render/palette.py), [fonts.py](render/fonts.py) | Isometric `.schem` renders, the Stage 3 road-layout image, contact sheets, the top-down world preview for the GUI region dialog |
+| (top level) | [blocks.py](blocks.py) | Block-state strings: `name[prop=val]` parsing/formatting and the air check |
+
+Road assets are matched by the first two characters of their schematic name:
+
+| Prefix | Meaning | Source of truth |
+|---|---|---|
+| `01`–`05` | big `2x2` tiles | `BIG_TILES` in [core/road_network.py](core/road_network.py) |
+| `06`–`10` | small `1x1` tiles | `SMALL_TILES` |
+| `11`–`14` | mixed `1x2` crossings | `MIXED_TILES` |
+| `18` | empty-lot ground fill (required) | `GROUND_FILL_PREFIX` in [schematic/road.py](schematic/road.py) |
+| any other, name contains `fill` | 9x9 fill props | `FILL_TOKEN` in [schematic/road.py](schematic/road.py) |
+
+Layers inside `engine` import only downward: `blocks`, `core` → `schematic` →
+`world` → `render` (enforced by `tests/test_dependencies.py`).
