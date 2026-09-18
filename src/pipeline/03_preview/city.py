@@ -4,50 +4,27 @@ from __future__ import annotations
 
 import glob
 import os
-import random
 import sys
 from pathlib import Path
 
-from PIL import Image, ImageDraw, ImageFont
+from PIL import Image, ImageDraw
 
 if __package__ in (None, ""):
     sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
-from config.algo import DEFAULT_SEED, FINE as DEFAULT_FINE
-from config.path import PREVIEW_BUILDS, PREVIEW_CITY, PREVIEW_ROADS
+from config.algo import CELL, DEFAULT_SEED, FINE as DEFAULT_FINE
+from config.path import PREVIEW_BUILDS, PREVIEW_ROADS, city_preview_path
 from config.render import CITY_GROUND_FILL_RGBA
-from engine.core.city_layout import (
-    FACE_K,
-    PlacementRules,
-    find_lots,
-    load_catalog,
-    place_city,
-    placement_origin,
-    validate_placements,
-)
-from engine.core.road_network import CELL, compose, gen_networks, load_assets, make_size, rot_img
+from engine.core.city_layout import FACE_K, FILLER_STREAM, placement_origin, plan_city, seeded_rng
+from engine.core.road_network import gen_networks, make_size
+from engine.render.fonts import label_font
+from engine.render.road_layout import compose, load_assets, rot_img
+from engine.schematic.building import read_catalog
 from engine.schematic.road import FILL_TOKEN
 from pipeline.stages import noop, run_stage_cli
 
-BUILDS = PREVIEW_BUILDS
-_FONTS = {}
-
-
-def font(size):
-    if size not in _FONTS:
-        for name in ("arialbd.ttf", "arial.ttf"):
-            try:
-                _FONTS[size] = ImageFont.truetype(name, size)
-                break
-            except OSError:
-                continue
-        else:
-            _FONTS[size] = ImageFont.load_default()
-    return _FONTS[size]
-
-
 def load_build_asset(key):
-    path = os.path.join(BUILDS, f"{key}.png")
+    path = os.path.join(PREVIEW_BUILDS, f"{key}.png")
     if not os.path.exists(path):
         raise FileNotFoundError(f"missing build asset {path}; run `python -m pipeline.stages preview` first")
     with Image.open(path) as image:
@@ -66,8 +43,8 @@ def draw_label(canvas, key, x, y, w, h):
         return
     draw = ImageDraw.Draw(canvas)
     size = max(5, min(13, int(min(w / max(1, len(key) * 0.55), h * 0.55))))
-    label_font = font(size)
-    bbox = draw.textbbox((0, 0), key, font=label_font)
+    font = label_font(size)
+    bbox = draw.textbbox((0, 0), key, font=font)
     tw, th = bbox[2] - bbox[0], bbox[3] - bbox[1]
     cx, cy = x + w // 2, y + h // 2
     pad_x, pad_y = 2, 1
@@ -75,7 +52,7 @@ def draw_label(canvas, key, x, y, w, h):
         [cx - tw // 2 - pad_x, cy - th // 2 - pad_y, cx + tw // 2 + pad_x, cy + th // 2 + pad_y],
         fill=(20, 22, 24, 210),
     )
-    draw.text((cx, cy), key, fill=(245, 240, 220, 255), font=label_font, anchor="mm")
+    draw.text((cx, cy), key, fill=(245, 240, 220, 255), font=font, anchor="mm")
 
 
 def fill_lots(road_cells, size):
@@ -137,38 +114,24 @@ def render(net, placements, out, preview, fillers=None, rng=None):
 
 def run(*, seed=DEFAULT_SEED, fine=DEFAULT_FINE, preview=0, out=None, logger=None, progress=None):
     logger = logger or noop
-    out = out or os.path.join(PREVIEW_CITY, f"seed_{seed}.png")
+    progress = progress or noop
+    progress(0, 2, "Planning city layout")
+    out = out or city_preview_path(seed)
     os.makedirs(os.path.dirname(out), exist_ok=True)
 
-    size = make_size(fine, even=True)
-    net = gen_networks(seed, size=size)
-    road_cells = net["road_cells"]
-    lots = find_lots(road_cells, size.fine)
-    rules = PlacementRules()
-    catalog = load_catalog(rules)
-    rng = random.Random(seed * 7 + 1)
-    rule_state = rules.new_state(rng)
-
-    placements = place_city(
-        road_cells,
-        lots,
-        catalog,
-        size.fine,
-        rng,
-        rules,
-        rule_state,
-        type2_frontage_cells=net["big_fine_cells"],
-    )
-    validate_placements(road_cells, placements, size.fine)
+    net = gen_networks(seed, size=make_size(fine))
+    lots, placements = plan_city(seed, net, read_catalog())
 
     by_type = {1: 0, 2: 0}
     for placement in placements:
         by_type[placement.building.type] += 1
     logger(f"lots={len(lots)}  builds placed={len(placements)}  (type 1={by_type[1]}, type 2={by_type[2]})")
+    progress(1, 2, "Rendering city layout preview")
     fillers = load_fill_assets()
-    filler_rng = random.Random(seed * 7 + 3)
+    filler_rng = seeded_rng(seed, FILLER_STREAM)
     width, height = render(net, placements, out, preview, fillers, filler_rng)
     logger(f"saved {out} ({width}x{height})")
+    progress(2, 2, "Rendered city layout preview")
     return {"output_path": out, "image_size": (width, height), "placements": len(placements)}
 
 

@@ -10,10 +10,10 @@ side effects beyond reading/writing schematic and image files it is handed. The
 
 | Subpackage | Modules | Responsibility |
 |---|---|---|
-| `core/` | [road_network.py](core/road_network.py), [city_layout.py](core/city_layout.py) | Road-network generation & tile compositing; lot finding & building placement |
+| `core/` | [road_network.py](core/road_network.py), [city_layout.py](core/city_layout.py) | Road-network generation and tile catalogue; lot finding & building placement (`plan_city`) |
 | `world/` | [anvil_world_reader.py](world/anvil_world_reader.py), [marker_extract.py](world/marker_extract.py), [writer.py](world/writer.py) | Read Anvil worlds; extract marker-defined cuboids; write standalone exported worlds |
-| `schematic/` | [transform.py](schematic/transform.py), [reader.py](schematic/reader.py), [writer.py](schematic/writer.py), [road.py](schematic/road.py), [building.py](schematic/building.py) | Sponge `.schem` I/O, tile transforms, road/building assembly |
-| `render/` | [isometric.py](render/isometric.py), [topdown.py](render/topdown.py), [palette.py](render/palette.py) | Isometric and top-down PNG rendering |
+| `schematic/` | [transform.py](schematic/transform.py), [reader.py](schematic/reader.py), [writer.py](schematic/writer.py), [road.py](schematic/road.py), [building.py](schematic/building.py) | Sponge `.schem` I/O, tile transforms, road assembly; the building catalog and its pieces |
+| `render/` | [isometric.py](render/isometric.py), [road_layout.py](render/road_layout.py), [contact_sheet.py](render/contact_sheet.py), [topdown.py](render/topdown.py), [palette.py](render/palette.py), [fonts.py](render/fonts.py) | Isometric, road-layout, contact-sheet, and top-down PNG rendering |
 
 ## How the road grid is generated
 
@@ -55,8 +55,11 @@ road `.schem` pieces for production, and keeps fill props out of the road tile s
 
 ## How building placement works
 
-Placement lives in [core/city_layout.py](core/city_layout.py). It is deterministic
-for a given seed:
+Placement lives in [core/city_layout.py](core/city_layout.py). `plan_city()` is
+the single entry point for both the Stage 3 preview and the Stage 4 build, so the
+preview always shows the city that gets built. It is deterministic for a given
+seed; `seeded_rng(seed, stream)` derives the independent placement, stack-height,
+and filler random streams:
 
 - roads define forbidden cells; all remaining fine cells are lots
 - buildings snap to the 9-block fine-cell grid
@@ -65,7 +68,9 @@ for a given seed:
 **Lot detection.** `find_lots()` flood-fills all non-road fine cells into
 connected lots, each processed for frontage placement.
 
-**Catalog loading** reads `buildings.json`, filters banned IDs, computes footprint
+**Catalog loading** takes the `buildings.json` entries (read through
+[schematic/building.py](schematic/building.py), which owns the catalog file and
+its piece naming), filters banned IDs, computes footprint
 size in fine cells, and sorts buildings descending by physical score
 (`width * depth`), area, footprint dimensions, then ID.
 
@@ -120,5 +125,9 @@ upgrade block-entity payloads normally.
 - [render/isometric.py](render/isometric.py) renders `.schem` files (and raw block
   grids) to isometric PNGs, using the color palette via
   [render/palette.py](render/palette.py) (`color_render.csv` from `config`).
+- [render/road_layout.py](render/road_layout.py) composes the Stage 3 road tile
+  PNGs into a top-down road-layout image.
+- [render/contact_sheet.py](render/contact_sheet.py) grids labelled thumbnails
+  into the contact sheets every asset stage writes.
 - [render/topdown.py](render/topdown.py) renders a top-down world preview, used by
   the GUI region dialog.

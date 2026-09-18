@@ -11,7 +11,6 @@ The generator is intentionally simple:
 """
 from __future__ import annotations
 
-import json
 import math
 import random
 from collections import deque
@@ -24,11 +23,19 @@ from config.algo import (
     LANDMARK_SPACING,
     TYPE1_TOP_FIT_CHOICES,
 )
-from config.path import BUILD_CATALOG
 
-CELL_BLOCKS = CELL
 DIRS = {"N": (0, -1), "E": (1, 0), "S": (0, 1), "W": (-1, 0)}
 FACE_K = {"S": 0, "W": 1, "N": 2, "E": 3}
+
+# Independent random streams derived from one city seed. Preview and production
+# must draw from the same stream for the same decision, or they diverge.
+PLACEMENT_STREAM = 1
+STACK_HEIGHT_STREAM = 2
+FILLER_STREAM = 3
+
+
+def seeded_rng(seed, stream):
+    return random.Random(seed * 7 + stream)
 
 
 @dataclass(slots=True)
@@ -44,8 +51,8 @@ class Building:
     score: int = field(init=False)
 
     def __post_init__(self) -> None:
-        self.fw = math.ceil(self.width / CELL_BLOCKS)
-        self.fd = math.ceil(self.depth / CELL_BLOCKS)
+        self.fw = math.ceil(self.width / CELL)
+        self.fd = math.ceil(self.depth / CELL)
         self.area = self.fw * self.fd
         self.score = self.width * self.depth
 
@@ -103,19 +110,14 @@ class PlacementRules:
         state.counts[building.num] = state.counts.get(building.num, 0) + 1
 
 
-def catalog_type(meta):
-    return meta["type"]
-
-
-def load_catalog(rules=None):
-    with open(BUILD_CATALOG, encoding="utf-8") as fh:
-        data = json.load(fh)
+def load_catalog(catalog_meta, rules=None):
+    """Placeable Buildings from raw ``buildings.json`` entries, best-scoring first."""
     buildings = []
-    for num, meta in data.items():
+    for num, meta in catalog_meta.items():
         if rules is not None and not rules.allow_building(num, meta):
             continue
         width, depth = meta["size"]
-        buildings.append(Building(num, catalog_type(meta), width, depth, meta))
+        buildings.append(Building(num, meta["type"], width, depth, meta))
     buildings.sort(key=lambda b: (b.score, b.area, b.fw, b.fd, b.num), reverse=True)
     if rules is not None:
         rules.prepare_catalog(buildings)
@@ -155,7 +157,7 @@ def landmark_spacing_allows(rect, placements, spacing):
     return all(rect_distance(rect, placement.rect) >= spacing for placement in placements)
 
 
-def placement_origin(rect, facing, width, depth, cell_size=CELL_BLOCKS):
+def placement_origin(rect, facing, width, depth, cell_size=CELL):
     x0, z0, cols, rows = rect.x0, rect.y0, rect.cols, rect.rows
     bx0, bz0 = x0 * cell_size, z0 * cell_size
 
@@ -358,3 +360,28 @@ def place_city(road_cells, lots, catalog, fine, rng=None, rules=None, rule_state
     placed += place_type2(avail, type2_frontage_cells, catalog, rules, rule_state, fine, landmark_spacing)
     placed += place_type1(avail, road_cells, lots, catalog, chooser, rules, rule_state, fine)
     return placed
+
+
+def plan_city(seed, net, catalog_meta):
+    """Lots and validated building placements for one seeded road network.
+
+    The single placement entry point for both the Stage 3 preview and the
+    Stage 4 city build, so the preview always shows the city that gets built.
+    """
+    road_cells = net["road_cells"]
+    fine = net["size"].fine
+    lots = find_lots(road_cells, fine)
+    rules = PlacementRules()
+    rng = seeded_rng(seed, PLACEMENT_STREAM)
+    placements = place_city(
+        road_cells,
+        lots,
+        load_catalog(catalog_meta, rules),
+        fine,
+        rng,
+        rules,
+        rules.new_state(rng),
+        type2_frontage_cells=net["big_fine_cells"],
+    )
+    validate_placements(road_cells, placements, fine)
+    return lots, placements

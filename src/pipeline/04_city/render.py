@@ -15,15 +15,12 @@ from config.render import FULL_SCHEM_ISO_BLOCK_H, FULL_SCHEM_ISO_TILE_H, FULL_SC
 from engine.render.isometric import render_schem_visible_iso
 from pipeline.stages import noop, run_stage_cli
 
-SCHEM = CITY_SCHEM
-
-
 def run(*, logger=None, progress=None):
     logger = logger or noop
     progress = progress or noop
     os.makedirs(CITY_RENDERS, exist_ok=True)
     outputs = []
-    paths = sorted(glob.glob(os.path.join(SCHEM, "*.schem")))
+    paths = sorted(glob.glob(os.path.join(CITY_SCHEM, "*.schem")))
     total = len(paths)
     if total > 0:
         progress(0, total, "Rendering city schematic")

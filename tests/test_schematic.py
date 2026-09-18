@@ -183,8 +183,7 @@ def test_road_asset_loaders_keep_network_tiles_fill_props_and_ground_fill_separa
 
 
 def test_building_assembly_uses_piece_shape_not_placement_type(tmp_path, monkeypatch):
-    monkeypatch.setattr(building_schem, "BUILDS", str(tmp_path))
-    monkeypatch.setattr(building_schem, "META", None)
+    monkeypatch.setattr(building_schem, "BUILDS_SCHEM", str(tmp_path))
     monkeypatch.setattr(building_schem, "_piece", {})
 
     write_sponge_schem_cells([[["minecraft:bottom"]]], str(tmp_path / "001_bottom.schem"), V2612)

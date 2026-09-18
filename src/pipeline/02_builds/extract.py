@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import json
 import os
 import sys
 from functools import lru_cache
@@ -15,11 +14,10 @@ from config.path import BUILD_CATALOG, BUILDS_SCHEM
 from config.world import BUILD_MARKER_Y_RANGE, BUILD_TYPES, DATA_VERSION
 from engine.world.anvil_world_reader import World
 from engine.world.marker_extract import detect_marker_assets, extract_cuboid, iter_signs, parse_range
+from engine.schematic.building import STACK_PARTS, WHOLE, piece_path, write_catalog
 from engine.schematic.writer import write_sponge_schem_cells
 from pipeline.extraction import chunk_scan_count, remove_existing_schems
 from pipeline.stages import noop, run_stage_cli
-
-CATALOG = BUILD_CATALOG
 
 
 @lru_cache(maxsize=1)
@@ -27,7 +25,7 @@ def get_world():
     return World()
 
 
-def detect_builds(build_type, x_a, x_b, z_a, z_b, y0, y1, *, on_scan_progress=None):
+def detect_builds(build_type, x_a, x_b, z_a, z_b, *, on_scan_progress=None):
     """Detect one- or three-layer builds from direct gold/diamond marker pairs."""
     m_lo, m_hi = BUILD_MARKER_Y_RANGE.as_tuple()
     components, skipped = detect_marker_assets(
@@ -54,10 +52,6 @@ def stack_sign(emerald):
     return parse_range(sign_text_at(ex, ey + 1, ez), stack_labels)
 
 
-def write_schem(cells, block_entities, path):
-    write_sponge_schem_cells(cells, path, DATA_VERSION, block_entities=block_entities)
-
-
 def run(*, logger=None, progress=None):
     logger = logger or noop
     progress = progress or noop
@@ -75,14 +69,14 @@ def run(*, logger=None, progress=None):
     progress(0, total_scan_chunks, "Scanning build regions...")
     builds = []
     for i, (build_type, start_xyz, end_xyz) in enumerate(region_data):
-        xa, y0, za = start_xyz
-        xb, y1, zb = end_xyz
+        xa, _y0, za = start_xyz
+        xb, _y1, zb = end_xyz
         offset = scan_offsets[i]
 
         def on_scan(done, _total, _offset=offset):
             progress(_offset + done, total_scan_chunks, "Scanning build regions...")
 
-        detected, skipped = detect_builds(build_type, xa, xb, za, zb, y0, y1, on_scan_progress=on_scan)
+        detected, skipped = detect_builds(build_type, xa, xb, za, zb, on_scan_progress=on_scan)
         builds.extend(detected)
         logger(f"type {build_type} region: {len(detected)} builds from marker pairs")
         for xmn, zmn, reason in skipped:
@@ -96,26 +90,24 @@ def run(*, logger=None, progress=None):
 
         entry = {"type": build_type, "size": size, "origin": origin, "ground_offset": ground_offset, "pieces": {}}
         if len(cuboids) == 1:
-            cells, bes = extract_cuboid(get_world(), cuboids[0], force_persistent_leaves=True)
-            write_schem(cells, bes, os.path.join(BUILDS_SCHEM, f"{key}.schem"))
-            entry["pieces"]["whole"] = cuboids[0][3] - cuboids[0][2] + 1
+            parts = (WHOLE,)
         else:
+            parts = STACK_PARTS
             stack_rng = stack_sign(emerald)
             entry["stack"] = stack_rng if stack_rng is not None else [1, 1]
-            for name, cuboid in zip(("bottom", "middle", "top"), cuboids):
-                cells, bes = extract_cuboid(get_world(), cuboid, force_persistent_leaves=True)
-                write_schem(cells, bes, os.path.join(BUILDS_SCHEM, f"{key}_{name}.schem"))
-                entry["pieces"][name] = cuboid[3] - cuboid[2] + 1
+        for part, cuboid in zip(parts, cuboids):
+            cells, bes = extract_cuboid(get_world(), cuboid, force_persistent_leaves=True)
+            write_sponge_schem_cells(cells, piece_path(key, part), DATA_VERSION, block_entities=bes)
+            entry["pieces"][part] = cuboid[3] - cuboid[2] + 1
         catalog[key] = entry
         logger(f"extracted {key}")
         progress(i + 1, total, key)
 
-    with open(CATALOG, "w", encoding="utf-8") as fh:
-        json.dump(catalog, fh, indent=2)
-    logger(f"wrote {len(catalog)} builds to {CATALOG}")
+    write_catalog(catalog)
+    logger(f"wrote {len(catalog)} builds to {BUILD_CATALOG}")
     return {
         "count": len(catalog),
-        "catalog_path": CATALOG,
+        "catalog_path": BUILD_CATALOG,
         "items": sorted(catalog),
     }
 

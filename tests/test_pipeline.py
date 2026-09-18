@@ -16,7 +16,9 @@ import pytest
 import numpy as np
 from PIL import Image
 
+from config.algo import CELL
 from pipeline import services
+from pipeline import stages
 from pipeline.stages import PIPELINE_STAGE_COMMANDS, PIPELINE_STAGE_MODULES
 from engine.schematic.transform import Tile
 
@@ -70,7 +72,7 @@ def test_world_export_uses_seeded_world_name_for_folder_and_level(monkeypatch, t
         calls["kwargs"] = kwargs
         return {"chunks": 1, "regions": 1, "block_entities": 0, "out_dir": out}
 
-    monkeypatch.setattr(world_export, "CITY_SCHEM", str(schem_dir))
+    monkeypatch.setattr(world_export, "city_schem_path", lambda seed: str(schem_dir / f"seed_{seed}.schem"))
     monkeypatch.setattr(world_export, "SAVES", str(saves_dir))
     monkeypatch.setattr(world_export, "SAVE", str(source))
     monkeypatch.setattr(world_export, "schem_to_world", fake_schem_to_world)
@@ -113,7 +115,7 @@ class RoadsExtractTests(unittest.TestCase):
             component = _component((0, 2, 0, 2), (0, 2, 65, 70, 0, 2), ground_offset=2)
             cells = [[["minecraft:stone"]]]
 
-            with mock.patch.object(roads_extract, "OUT", str(out_dir)), \
+            with mock.patch.object(roads_extract, "ROADS_SCHEM", str(out_dir)), \
                  mock.patch.object(roads_extract, "get_world", return_value=mock.Mock()), \
                  mock.patch.object(roads_extract, "name_for", return_value="fresh"), \
                  mock.patch.object(roads_extract, "detect_marker_assets", return_value=([component], [])), \
@@ -134,7 +136,7 @@ class RoadsExtractTests(unittest.TestCase):
             stale = out_dir / "stale.schem"
             stale.write_text("old", encoding="utf-8")
 
-            with mock.patch.object(roads_extract, "OUT", str(out_dir)), \
+            with mock.patch.object(roads_extract, "ROADS_SCHEM", str(out_dir)), \
                  mock.patch.object(roads_extract, "get_world", return_value=mock.Mock()), \
                  mock.patch.object(roads_extract, "detect_marker_assets", return_value=([], [])):
                 with self.assertRaisesRegex(RuntimeError, "found no assets"):
@@ -171,6 +173,18 @@ def test_road_name_reads_sign_one_block_above_emerald(monkeypatch):
     assert roads_extract.name_for((4, 70, 8)) == "02_big_2x2_I"
 
 
+def _checking_write_contact():
+    """Patch the shared contact writer to assert it receives image paths, not images."""
+    rendering = importlib.import_module("pipeline.rendering")
+    real_write_contact = rendering.write_contact
+
+    def checking_write_contact(images, out, **kwargs):
+        assert all(isinstance(source, (str, os.PathLike)) for _key, source in images)
+        return real_write_contact(images, out, **kwargs)
+
+    return mock.patch.object(rendering, "write_contact", side_effect=checking_write_contact)
+
+
 class ContactRenderTests(unittest.TestCase):
     def test_builds_render_writes_piece_images_and_contact_sheet(self):
         with tempfile.TemporaryDirectory() as tempdir:
@@ -181,19 +195,12 @@ class ContactRenderTests(unittest.TestCase):
                 encoding="utf-8",
             )
 
-            real_write_contact = importlib.import_module("engine.render.isometric").write_contact
-
-            def checking_write_contact(images, out, **kwargs):
-                assert all(isinstance(source, (str, os.PathLike)) for _key, source in images)
-                return real_write_contact(images, out, **kwargs)
-
-            with mock.patch.object(builds_render, "CATALOG", str(catalog_path)), \
-                 mock.patch.object(builds_render, "SCHEM", str(out_dir)), \
+            with mock.patch.object(builds_render, "read_catalog", return_value={"001": {"type": 1}, "002": {"type": 1}}), \
                  mock.patch.object(builds_render, "BUILDS_RENDERS", str(out_dir)), \
                  mock.patch.object(builds_render, "BUILDS_GIF", str(out_dir / "buildings.gif")), \
-                 mock.patch.object(builds_render, "assemble", return_value=[[["minecraft:stone"]]]), \
+                 mock.patch.object(builds_render, "assemble", return_value=Tile(1, 1, 1, [[["minecraft:stone"]]])), \
                  mock.patch.object(builds_render, "render_cells_visible_iso", return_value=Image.new("RGBA", (16, 16))), \
-                 mock.patch.object(builds_render, "write_contact", side_effect=checking_write_contact):
+                 _checking_write_contact():
                 result = builds_render.run()
 
             assert result["count"] == 2
@@ -209,17 +216,11 @@ class ContactRenderTests(unittest.TestCase):
             (out_dir / "a.schem").write_text("stub", encoding="utf-8")
             (out_dir / "b.schem").write_text("stub", encoding="utf-8")
 
-            real_write_contact = importlib.import_module("engine.render.isometric").write_contact
-
-            def checking_write_contact(images, out, **kwargs):
-                assert all(isinstance(source, (str, os.PathLike)) for _key, source in images)
-                return real_write_contact(images, out, **kwargs)
-
-            with mock.patch.object(roads_render, "SCHEM", str(out_dir)), \
+            with mock.patch.object(roads_render, "ROADS_SCHEM", str(out_dir)), \
                  mock.patch.object(roads_render, "ROADS_RENDERS", str(out_dir)), \
                  mock.patch.object(roads_render, "decode_schem_cells", return_value=[[["minecraft:stone"]]]), \
                  mock.patch.object(roads_render, "render_cells_visible_iso", return_value=Image.new("RGBA", (16, 16))), \
-                 mock.patch.object(roads_render, "write_contact", side_effect=checking_write_contact):
+                 _checking_write_contact():
                 result = roads_render.run()
 
             assert result["count"] == 2
@@ -228,9 +229,35 @@ class ContactRenderTests(unittest.TestCase):
             assert (out_dir / "_contact_sheet.png").exists()
 
 
-def test_run_city_construct_stage_requires_integer_seed():
+def test_run_stage_requires_integer_seed():
     with pytest.raises(ValueError, match="Seed must be an integer."):
-        services.run_city_construct_stage("bad", "2")  # coercion guard shared by all stage services
+        services.run_stage("city", seed="bad", fine="2")
+
+
+def test_run_stage_forwards_params_and_tags_progress_by_step_module(monkeypatch):
+    calls = []
+
+    def fake_module(module):
+        def run(*, logger, progress, **kwargs):
+            calls.append((module, kwargs))
+            progress(1, 1, "done")
+            return module
+
+        return types.SimpleNamespace(run=run)
+
+    monkeypatch.setattr(stages.importlib, "import_module", fake_module)
+    ticks = []
+
+    results = stages.run_stage("city", seed=3, progress=lambda *tick: ticks.append(tick))
+
+    assert calls == [(stages.CITY_CONSTRUCT, {"seed": 3}), (stages.CITY_RENDER, {})]
+    assert results == {"construct": stages.CITY_CONSTRUCT, "render": stages.CITY_RENDER}
+    assert ticks == [(stages.CITY_CONSTRUCT, 1, 1, "done"), (stages.CITY_RENDER, 1, 1, "done")]
+
+
+def test_run_stage_rejects_parameters_no_step_accepts():
+    with pytest.raises(TypeError, match="unexpected parameters"):
+        stages.run_stage("roads", seed=1)
 
 
 def test_city_ground_fill_asset_uses_shared_marker_ground_plane():
@@ -257,10 +284,10 @@ def test_city_ground_fill_asset_uses_shared_marker_ground_plane():
     )
 
     z0 = city_construct.PLAYER_ANCHOR_MARGIN
-    z1 = z0 + city_construct.BLOCKS_PER_CELL
+    z1 = z0 + CELL
     x0 = city_construct.PLAYER_ANCHOR_MARGIN
-    x1 = x0 + city_construct.BLOCKS_PER_CELL
-    assert np.count_nonzero(grid[3, z0:z1, x0:x1]) == city_construct.BLOCKS_PER_CELL ** 2
+    x1 = x0 + CELL
+    assert np.count_nonzero(grid[3, z0:z1, x0:x1]) == CELL ** 2
     assert np.count_nonzero(grid[2, z0:z1, x0:x1]) == 0
 
     offset_tile = Tile(
@@ -279,7 +306,7 @@ def test_city_ground_fill_asset_uses_shared_marker_ground_plane():
         ground_y=3,
         ground_fill_tile=offset_tile,
     )
-    assert np.count_nonzero(grid[2, z0:z1, x0:x1]) == city_construct.BLOCKS_PER_CELL ** 2
+    assert np.count_nonzero(grid[2, z0:z1, x0:x1]) == CELL ** 2
 
 
 def test_city_ground_fill_skips_cells_with_fill_props():
@@ -307,9 +334,9 @@ def test_city_ground_fill_skips_cells_with_fill_props():
     )
 
     z0 = city_construct.PLAYER_ANCHOR_MARGIN
-    z1 = z0 + city_construct.BLOCKS_PER_CELL
+    z1 = z0 + CELL
     x0 = city_construct.PLAYER_ANCHOR_MARGIN
-    x1 = x0 + city_construct.BLOCKS_PER_CELL
+    x1 = x0 + CELL
     assert np.count_nonzero(grid[:, z0:z1, x0:x1]) == 0
 
 

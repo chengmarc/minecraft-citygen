@@ -1,10 +1,9 @@
 """
-Road grid library -- shared helper for the grid pipelines.
+Road network model -- generation and the tile catalogue, with no rendering.
 
-Holds network generation, the tile catalogue, and 2D vector compositing used by
-`pipeline.03_preview.grid` (preview) and `pipeline.04_city.construct` (city).
-Not a driver itself; import it, optionally call `make_size()`, then call
-`gen_networks()` / `compose()`.
+`gen_networks()` builds the seeded network; `iter_placements()` says which tile
+goes where. Stage 3 draws it (`engine.render.road_layout`) and Stage 4 stamps
+it in blocks (`engine.schematic.road`).
 
 Overlay model (big 2x2, small 1x1, mixed 1x2). Two independent Manhattan
 networks are generated, then composited:
@@ -33,17 +32,11 @@ Two rules, both enforced by construction (see gen_networks):
 
 from __future__ import annotations
 
-import os
 import random
 from dataclasses import dataclass
 
-from PIL import Image
-
 from config.algo import (CELL, FINE as DEFAULT_FINE, GAP_MIXED, GAP_BIG, GAP_SMALL, PAD_BIG, PAD_SMALL,
                                 N_BIG_CORNERS, N_SMALL_CORNERS, N_BIG_TEES, N_SMALL_TEES)
-from config.path import PREVIEW_ROADS
-
-ASSET_DIR = PREVIEW_ROADS   # Stage 3 preview road tiles
 
 # direction unit vectors, clockwise from north
 DIRS = {"N": (0, -1), "E": (1, 0), "S": (0, 1), "W": (-1, 0)}
@@ -67,10 +60,10 @@ class NetworkSize:
     span: int
 
 
-def make_size(fine, *, even=False):
+def make_size(fine):
+    """Network dimensions; ``fine`` rounds down to even so coarse cells tile it."""
     fine = int(fine)
-    if even:
-        fine -= fine % 2
+    fine -= fine % 2
     return NetworkSize(fine=fine, coarse=fine // 2, span=fine * CELL)
 
 
@@ -103,26 +96,12 @@ MIXED_TILES = [
 ]
 
 
-def load_assets():
-    assets = {}
-    for _, name in BIG_TILES + SMALL_TILES + MIXED_TILES:
-        with Image.open(os.path.join(ASSET_DIR, name + ".png")) as image:
-            assets[name] = image.convert("RGBA")
-    return assets
-
-
 def rot_dir(d, k):
     return ORDER[(ORDER.index(d) + k) % 4]
 
 
 def rot_ports(ports, k):
     return frozenset((rot_dir(d, k), size) for d, size in ports)
-
-
-def rot_img(img, k):
-    for _ in range(k % 4):
-        img = img.transpose(Image.Transpose.ROTATE_270)  # 90 deg clockwise
-    return img
 
 
 def _compile_tile_lookup(catalogue):
@@ -413,12 +392,3 @@ def iter_placements(net, layers=("big", "mixed", "small")):
         else:
             raise ValueError(f"unknown placement layer: {layer}")
 
-
-# ---------------------------------------------------------------- render
-def compose(net, assets):
-    size = net["size"]
-    canvas = Image.new("RGBA", (size.span, size.span))
-    for placement in iter_placements(net):
-        img = rot_img(assets[placement.tile_name], placement.rotation)
-        canvas.alpha_composite(img, (placement.fx * CELL, placement.fy * CELL))
-    return canvas

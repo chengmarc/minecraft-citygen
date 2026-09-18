@@ -33,8 +33,8 @@ variables before importing/reloading a stage, which is how a run is configured
 without editing code.
 
 For in-process callers, the supported boundary is
-`pipeline.services.<stage>(env_overrides={...})`. Pass only the `MC_CITY_*` keys
-needed for that run; `pipeline.runtime.configured_environment` temporarily
+`pipeline.services.run_stage(stage, env_overrides={...})`. Pass only the `MC_CITY_*` keys
+needed for that run; `pipeline.services.configured_environment` temporarily
 applies them, reloads the import-time config graph, and restores the prior
 environment after the stage exits.
 

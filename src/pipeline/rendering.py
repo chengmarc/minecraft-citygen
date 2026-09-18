@@ -6,7 +6,7 @@ import os
 
 from PIL import Image, ImageSequence
 
-from engine.render.isometric import write_contact as _write_contact
+from engine.render.contact_sheet import write_contact
 from pipeline.stages import noop
 
 
@@ -24,7 +24,6 @@ def render_contact_sheet(
     logger=None,
     progress=None,
     item_label="items",
-    contact_writer=None,
 ):
     """Render ``items`` to PNG files, then assemble their contact sheet."""
     logger = logger or noop
@@ -43,8 +42,7 @@ def render_contact_sheet(
         progress(index, total, name)
 
     contact = os.path.join(output_dir, contact_name)
-    writer = contact_writer or _write_contact
-    writer(
+    write_contact(
         images,
         contact,
         cols=cols,

@@ -27,6 +27,7 @@ from nbtlib import Byte, Compound, Double, Float, Int, List, Long, LongArray, St
 
 from config.path import DEFAULT_WORLD, GUI, region_dir_candidates, resolve_region_dir
 from config.world import HARD_FLOOR_DATA_VERSION, release_name_for
+from engine.blocks import AIR_BLOCKS
 from engine.schematic.reader import (
     decode_schem_array,
     decode_schem_block_entities,
@@ -40,7 +41,6 @@ WORLD_HEIGHT = 384
 HEIGHTMAP_BITS = (WORLD_HEIGHT).bit_length()  # 9
 
 TARGET_GROUND_Y = 64  # world Y the city ground plane is seated at
-AIR_NAMES = frozenset({"minecraft:air", "minecraft:cave_air", "minecraft:void_air"})
 
 # Minecraft shows this in the save list; the app icon doubles as the world icon.
 APP_ICON = os.path.join(GUI, "icons", "app-icon.png")
@@ -264,7 +264,7 @@ def write_world(
     """
     progress = progress or _noop
     progress(1, WORLD_WRITE_STEPS, "Composing chunks")
-    air_idx = np.array([i for i, s in inv.items() if s.split("[", 1)[0] in AIR_NAMES], dtype=grid.dtype)
+    air_idx = np.array([i for i, s in inv.items() if s.split("[", 1)[0] in AIR_BLOCKS], dtype=grid.dtype)
     mask = ~np.isin(grid, air_idx) if air_idx.size else np.ones(grid.shape, bool)
     ys, zs, xs = np.nonzero(mask)
     if ys.size == 0:

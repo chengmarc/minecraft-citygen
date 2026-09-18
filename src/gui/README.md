@@ -32,9 +32,13 @@ application.pyw  ->  gui.launcher:main  ->  gui.app  (QApplication + main window
   mixins so stage runs don't block the UI thread.
 - [theme.py](core/theme.py) — application styling: stylesheet, palette, and
   widget-decoration helpers.
-- [common.py](core/common.py) — shared constants and non-widget helpers: loading
-  and saving the GUI config (`citygen.json`), default tab configs, algo-value ↔
-  env mapping, and version display helpers.
+- [algo_config.py](core/algo_config.py) — the algorithm settings form: which
+  knobs the Preview/Build tabs show, their defaults, and the algo-value ↔
+  `MC_CITY_*` env mapping.
+- [extraction_config.py](core/extraction_config.py) — extraction settings:
+  default source world and asset regions, and the version stamp/selector.
+- [app_files.py](core/app_files.py) — files the GUI owns on disk: icons, the
+  saved GUI config (`citygen.json`), progress timings, and artifact cleanup.
 - [progress.py](core/progress.py) — progress-message formatting shared by
   worker-driven tabs.
 
@@ -63,18 +67,18 @@ application.pyw  ->  gui.launcher:main  ->  gui.app  (QApplication + main window
 ## How it drives the pipeline
 
 - The tabs collect settings into `MC_CITY_*` env overrides and call
-  [`pipeline.services`](../pipeline/README.md) functions from background workers,
+  [`pipeline.services.run_stage`](../pipeline/README.md) from background workers,
   streaming progress back to the UI through the `workers` mixins.
 - The user-facing tab order maps to the numbered pipeline: Extract runs
   Stages 1 and 2, Preview runs Stage 3, and Build runs Stage 4
   followed by Stage 5.
-- The GUI passes only explicit `MC_CITY_*` overrides into the pipeline runtime.
-  The runtime owns temporary environment mutation/reload/restore; GUI code should
+- The GUI passes only explicit `MC_CITY_*` overrides into `pipeline.services`,
+  which owns temporary environment mutation/reload/restore; GUI code should
   not set process environment variables directly for a stage run.
 - The Extraction tab detects and displays the source world's Minecraft version and
   offers the Target Version selector (see the
   [config guide](../config/README.md#version-compatibility)).
-- User settings persist to `citygen.json` via `common.save_saved_gui_config` /
+- User settings persist to `citygen.json` via `app_files.save_saved_gui_config` /
   `load_saved_gui_config`.
 
 ## Platform notes

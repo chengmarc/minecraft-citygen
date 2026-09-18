@@ -17,6 +17,7 @@ import nbtlib
 
 from config.path import region_dir_candidates
 from config.world import REGION_DIR, REGION_DIR_CANDIDATES, SAVE
+from engine.blocks import AIR_BLOCKS
 
 
 def _checked_region_paths(region_dir, save_path, fallback_candidates):
@@ -139,7 +140,6 @@ class World:
         self._sections[key] = result
         return result
 
-    _AIR_BLOCKS = frozenset({"minecraft:air", "minecraft:cave_air", "minecraft:void_air"})
     _SURFACE_HEIGHTMAPS = ("WORLD_SURFACE", "WORLD_SURFACE_WG")
 
     def block(self, x, y, z):
@@ -168,14 +168,14 @@ class World:
             if indexes is None:
                 entry = palette[0]
                 name = str(entry["Name"])
-                if name not in self._AIR_BLOCKS:
+                if name not in AIR_BLOCKS:
                     return name, (sy << 4) + 15, self._block_properties(entry)
                 continue
             for ly in range(15, -1, -1):
                 index = indexes[ly * 256 + lz * 16 + lx]
                 entry = palette[index]
                 name = str(entry["Name"])
-                if name not in self._AIR_BLOCKS:
+                if name not in AIR_BLOCKS:
                     return name, (sy << 4) + ly, self._block_properties(entry)
         return None
 
@@ -343,7 +343,7 @@ class World:
             lz = col >> 4
             y = int(raw_height) + min_y - 1
             name, _props = self.block((cx << 4) + lx, y, (cz << 4) + lz)
-            if name not in self._AIR_BLOCKS:
+            if name not in AIR_BLOCKS:
                 result[col] = (name, y)
         return result
 
@@ -363,6 +363,6 @@ class World:
             return None
         y = raw_height + self._chunk_min_y(chunk) - 1
         name, props = self.block(x, y, z)
-        if name in self._AIR_BLOCKS:
+        if name in AIR_BLOCKS:
             return None
         return name, y, props
