@@ -113,7 +113,7 @@ def place_ground_fill(
     prop's authored ground without mixing in asset 18 around it.
     """
     if ground_fill_tile is None:
-        return []
+        return
     y0 = seat_y(ground_y, ground_fill_tile.ground_offset)
     if ground_fill_tile.block_entities:
         raise ValueError("ground-fill asset 18 must not contain block entities")
@@ -152,7 +152,6 @@ def place_ground_fill(
                         for dy, state in column:
                             gy = y0 + dy
                             grid[gy, gz, gx] = intern_state(master_palette, state)
-    return []
 
 
 def place_fillers(grid, master_palette, build_mask, road_cells, size, ground_y, fillers, rng):
@@ -190,13 +189,10 @@ def place_lot_fill(grid, master_palette, build_mask, road_cells, size, ground_y,
     block_entities = []
     tree_cells = set()
     if fillers:
-        tree_cells, filler_block_entities = place_fillers(
+        tree_cells, block_entities = place_fillers(
             grid, master_palette, build_mask, road_cells, size, ground_y, fillers, filler_rng
         )
-        block_entities += filler_block_entities
-    block_entities += place_ground_fill(
-        grid, master_palette, build_mask, road_cells, size, ground_y, ground_fill_tile, tree_cells
-    )
+    place_ground_fill(grid, master_palette, build_mask, road_cells, size, ground_y, ground_fill_tile, tree_cells)
     return len(tree_cells), block_entities
 
 

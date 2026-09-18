@@ -14,6 +14,7 @@ os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
 from PySide6 import QtWidgets  # noqa: E402
 
+from config.path import city_preview_path, grid_preview_path  # noqa: E402
 from gui import app as gui_app  # noqa: E402
 from gui import launcher  # noqa: E402
 from gui.core import algo_config, app_files, extraction_config, progress  # noqa: E402
@@ -42,23 +43,8 @@ class _GuiOwner(QtWidgets.QWidget):
     def set_saved_config_section(self, section, value):
         self._sections[section] = value
 
-    def preview_prerequisite_met(self):
-        return True
-
-    def generation_prerequisite_met(self):
-        return True
-
-    def begin_extraction_run(self):
-        self.events.append("begin_extraction")
-
-    def mark_extraction_complete(self, state):
-        self.events.append(("extraction_complete", state))
-
-    def end_extraction_run(self, succeeded):
-        self.events.append(("end_extraction", succeeded))
-
-    def mark_preview_complete(self, state):
-        self.events.append(("preview_complete", state))
+    def refresh_prerequisite_buttons(self):
+        self.events.append("refresh_prerequisites")
 
 
 class _ImmediateThread:
@@ -143,8 +129,7 @@ class GuiPipelineHandoffTests(unittest.TestCase):
         self.assertIn("MC_CITY_ROAD_BOX", env)
         self.assertIn("MC_CITY_BUILD_TYPES", env)
         self.assertEqual(env["MC_CITY_DATA_VERSION"], "4790")
-        self.assertIn("begin_extraction", owner.events)
-        self.assertIn(("end_extraction", True), owner.events)
+        self.assertIn("refresh_prerequisites", owner.events)
         tab.close()
         owner.close()
 
@@ -163,8 +148,9 @@ class GuiPipelineHandoffTests(unittest.TestCase):
             mock.patch.object(preview_module.threading, "Thread", _ImmediateThread),
         ):
             tab = PreviewTab(owner)
-            tab.grid_viewer.load_image = lambda _path: None
-            tab.city_viewer.load_image = lambda _path: None
+            loaded = []
+            tab.grid_viewer.load_image = loaded.append
+            tab.city_viewer.load_image = loaded.append
             tab.controls.seed_edit.setText("42")
             tab._run_preview()
 
@@ -172,7 +158,7 @@ class GuiPipelineHandoffTests(unittest.TestCase):
         self.assertEqual(calls["seed"], "42")
         self.assertEqual(calls["fine"], calls["env"]["MC_CITY_FINE"])
         self.assertIn("MC_CITY_GAP_BIG", calls["env"])
-        self.assertEqual(owner.events[0][0], "preview_complete")
+        self.assertEqual(loaded, [grid_preview_path("42"), city_preview_path("42")])
         tab.close()
         owner.close()
 

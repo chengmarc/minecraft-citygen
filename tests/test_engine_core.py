@@ -57,8 +57,6 @@ class CityLayoutTests(unittest.TestCase):
         road_cells = {(0, y) for y in range(fine)}
         lots = C.find_lots(road_cells, fine)
         building = C.Building("010", 2, 9, 9, {"type": 2})
-        rules = C.PlacementRules(banned_buildings=set())
-        state = rules.new_state(random.Random(1))
 
         placements = C.place_city(
             road_cells,
@@ -66,8 +64,6 @@ class CityLayoutTests(unittest.TestCase):
             [building],
             fine,
             rng=random.Random(5),
-            rules=rules,
-            rule_state=state,
             type2_frontage_cells=road_cells,
         )
 
@@ -79,8 +75,6 @@ class CityLayoutTests(unittest.TestCase):
         lots = C.find_lots(road_cells, fine)
         small = C.Building("010", 2, 9, 9, {"type": 2})
         large = C.Building("020", 2, 18, 18, {"type": 2})
-        rules = C.PlacementRules(banned_buildings=set())
-        state = rules.new_state(random.Random(1))
 
         placements = C.place_city(
             road_cells,
@@ -88,8 +82,6 @@ class CityLayoutTests(unittest.TestCase):
             [small, large],
             fine,
             rng=random.Random(5),
-            rules=rules,
-            rule_state=state,
             type2_frontage_cells=road_cells,
             landmark_spacing=0,
         )
@@ -106,8 +98,6 @@ class CityLayoutTests(unittest.TestCase):
             C.Building("011", 2, 9, 9, {"type": 2}),
             C.Building("012", 2, 9, 9, {"type": 2}),
         ]
-        rules = C.PlacementRules(banned_buildings=set())
-        state = rules.new_state(random.Random(1))
 
         placements = C.place_city(
             road_cells,
@@ -115,8 +105,6 @@ class CityLayoutTests(unittest.TestCase):
             catalog,
             fine,
             rng=random.Random(5),
-            rules=rules,
-            rule_state=state,
             type2_frontage_cells=road_cells,
             landmark_spacing=3,
         )
@@ -124,6 +112,14 @@ class CityLayoutTests(unittest.TestCase):
         type2 = [p for p in placements if p.building.type == 2]
         self.assertEqual([p.building.num for p in type2], ["012", "011"])
         self.assertEqual([p.rect for p in type2], [C.PlacementRect(1, 0, 1, 1), C.PlacementRect(1, 3, 1, 1)])
+
+
+    def test_load_catalog_skips_banned_ids_in_any_spelling(self):
+        catalog_meta = {"001": {"type": 1, "size": [9, 9]}, "002": {"type": 1, "size": [9, 9]}}
+
+        buildings = C.load_catalog(catalog_meta, banned_buildings={"1"})
+
+        self.assertEqual([b.num for b in buildings], ["002"])
 
 
 class IsometricRendererTests(unittest.TestCase):

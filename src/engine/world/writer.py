@@ -441,19 +441,3 @@ def schem_to_world(schem_path, out_dir, source_world=None, data_version=None, wo
     return write_world(grid, inv, block_entities, out_dir, data_version, base_y,
                        source_world=template_world, region_dir=region_dir, world_name=world_name, progress=progress)
 
-
-if __name__ == "__main__":
-    import argparse
-    import sys
-    from pathlib import Path
-
-    if __package__ in (None, ""):
-        sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
-
-    parser = argparse.ArgumentParser(description="Convert a city .schem into a standalone Minecraft world.")
-    parser.add_argument("schem", help="path to a city .schem")
-    parser.add_argument("out_dir", help="output world folder (created if missing)")
-    args = parser.parse_args()
-
-    summary = schem_to_world(args.schem, args.out_dir)
-    print(f"wrote {summary['chunks']} chunks across {summary['regions']} region(s) to {summary['out_dir']}")

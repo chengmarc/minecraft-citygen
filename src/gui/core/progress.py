@@ -25,9 +25,7 @@ GENERATION_WORLD_WEIGHT = 45
 
 PROGRESS_CREEP = {
     "default": {"headroom": 0.90, "tick_ms": 120},
-    "extraction": {"headroom": 0.90, "tick_ms": 120},
     "preview": {"headroom": 0.95, "tick_ms": 60},
-    "generation": {"headroom": 0.90, "tick_ms": 120},
 }
 
 PROGRESS_CREEP_RATE = 0.10

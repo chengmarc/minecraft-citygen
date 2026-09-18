@@ -7,7 +7,7 @@ The generator is intentionally simple:
   - type-1 buildings fill the remaining cells
   - landmarks are tried once each, largest footprint first
   - each type-1 frontage position picks randomly among the top fitting buildings
-  - optional rule hooks can reject catalog items or candidate placements
+  - banned building IDs never enter the catalog
 """
 from __future__ import annotations
 
@@ -82,45 +82,16 @@ def normalize_building_id(value):
     return f"{int(text):03d}" if text.isdigit() else text
 
 
-class PlacementRuleState:
-    def __init__(self):
-        self.counts = {}
-
-
-class PlacementRules:
-    def __init__(self, banned_buildings=None):
-        banned = BANNED_BUILDINGS if banned_buildings is None else banned_buildings
-        self.banned_buildings = {normalize_building_id(v) for v in banned}
-
-    def new_state(self, _rng):
-        return PlacementRuleState()
-
-    def prepare_catalog(self, _buildings):
-        return None
-
-    def allow_building(self, num, _meta):
-        return normalize_building_id(num) not in self.banned_buildings
-
-    def can_place(self, building, _facing, rect, state):
-        if building.type != 2:
-            return True
-        return state.counts.get(building.num, 0) == 0
-
-    def record_placement(self, building, _facing, rect, state):
-        state.counts[building.num] = state.counts.get(building.num, 0) + 1
-
-
-def load_catalog(catalog_meta, rules=None):
+def load_catalog(catalog_meta, banned_buildings=BANNED_BUILDINGS):
     """Placeable Buildings from raw ``buildings.json`` entries, best-scoring first."""
+    banned = {normalize_building_id(value) for value in banned_buildings}
     buildings = []
     for num, meta in catalog_meta.items():
-        if rules is not None and not rules.allow_building(num, meta):
+        if normalize_building_id(num) in banned:
             continue
         width, depth = meta["size"]
         buildings.append(Building(num, meta["type"], width, depth, meta))
     buildings.sort(key=lambda b: (b.score, b.area, b.fw, b.fd, b.num), reverse=True)
-    if rules is not None:
-        rules.prepare_catalog(buildings)
     return buildings
 
 
@@ -268,34 +239,27 @@ def validate_placements(road_cells, placements, fine):
         raise ValueError(f"invalid city placements: {sample}{more}")
 
 
-def place_from_points(avail, points, facing, candidates, chooser, rules, rule_state,
-                      top_fit_choices, fine):
+def place_from_points(avail, points, facing, candidates, chooser, top_fit_choices, fine):
     placed = []
-
-    def rules_allow(building, facing, rect):
-        return rules is None or rules.can_place(building, facing, rect, rule_state)
-
     for x, y in points:
         if (x, y) not in avail:
             continue
         options = []
         for building in candidates:
             rect = footprint(x, y, facing, building.fw, building.fd)
-            if rect_fits(avail, rect, fine) and rules_allow(building, facing, rect):
+            if rect_fits(avail, rect, fine):
                 options.append((building, rect))
                 if len(options) == top_fit_choices:
                     break
         if options:
             building, rect = chooser.choice(options)
-            if rules is not None:
-                rules.record_placement(building, facing, rect, rule_state)
             avail.difference_update(rect.cells())
             placed.append(CityPlacement(building, facing, rect))
     return placed
 
 
-def place_type2(avail, frontage_cells, catalog, rules, rule_state, fine, landmark_spacing=LANDMARK_SPACING):
-    """Place each type-2 landmark once, largest footprint first."""
+def place_type2(avail, frontage_cells, catalog, fine, landmark_spacing=LANDMARK_SPACING):
+    """Place each type-2 landmark at most once, largest footprint first."""
     placed = []
     candidates = sorted(
         (b for b in catalog if b.type == 2),
@@ -311,8 +275,6 @@ def place_type2(avail, frontage_cells, catalog, rules, rule_state, fine, landmar
                 rect = footprint(x, y, facing, building.fw, building.fd)
                 if not rect_fits(avail, rect, fine):
                     continue
-                if rules is not None and not rules.can_place(building, facing, rect, rule_state):
-                    continue
                 if not landmark_spacing_allows(rect, placed, landmark_spacing):
                     continue
                 selected = (facing, rect)
@@ -322,14 +284,12 @@ def place_type2(avail, frontage_cells, catalog, rules, rule_state, fine, landmar
         if selected is None:
             continue
         facing, rect = selected
-        if rules is not None:
-            rules.record_placement(building, facing, rect, rule_state)
         avail.difference_update(rect.cells())
         placed.append(CityPlacement(building, facing, rect))
     return placed
 
 
-def place_type1(avail, road_cells, lots, catalog, chooser, rules, rule_state, fine):
+def place_type1(avail, road_cells, lots, catalog, chooser, fine):
     """Fill remaining lot frontage with type-1 buildings."""
     placed = []
     candidates = [b for b in catalog if b.type == 1]
@@ -342,23 +302,17 @@ def place_type1(avail, road_cells, lots, catalog, chooser, rules, rule_state, fi
                         0 <= x + dx < n and 0 <= y + dy < n and
                         (x + dx, y + dy) in road_cells]
             placed += place_from_points(avail, sort_frontage(frontage, facing), facing,
-                                        candidates, chooser, rules, rule_state,
-                                        TYPE1_TOP_FIT_CHOICES, fine)
+                                        candidates, chooser, TYPE1_TOP_FIT_CHOICES, fine)
     return placed
 
 
-def place_city(road_cells, lots, catalog, fine, rng=None, rules=None, rule_state=None,
-               type2_frontage_cells=None, landmark_spacing=LANDMARK_SPACING):
+def place_city(road_cells, lots, catalog, fine, rng, type2_frontage_cells=None, landmark_spacing=LANDMARK_SPACING):
     """Place type-2 buildings by longest big-road frontage, then fill with type-1."""
     avail = {cell for lot in lots for cell in lot}
-    chooser = rng if rng is not None else random
-    if rules is not None and rule_state is None:
-        rule_state = rules.new_state(chooser)
-
     type2_frontage_cells = road_cells if type2_frontage_cells is None else type2_frontage_cells
     placed = []
-    placed += place_type2(avail, type2_frontage_cells, catalog, rules, rule_state, fine, landmark_spacing)
-    placed += place_type1(avail, road_cells, lots, catalog, chooser, rules, rule_state, fine)
+    placed += place_type2(avail, type2_frontage_cells, catalog, fine, landmark_spacing)
+    placed += place_type1(avail, road_cells, lots, catalog, rng, fine)
     return placed
 
 
@@ -371,16 +325,12 @@ def plan_city(seed, net, catalog_meta):
     road_cells = net["road_cells"]
     fine = net["size"].fine
     lots = find_lots(road_cells, fine)
-    rules = PlacementRules()
-    rng = seeded_rng(seed, PLACEMENT_STREAM)
     placements = place_city(
         road_cells,
         lots,
-        load_catalog(catalog_meta, rules),
+        load_catalog(catalog_meta),
         fine,
-        rng,
-        rules,
-        rules.new_state(rng),
+        seeded_rng(seed, PLACEMENT_STREAM),
         type2_frontage_cells=net["big_fine_cells"],
     )
     validate_placements(road_cells, placements, fine)

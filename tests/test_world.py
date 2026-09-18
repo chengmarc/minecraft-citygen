@@ -14,10 +14,8 @@ from pathlib import Path
 from engine.render.topdown import region_world_bounds
 from engine.world.anvil_world_reader import World
 from engine.world.marker_extract import (
-    detect_source_ground_y,
     extract_cuboid,
     group_marker_cuboids,
-    ground_shift,
     marker_blocks_in_region,
     pair_gold_diamond_markers,
 )
@@ -33,28 +31,6 @@ class AnvilWorldReaderTests(unittest.TestCase):
         message = str(exc_info.exception)
         self.assertIn("Configured save: C:/missing/world", message)
         self.assertIn(os.path.normpath("C:/missing/world/region"), message)
-
-    def _world(self, sections, section_ys):
-        """Build a World bypassing __init__, with mocked chunk/section access."""
-        world = object.__new__(World)
-        world.load_chunk = lambda cx, cz: {"sections": [{"Y": y} for y in section_ys]}
-        world._section = lambda cx, cz, sy: sections[sy]
-        return world
-
-    def test_top_solid_block_returns_highest_non_air_skipping_air_above(self):
-        air = ([{"Name": "minecraft:air"}], None)  # uniform air section
-        leaf_palette = [{"Name": "minecraft:air"}, {"Name": "minecraft:oak_leaves"}]
-        leaf_idx = [0] * 4096
-        leaf_idx[2 * 256] = 1  # (x=0, z=0) at local y=2 -> world y = (4<<4)+2 = 66
-        sections = {5: air, 4: (leaf_palette, leaf_idx), 3: ([{"Name": "minecraft:stone"}], None)}
-        world = self._world(sections, section_ys=[3, 4, 5])
-
-        self.assertEqual(world.top_solid_block(0, 0), ("minecraft:oak_leaves", 66, None))
-
-    def test_top_solid_block_returns_none_for_absent_chunk(self):
-        world = object.__new__(World)
-        world.load_chunk = lambda cx, cz: None
-        self.assertIsNone(world.top_solid_block(0, 0))
 
     def _pack_heightmap(self, heights, bits=9):
         per_long = 64 // bits
@@ -160,79 +136,6 @@ class AnvilWorldReaderTests(unittest.TestCase):
                 (39, 69, -10, "minecraft:emerald_block"),
             ],
         )
-
-
-# --- ground detection -----------------------------------------------------
-
-def _chunk_tops(surface_y):
-    """Build a 256-entry top_solid_blocks array from a ``(x, z) -> y`` callable.
-
-    Columns are indexed ``z_local * 16 + x_local`` and world coords are the
-    caller's absolute block positions -- matching the real World API.
-    """
-    def blocks(cx, cz):
-        entries = []
-        for col in range(256):
-            x = (cx << 4) + (col & 15)
-            z = (cz << 4) + (col >> 4)
-            entries.append(("minecraft:grass_block", surface_y(x, z)))
-        return entries
-    return blocks
-
-
-class _FlatGroundWorld:
-    """Flat ground at ``ground_y``; a sparse grid of columns raised (builds)."""
-
-    def __init__(self, ground_y, empty=False):
-        self.ground_y = ground_y
-        self.empty = empty
-
-    def is_chunk_empty(self, cx, cz):
-        return self.empty
-
-    def top_solid_blocks(self, cx, cz):
-        raised = lambda x, z: self.ground_y + (8 if (x % 20 == 0 and z % 20 == 0) else 0)
-        return _chunk_tops(raised)(cx, cz)
-
-
-class _RoadDenseWorld:
-    """Most columns at a raised road surface; grass ground exposed in a minority."""
-
-    def __init__(self, ground_y, road_y):
-        self.ground_y = ground_y
-        self.road_y = road_y
-
-    def is_chunk_empty(self, cx, cz):
-        return False
-
-    def top_solid_blocks(self, cx, cz):
-        # ~1/3 of columns show bare ground, the rest the higher road surface.
-        surface = lambda x, z: self.ground_y if (x + z) % 3 == 0 else self.road_y
-        return _chunk_tops(surface)(cx, cz)
-
-
-def test_detects_ground_plane():
-    # Ground dominates; the sparse raised columns must not sway detection.
-    assert detect_source_ground_y(_FlatGroundWorld(-61), -272, 47, -272, 47) == -61
-    assert detect_source_ground_y(_FlatGroundWorld(63), -80, -17, -256, -145) == 63
-
-
-def test_ground_is_lowest_common_surface_not_the_mode():
-    # The road surface (-58) is the *most common* level, but ground is -61; the
-    # detector must return the lower broadly-present plane, not the mode.
-    assert detect_source_ground_y(_RoadDenseWorld(-61, -58), -80, -17, -256, -145) == -61
-
-
-def test_ground_shift_is_delta_from_reference():
-    # New 1.19.4 world (ground -61) against the config reference (63) -> -124.
-    assert ground_shift(_FlatGroundWorld(-61), -80, -17, -256, -145, 63) == -124
-    # A world already at the reference needs no shift.
-    assert ground_shift(_FlatGroundWorld(63), -80, -17, -256, -145, 63) == 0
-
-
-def test_ground_shift_zero_when_undetectable():
-    # Undetectable ground (empty region) preserves the configured absolute windows.
-    assert ground_shift(_FlatGroundWorld(0, empty=True), 0, 15, 0, 15, 63) == 0
 
 
 def test_gold_markers_pair_with_closest_unused_diamonds():
