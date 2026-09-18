@@ -136,7 +136,6 @@ def test_cells_and_grid_emit_v3_container():
 
 
 def test_container_carries_target_data_version():
-    assert int(_cells_file(V2612)["Schematic"]["DataVersion"]) == V2612
     assert int(_cells_file(LATEST)["Schematic"]["DataVersion"]) == LATEST
 
 

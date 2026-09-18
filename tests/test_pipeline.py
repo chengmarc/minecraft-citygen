@@ -47,10 +47,6 @@ def _run_script_help(script, *args):
     assert result.returncode == 0, result.stderr or result.stdout
 
 
-def test_pipeline_stage_script_bootstraps_without_pythonpath():
-    _run_script_help(ROOT_DIR / "src" / "pipeline" / "stages.py")
-
-
 @pytest.mark.parametrize("stage_key", PIPELINE_STAGE_COMMANDS)
 def test_pipeline_stage_subcommands_bootstrap_without_pythonpath(stage_key):
     script = ROOT_DIR / "src" / "pipeline" / "stages.py"
@@ -185,11 +181,6 @@ class ContactRenderTests(unittest.TestCase):
     def test_builds_render_writes_piece_images_and_contact_sheet(self):
         with tempfile.TemporaryDirectory() as tempdir:
             out_dir = Path(tempdir)
-            catalog_path = out_dir / "buildings.json"
-            catalog_path.write_text(
-                '{"001": {"type": 1}, "002": {"type": 1}}',
-                encoding="utf-8",
-            )
 
             with mock.patch.object(builds_render, "read_catalog", return_value={"001": {"type": 1}, "002": {"type": 1}}), \
                  mock.patch.object(builds_render, "BUILDS_RENDERS", str(out_dir)), \
@@ -258,84 +249,46 @@ def test_run_stage_rejects_parameters_no_step_accepts():
         stages.run_stage("roads", seed=1)
 
 
-def test_city_ground_fill_asset_uses_shared_marker_ground_plane():
+def _fill_first_cell(tile, **kwargs):
+    """Ground-fill a 12x12 grid with ``ground_y=3``; return its first cell's columns."""
     grid = np.zeros((6, 12, 12), dtype=np.int16)
-    palette = {"minecraft:air": 0}
-    build_mask = np.zeros((12, 12), dtype=bool)
-    size = SimpleNamespace(fine=1)
-    tile = Tile(
-        width=1,
-        height=1,
-        length=1,
-        cells=[[["minecraft:moss_block"]]],
-        ground_offset=0,
-    )
-
     city_grid.place_ground_fill(
         grid,
-        palette,
-        build_mask,
+        {"minecraft:air": 0},
+        np.zeros((12, 12), dtype=bool),
         road_cells=set(),
-        size=size,
+        size=SimpleNamespace(fine=1),
         ground_y=3,
         ground_fill_tile=tile,
+        **kwargs,
     )
+    z0 = x0 = city_grid.PLAYER_ANCHOR_MARGIN
+    return grid[:, z0:z0 + CELL, x0:x0 + CELL]
 
-    z0 = city_grid.PLAYER_ANCHOR_MARGIN
-    z1 = z0 + CELL
-    x0 = city_grid.PLAYER_ANCHOR_MARGIN
-    x1 = x0 + CELL
-    assert np.count_nonzero(grid[3, z0:z1, x0:x1]) == CELL ** 2
-    assert np.count_nonzero(grid[2, z0:z1, x0:x1]) == 0
 
-    offset_tile = Tile(
-        width=1,
-        height=1,
-        length=1,
-        cells=[[["minecraft:oak_planks"]]],
-        ground_offset=1,
-    )
-    city_grid.place_ground_fill(
-        grid,
-        palette,
-        build_mask,
-        road_cells=set(),
-        size=size,
-        ground_y=3,
-        ground_fill_tile=offset_tile,
-    )
-    assert np.count_nonzero(grid[2, z0:z1, x0:x1]) == CELL ** 2
+def test_city_ground_fill_tops_out_at_the_shared_ground_plane():
+    tile = Tile(width=1, height=1, length=1, cells=[[["minecraft:moss_block"]]], ground_offset=0)
+
+    cell = _fill_first_cell(tile)
+
+    assert np.count_nonzero(cell[3]) == CELL ** 2
+    assert np.count_nonzero(cell[2]) == 0
+
+
+def test_city_ground_fill_ground_offset_sinks_the_tile_below_the_plane():
+    tile = Tile(width=1, height=1, length=1, cells=[[["minecraft:oak_planks"]]], ground_offset=1)
+
+    cell = _fill_first_cell(tile)
+
+    assert np.count_nonzero(cell[2]) == CELL ** 2
 
 
 def test_city_ground_fill_skips_cells_with_fill_props():
-    grid = np.zeros((6, 12, 12), dtype=np.int16)
-    palette = {"minecraft:air": 0}
-    build_mask = np.zeros((12, 12), dtype=bool)
-    size = SimpleNamespace(fine=1)
-    tile = Tile(
-        width=1,
-        height=1,
-        length=1,
-        cells=[[["minecraft:dirt"]]],
-        ground_offset=0,
-    )
+    tile = Tile(width=1, height=1, length=1, cells=[[["minecraft:dirt"]]], ground_offset=0)
 
-    city_grid.place_ground_fill(
-        grid,
-        palette,
-        build_mask,
-        road_cells=set(),
-        size=size,
-        ground_y=3,
-        ground_fill_tile=tile,
-        skip_cells={(0, 0)},
-    )
+    cell = _fill_first_cell(tile, skip_cells={(0, 0)})
 
-    z0 = city_grid.PLAYER_ANCHOR_MARGIN
-    z1 = z0 + CELL
-    x0 = city_grid.PLAYER_ANCHOR_MARGIN
-    x1 = x0 + CELL
-    assert np.count_nonzero(grid[:, z0:z1, x0:x1]) == 0
+    assert np.count_nonzero(cell) == 0
 
 
 if __name__ == "__main__":

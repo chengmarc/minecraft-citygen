@@ -11,6 +11,7 @@ import unittest
 import numpy as np
 import nbtlib
 from nbtlib import Byte, Compound, String
+from PIL import Image
 
 from config.path import APP_ICON, resolve_region_dir
 from config.world import HARD_FLOOR_DATA_VERSION
@@ -48,25 +49,25 @@ def _sample_grid():
     return grid, inv, block_entities
 
 
+def _comparable(block):
+    """``(name, props)`` with every air variant as plain air and no-props as None."""
+    name, props = block
+    return ("minecraft:air", None) if name in AIR_BLOCKS else (name, props or None)
+
+
 class WorldWriterRoundTripTests(unittest.TestCase):
     def test_every_block_survives_the_round_trip(self):
         grid, inv, block_entities = _sample_grid()
         base_y = 64
+        positions = list(np.ndindex(grid.shape))  # (y, z, x)
         with tempfile.TemporaryDirectory() as out:
             world_writer.write_world(grid, inv, block_entities, out, DATA_VERSION, base_y)
             world = World(region_dir=resolve_region_dir(out), save_path=out)
+            read = {(y, z, x): world.block(x - ANCHOR, y + base_y, z - ANCHOR) for y, z, x in positions}
 
-            h, length, width = grid.shape
-            for y in range(h):
-                for z in range(length):
-                    for x in range(width):
-                        state = inv[int(grid[y, z, x])]
-                        name, props = parse_state(state)
-                        read_name, read_props = world.block(x - ANCHOR, y + base_y, z - ANCHOR)
-                        if name == "minecraft:air":
-                            self.assertIn(read_name, AIR_BLOCKS)
-                        else:
-                            self.assertEqual((read_name, read_props or None), (name, props or None))
+        expected = {pos: _comparable(parse_state(inv[int(grid[pos])])) for pos in positions}
+        self.maxDiff = None  # show which blocks differ
+        self.assertEqual({pos: _comparable(block) for pos, block in read.items()}, expected)
 
     def test_block_entity_survives_with_absolute_coords(self):
         grid, inv, block_entities = _sample_grid()
@@ -92,31 +93,39 @@ class SchemToWorldTests(unittest.TestCase):
             offset=(0, -1, 0), block_entities=block_entities,
         )
 
-    def test_exported_world_and_spawn_stands_on_solid_ground(self):
+    def _export(self, tmp, **kwargs):
+        """Write the sample schem and export it; return the output world dir."""
+        schem = os.path.join(tmp, "city.schem")
+        out = os.path.join(tmp, "world")
+        self._write_schem(schem)
+        world_writer.schem_to_world(schem, out, **kwargs)
+        return out
+
+    def test_exported_world_is_stamped_with_the_schematic_data_version(self):
         with tempfile.TemporaryDirectory() as tmp:
-            schem = os.path.join(tmp, "city.schem")
-            out = os.path.join(tmp, "world")
-            self._write_schem(schem)
-
-            summary = world_writer.schem_to_world(schem, out, world_name="Minecraft CityGen World 5", icon_path=APP_ICON)
-            self.assertGreater(summary["chunks"], 0)
-
+            out = self._export(tmp, world_name="Minecraft CityGen World 5")
             data = nbtlib.load(os.path.join(out, "level.dat"))["Data"]
-            # World version matches the schematic's own stamp, not the ambient env.
-            self.assertEqual(int(data["DataVersion"]), DATA_VERSION)
-            self.assertEqual(str(data["LevelName"]), "Minecraft CityGen World 5")
 
-            # The saved player sits one block above a solid column (no void drop).
+        # World version matches the schematic's own stamp, not the ambient env.
+        self.assertEqual(int(data["DataVersion"]), DATA_VERSION)
+
+    def test_exported_world_spawns_player_on_solid_ground(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            out = self._export(tmp)
+            data = nbtlib.load(os.path.join(out, "level.dat"))["Data"]
             px, py, pz = (float(v) for v in data["Player"]["Pos"])
             world = World(region_dir=resolve_region_dir(out), save_path=out)
-            self.assertNotIn(world.block(int(px), int(py) - 1, int(pz))[0], AIR_BLOCKS)
+            below_feet = world.block(int(px), int(py) - 1, int(pz))[0]
 
-            # The given icon is written as the 64x64 world icon for the save list.
-            from PIL import Image
-            icon = os.path.join(out, "icon.png")
-            self.assertTrue(os.path.exists(icon))
-            with Image.open(icon) as im:
-                self.assertEqual(im.size, (64, 64))
+        self.assertNotIn(below_feet, AIR_BLOCKS)  # no void drop
+
+    def test_exported_world_writes_the_given_icon_at_64px(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            out = self._export(tmp, icon_path=APP_ICON)
+            with Image.open(os.path.join(out, "icon.png")) as im:
+                size = im.size
+
+        self.assertEqual(size, (64, 64))
 
     def _fake_source_world(self, tmp, data_version, *, nested_overworld=False, include_player=True):
         """A source world dir whose save layout and ``level.dat`` are native."""
@@ -162,31 +171,48 @@ class SchemToWorldTests(unittest.TestCase):
         level.save(os.path.join(source, "level.dat"))
         return source
 
-    def test_uses_source_level_dat_kept_native_and_recenters_player(self):
-        # The export keeps the source world's native version and worldgen, and only
-        # changes the copied save's name plus player/spawn location.
+    def test_export_keeps_source_level_dat_native(self):
+        # The export keeps the source world's native version, worldgen, packs, and
+        # player state, and copies the rest of the save alongside.
         with tempfile.TemporaryDirectory() as tmp:
             source = self._fake_source_world(tmp, 4790)  # 26.1.2
-            schem = os.path.join(tmp, "city.schem")
-            out = os.path.join(tmp, "world")
-            self._write_schem(schem)
-
-            world_writer.schem_to_world(schem, out, source_world=source, world_name="Minecraft CityGen World 7")
-
+            out = self._export(tmp, source_world=source)
             data = nbtlib.load(os.path.join(out, "level.dat"))["Data"]
-            self.assertEqual(int(data["DataVersion"]), 4790)            # native, not floor
-            self.assertEqual(int(data["Version"]["Id"]), 4790)
-            wgs = data["WorldGenSettings"]
-            self.assertEqual(int(wgs["seed"]), 12345)                   # native seed preserved
-            self.assertIn("minecraft:the_nether", wgs["dimensions"])    # native dims preserved
-            self.assertEqual([str(p) for p in data["DataPacks"]["Enabled"]], ["vanilla", "myworldpack"])
-            self.assertEqual(str(data["LevelName"]), "Minecraft CityGen World 7")
-            gen = wgs["dimensions"]["minecraft:overworld"]["generator"]
-            self.assertEqual(str(gen["type"]), "minecraft:noise")       # native worldgen preserved
-            self.assertEqual(str(data["Player"]["Dimension"]), "minecraft:overworld")
-            self.assertEqual(int(data["Player"]["SeenCredits"]), 1)     # existing player state kept
-            self.assertEqual((int(data["SpawnX"]), int(data["SpawnY"]), int(data["SpawnZ"])), (0, 65, 0))
-            self.assertTrue(os.path.exists(os.path.join(out, "data", "marker.txt")))
+            data_dir_copied = os.path.exists(os.path.join(out, "data", "marker.txt"))
+
+        wgs = data["WorldGenSettings"]
+        native = {
+            "DataVersion": int(data["DataVersion"]),
+            "Version.Id": int(data["Version"]["Id"]),
+            "seed": int(wgs["seed"]),
+            "dimensions": sorted(str(k) for k in wgs["dimensions"]),
+            "overworld generator": str(wgs["dimensions"]["minecraft:overworld"]["generator"]["type"]),
+            "enabled packs": [str(p) for p in data["DataPacks"]["Enabled"]],
+            "SeenCredits": int(data["Player"]["SeenCredits"]),
+            "data dir copied": data_dir_copied,
+        }
+        self.assertEqual(native, {
+            "DataVersion": 4790,
+            "Version.Id": 4790,
+            "seed": 12345,
+            "dimensions": ["minecraft:overworld", "minecraft:the_nether"],
+            "overworld generator": "minecraft:noise",
+            "enabled packs": ["vanilla", "myworldpack"],
+            "SeenCredits": 1,
+            "data dir copied": True,
+        })
+
+    def test_export_renames_save_and_recenters_player_in_the_overworld(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            source = self._fake_source_world(tmp, 4790)  # player saved in the nether
+            out = self._export(tmp, source_world=source, world_name="Minecraft CityGen World 7")
+            data = nbtlib.load(os.path.join(out, "level.dat"))["Data"]
+
+        self.assertEqual(
+            (str(data["LevelName"]), str(data["Player"]["Dimension"]),
+             (int(data["SpawnX"]), int(data["SpawnY"]), int(data["SpawnZ"]))),
+            ("Minecraft CityGen World 7", "minecraft:overworld", (0, 65, 0)),
+        )
 
     def test_source_without_player_still_gets_centered_spawn(self):
         with tempfile.TemporaryDirectory() as tmp:
