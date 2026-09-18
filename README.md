@@ -11,10 +11,6 @@
   </h3>
 </div>
 
-### AI Disclaimer
-
-> Every asset in this app was hand-built by the author, placed block by block, over a development period spanning 2017 to 2026. Code and implementation were developed with AI assistance from **Claude Fable** and **GPT Astra**.
-
 # Rendering Result
 
 <table>
@@ -67,7 +63,7 @@ You can tune any three-piece building with a sign directive above its emerald: `
 
 <img src="docs/pics/type2.png" alt="Three-layer build marker convention" width="100%">
 
-# For Technical Details
+# Technical Details
 
 See the [source architecture overview](src/README.md) and its per-package guides
 ([config](src/config/README.md), [engine](src/engine/README.md),
@@ -96,7 +92,6 @@ Use `MC_CITY_*` environment overrides through `pipeline.services` for in-process
 runs; the pipeline runtime applies them under a lock and reloads import-time
 configuration safely for one run at a time.
 
-### Supported Minecraft Versions
+## AI Disclaimer
 
-![26.1.2](https://img.shields.io/badge/26.1.2-404040)
-![26.2](https://img.shields.io/badge/26.2-404040)
+> Every asset in this app was hand-built by the author, placed block by block, over a development period spanning 2017 to 2026. Code and implementation were developed with AI assistance from **Claude Fable** and **GPT Astra**.
