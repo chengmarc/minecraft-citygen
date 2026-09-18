@@ -9,11 +9,13 @@ import shutil
 import subprocess
 import sys
 
-from config.path import ARTIFACTS, BUILDS_CONTACT_SHEET, GUI, ROADS_CONTACT_SHEET, ROOT, SAVES, WORLD_PREVIEW_CACHE
+from config.path import (
+    APP_ICON, ARTIFACTS, BUILDS_CONTACT_SHEET, GUI_ICONS, ROADS_CONTACT_SHEET, ROOT, SAVES, WORLD_PREVIEW_CACHE,
+)
 
 
-ICON_DIR = os.path.join(GUI, "icons")
-APP_ICON_PATH = os.path.join(ICON_DIR, "app-icon.png")
+ICON_DIR = GUI_ICONS
+APP_ICON_PATH = APP_ICON
 STARTUP_ERROR_LOG = os.path.join(ROOT, "application_startup_error.log")
 PROGRESS_TIMINGS_PATH = os.path.join(ARTIFACTS, "progress_timings.json")
 LEGACY_SAVED_GUI_CONFIG_PATH = os.path.join(ROOT, "citygen_saved_config.json")

@@ -98,7 +98,7 @@ schematic, and the sign above the emerald provides the exported name (e.g.
 Fill props are authored in the road region and named with a `fill` token
 (`15_fill_1x1_A`, ...). Each is a self-contained 9x9 (one fine cell) asset
 carrying its own ground. `engine.schematic.road` keeps them out of the road tile
-set and exposes them via `load_fillers()`; `engine.schematic.city` drops a random,
+set and exposes them via `load_fillers(roads_dir)`; `engine.schematic.city` drops a random,
 randomly-rotated fill prop into every fully-empty non-road lot cell. The
 dedicated road-region ground-fill asset `18` is also required for ordinary empty
 lot ground; it is repeated across empty non-road, non-building columns and skips

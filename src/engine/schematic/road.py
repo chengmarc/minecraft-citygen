@@ -8,7 +8,6 @@ import os
 import numpy as np
 
 from config.algo import CELL
-from config.path import ROADS_SCHEM
 from engine.core.road_network import iter_placements, iter_tile_catalogue, rot_ports
 from engine.schematic.grid import new_palette, stamp_tile
 from engine.schematic.reader import read_tile
@@ -22,9 +21,9 @@ GROUND_FILL_PREFIX = "18"
 ROAD_TILE_PREFIXES = frozenset(name[:2] for _layer, _base, name in iter_tile_catalogue())
 
 
-def load_tiles():
+def load_tiles(roads_dir):
     tiles = {}
-    for path in glob.glob(os.path.join(ROADS_SCHEM, "*.schem")):
+    for path in glob.glob(os.path.join(roads_dir, "*.schem")):
         name = os.path.basename(path)
         if name[:2] not in ROAD_TILE_PREFIXES:
             continue
@@ -32,18 +31,18 @@ def load_tiles():
     return tiles
 
 
-def load_fillers():
+def load_fillers(roads_dir):
     """Load the fill-prop tiles (self-contained, ground-seated cell fillers)."""
     return [
         read_tile(path)
-        for path in sorted(glob.glob(os.path.join(ROADS_SCHEM, "*.schem")))
+        for path in sorted(glob.glob(os.path.join(roads_dir, "*.schem")))
         if FILL_TOKEN in os.path.basename(path) and os.path.basename(path)[:2] != GROUND_FILL_PREFIX
     ]
 
 
-def load_ground_fill_tile():
+def load_ground_fill_tile(roads_dir):
     """Load the dedicated empty-lot ground filler authored as road asset 18."""
-    for path in sorted(glob.glob(os.path.join(ROADS_SCHEM, "*.schem"))):
+    for path in sorted(glob.glob(os.path.join(roads_dir, "*.schem"))):
         if os.path.basename(path)[:2] == GROUND_FILL_PREFIX:
             return read_tile(path)
     return None
@@ -91,9 +90,8 @@ def placements(net):
     ]
 
 
-def build(net):
-    """Stamp every road tile of ``net`` into one voxel grid."""
-    tiles = load_tiles()
+def build(net, tiles):
+    """Stamp every road tile of ``net`` into one voxel grid; ``tiles`` is from :func:`load_tiles`."""
     road_ground_offsets = {tile.ground_offset for tile in tiles.values()}
     if len(road_ground_offsets) > 1:
         raise ValueError(f"road assets disagree on ground offsets: {sorted(road_ground_offsets)}")

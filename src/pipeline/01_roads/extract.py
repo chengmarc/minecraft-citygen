@@ -11,7 +11,7 @@ if __package__ in (None, ""):
     sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
 from config.path import ROADS_SCHEM
-from config.world import BUILD_MARKER_Y_RANGE, DATA_VERSION, ROAD_BOX
+from config.world import BUILD_MARKER_Y_RANGE, DATA_VERSION, REGION_DIR, ROAD_BOX, SAVE
 from engine.world.anvil_world_reader import World
 from engine.world.marker_extract import detect_marker_assets, extract_cuboid, sign_text_above
 from engine.schematic.writer import write_sponge_schem_cells
@@ -20,7 +20,7 @@ from pipeline.stages import noop, run_stage_cli
 
 @lru_cache(maxsize=1)
 def get_world():
-    return World()
+    return World(REGION_DIR, SAVE)
 
 
 def name_for(emerald):

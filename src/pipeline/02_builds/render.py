@@ -9,7 +9,7 @@ from pathlib import Path
 if __package__ in (None, ""):
     sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
-from config.path import BUILDS_CONTACT_SHEET, BUILDS_GIF, BUILDS_RENDERS
+from config.path import BUILD_CATALOG, BUILDS_CONTACT_SHEET, BUILDS_GIF, BUILDS_RENDERS, BUILDS_SCHEM
 from engine.render.isometric import render_cells_visible_iso
 from engine.schematic.building import assemble, read_catalog
 from pipeline.rendering import render_contact_sheet, write_image_sequence_gif
@@ -23,13 +23,13 @@ def run(*, logger=None, progress=None):
     """
     logger = logger or noop
     progress = progress or noop
-    catalog = read_catalog()
+    catalog = read_catalog(BUILD_CATALOG)
     keys = sorted(catalog)
     gif_steps = len(keys) + 1
     sheet_steps = 0
 
     def render_key(key):
-        return key, render_cells_visible_iso(assemble(key, 1, catalog).cells)
+        return key, render_cells_visible_iso(assemble(BUILDS_SCHEM, key, 1, catalog).cells)
 
     def sheet_progress(done, total, label):
         nonlocal sheet_steps

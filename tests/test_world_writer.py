@@ -12,7 +12,7 @@ import numpy as np
 import nbtlib
 from nbtlib import Byte, Compound, String
 
-from config.path import resolve_region_dir
+from config.path import APP_ICON, resolve_region_dir
 from config.world import HARD_FLOOR_DATA_VERSION
 from engine.blocks import AIR_BLOCKS, parse_state
 from engine.schematic.transform import BlockEntity
@@ -100,7 +100,7 @@ class SchemToWorldTests(unittest.TestCase):
             out = os.path.join(tmp, "world")
             self._write_schem(schem)
 
-            summary = world_writer.schem_to_world(schem, out, world_name="Minecraft CityGen World 5")
+            summary = world_writer.schem_to_world(schem, out, world_name="Minecraft CityGen World 5", icon_path=APP_ICON)
             self.assertGreater(summary["chunks"], 0)
 
             data = nbtlib.load(os.path.join(out, "level.dat"))["Data"]
@@ -113,7 +113,7 @@ class SchemToWorldTests(unittest.TestCase):
             world = World(region_dir=resolve_region_dir(out), save_path=out)
             self.assertNotIn(world.block(int(px), int(py) - 1, int(pz))[0], AIR_BLOCKS)
 
-            # The app icon is written as the 64x64 world icon for the save list.
+            # The given icon is written as the 64x64 world icon for the save list.
             from PIL import Image
             icon = os.path.join(out, "icon.png")
             self.assertTrue(os.path.exists(icon))

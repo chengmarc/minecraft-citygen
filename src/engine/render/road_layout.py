@@ -7,14 +7,13 @@ import os
 from PIL import Image
 
 from config.algo import CELL
-from config.path import PREVIEW_ROADS
 from engine.core.road_network import iter_placements, iter_tile_catalogue
 
 
-def load_assets():
+def load_assets(tiles_dir):
     assets = {}
     for _layer, _base, name in iter_tile_catalogue():
-        with Image.open(os.path.join(PREVIEW_ROADS, name + ".png")) as image:
+        with Image.open(os.path.join(tiles_dir, name + ".png")) as image:
             assets[name] = image.convert("RGBA")
     return assets
 

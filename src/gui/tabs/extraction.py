@@ -341,6 +341,7 @@ class ExtractionTab(QtWidgets.QWidget, ProgressMixin):
             self,
             job,
             on_progress=self._on_pipeline_progress,
+            on_failed=self.show_failure,
             on_success=lambda _result: self._handle_extract_success(),
             on_finished=_handle_finished,
             failure_title="Extract failed",

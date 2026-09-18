@@ -13,7 +13,7 @@ if __package__ in (None, ""):
     sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
 from config.algo import CELL, DEFAULT_SEED, FINE as DEFAULT_FINE
-from config.path import PREVIEW_BUILDS, PREVIEW_ROADS, city_preview_path
+from config.path import BUILD_CATALOG, PREVIEW_BUILDS, PREVIEW_ROADS, city_preview_path
 from config.render import CITY_GROUND_FILL_RGBA
 from engine.core.city_layout import FACE_K, FILLER_STREAM, placement_origin, plan_city, seeded_rng
 from engine.core.road_network import gen_networks, make_size
@@ -97,7 +97,7 @@ def render(net, placements, out, preview, fillers=None, rng=None):
     if fillers:
         occupied = {cell for placement in placements for cell in placement.rect.cells()}
         place_fill_props(canvas, net["road_cells"], occupied, net["size"], fillers, rng)
-    canvas.alpha_composite(compose(net, load_assets()))
+    canvas.alpha_composite(compose(net, load_assets(PREVIEW_ROADS)))
     cache = {}
     for placement in placements:
         b = placement.building
@@ -120,7 +120,7 @@ def run(*, seed=DEFAULT_SEED, fine=DEFAULT_FINE, preview=0, out=None, logger=Non
     os.makedirs(os.path.dirname(out), exist_ok=True)
 
     net = gen_networks(seed, size=make_size(fine))
-    lots, placements = plan_city(seed, net, read_catalog())
+    lots, placements = plan_city(seed, net, read_catalog(BUILD_CATALOG))
 
     by_type = {1: 0, 2: 0}
     for placement in placements:

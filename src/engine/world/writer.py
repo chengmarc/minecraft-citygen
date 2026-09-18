@@ -25,7 +25,7 @@ import numpy as np
 import nbtlib
 from nbtlib import Byte, Compound, Double, Float, Int, List, Long, LongArray, String
 
-from config.path import DEFAULT_WORLD, EXPORTED_WORLD_NAME, GUI, region_dir_candidates, resolve_region_dir
+from config.path import DEFAULT_WORLD, EXPORTED_WORLD_NAME, region_dir_candidates, resolve_region_dir
 from config.world import release_name_for, source_data_version
 from engine.blocks import is_air, parse_state
 from engine.schematic.reader import (
@@ -42,9 +42,7 @@ HEIGHTMAP_BITS = (WORLD_HEIGHT).bit_length()  # 9
 
 TARGET_GROUND_Y = 64  # world Y the city ground plane is seated at
 
-# Minecraft shows this in the save list; the app icon doubles as the world icon.
-APP_ICON = os.path.join(GUI, "icons", "app-icon.png")
-WORLD_ICON_SIZE = 64
+WORLD_ICON_SIZE = 64  # icon.png edge Minecraft shows in the save list
 
 # Coarse progress steps a world export reports (read, compose, encode, level, done).
 WORLD_WRITE_STEPS = 4
@@ -241,6 +239,7 @@ def write_world(
     source_world=None,
     region_dir=None,
     world_name=EXPORTED_WORLD_NAME,
+    icon_path=None,
     progress=None,
 ):
     """Write ``grid`` (shape H,L,Z indexed [y][z][x]) into ``out_dir``.
@@ -248,6 +247,7 @@ def write_world(
     ``inv`` maps palette index -> block state string; ``block_entities`` are
     :class:`BlockEntity` records in schem-local coords. ``source_world`` is the
     world whose copied save is edited in place (see :func:`_write_level_dat`).
+    ``icon_path``, when given, becomes the world's save-list icon.
     Returns a small summary.
     """
     progress = progress or _noop
@@ -317,7 +317,8 @@ def write_world(
     if spawn is None:
         spawn = (anchor_x + origin[0], anchor_top + base_y + 1, anchor_z + origin[1])
     _write_level_dat(out_dir, data_version, spawn, source_world, world_name)
-    _write_world_icon(out_dir)
+    if icon_path:
+        _write_world_icon(out_dir, icon_path)
     progress(WORLD_WRITE_STEPS, WORLD_WRITE_STEPS, "World saved")
 
     return {
@@ -358,15 +359,15 @@ def _chunk_block_entities(block_entities, cx, cz, origin, base_y):
     return out
 
 
-def _write_world_icon(out_dir):
-    """Copy the app icon in as the world's icon.png (64x64) for the save list."""
-    if not os.path.exists(APP_ICON):
+def _write_world_icon(out_dir, icon_path):
+    """Copy ``icon_path`` in as the world's icon.png (64x64) for the save list."""
+    if not os.path.exists(icon_path):
         return
     try:
         from PIL import Image
     except ImportError:
         return
-    with Image.open(APP_ICON) as img:
+    with Image.open(icon_path) as img:
         icon = img.convert("RGBA").resize((WORLD_ICON_SIZE, WORLD_ICON_SIZE), Image.LANCZOS)
         icon.save(os.path.join(out_dir, "icon.png"))
 
@@ -412,7 +413,8 @@ def _write_level_dat(out_dir, data_version, spawn, source_world, world_name=EXPO
     level.save(target)
 
 
-def schem_to_world(schem_path, out_dir, source_world=None, data_version=None, world_name=EXPORTED_WORLD_NAME, progress=None):
+def schem_to_world(schem_path, out_dir, source_world=None, data_version=None, world_name=EXPORTED_WORLD_NAME,
+                   icon_path=None, progress=None):
     """Read a city ``.schem`` and write it into a copied world save at ``out_dir``.
 
     ``source_world`` defaults to the bundled world. The source save is copied
@@ -439,5 +441,6 @@ def schem_to_world(schem_path, out_dir, source_world=None, data_version=None, wo
     _copy_source_world(template_world, out_dir)
     region_dir = _prepare_output_region_dir(out_dir, template_world)
     return write_world(grid, inv, block_entities, out_dir, data_version, base_y,
-                       source_world=template_world, region_dir=region_dir, world_name=world_name, progress=progress)
+                       source_world=template_world, region_dir=region_dir, world_name=world_name,
+                       icon_path=icon_path, progress=progress)
 

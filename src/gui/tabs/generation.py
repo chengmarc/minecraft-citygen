@@ -184,6 +184,7 @@ class GenerationTab(QtWidgets.QWidget, AlgoTabMixin, ProgressMixin):
             self,
             job,
             on_progress=self._on_pipeline_progress,
+            on_failed=self.show_failure,
             on_success=handle_success,
             on_finished=handle_finished,
             failure_title="Generation failed",
