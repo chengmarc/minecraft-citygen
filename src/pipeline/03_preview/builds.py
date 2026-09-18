@@ -16,7 +16,7 @@ from config.path import BUILD_CATALOG, PREVIEW_BUILDS, PREVIEW_BUILDS_CONTACT_SH
 from config.render import BUILD_PREVIEW_COLORS
 from engine.render.contact_sheet import write_contact
 from engine.schematic.building import read_catalog
-from pipeline.stages import noop, run_stage_cli
+from pipeline.step import noop, run_stage_cli
 
 def _clamp(v):
     return max(0, min(255, int(v)))

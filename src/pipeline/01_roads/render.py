@@ -15,7 +15,7 @@ from config.render import ROAD_ASSET_ISO_BLOCK_H, ROAD_ASSET_ISO_TILE_H, ROAD_AS
 from engine.render.isometric import render_cells_visible_iso
 from engine.schematic.reader import decode_schem_cells
 from pipeline.rendering import render_contact_sheet
-from pipeline.stages import run_stage_cli
+from pipeline.step import run_stage_cli
 
 def run(*, logger=None, progress=None):
     paths = sorted(glob.glob(os.path.join(ROADS_SCHEM, "*.schem")))

@@ -7,7 +7,7 @@ import os
 from PIL import Image
 
 from engine.render.contact_sheet import write_contact
-from pipeline.stages import noop
+from pipeline.step import noop
 
 
 def render_contact_sheet(

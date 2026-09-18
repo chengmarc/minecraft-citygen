@@ -13,6 +13,7 @@ same way.
 | Module / package | Responsibility |
 |---|---|
 | [stages.py](stages.py) | Stage registry (ordered steps per stage), `run_stage`, and the stage CLI |
+| [step.py](step.py) | What every step module imports: `noop` callbacks and `run_stage_cli`; steps never import `stages` |
 | [services.py](services.py) | `run_stage` under per-run `MC_CITY_*` overrides (`configured_environment`), used by the GUI |
 | [extraction.py](extraction.py), [rendering.py](rendering.py) | Helpers shared by the extract and render steps |
 | `01_roads/` | road extraction and road contact-sheet rendering |

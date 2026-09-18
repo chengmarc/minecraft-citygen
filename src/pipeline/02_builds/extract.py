@@ -17,7 +17,7 @@ from engine.world.marker_extract import detect_marker_assets, extract_cuboid, pa
 from engine.schematic.building import STACK_PARTS, WHOLE, piece_path, write_catalog
 from engine.schematic.writer import write_sponge_schem_cells
 from pipeline.extraction import chunk_scan_count, remove_existing_schems
-from pipeline.stages import noop, run_stage_cli
+from pipeline.step import noop, run_stage_cli
 
 
 @lru_cache(maxsize=1)

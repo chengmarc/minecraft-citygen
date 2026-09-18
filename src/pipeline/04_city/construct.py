@@ -18,7 +18,7 @@ from engine.schematic.building import read_catalog
 from engine.schematic.road import build as build_road_grid
 from engine.schematic.road import load_fillers, load_ground_fill_tile, load_tiles
 from engine.schematic.writer import write_sponge_schem_grid
-from pipeline.stages import noop, run_stage_cli
+from pipeline.step import noop, run_stage_cli
 
 # Progress steps reported by run(), in order; the GUI weights mirror this.
 STEPS = (

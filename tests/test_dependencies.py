@@ -1,8 +1,10 @@
 """The source tree's import graph stays a layered DAG.
 
 Reads every module under ``src/`` with ``ast`` (nothing is imported) and checks
-the three dependency rules: packages only import downward, no module-level
-cycles, and imports land on public names only.
+the three dependency rules: packages -- and the parts inside each package --
+only import downward, no module-level cycles, and imports land on public names
+only. A string literal naming an in-tree module (``importlib.import_module``
+targets such as the stage registry's step modules) counts as an import.
 """
 
 from __future__ import annotations
@@ -14,6 +16,27 @@ SRC = Path(__file__).resolve().parents[1] / "src"
 
 # Lower layers never import higher ones; a package may import itself.
 LAYERS = {"config": 0, "engine": 1, "pipeline": 2, "gui": 3}
+
+# Layers inside each package, keyed by the first name under it. A part may import
+# itself or a strictly lower layer, so parts sharing a layer (the numbered pipeline
+# stages) never import each other. Every module must belong to a listed part.
+PART_LAYERS = {
+    "config": {"env": 0, "render": 0, "path": 1, "algo": 1, "world": 2, "doctor": 3},
+    "engine": {"blocks": 0, "core": 0, "schematic": 1, "world": 2, "render": 3},
+    "pipeline": {
+        "step": 0,
+        "extraction": 1,
+        "rendering": 1,
+        "01_roads": 2,
+        "02_builds": 2,
+        "03_preview": 2,
+        "04_city": 2,
+        "05_world": 2,
+        "stages": 3,
+        "services": 4,
+    },
+    "gui": {"core": 0, "widgets": 1, "tabs": 2, "app": 3, "launcher": 4},
+}
 
 # The only pipeline modules the GUI may use: the stage registry and its runner.
 PIPELINE_ENTRY_POINTS = {"pipeline.stages", "pipeline.services"}
@@ -47,6 +70,8 @@ def _imports(name, path):
                     yield submodule, None
                 else:
                     yield target, alias.name
+        elif isinstance(node, ast.Constant) and node.value in MODULES and node.value != name:
+            yield node.value, None
 
 
 EDGES = {name: sorted(set(_imports(name, path)), key=str) for name, path in MODULES.items()}
@@ -59,6 +84,30 @@ def test_packages_import_only_lower_layers():
         for target, _name in imports
         if LAYERS[target.split(".")[0]] > LAYERS[source.split(".")[0]]
     ]
+    assert upward == []
+
+
+def _part(module):
+    package, part = module.split(".")[:2]
+    return package, part
+
+
+def test_every_module_has_a_part_layer():
+    unlisted = sorted({".".join(_part(name)) for name in MODULES if _part(name)[1] not in PART_LAYERS[_part(name)[0]]})
+    assert unlisted == []
+
+
+def test_parts_import_only_lower_layers():
+    upward = []
+    for source, imports in EDGES.items():
+        package, source_part = _part(source)
+        for target, _name in imports:
+            target_package, target_part = _part(target)
+            if target_package != package or target_part == source_part:
+                continue
+            layers = PART_LAYERS[package]
+            if layers[target_part] >= layers[source_part]:
+                upward.append(f"{source} -> {target}")
     assert upward == []
 
 

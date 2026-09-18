@@ -15,7 +15,7 @@ from config.algo import DEFAULT_SEED, FINE as DEFAULT_FINE
 from config.path import PREVIEW_ROADS, grid_preview_path
 from engine.core.road_network import gen_networks, make_size
 from engine.render.road_layout import compose, load_assets
-from pipeline.stages import noop, run_stage_cli
+from pipeline.step import noop, run_stage_cli
 
 
 def run(*, seed=DEFAULT_SEED, fine=DEFAULT_FINE, preview=0, logger=None, progress=None):

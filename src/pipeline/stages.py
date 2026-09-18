@@ -3,27 +3,22 @@
 Each numbered stage is an ordered tuple of :class:`Step` records, each naming
 the module whose ``run`` performs it. :func:`run_stage` is the only code that
 walks those steps; the CLI (:func:`main`) and the GUI (via
-:mod:`pipeline.services`) both call it.
-
-Two helpers remove boilerplate from the step modules themselves:
-
-- :func:`noop` is the default logger/progress callback, so a step body can call
-  ``logger(...)``/``progress(...)`` unconditionally.
-- :func:`run_stage_cli` turns a step's ``run`` into a command-line entry point,
-  reading each option's default from ``run``'s own signature.
+:mod:`pipeline.services`) both call it. The step modules share their helpers
+through :mod:`pipeline.step`, never through this registry.
 """
 
 from __future__ import annotations
 
 import argparse
 import importlib
-import inspect
 import sys
 from dataclasses import dataclass
 from pathlib import Path
 
 if __package__ in (None, ""):
     sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+
+from pipeline.step import add_options, noop
 
 
 @dataclass(frozen=True)
@@ -94,10 +89,6 @@ PIPELINE_DEPENDENCY_MODULES = (
 RELOAD_ORDER = (*PIPELINE_DEPENDENCY_MODULES, *PIPELINE_INTERNAL_MODULES, *PIPELINE_STAGE_MODULES)
 
 
-def noop(*args, **kwargs) -> None:
-    """A logger/progress callback that discards its arguments."""
-
-
 def stage_params(stage_key):
     """Every parameter the stage accepts, in first-use order."""
     return tuple(dict.fromkeys(name for step in STAGES[stage_key] for name in step.params))
@@ -129,44 +120,12 @@ def run_stage(stage_key, *, logger=None, progress=None, **params):
     return results
 
 
-# CLI option specs shared by stage modules and the stage registry CLI.
-# Keys match ``run`` keyword names; underscores map to hyphenated CLI flags.
-_STAGE_CLI_ARGS = {
-    "seed": {"type": int, "help": "generation seed"},
-    "fine": {"type": int, "help": "fine grid edge in cells (even)"},
-    "preview": {"type": int, "help": "edge of preview png (0 = full res)"},
-    "out": {"type": str, "help": "output path (default: derived from seed)"},
-    "key": {"type": str, "help": "render one catalog key, e.g. 001"},
-    "no_ground_fill": {
-        "action": "store_true",
-        "help": "leave empty non-road lot cells as air instead of filling them",
-    },
-}
-
-
-def _add_options(parser, params, defaults):
-    for name in params:
-        parser.add_argument(f"--{name.replace('_', '-')}", default=defaults(name), **_STAGE_CLI_ARGS[name])
-
-
-def run_stage_cli(run, *params: str, logger=print):
-    """Run a step module's ``run`` as a command-line script.
-
-    ``params`` names the options to expose (keys of :data:`_STAGE_CLI_ARGS`);
-    each option's default is taken from ``run``'s own signature.
-    """
-    signature = inspect.signature(run)
-    parser = argparse.ArgumentParser()
-    _add_options(parser, params, lambda name: signature.parameters[name].default)
-    return run(logger=logger, **vars(parser.parse_args()))
-
-
 def main(argv=None) -> int:
     parser = argparse.ArgumentParser()
     subparsers = parser.add_subparsers(dest="stage", required=True)
     for key in PIPELINE_STAGE_COMMANDS:
         # Omitted options stay unset, so each step applies its own default.
-        _add_options(subparsers.add_parser(key), stage_params(key), lambda _name: argparse.SUPPRESS)
+        add_options(subparsers.add_parser(key), stage_params(key), lambda _name: argparse.SUPPRESS)
 
     params = vars(parser.parse_args(argv))
     run_stage(params.pop("stage"), logger=print, **params)
