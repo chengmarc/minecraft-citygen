@@ -2,14 +2,14 @@
   <h1>Minecraft CityGen - Customizable AI City Generator</h1>
   <img src="src/gui/icons/app-icon.svg" alt="Minecraft CityGen app icon" width="180">
   <br><br>
-  <img src="https://img.shields.io/badge/Version-1.1.0-6495ED?style=for-the-badge&amp;logo=data%3Aimage%2Fsvg%2Bxml%3Bbase64%2CPHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCI%2BPHBhdGggZmlsbD0id2hpdGUiIGZpbGwtcnVsZT0iZXZlbm9kZCIgZD0iTTMgM2g4bDEwIDEwLTggOEwzIDExWk04LjUgN2ExLjUgMS41IDAgMSAwLTMgMCAxLjUgMS41IDAgMCAwIDMgMFoiLz48L3N2Zz4%3D" alt="Release 1.1.0">
+  <img src="https://img.shields.io/badge/Version-1.2.0-6495ED?style=for-the-badge&amp;logo=data%3Aimage%2Fsvg%2Bxml%3Bbase64%2CPHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCI%2BPHBhdGggZmlsbD0id2hpdGUiIGZpbGwtcnVsZT0iZXZlbm9kZCIgZD0iTTMgM2g4bDEwIDEwLTggOEwzIDExWk04LjUgN2ExLjUgMS41IDAgMSAwLTMgMCAxLjUgMS41IDAgMCAwIDMgMFoiLz48L3N2Zz4%3D" alt="Release 1.2.0">
   <!-- Minecraft badge logo: Pictogrammers Material Design Icons (Apache-2.0), https://github.com/Templarian/MaterialDesign/blob/master/svg/minecraft.svg -->
   <img src="https://img.shields.io/badge/Minecraft-%E2%89%A5%2026.1.2-4C9A2A?style=for-the-badge&amp;logo=data%3Aimage%2Fsvg%2Bxml%3Bbase64%2CPHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCI%2BPHBhdGggZmlsbD0id2hpdGUiIGQ9Ik00LDJIMjBBMiwyIDAgMCwxIDIyLDRWMjBBMiwyIDAgMCwxIDIwLDIySDRBMiwyIDAgMCwxIDIsMjBWNEEyLDIgMCAwLDEgNCwyTTYsNlYxMEgxMFYxMkg4VjE4SDEwVjE2SDE0VjE4SDE2VjEySDE0VjEwSDE4VjZIMTRWMTBIMTBWNkg2WiIvPjwvc3ZnPg%3D%3D" alt="Minecraft >= 26.1.2">
   <h3>
     Turn your own Minecraft builds into an entire city.
     <br><br>
-    Download <a href="https://github.com/doubletrends/minecraft-citygen/releases/download/v1.1.0/Minecraft.CityGen-setup.exe">Windows Installer (.exe)</a> or
-    <a href="https://github.com/doubletrends/minecraft-citygen/releases/download/v1.1.0/Minecraft.CityGen-portable-windows.zip">Compressed Portable (.zip)</a>
+    Download <a href="https://github.com/doubletrends/minecraft-citygen/releases/download/v1.2.0/Minecraft.CityGen-setup.exe">Windows Installer (.exe)</a> or
+    <a href="https://github.com/doubletrends/minecraft-citygen/releases/download/v1.2.0/Minecraft.CityGen-portable-windows.zip">Compressed Portable (.zip)</a>
   </h3>
 </div>
 
