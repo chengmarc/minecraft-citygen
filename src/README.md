@@ -18,8 +18,9 @@ inside a Minecraft world — into a complete, paste-ready city. Everything under
 The dependency direction is one-way: `gui/` and `pipeline/` depend on `engine/` and
 `config/`; `engine/` depends on `config/`; `config/` depends on nothing else in the
 tree. `gui/` reaches the pipeline only through `pipeline.stages` and
-`pipeline.services`. Engine functions take the artifact paths and world
-locations they work on as arguments; the pipeline stages decide which ones.
+`pipeline.services`. Engine functions take the artifact paths, world
+locations, and per-run settings (a `config.algo.Algo`) they work on as
+arguments; the pipeline stages decide which ones.
 [tests/test_dependencies.py](../tests/test_dependencies.py) enforces the
 layering, the absence of import cycles, and that no module imports another's
 `_`-prefixed names.

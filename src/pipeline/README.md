@@ -14,7 +14,7 @@ same way.
 |---|---|
 | [stages.py](stages.py) | Stage registry (ordered steps per stage), `run_stage`, and the stage CLI |
 | [step.py](step.py) | What every step module imports: `noop` callbacks and `run_stage_cli`; steps never import `stages` |
-| [services.py](services.py) | `run_stage` under per-run `MC_CITY_*` overrides (`configured_environment`), used by the GUI |
+| [services.py](services.py) | `run_stage` for the GUI: text params coerced, runs serialized by `PIPELINE_LOCK` |
 | [extraction.py](extraction.py), [rendering.py](rendering.py) | Helpers shared by the extract and render steps |
 | `01_roads/` | road extraction and road contact-sheet rendering |
 | `02_builds/` | building extraction, catalog writing, and building contact-sheet rendering |
@@ -29,18 +29,15 @@ standalone Minecraft save.
 
 ## Runtime boundary
 
-Pipeline stages read configuration from `MC_CITY_*` environment variables at
-import time through the `config` package. In-process callers should not mutate
-`os.environ` directly; call [`services.run_stage`](services.py) with an
-`env_overrides` dict containing only the `MC_CITY_*` values needed for that run.
-[`services.configured_environment`](services.py) applies those values under a process-wide lock,
-reloads config/engine/stage modules in dependency order, runs the stage, then
-restores the previous environment and reloads again.
-
-This keeps GUI runs deterministic, but it is still process-global state. Run
-overridden stages one at a time inside a process. For true concurrent generation
-with different configs, use separate processes or replace the import-time config
-model with explicit config objects.
+Per-run settings are ordinary stage parameters: `algo` (a
+`config.algo.Algo`), `save`, `road_box`, `build_types`, and `data_version`.
+Each step's `run` falls back to this process's defaults (`config.algo.ALGO`,
+`config.world.SAVE`, ...), which the `config` package reads once from
+`MC_CITY_*` environment variables, so CLI runs are still configured through the
+environment. In-process callers pass settings as arguments to
+[`services.run_stage`](services.py), never through `os.environ`; nothing is
+reloaded between runs. `services.PIPELINE_LOCK` still runs stages one at a time,
+because every stage shares the artifact directories.
 
 ## Pipeline stages
 
@@ -126,7 +123,7 @@ emerald marks the asset ground level and anchors the metadata sign above it.
 
 Type and layer count are independent: a type-1 building can have three layers,
 and a type-2 landmark can have one. Type-2 catalog IDs are placed exactly once per
-city, largest footprints first with `LANDMARK_SPACING` between landmarks; type-1
+city, largest footprints first with `Algo.landmark_spacing` between landmarks; type-1
 IDs have no repeat limit.
 
 **Sign directives** above the emerald marker add catalog metadata: `stack: n` or

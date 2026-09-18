@@ -18,7 +18,7 @@ from pathlib import Path
 if __package__ in (None, ""):
     sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from pipeline.step import add_options, noop
+from pipeline.step import CLI_OPTIONS, add_options, noop
 
 
 @dataclass(frozen=True)
@@ -26,7 +26,7 @@ class Step:
     key: str  # result key in run_stage's return value
     label: str
     module: str  # module whose ``run`` performs the step
-    params: tuple[str, ...] = ()  # stage parameters forwarded to ``run``
+    params: tuple[str, ...] = ()  # stage parameters forwarded to ``run``; the CLI exposes those in CLI_OPTIONS
 
 
 ROADS_EXTRACT = "pipeline.01_roads.extract"
@@ -43,50 +43,31 @@ WORLD_EXPORT = "pipeline.05_world.export"
 
 STAGES = {
     "roads": (
-        Step("extract", "Extracting road pieces", ROADS_EXTRACT),
+        Step("extract", "Extracting road pieces", ROADS_EXTRACT, ("save", "road_box", "data_version")),
         Step("render", "Rendering road contact sheet", ROADS_RENDER),
     ),
     "builds": (
-        Step("extract", "Extracting building pieces", BUILDS_EXTRACT),
+        Step("extract", "Extracting building pieces", BUILDS_EXTRACT, ("save", "build_types", "data_version")),
         Step("render", "Rendering building contact sheet", BUILDS_RENDER),
     ),
     "preview": (
         Step("road_assets", "Generating road preview assets", PREVIEW_ROADS),
         Step("build_assets", "Generating building preview assets", PREVIEW_BUILDS),
-        Step("grid_preview", "Rendering road layout preview", PREVIEW_GRID, ("seed", "fine", "preview")),
-        Step("city_preview", "Rendering city layout preview", PREVIEW_CITY, ("seed", "fine", "preview")),
+        Step("grid_preview", "Rendering road layout preview", PREVIEW_GRID, ("seed", "fine", "algo", "preview")),
+        Step("city_preview", "Rendering city layout preview", PREVIEW_CITY, ("seed", "fine", "algo", "preview")),
     ),
     "city": (
-        Step("construct", "Building city schematic", CITY_CONSTRUCT, ("seed", "fine")),
+        Step("construct", "Building city schematic", CITY_CONSTRUCT, ("seed", "fine", "algo", "data_version")),
         Step("render", "Rendering final city", CITY_RENDER, ("seed",)),
     ),
     "world": (
-        Step("export", "Exporting Minecraft world", WORLD_EXPORT, ("seed", "out")),
+        Step("export", "Exporting Minecraft world", WORLD_EXPORT, ("seed", "save", "out")),
     ),
 }
 
 PIPELINE_STAGE_COMMANDS = tuple(STAGES)
 PIPELINE_INTERNAL_MODULES = tuple(step.module for steps in STAGES.values() for step in steps)
 PIPELINE_STAGE_MODULES = ("pipeline.stages",)
-
-# Modules that bind MC_CITY_* config at import time, dependencies first; see
-# pipeline.services.configured_environment.
-PIPELINE_DEPENDENCY_MODULES = (
-    "config.env",
-    "config.path",
-    "config.algo",
-    "config.world",
-    "config.render",
-    "engine.core.road_network",
-    "engine.core.city_layout",
-    "engine.render.road_layout",
-    "engine.schematic.road",
-    "engine.schematic.building",
-    "engine.schematic.city",
-    "engine.world.anvil_world_reader",
-    "engine.world.writer",
-)
-RELOAD_ORDER = (*PIPELINE_DEPENDENCY_MODULES, *PIPELINE_INTERNAL_MODULES, *PIPELINE_STAGE_MODULES)
 
 
 def stage_params(stage_key):
@@ -125,7 +106,8 @@ def main(argv=None) -> int:
     subparsers = parser.add_subparsers(dest="stage", required=True)
     for key in PIPELINE_STAGE_COMMANDS:
         # Omitted options stay unset, so each step applies its own default.
-        add_options(subparsers.add_parser(key), stage_params(key), lambda _name: argparse.SUPPRESS)
+        cli_params = [name for name in stage_params(key) if name in CLI_OPTIONS]
+        add_options(subparsers.add_parser(key), cli_params, lambda _name: argparse.SUPPRESS)
 
     params = vars(parser.parse_args(argv))
     run_stage(params.pop("stage"), logger=print, **params)

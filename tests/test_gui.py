@@ -14,7 +14,9 @@ os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
 from PySide6 import QtWidgets  # noqa: E402
 
+from config.algo import ALGO  # noqa: E402
 from config.path import city_preview_path, grid_preview_path  # noqa: E402
+from config.world import BlockRegion  # noqa: E402
 from gui import app as gui_app  # noqa: E402
 from gui import launcher  # noqa: E402
 from gui.core import algo_config, app_files, extraction_config, progress  # noqa: E402
@@ -98,21 +100,20 @@ class GuiPipelineHandoffTests(unittest.TestCase):
     def setUp(self):
         self.app = _qapp()
 
-    def test_extraction_run_builds_env_and_runs_road_then_build_stages(self):
+    def test_extraction_run_passes_source_and_regions_to_road_then_build_stages(self):
         owner = _GuiOwner(extraction=extraction_config.default_extraction_tab_config())
         calls = []
 
         progress_stage = {"roads": stages.ROADS_EXTRACT, "builds": stages.BUILDS_EXTRACT}
 
-        def fake_stage(name, *, env_overrides, progress=None):
-            calls.append((name, dict(env_overrides)))
+        def fake_stage(name, *, progress=None, **params):
+            calls.append((name, params))
             if progress is not None:
                 progress(progress_stage[name], 1, 1, "done")
             return {"stage": name}
 
         with (
             mock.patch.object(extraction_module, "has_region_files", return_value=True),
-            mock.patch.object(extraction_module.extraction_config, "stamp_version_env", return_value={"MC_CITY_DATA_VERSION": "4790"}),
             mock.patch.object(extraction_module.services, "run_stage", side_effect=fake_stage),
             mock.patch.object(extraction_module.threading, "Thread", _ImmediateThread),
             mock.patch.object(extraction_module.app_files, "save_progress_timing"),
@@ -122,23 +123,25 @@ class GuiPipelineHandoffTests(unittest.TestCase):
             tab.build_viewer.load_image = lambda _path: None
             tab._run_extract_all()
 
-        self.assertEqual([name for name, _env in calls], ["roads", "builds"])
-        env = calls[0][1]
-        self.assertEqual(calls[1][1], env)
-        self.assertEqual(env["MC_CITY_SAVE"], owner._sections["extraction"]["world_path"])
-        self.assertIn("MC_CITY_ROAD_BOX", env)
-        self.assertIn("MC_CITY_BUILD_TYPES", env)
-        self.assertEqual(env["MC_CITY_DATA_VERSION"], "4790")
+        self.assertEqual([name for name, _params in calls], ["roads", "builds"])
+        roads, builds = calls[0][1], calls[1][1]
+        world_path = owner._sections["extraction"]["world_path"]
+        self.assertEqual(set(roads), {"save", "road_box"})
+        self.assertEqual(set(builds), {"save", "build_types"})
+        self.assertEqual(roads["save"], world_path)
+        self.assertEqual(builds["save"], world_path)
+        self.assertIsInstance(roads["road_box"], BlockRegion)
+        self.assertEqual([region.build_type for region in builds["build_types"]], [1, 2])
         self.assertIn("refresh_prerequisites", owner.events)
         tab.close()
         owner.close()
 
-    def test_preview_run_passes_seed_size_and_algorithm_env_to_service(self):
+    def test_preview_run_passes_seed_and_algo_to_service(self):
         owner = _GuiOwner(algo=algo_config.default_algo_tab_config())
         calls = {}
 
-        def fake_preview(stage_key, *, seed, fine, env_overrides, progress=None, logger=None):
-            calls.update(stage=stage_key, seed=seed, fine=fine, env=dict(env_overrides), logger=logger)
+        def fake_preview(stage_key, *, seed, algo, progress=None, logger=None):
+            calls.update(stage=stage_key, seed=seed, algo=algo, logger=logger)
             if progress is not None:
                 progress(stages.PREVIEW_CITY, 2, 2, "Rendered city layout preview")
             return {"seed": seed}
@@ -156,8 +159,7 @@ class GuiPipelineHandoffTests(unittest.TestCase):
 
         self.assertEqual(calls["stage"], "preview")
         self.assertEqual(calls["seed"], "42")
-        self.assertEqual(calls["fine"], calls["env"]["MC_CITY_FINE"])
-        self.assertIn("MC_CITY_GAP_BIG", calls["env"])
+        self.assertEqual(calls["algo"], ALGO)
         self.assertEqual(loaded, [grid_preview_path("42"), city_preview_path("42")])
         tab.close()
         owner.close()
@@ -170,14 +172,14 @@ class GuiPipelineHandoffTests(unittest.TestCase):
 
         progress_stage = {"city": stages.CITY_RENDER, "world": stages.WORLD_EXPORT}
 
-        def record(name, *, seed, env_overrides, progress=None, **params):
-            calls.append((name, seed, params, dict(env_overrides)))
+        def record(name, *, seed, progress=None, **params):
+            calls.append((name, seed, params))
             if progress is not None:
                 progress(progress_stage[name], 1, 1, "done")
             return {"stage": name}
 
         with (
-            mock.patch.object(generation_module.extraction_config, "stamp_version_env", return_value={"MC_CITY_DATA_VERSION": "4790"}),
+            mock.patch.object(generation_module, "source_data_version", return_value=4790),
             mock.patch.object(generation_module.services, "run_stage", side_effect=record),
             mock.patch.object(generation_module.threading, "Thread", _ImmediateThread),
             mock.patch.object(generation_module.app_files, "save_progress_timing"),
@@ -187,13 +189,10 @@ class GuiPipelineHandoffTests(unittest.TestCase):
             tab.controls.seed_edit.setText("9")
             tab._run_generate()
 
-        self.assertEqual([name for name, _seed, _params, _env in calls], ["city", "world"])
-        self.assertEqual(calls[0][2], {"fine": calls[0][3]["MC_CITY_FINE"]})
-        self.assertEqual(calls[1][2], {})
-        for _name, seed, _args, env in calls:
-            self.assertEqual(seed, "9")
-            self.assertEqual(env["MC_CITY_SAVE"], "C:/minecraft/source-world")
-            self.assertEqual(env["MC_CITY_DATA_VERSION"], "4790")
+        self.assertEqual([name for name, _seed, _params in calls], ["city", "world"])
+        self.assertEqual(calls[0][2], {"algo": ALGO, "data_version": 4790})
+        self.assertEqual(calls[1][2], {"save": "C:/minecraft/source-world"})
+        self.assertEqual([seed for _name, seed, _params in calls], ["9", "9"])
         tab.close()
         owner.close()
 

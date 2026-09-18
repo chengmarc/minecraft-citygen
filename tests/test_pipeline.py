@@ -118,7 +118,7 @@ class RoadsExtractTests(unittest.TestCase):
             cells = [[["minecraft:stone"]]]
 
             with mock.patch.object(roads_extract, "ROADS_SCHEM", str(out_dir)), \
-                 mock.patch.object(roads_extract, "get_world", return_value=mock.Mock()), \
+                 mock.patch.object(roads_extract, "open_world", return_value=mock.Mock()), \
                  mock.patch.object(roads_extract, "name_for", return_value="fresh"), \
                  mock.patch.object(roads_extract, "detect_marker_assets", return_value=([component], [])), \
                  mock.patch.object(roads_extract, "extract_cuboid", return_value=(cells, [])), \
@@ -139,7 +139,7 @@ class RoadsExtractTests(unittest.TestCase):
             stale.write_text("old", encoding="utf-8")
 
             with mock.patch.object(roads_extract, "ROADS_SCHEM", str(out_dir)), \
-                 mock.patch.object(roads_extract, "get_world", return_value=mock.Mock()), \
+                 mock.patch.object(roads_extract, "open_world", return_value=mock.Mock()), \
                  mock.patch.object(roads_extract, "detect_marker_assets", return_value=([], [])):
                 with self.assertRaisesRegex(RuntimeError, "found no assets"):
                     roads_extract.run()
@@ -156,9 +156,7 @@ def test_build_stack_sign_reads_sign_one_block_above_emerald(monkeypatch):
             (4, 71, 8, "stack: 2-5"),
         ],
     )
-    monkeypatch.setattr(builds_extract, "get_world", lambda: object())
-
-    assert builds_extract.stack_sign((4, 70, 8)) == [2, 5]
+    assert builds_extract.stack_sign(object(), (4, 70, 8)) == [2, 5]
 
 
 def test_road_name_reads_sign_one_block_above_emerald(monkeypatch):
@@ -170,9 +168,7 @@ def test_road_name_reads_sign_one_block_above_emerald(monkeypatch):
             (4, 71, 8, " 02_big _2x2 _I "),
         ],
     )
-    monkeypatch.setattr(roads_extract, "get_world", lambda: object())
-
-    assert roads_extract.name_for((4, 70, 8)) == "02_big_2x2_I"
+    assert roads_extract.name_for(object(), (4, 70, 8)) == "02_big_2x2_I"
 
 
 def _checking_write_contact():

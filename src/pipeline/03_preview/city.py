@@ -12,7 +12,7 @@ from PIL import Image, ImageDraw
 if __package__ in (None, ""):
     sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
-from config.algo import CELL, DEFAULT_SEED, FINE as DEFAULT_FINE
+from config.algo import ALGO, CELL, DEFAULT_SEED
 from config.path import BUILD_CATALOG, PREVIEW_BUILDS, PREVIEW_ROADS, city_preview_path
 from config.render import CITY_GROUND_FILL_RGBA
 from engine.core.city_layout import FACE_K, FILLER_STREAM, placement_origin, plan_city, seeded_rng
@@ -112,15 +112,15 @@ def render(net, placements, out, preview, fillers=None, rng=None):
     return canvas.width, canvas.height
 
 
-def run(*, seed=DEFAULT_SEED, fine=DEFAULT_FINE, preview=0, out=None, logger=None, progress=None):
+def run(*, seed=DEFAULT_SEED, fine=None, algo=ALGO, preview=0, out=None, logger=None, progress=None):
     logger = logger or noop
     progress = progress or noop
     progress(0, 2, "Planning city layout")
     out = out or city_preview_path(seed)
     os.makedirs(os.path.dirname(out), exist_ok=True)
 
-    net = gen_networks(seed, size=make_size(fine))
-    lots, placements = plan_city(seed, net, read_catalog(BUILD_CATALOG))
+    net = gen_networks(seed, make_size(fine or algo.fine), algo)
+    lots, placements = plan_city(seed, net, read_catalog(BUILD_CATALOG), algo)
 
     by_type = {1: 0, 2: 0}
     for placement in placements:

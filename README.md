@@ -90,9 +90,9 @@ Pipeline stages can be run through the stage registry in a checkout, for example
 python src/pipeline/stages.py city --seed 5
 ```
 
-Use `MC_CITY_*` environment overrides through `pipeline.services.run_stage` for
-in-process runs; it applies them under a lock and reloads import-time
-configuration safely for one run at a time.
+`MC_CITY_*` environment variables set a CLI run's defaults. In-process callers
+pass per-run settings (such as a `config.algo.Algo`) as parameters to
+`pipeline.services.run_stage` instead.
 
 ## AI Disclaimer
 

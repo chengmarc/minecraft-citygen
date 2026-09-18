@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from config.world import (
     BUILD_TYPES, RELEASE_NAMES, ROAD_BOX, SAVE,
-    BlockRegion, BuildRegion, source_data_version,
+    BlockRegion, BuildRegion,
 )
 
 
@@ -64,12 +64,3 @@ def version_selector_items(min_data_version=None):
         if min_data_version is None or dv >= min_data_version
     )
     return items
-
-
-def stamp_version_env(world_path):
-    """Env fragment pinning MC_CITY_DATA_VERSION to the source world's version.
-
-    Always explicit so stages that do not set MC_CITY_SAVE (construct, render)
-    stamp the source version instead of re-detecting the wrong (default) world.
-    """
-    return {"MC_CITY_DATA_VERSION": str(source_data_version(world_path))}

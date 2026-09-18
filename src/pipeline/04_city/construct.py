@@ -8,7 +8,7 @@ from pathlib import Path
 if __package__ in (None, ""):
     sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
-from config.algo import DEFAULT_SEED, FINE as DEFAULT_FINE
+from config.algo import ALGO, DEFAULT_SEED
 from config.path import BUILD_CATALOG, BUILDS_SCHEM, ROADS_SCHEM, city_schem_path
 from config.world import DATA_VERSION
 from engine.core.city_layout import FILLER_STREAM, plan_city, seeded_rng
@@ -45,7 +45,10 @@ def _load_fill_assets(no_ground_fill):
     return fillers, ground_fill_tile
 
 
-def run(*, seed=DEFAULT_SEED, fine=DEFAULT_FINE, out=None, no_ground_fill=False, logger=None, progress=None):
+def run(
+    *, seed=DEFAULT_SEED, fine=None, algo=ALGO, data_version=DATA_VERSION, out=None, no_ground_fill=False,
+    logger=None, progress=None,
+):
     logger = logger or noop
     progress = progress or noop
 
@@ -53,10 +56,10 @@ def run(*, seed=DEFAULT_SEED, fine=DEFAULT_FINE, out=None, no_ground_fill=False,
         progress(n, len(STEPS), STEPS[n] if n < len(STEPS) else "Schematic saved")
 
     out = out or city_schem_path(seed)
-    size = make_size(fine)
+    size = make_size(fine or algo.fine)
 
     _step(0)
-    network = gen_networks(seed, size=size)
+    network = gen_networks(seed, size, algo)
 
     _step(1)
     road_grid, road_palette, (road_span, road_height, _), tile_count, road_ground_offset, road_block_entities = build_road_grid(network, load_tiles(ROADS_SCHEM))
@@ -65,7 +68,7 @@ def run(*, seed=DEFAULT_SEED, fine=DEFAULT_FINE, out=None, no_ground_fill=False,
     catalog_meta = read_catalog(BUILD_CATALOG)
 
     _step(3)
-    _lots, placements = plan_city(seed, network, catalog_meta)
+    _lots, placements = plan_city(seed, network, catalog_meta, algo)
     city_ground_y = city.city_ground_y(placements, catalog_meta)
     # `ground_y` is the shared plane roads, buildings, the dedicated lot
     # ground-fill asset, and tree props resolve against.
@@ -101,7 +104,7 @@ def run(*, seed=DEFAULT_SEED, fine=DEFAULT_FINE, out=None, no_ground_fill=False,
     )
     logger(summary)
     write_sponge_schem_grid(
-        grid, palette, out, DATA_VERSION,
+        grid, palette, out, data_version,
         offset=(0, -(city_ground_y + 1), 0),
         block_entities=block_entities,
     )

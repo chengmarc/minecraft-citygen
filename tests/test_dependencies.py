@@ -38,6 +38,13 @@ PART_LAYERS = {
     "gui": {"core": 0, "widgets": 1, "tabs": 2, "app": 3, "launcher": 4},
 }
 
+# This process's per-run defaults, read from MC_CITY_* overrides. The engine takes
+# these settings as arguments; only the pipeline and GUI fall back on the defaults.
+PER_RUN_DEFAULTS = {
+    "config.algo": {"ALGO"},
+    "config.world": {"SAVE", "REGION_DIR", "REGION_DIR_CANDIDATES", "DATA_VERSION", "ROAD_BOX", "BUILD_TYPES"},
+}
+
 # The only pipeline modules the GUI may use: the stage registry and its runner.
 PIPELINE_ENTRY_POINTS = {"pipeline.stages", "pipeline.services"}
 
@@ -109,6 +116,17 @@ def test_parts_import_only_lower_layers():
             if layers[target_part] >= layers[source_part]:
                 upward.append(f"{source} -> {target}")
     assert upward == []
+
+
+def test_engine_takes_per_run_settings_as_arguments():
+    reads = [
+        f"{source} -> {target}" + (f".{name}" if name else "")
+        for source, imports in EDGES.items()
+        if source.startswith("engine.")
+        for target, name in imports
+        if target == "config.env" or name in PER_RUN_DEFAULTS.get(target, ()) or (target in PER_RUN_DEFAULTS and not name)
+    ]
+    assert reads == []
 
 
 def test_gui_uses_only_pipeline_entry_points():
