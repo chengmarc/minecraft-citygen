@@ -168,10 +168,9 @@ def render_schem_visible_iso(
     tile_w=FULL_SCHEM_ISO_TILE_W,
     tile_h=FULL_SCHEM_ISO_TILE_H,
     block_h=FULL_SCHEM_ISO_BLOCK_H,
-    margin=ISO_MARGIN,
 ):
     _W, _H, _L, inv, grid = decode_schem_array(path)
-    return render_grid_visible_iso(grid, inv, tile_w, tile_h, block_h, margin)
+    return render_grid_visible_iso(grid, inv, tile_w, tile_h, block_h)
 
 
 def render_cells_visible_iso(
@@ -179,10 +178,9 @@ def render_cells_visible_iso(
     tile_w=ROAD_ASSET_ISO_TILE_W,
     tile_h=ROAD_ASSET_ISO_TILE_H,
     block_h=ROAD_ASSET_ISO_BLOCK_H,
-    margin=ISO_MARGIN,
 ):
     _W, _H, _L, inv, grid = cells_to_grid(cells)
-    return render_grid_visible_iso(grid, inv, tile_w, tile_h, block_h, margin)
+    return render_grid_visible_iso(grid, inv, tile_w, tile_h, block_h)
 
 
 def warm_up():

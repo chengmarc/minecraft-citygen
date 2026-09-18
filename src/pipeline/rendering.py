@@ -64,7 +64,6 @@ def write_image_sequence_gif(
     out,
     *,
     duration=500,
-    loop=0,
     on_progress=None,
 ):
     """Write image paths as a same-canvas animated GIF; return its path.
@@ -95,7 +94,7 @@ def write_image_sequence_gif(
             save_all=True,
             append_images=prepared[1:],
             duration=duration,
-            loop=loop,
+            loop=0,
             disposal=2,
             optimize=False,
         )

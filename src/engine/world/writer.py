@@ -235,7 +235,6 @@ def write_world(
     data_version,
     base_y,
     origin=None,
-    spawn=None,
     source_world=None,
     region_dir=None,
     world_name=EXPORTED_WORLD_NAME,
@@ -314,8 +313,7 @@ def write_world(
         _write_region(os.path.join(region_dir, f"r.{rx}.{rz}.mca"), chunks)
 
     progress(3, WORLD_WRITE_STEPS, "Writing level.dat")
-    if spawn is None:
-        spawn = (anchor_x + origin[0], anchor_top + base_y + 1, anchor_z + origin[1])
+    spawn = (anchor_x + origin[0], anchor_top + base_y + 1, anchor_z + origin[1])
     _write_level_dat(out_dir, data_version, spawn, source_world, world_name)
     if icon_path:
         _write_world_icon(out_dir, icon_path)
@@ -413,7 +411,7 @@ def _write_level_dat(out_dir, data_version, spawn, source_world, world_name=EXPO
     level.save(target)
 
 
-def schem_to_world(schem_path, out_dir, source_world=None, data_version=None, world_name=EXPORTED_WORLD_NAME,
+def schem_to_world(schem_path, out_dir, source_world=None, world_name=EXPORTED_WORLD_NAME,
                    icon_path=None, progress=None):
     """Read a city ``.schem`` and write it into a copied world save at ``out_dir``.
 
@@ -434,8 +432,7 @@ def schem_to_world(schem_path, out_dir, source_world=None, data_version=None, wo
     base_y = TARGET_GROUND_Y - city_ground_y if offset[1] != 0 else TARGET_GROUND_Y
 
     # Match chunks + level.dat to the source world's own version (native load).
-    if data_version is None:
-        data_version = source_data_version(source_world)
+    data_version = source_data_version(source_world)
 
     template_world = _source_world_root(source_world)
     _copy_source_world(template_world, out_dir)

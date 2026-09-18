@@ -40,7 +40,7 @@ def add_options(parser, params, defaults):
         parser.add_argument(f"--{name.replace('_', '-')}", default=defaults(name), **CLI_OPTIONS[name])
 
 
-def run_stage_cli(run, *params: str, logger=print):
+def run_stage_cli(run, *params: str):
     """Run a step module's ``run`` as a command-line script.
 
     ``params`` names the options to expose (keys of :data:`CLI_OPTIONS`);
@@ -49,4 +49,4 @@ def run_stage_cli(run, *params: str, logger=print):
     signature = inspect.signature(run)
     parser = argparse.ArgumentParser()
     add_options(parser, params, lambda name: signature.parameters[name].default)
-    return run(logger=logger, **vars(parser.parse_args()))
+    return run(logger=print, **vars(parser.parse_args()))

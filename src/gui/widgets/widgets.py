@@ -290,11 +290,10 @@ class ExtractionAreaGroup(QtWidgets.QGroupBox):
         self._end_xyz = None
         self._set_status(False)
 
-    def clear_selection(self, *, emit_change=True):
+    def clear_selection(self):
         self._clear_selection()
-        if emit_change:
-            for handler in self._change_handlers:
-                handler()
+        for handler in self._change_handlers:
+            handler()
 
     def _set_status(self, selected):
         self.status_chip.setProperty("selected", bool(selected))
