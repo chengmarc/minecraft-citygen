@@ -27,7 +27,7 @@ before committing.
 | road layout, building placement, schematic/world I/O, rendering | [engine guide](engine/README.md#how-to-guides) |
 | stage order, a new step, in-world marker conventions, `buildings.json` | [pipeline guide](pipeline/README.md#how-to-guides) |
 | a tab, the settings form, progress bars | [gui guide](gui/README.md#how-to-guides) |
-| the installer, zip, or a release | [packaging guide](../packaging/README.md) |
+| the installer, zip, or a release | [release guide](../docs/RELEASING.md) |
 
 ### Reset local state
 
