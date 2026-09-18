@@ -65,34 +65,21 @@ You can tune any three-piece building with a sign directive above its emerald: `
 
 <img src="docs/pics/type2.png" alt="Three-layer build marker convention" width="100%">
 
+The exact rules for roads and buildings are in the
+[in-world asset conventions](src/pipeline/README.md#in-world-asset-conventions).
+
 # Technical Details
-
-See the [source architecture overview](src/README.md) and its per-package guides
-([config](src/config/README.md), [engine](src/engine/README.md),
-[gui](src/gui/README.md), [pipeline](src/pipeline/README.md)).
-
-## Developer Quick Start
 
 ```bash
 python -m pip install -e .
-pytest -q
+python -m pytest -q
 pythonw application.pyw
 ```
 
-The source tree is organized as four packages under `src/`: `config`, `engine`,
-`gui`, and `pipeline`. Generated previews, schematics, renders, exported worlds,
-test caches, and packaging outputs live in git-ignored directories such as
-`artifacts/`, `build/`, `dist/`, and `.pytest_cache/`.
-
-Pipeline stages can be run through the stage registry in a checkout, for example:
-
-```bash
-python src/pipeline/stages.py city --seed 5
-```
-
-`MC_CITY_*` environment variables set a CLI run's defaults. In-process callers
-pass per-run settings (such as a `config.algo.Algo`) as parameters to
-`pipeline.services.run_stage` instead.
+Start at the [source architecture overview](src/README.md), then follow the
+package guides: [config](src/config/README.md), [engine](src/engine/README.md),
+[pipeline](src/pipeline/README.md), [gui](src/gui/README.md), and
+[packaging](packaging/README.md) for releases.
 
 ## AI Disclaimer
 
