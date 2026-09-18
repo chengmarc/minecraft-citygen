@@ -14,7 +14,6 @@ import threading
 
 from pipeline import stages
 
-# Serializes stage runs; they share the artifact directories on disk.
 PIPELINE_LOCK = threading.RLock()
 
 _INTEGER_PARAMS = {"seed": "Seed", "fine": "Fine", "preview": "Preview"}

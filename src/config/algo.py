@@ -17,7 +17,7 @@ DEFAULT_SEED = env_int("DEFAULT_SEED", 5)
 
 @dataclass(frozen=True)
 class Algo:
-    fine: int = 80  # fine grid edge (fine x fine cells); drivers may override
+    fine: int = 80  # fine grid edge (fine x fine cells); rounded down to even, since coarse = fine // 2
 
     # forced gap between parallel lines
     gap_mixed: int = 5  # fine-cell clearance between a small street and a big corridor band
@@ -36,7 +36,7 @@ class Algo:
 
     banned_buildings: frozenset[str] = frozenset()  # building IDs to skip during placement
     landmark_spacing: int = 5  # min fine-cell distance between landmark footprints
-    type1_top_fit_choices: int = 5
+    type1_top_fit_choices: int = 5  # each type-1 frontage point picks randomly among this many best fits
 
     @classmethod
     def from_env(cls) -> "Algo":

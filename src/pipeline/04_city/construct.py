@@ -105,6 +105,8 @@ def run(
     logger(summary)
     write_sponge_schem_grid(
         grid, palette, out, data_version,
+        # engine.world.writer recovers city_ground_y from this offset to seat the
+        # exported world's ground; change both together.
         offset=(0, -(city_ground_y + 1), 0),
         block_entities=block_entities,
     )

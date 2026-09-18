@@ -18,6 +18,8 @@ from engine.schematic.building import assemble, is_stacked
 from engine.schematic.grid import intern_state, new_palette, stamp_tile
 from engine.schematic.transform import rot_tile, translate_block_entities
 
+# One extra layer reserved below the road deck, so buildings can sit slightly
+# lower than the roads without clipping below y=0 of the output schematic.
 BUILD_SNAP_DROP = 1
 PLAYER_ANCHOR_MARGIN = 1
 
