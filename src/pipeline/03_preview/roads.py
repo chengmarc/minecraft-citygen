@@ -179,10 +179,12 @@ def make_tile(w, h, conns):
     return img
 
 
+EDGE_DRAW_ORDER = "NSEW"  # make_tile overdraws, so edge order changes mixed-tile pixels
+
 # One top-down tile per road-network catalogue entry, drawn in its base
 # orientation: (width_px, height_px, {edge: size}).
 TILES = {
-    name: (cols * CELL, rows * CELL, dict(base))
+    name: (cols * CELL, rows * CELL, dict(sorted(base, key=lambda port: EDGE_DRAW_ORDER.index(port[0]))))
     for layer, base, name in sorted(iter_tile_catalogue(), key=lambda entry: entry[2])
     for cols, rows in [tile_footprint(layer, base)]
 }
