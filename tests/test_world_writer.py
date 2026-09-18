@@ -24,6 +24,8 @@ STONE = "minecraft:stone"
 STAIRS = "minecraft:oak_stairs[facing=east,half=bottom,shape=straight,waterlogged=false]"
 SIGN = "minecraft:oak_sign[rotation=0,waterlogged=false]"
 DATA_VERSION = 4790  # 26.1.2
+# write_world anchors the grid's centre column (9, 9) at world x=0, z=0.
+ANCHOR = 9
 
 
 def _sample_grid():
@@ -51,9 +53,7 @@ class WorldWriterRoundTripTests(unittest.TestCase):
         grid, inv, block_entities = _sample_grid()
         base_y = 64
         with tempfile.TemporaryDirectory() as out:
-            world_writer.write_world(
-                grid, inv, block_entities, out, DATA_VERSION, base_y, origin=(0, 0)
-            )
+            world_writer.write_world(grid, inv, block_entities, out, DATA_VERSION, base_y)
             world = World(region_dir=resolve_region_dir(out), save_path=out)
 
             h, length, width = grid.shape
@@ -62,7 +62,7 @@ class WorldWriterRoundTripTests(unittest.TestCase):
                     for x in range(width):
                         state = inv[int(grid[y, z, x])]
                         name, props = parse_state(state)
-                        read_name, read_props = world.block(x, y + base_y, z)
+                        read_name, read_props = world.block(x - ANCHOR, y + base_y, z - ANCHOR)
                         if name == "minecraft:air":
                             self.assertIn(read_name, AIR_BLOCKS)
                         else:
@@ -72,13 +72,11 @@ class WorldWriterRoundTripTests(unittest.TestCase):
         grid, inv, block_entities = _sample_grid()
         base_y = 64
         with tempfile.TemporaryDirectory() as out:
-            world_writer.write_world(
-                grid, inv, block_entities, out, DATA_VERSION, base_y, origin=(0, 0)
-            )
+            world_writer.write_world(grid, inv, block_entities, out, DATA_VERSION, base_y)
             world = World(region_dir=resolve_region_dir(out), save_path=out)
-            chunk = world.load_chunk(0, 0)  # sign at world (8, 65, 8) -> chunk (0, 0)
+            chunk = world.load_chunk(-1, -1)  # sign at world (-1, 65, -1) -> chunk (-1, -1)
             entries = [be for be in chunk["block_entities"]
-                       if (int(be["x"]), int(be["y"]), int(be["z"])) == (8, 65, 8)]
+                       if (int(be["x"]), int(be["y"]), int(be["z"])) == (-1, 65, -1)]
             self.assertEqual(len(entries), 1)
             self.assertEqual(str(entries[0]["id"]), "minecraft:oak_sign")
             self.assertEqual(int(entries[0]["is_waxed"]), 0)

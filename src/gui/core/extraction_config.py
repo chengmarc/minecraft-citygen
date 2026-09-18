@@ -22,8 +22,7 @@ def region_to_xyz_pair(region):
 
 def first_build_region(build_types, build_type):
     for region in build_types:
-        region_type = region.build_type if isinstance(region, BuildRegion) else region[0]
-        if region_type == build_type:
+        if region.build_type == build_type:
             return region
     return BuildRegion(build_type, BlockRegion(0, 0, 0, 0, 64, 64))
 

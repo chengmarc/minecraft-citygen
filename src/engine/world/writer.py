@@ -234,7 +234,6 @@ def write_world(
     out_dir,
     data_version,
     base_y,
-    origin=None,
     source_world=None,
     region_dir=None,
     world_name=EXPORTED_WORLD_NAME,
@@ -262,8 +261,7 @@ def write_world(
     # world origin. Some source worlds or game modes can ignore the stored Y
     # spawn, so make 0,0 land on the city instead of an empty column.
     anchor_x, anchor_z, anchor_top = _anchor_column(mask)
-    if origin is None:
-        origin = (-anchor_x, -anchor_z)
+    origin = (-anchor_x, -anchor_z)
 
     wx = xs.astype(np.int64) + origin[0]
     wz = zs.astype(np.int64) + origin[1]

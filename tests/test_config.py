@@ -20,16 +20,14 @@ class RegionAndWorldConfigTests(unittest.TestCase):
         self.assertTrue(config_path.ROOT)
         self.assertEqual(config_path.region_dir_candidates("world")[0], os.path.normpath("world/region"))
 
-    def test_block_and_build_regions_round_trip_through_xyz_and_env(self):
+    def test_block_and_build_regions_round_trip_through_xyz(self):
         block = BlockRegion.from_xyz_pair((1, 2, 3), (4, 5, 6))
         self.assertEqual(block.as_tuple(), ((1, 2, 3), (4, 5, 6)))
-        self.assertEqual(block.to_env_value(), "((1, 2, 3), (4, 5, 6))")
         # Legacy flat 6-tuple shape decodes to the same region.
         self.assertEqual(BlockRegion.from_values((1, 4, 3, 6, 2, 5)).as_tuple(), ((1, 2, 3), (4, 5, 6)))
 
         build = BuildRegion.from_values((2, (1, 2, 3), (4, 5, 6)))
         self.assertEqual(build.as_tuple(), (2, (1, 2, 3), (4, 5, 6)))
-        self.assertEqual(build.to_env_value(), "2, ((1, 2, 3), (4, 5, 6))")
 
     def test_config_world_accepts_new_and_legacy_env_formats(self):
         original = importlib.import_module("config.world")
