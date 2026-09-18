@@ -9,13 +9,11 @@ import shutil
 import subprocess
 import sys
 
-from config.path import ARTIFACTS, BUILDS_RENDERS, GUI, ROOT, ROADS_RENDERS, SAVES
+from config.path import ARTIFACTS, BUILDS_CONTACT_SHEET, GUI, ROADS_CONTACT_SHEET, ROOT, SAVES, WORLD_PREVIEW_CACHE
 
 
 ICON_DIR = os.path.join(GUI, "icons")
 APP_ICON_PATH = os.path.join(ICON_DIR, "app-icon.png")
-ROAD_CONTACT_SHEET = os.path.join(ROADS_RENDERS, "_contact_sheet.png")
-BUILD_CONTACT_SHEET = os.path.join(BUILDS_RENDERS, "_contact_sheet.png")
 STARTUP_ERROR_LOG = os.path.join(ROOT, "application_startup_error.log")
 PROGRESS_TIMINGS_PATH = os.path.join(ARTIFACTS, "progress_timings.json")
 LEGACY_SAVED_GUI_CONFIG_PATH = os.path.join(ROOT, "citygen_saved_config.json")
@@ -23,7 +21,7 @@ SAVED_GUI_CONFIG_PATH = os.path.join(ROOT, "src", "config", "citygen.json")
 
 
 def extracted_assets_ready():
-    return os.path.exists(ROAD_CONTACT_SHEET) and os.path.exists(BUILD_CONTACT_SHEET)
+    return os.path.exists(ROADS_CONTACT_SHEET) and os.path.exists(BUILDS_CONTACT_SHEET)
 
 
 def load_saved_gui_config():
@@ -89,8 +87,8 @@ def _clear_dir(directory):
 
 
 def clear_preview_cache():
-    """Delete all cached world top-down preview images (artifacts/world_preview/)."""
-    _clear_dir(os.path.join(ARTIFACTS, "world_preview"))
+    """Delete all cached world top-down preview images."""
+    _clear_dir(WORLD_PREVIEW_CACHE)
 
 
 def clear_pipeline_artifacts():

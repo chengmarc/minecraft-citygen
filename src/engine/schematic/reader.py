@@ -6,7 +6,7 @@ import nbtlib
 import numpy as np
 from nbtlib import Compound
 
-from engine.schematic.transform import BlockEntity
+from engine.schematic.transform import BlockEntity, Tile
 
 
 def _load_schem(path):
@@ -88,6 +88,18 @@ def decode_schem_cells(path):
     width, height, length, inv, vals = decode_schem(path)
     return [[[inv[vals[(y * length + z) * width + x]] for x in range(width)]
              for z in range(length)] for y in range(height)]
+
+
+def read_tile(path):
+    """A ``.schem`` as a Tile; its ground offset is recovered from the stored Y offset."""
+    cells = decode_schem_cells(path)
+    height, length, width = len(cells), len(cells[0]), len(cells[0][0])
+    _x, y, _z = decode_schem_offset(path)
+    return Tile(
+        width, height, length, cells,
+        ground_offset=max(0, -y),
+        block_entities=tuple(decode_schem_block_entities(path)),
+    )
 
 
 def decode_schem_array(path):

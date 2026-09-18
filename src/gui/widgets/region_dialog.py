@@ -9,7 +9,7 @@ from pathlib import Path
 
 from PySide6 import QtCore, QtGui, QtWidgets
 
-from config.path import ARTIFACTS, resolve_region_dir
+from config.path import WORLD_PREVIEW_CACHE, resolve_region_dir
 from engine.render.topdown import render_topdown_preview
 
 from gui.widgets.qt_viewer import QtImageViewer
@@ -17,12 +17,12 @@ from gui.core.theme import ACCENT_RGB
 from gui.core.workers import RegionPreviewSignals
 
 CHUNK_SIZE = 16
-_PREVIEW_CACHE_DIR = Path(ARTIFACTS) / "world_preview"
 
 
 def _preview_cache_paths(save_path):
     key = hashlib.md5(str(save_path).encode()).hexdigest()[:16]
-    return _PREVIEW_CACHE_DIR / f"{key}.png", _PREVIEW_CACHE_DIR / f"{key}.json"
+    cache_dir = Path(WORLD_PREVIEW_CACHE)
+    return cache_dir / f"{key}.png", cache_dir / f"{key}.json"
 
 
 def _preview_region_mtime(save_path):
@@ -35,7 +35,7 @@ def _preview_region_mtime(save_path):
 
 
 def cached_topdown_preview(save_path, on_progress=None):
-    """render_topdown_preview with a disk cache in artifacts/world_preview/.
+    """render_topdown_preview with a disk cache in ``WORLD_PREVIEW_CACHE``.
 
     The cache is keyed on save_path and invalidated when any .mca file changes.
     A hit skips the full render, so repeated region-selector opens are instant.

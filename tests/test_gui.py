@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import importlib
 import os
 import tempfile
 import unittest
@@ -15,7 +16,7 @@ from PySide6 import QtWidgets  # noqa: E402
 
 from gui import app as gui_app  # noqa: E402
 from gui import launcher  # noqa: E402
-from gui.core import algo_config, app_files, extraction_config  # noqa: E402
+from gui.core import algo_config, app_files, extraction_config, progress  # noqa: E402
 from gui.tabs import extraction as extraction_module  # noqa: E402
 from gui.tabs import generation as generation_module  # noqa: E402
 from gui.tabs import preview as preview_module  # noqa: E402
@@ -242,6 +243,17 @@ class SavedGuiConfigTests(unittest.TestCase):
             self.assertEqual(loaded, sample)
             self.assertTrue(config_path.exists())
             self.assertFalse(legacy_path.exists())
+
+
+class ProgressWeightMirrorTests(unittest.TestCase):
+    """GUI progress weights are hand-tuned per pipeline step; keep one per step."""
+
+    def test_preview_weights_match_preview_stage_steps(self):
+        self.assertEqual(len(progress.PREVIEW_STEP_WEIGHTS), len(stages.STAGES["preview"]))
+
+    def test_construct_weights_match_construct_steps(self):
+        construct = importlib.import_module(stages.CITY_CONSTRUCT)
+        self.assertEqual(len(progress.GENERATION_CONSTRUCT_WEIGHTS), len(construct.STEPS))
 
 
 if __name__ == "__main__":

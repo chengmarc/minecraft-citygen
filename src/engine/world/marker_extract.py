@@ -15,8 +15,8 @@ from dataclasses import dataclass
 
 from nbtlib import Compound
 
+from engine.blocks import format_state
 from engine.schematic.transform import BlockEntity
-from engine.schematic.writer import blockstate
 
 MARKER_BLOCKS = {"gold_block", "diamond_block", "emerald_block"}
 MARKER_BLOCK_NAMES = {f"minecraft:{name}" for name in MARKER_BLOCKS}
@@ -228,6 +228,15 @@ def iter_signs(world, x_a, x_b, z_a, z_b):
                     yield x, y, z, sign_text(be)
 
 
+def sign_text_above(world, marker):
+    """Text of the sign one block above ``marker`` (an asset's metadata sign), or ""."""
+    x, y, z = marker
+    for sx, sy, sz, text in iter_signs(world, x, x, z, z):
+        if (sx, sy, sz) == (x, y + 1, z):
+            return text
+    return ""
+
+
 def parse_range(text, labels):
     for label in labels:
         pattern = rf"{label}\s*(\d+)(?:\s*-\s*(\d+))?"
@@ -294,7 +303,7 @@ def extract_cuboid(world, cuboid, *, force_persistent_leaves=False):
                 elif force_persistent_leaves and base.endswith("leaves") \
                         and props and props.get("persistent") == "false":
                     props = {**props, "persistent": "true"}
-                row.append(blockstate(name, props))
+                row.append(format_state(name, props))
             layer.append(row)
         cells.append(layer)
     return cells, _cuboid_block_entities(world, cuboid)

@@ -113,16 +113,22 @@ def _artifact_dir(*parts: str) -> str:
     return str(Path(ARTIFACTS).joinpath(*parts))
 
 
+CONTACT_SHEET = "_contact_sheet.png"  # every asset folder's labelled thumbnail grid
+
 ROADS_SCHEM = _artifact_dir("01_roads", "schem")
 ROADS_RENDERS = _artifact_dir("01_roads", "renders")
+ROADS_CONTACT_SHEET = str(Path(ROADS_RENDERS) / CONTACT_SHEET)
 
-STAGE_02_BUILDS = _artifact_dir("02_builds")
 BUILDS_SCHEM = _artifact_dir("02_builds", "schem")
 BUILDS_RENDERS = _artifact_dir("02_builds", "renders")
-BUILD_CATALOG = str(Path(STAGE_02_BUILDS) / "buildings.json")
+BUILDS_CONTACT_SHEET = str(Path(BUILDS_RENDERS) / CONTACT_SHEET)
+BUILD_CATALOG = _artifact_dir("02_builds", "buildings.json")
+BUILDS_GIF = _artifact_dir("02_builds", "buildings.gif")
 
 PREVIEW_ROADS = _artifact_dir("03_preview", "roads")
+PREVIEW_ROADS_CONTACT_SHEET = str(Path(PREVIEW_ROADS) / CONTACT_SHEET)
 PREVIEW_BUILDS = _artifact_dir("03_preview", "builds")
+PREVIEW_BUILDS_CONTACT_SHEET = str(Path(PREVIEW_BUILDS) / CONTACT_SHEET)
 PREVIEW_GRID = _artifact_dir("03_preview", "grid")
 PREVIEW_CITY = _artifact_dir("03_preview", "city")
 
@@ -131,6 +137,10 @@ CITY_RENDERS = _artifact_dir("04_city", "renders")
 
 # Standalone Minecraft worlds exported from the final city (one folder per seed).
 SAVES = _artifact_dir("05_world", "saves")
+EXPORTED_WORLD_NAME = f"{APP_NAME} World"
+
+# Cached top-down world renders for the GUI region selector.
+WORLD_PREVIEW_CACHE = _artifact_dir("world_preview")
 
 COLOR_RENDER_CSV = str(Path(CONFIG) / "color_render.csv")
 
@@ -150,6 +160,14 @@ def city_schem_path(seed) -> str:
 
 def city_render_path(seed) -> str:
     return str(Path(CITY_RENDERS) / f"seed_{seed}.png")
+
+
+def exported_world_name(seed) -> str:
+    return f"{EXPORTED_WORLD_NAME} {seed}"
+
+
+def exported_world_path(seed) -> str:
+    return str(Path(SAVES) / exported_world_name(seed))
 
 
 # --------------------------------------------------------- world-save lookup

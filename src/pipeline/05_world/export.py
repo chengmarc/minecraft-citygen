@@ -10,14 +10,10 @@ if __package__ in (None, ""):
     sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
 from config.algo import DEFAULT_SEED
-from config.path import SAVES, city_schem_path
+from config.path import city_schem_path, exported_world_name, exported_world_path
 from config.world import SAVE
 from engine.world.writer import schem_to_world
 from pipeline.stages import noop, run_stage_cli
-
-
-def exported_world_name(seed):
-    return f"Minecraft CityGen World {seed}"
 
 
 def run(*, seed=DEFAULT_SEED, out=None, logger=None, progress=None):
@@ -26,12 +22,11 @@ def run(*, seed=DEFAULT_SEED, out=None, logger=None, progress=None):
     schem = city_schem_path(seed)
     if not os.path.exists(schem):
         raise FileNotFoundError(f"City schematic not found: {schem}. Run Stage 4 first.")
-    world_name = exported_world_name(seed)
-    out = out or os.path.join(SAVES, world_name)
+    out = out or exported_world_path(seed)
 
     # Copy the source world and replace only the output overworld region files.
     logger(f"building world from source level.dat: {os.path.join(SAVE, 'level.dat')}")
-    summary = schem_to_world(schem, out, source_world=SAVE, world_name=world_name, progress=progress)
+    summary = schem_to_world(schem, out, source_world=SAVE, world_name=exported_world_name(seed), progress=progress)
     logger(
         f"seed={seed}: wrote world to {out} "
         f"({summary['chunks']} chunks, {summary['regions']} regions, "

@@ -9,12 +9,6 @@ import numpy as np
 from nbtlib import ByteArray, Compound, Int, IntArray, List, Short, String
 
 
-def blockstate(name, props):
-    if not props:
-        return name
-    return name + "[" + ",".join(f"{key}={props[key]}" for key in sorted(props)) + "]"
-
-
 def encode_varint_scalar(n):
     out = []
     while True:

@@ -13,7 +13,8 @@ import nbtlib
 from nbtlib import Byte, Compound, String
 
 from config.path import resolve_region_dir
-from engine.blocks import AIR_BLOCKS
+from config.world import HARD_FLOOR_DATA_VERSION
+from engine.blocks import AIR_BLOCKS, parse_state
 from engine.schematic.transform import BlockEntity
 from engine.schematic.writer import write_sponge_schem_grid
 from engine.world.anvil_world_reader import World
@@ -60,7 +61,7 @@ class WorldWriterRoundTripTests(unittest.TestCase):
                 for z in range(length):
                     for x in range(width):
                         state = inv[int(grid[y, z, x])]
-                        name, props = world_writer.parse_state(state)
+                        name, props = parse_state(state)
                         read_name, read_props = world.block(x, y + base_y, z)
                         if name == "minecraft:air":
                             self.assertIn(read_name, AIR_BLOCKS)
@@ -254,7 +255,7 @@ class SchemToWorldTests(unittest.TestCase):
             world_writer.schem_to_world(schem, out, source_world=source)
 
             data = nbtlib.load(os.path.join(out, "level.dat"))["Data"]
-            self.assertEqual(int(data["DataVersion"]), world_writer.HARD_FLOOR_DATA_VERSION)
+            self.assertEqual(int(data["DataVersion"]), HARD_FLOOR_DATA_VERSION)
 
     def test_export_rejects_source_and_output_paths_that_overlap(self):
         with tempfile.TemporaryDirectory() as tmp:

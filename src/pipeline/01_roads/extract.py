@@ -13,7 +13,7 @@ if __package__ in (None, ""):
 from config.path import ROADS_SCHEM
 from config.world import BUILD_MARKER_Y_RANGE, DATA_VERSION, ROAD_BOX
 from engine.world.anvil_world_reader import World
-from engine.world.marker_extract import detect_marker_assets, extract_cuboid, iter_signs
+from engine.world.marker_extract import detect_marker_assets, extract_cuboid, sign_text_above
 from engine.schematic.writer import write_sponge_schem_cells
 from pipeline.extraction import chunk_scan_count, remove_existing_schems
 from pipeline.stages import noop, run_stage_cli
@@ -23,16 +23,8 @@ def get_world():
     return World()
 
 
-def sign_text_at(x, y, z):
-    for sx, sy, sz, text in iter_signs(get_world(), x, x, z, z):
-        if sx == x and sy == y and sz == z:
-            return text
-    return ""
-
-
 def name_for(emerald):
-    ex, ey, ez = emerald
-    return sign_text_at(ex, ey + 1, ez).replace(" ", "").strip() or None
+    return sign_text_above(get_world(), emerald).replace(" ", "").strip() or None
 
 
 def run(*, logger=None, progress=None):

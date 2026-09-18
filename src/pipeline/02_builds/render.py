@@ -9,14 +9,11 @@ from pathlib import Path
 if __package__ in (None, ""):
     sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
-from config.path import BUILDS_RENDERS, STAGE_02_BUILDS
+from config.path import BUILDS_CONTACT_SHEET, BUILDS_GIF, BUILDS_RENDERS
 from engine.render.isometric import render_cells_visible_iso
 from engine.schematic.building import assemble, read_catalog
 from pipeline.rendering import render_contact_sheet, write_image_sequence_gif
 from pipeline.stages import noop, run_stage_cli
-
-BUILDS_GIF = os.path.join(STAGE_02_BUILDS, "buildings.gif")
-
 
 def run(*, logger=None, progress=None):
     logger = logger or noop
@@ -29,6 +26,7 @@ def run(*, logger=None, progress=None):
     result = render_contact_sheet(
         keys,
         output_dir=BUILDS_RENDERS,
+        contact_sheet=BUILDS_CONTACT_SHEET,
         render_item=render_key,
         cols=8,
         cell_w=180,

@@ -153,6 +153,17 @@ def detect_world_data_version(save_path: str) -> int | None:
         return None
 
 
+def source_data_version(save_path: str | None) -> int:
+    """DataVersion every output is stamped with: the source world's own, clamped up to the floor.
+
+    Stamping any newer version would skip rename/upgrade steps for blocks that
+    changed after the source version (forward-only compatibility).
+    """
+    detected = detect_world_data_version(save_path)
+    resolved = detected if detected is not None else HARD_FLOOR_DATA_VERSION
+    return max(resolved, HARD_FLOOR_DATA_VERSION)
+
+
 def _parse_tuple_like(value: str):
     parsed = ast.literal_eval(value)
     if isinstance(parsed, tuple):
@@ -195,9 +206,7 @@ def _resolve_data_version() -> int:
     raw = env_raw("DATA_VERSION")
     if raw is not None:
         return max(int(raw.strip()), HARD_FLOOR_DATA_VERSION)
-    detected = detect_world_data_version(SAVE)
-    resolved = detected if detected is not None else HARD_FLOOR_DATA_VERSION
-    return max(resolved, HARD_FLOOR_DATA_VERSION)
+    return source_data_version(SAVE)
 
 
 DATA_VERSION = _resolve_data_version()

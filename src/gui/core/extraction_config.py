@@ -3,8 +3,8 @@
 from __future__ import annotations
 
 from config.world import (
-    BUILD_TYPES, HARD_FLOOR_DATA_VERSION, RELEASE_NAMES, ROAD_BOX, SAVE,
-    BlockRegion, BuildRegion, detect_world_data_version,
+    BUILD_TYPES, RELEASE_NAMES, ROAD_BOX, SAVE,
+    BlockRegion, BuildRegion, source_data_version,
 )
 
 
@@ -54,7 +54,7 @@ def version_selector_items(min_data_version=None):
     Indicator only: it lists the Minecraft versions the output can be pasted into
     -- the source version and newer -- so the user can confirm the target. It
     does not affect the stamp, which is always the source version (see
-    source_stamp_data_version). When min_data_version is given, only versions at
+    config.world.source_data_version). When min_data_version is given, only versions at
     or above it are listed.
     """
     items = [("Auto", AUTO_VERSION)]
@@ -66,23 +66,10 @@ def version_selector_items(min_data_version=None):
     return items
 
 
-def source_stamp_data_version(world_path):
-    """DataVersion to stamp on outputs: the source world's own version.
-
-    Outputs are always stamped with the source world's version (clamped to the
-    hard floor) so forward-only compatibility stays anchored to the source data.
-    Stamping any newer version would risk skipping rename/upgrade steps for
-    blocks that changed after the source version.
-    """
-    detected = detect_world_data_version(world_path)
-    resolved = detected if detected is not None else HARD_FLOOR_DATA_VERSION
-    return max(resolved, HARD_FLOOR_DATA_VERSION)
-
-
 def stamp_version_env(world_path):
     """Env fragment pinning MC_CITY_DATA_VERSION to the source world's version.
 
     Always explicit so stages that do not set MC_CITY_SAVE (construct, render)
     stamp the source version instead of re-detecting the wrong (default) world.
     """
-    return {"MC_CITY_DATA_VERSION": str(source_stamp_data_version(world_path))}
+    return {"MC_CITY_DATA_VERSION": str(source_data_version(world_path))}
