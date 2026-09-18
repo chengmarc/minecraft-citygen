@@ -179,7 +179,6 @@ def _env_build_regions(name: str, default: tuple[BuildRegion, ...]) -> tuple[Bui
     return default if raw is None else _parse_build_types(raw)
 
 
-# Minecraft world save folder. Override with MC_CITY_SAVE when needed.
 SAVE = env_str("SAVE", DEFAULT_WORLD)
 REGION_DIR_CANDIDATES = tuple(region_dir_candidates(SAVE))
 REGION_DIR = resolve_region_dir(SAVE)
@@ -198,12 +197,10 @@ def _resolve_data_version() -> int:
 
 DATA_VERSION = _resolve_data_version()
 
-# Road assets region in world ((x_a, y_a, z_a), (x_b, y_b, z_b))
 ROAD_REGION = BlockRegion.from_xyz_pair((-80, 65, 16), (-17, 75, 127))
 ROAD_BOX = _env_block_region("ROAD_BOX", ROAD_REGION)
 
-# Built assets region in world (type, (x_a, y_a, z_a), (x_b, y_b, z_b))
-# y0/y1 is retained as catalog metadata; marker blocks define extracted geometry.
+# Build regions' y0/y1 is retained as catalog metadata; marker blocks define extracted geometry.
 BUILD_TYPE1_REGION = BuildRegion(1, BlockRegion.from_xyz_pair((-320, 64, -176), (-17, 65, -17)))
 BUILD_TYPE2_REGION = BuildRegion(2, BlockRegion.from_xyz_pair((16, 64, -304), (287, 65, 191)))
 

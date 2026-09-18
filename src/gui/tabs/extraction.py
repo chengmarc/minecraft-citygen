@@ -308,7 +308,6 @@ class ExtractionTab(QtWidgets.QWidget, ProgressMixin):
             QtWidgets.QMessageBox.critical(self, "Invalid extraction region", str(exc))
             return
 
-        # Extraction stamps the source world's own DataVersion by default.
         save = state["world_path"].strip()
         road_start, road_end = self.road_group.get_xyz_pair("Road")
         road_box = BlockRegion.from_xyz_pair(road_start, road_end)
@@ -334,6 +333,7 @@ class ExtractionTab(QtWidgets.QWidget, ProgressMixin):
 
         def job(emit_progress):
             on_progress = coalesce_pipeline_progress(emit_progress)
+            # No data_version: extraction stamps the version detected from ``save``.
             services.run_stage("roads", save=save, road_box=road_box, progress=on_progress)
             services.run_stage("builds", save=save, build_types=build_types, progress=on_progress)
 

@@ -8,7 +8,6 @@ from pathlib import Path
 
 from config.env import env_raw
 
-# ------------------------------------------------------------ path constants
 APP_NAME = "Minecraft CityGen"
 SOURCE_ROOT = str(Path(__file__).resolve().parents[1])
 _REQUIRED_PACKAGE_DIRS = ("config", "engine", "gui", "pipeline")
@@ -141,7 +140,6 @@ def exported_world_path(seed) -> str:
     return str(Path(SAVES) / exported_world_name(seed))
 
 
-# --------------------------------------------------------- world-save lookup
 def _normalized(path: os.PathLike[str] | str | None) -> str:
     if not path:
         return ""

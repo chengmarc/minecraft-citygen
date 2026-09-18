@@ -66,10 +66,10 @@ def make_size(fine):
     return NetworkSize(fine=fine, coarse=fine // 2, span=fine * CELL)
 
 
-# ---------------------------------------------------------------- tile catalogue
 # Each entry maps a base connection set -> asset name. A connection is
 # (direction, size) with size "b" (big) or "s" (small). Any real orientation is
-# obtained by rotating the base clockwise; the matcher rotates the PNG to suit.
+# obtained by rotating the base clockwise; the lookup records the quarter-turns,
+# and the preview renderer and schematic stamper rotate the asset to match.
 BIG_TILES = [
     (frozenset({("N", "b"), ("S", "b")}), "02_big_2x2_I"),
     (frozenset({("N", "b"), ("S", "b"), ("E", "b"), ("W", "b")}), "05_big_2x2_X"),
@@ -135,7 +135,6 @@ def tile_footprint(layer, base):
 _LOOKUP_BY_LAYER = {layer: _compile_tile_lookup(catalogue) for layer, catalogue in TILES_BY_LAYER.items()}
 
 
-# ---------------------------------------------------------------- generation
 def _net_size(net, size=None):
     return net["size"] if size is None else size
 
@@ -218,9 +217,6 @@ def _generate_streets(band_iv, size, algo, lo=2, hi=None):
 
 
 def _generate_big_network(rng, size, algo):
-    # E-W avenues are padded vertically by choosing row positions away from
-    # top/bottom. N-S avenues are padded horizontally by choosing column
-    # positions away from left/right.
     pad = algo.pad_big
     big_rows = _generate_avenues(rng, size, algo.gap_big, lo=pad, hi=size.coarse - 1 - pad)
     big_cols = _generate_avenues(rng, size, algo.gap_big, lo=pad, hi=size.coarse - 1 - pad)
@@ -237,9 +233,6 @@ def _generate_big_network(rng, size, algo):
 def _generate_small_network(rng, size, algo, big_rows, big_cols):
     band_row_iv = [(2 * r, 2 * r + 1) for r in big_rows]
     band_col_iv = [(2 * c, 2 * c + 1) for c in big_cols]
-    # E-W streets are padded vertically by choosing row positions away from
-    # top/bottom. N-S streets are padded horizontally by choosing column
-    # positions away from left/right.
     pad = algo.pad_small
     small_rows = _generate_streets(band_row_iv, size, algo, lo=pad, hi=size.fine - 1 - pad)
     small_cols = _generate_streets(band_col_iv, size, algo, lo=pad, hi=size.fine - 1 - pad)
@@ -310,7 +303,6 @@ def _cache_road_cells(net, size=None):
     return net
 
 
-# ---------------------------------------------------------------- topology queries
 def big_node(net, cx, cy):
     return (cx, cy) in net["big_cells"]
 
