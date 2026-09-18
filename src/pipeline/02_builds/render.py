@@ -13,7 +13,7 @@ from config.path import BUILD_CATALOG, BUILDS_CONTACT_SHEET, BUILDS_GIF, BUILDS_
 from engine.render.isometric import render_cells_visible_iso
 from engine.schematic.building import assemble, read_catalog
 from pipeline.rendering import render_contact_sheet, write_image_sequence_gif
-from pipeline.stages import noop, run_stage_cli
+from pipeline.step import noop, run_stage_cli
 
 def run(*, logger=None, progress=None):
     """Render every build and its contact sheet, then the showcase GIF.

@@ -16,7 +16,7 @@ from engine.world.anvil_world_reader import World
 from engine.world.marker_extract import detect_marker_assets, extract_cuboid, sign_text_above
 from engine.schematic.writer import write_sponge_schem_cells
 from pipeline.extraction import chunk_scan_count, remove_existing_schems
-from pipeline.stages import noop, run_stage_cli
+from pipeline.step import noop, run_stage_cli
 
 @lru_cache(maxsize=1)
 def get_world():

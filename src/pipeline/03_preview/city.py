@@ -21,7 +21,7 @@ from engine.render.fonts import label_font
 from engine.render.road_layout import compose, load_assets, rot_img
 from engine.schematic.building import read_catalog
 from engine.schematic.road import FILL_TOKEN
-from pipeline.stages import noop, run_stage_cli
+from pipeline.step import noop, run_stage_cli
 
 def load_build_asset(key):
     path = os.path.join(PREVIEW_BUILDS, f"{key}.png")

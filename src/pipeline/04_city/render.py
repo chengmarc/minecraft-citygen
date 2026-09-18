@@ -13,7 +13,7 @@ from config.algo import DEFAULT_SEED
 from config.path import city_render_path, city_schem_path
 from config.render import FULL_SCHEM_ISO_BLOCK_H, FULL_SCHEM_ISO_TILE_H, FULL_SCHEM_ISO_TILE_W
 from engine.render.isometric import render_schem_visible_iso
-from pipeline.stages import noop, run_stage_cli
+from pipeline.step import noop, run_stage_cli
 
 
 def run(*, seed=DEFAULT_SEED, logger=None, progress=None):

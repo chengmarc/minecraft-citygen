@@ -13,7 +13,7 @@ from config.algo import DEFAULT_SEED
 from config.path import APP_ICON, city_schem_path, exported_world_name, exported_world_path
 from config.world import SAVE
 from engine.world.writer import schem_to_world
-from pipeline.stages import noop, run_stage_cli
+from pipeline.step import noop, run_stage_cli
 
 
 def run(*, seed=DEFAULT_SEED, out=None, logger=None, progress=None):

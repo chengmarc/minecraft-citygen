@@ -30,7 +30,7 @@ from config.path import PREVIEW_ROADS, PREVIEW_ROADS_CONTACT_SHEET
 from config.render import CITY_GROUND_FILL_RGBA
 from engine.core.road_network import iter_tile_catalogue, tile_footprint
 from engine.render.contact_sheet import write_contact
-from pipeline.stages import noop, run_stage_cli
+from pipeline.step import noop, run_stage_cli
 
 SMALL_PAD = 1
 BIG_PAD = 2
