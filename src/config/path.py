@@ -1,4 +1,4 @@
-"""Environment overrides, runtime paths, and world-save path helpers."""
+"""Runtime paths: app/resource roots, artifact locations, and world-save region lookup."""
 
 from __future__ import annotations
 
@@ -6,37 +6,7 @@ import os
 import sys
 from pathlib import Path
 
-# ------------------------------------------------------------- env overrides
-PREFIX = "MC_CITY_"
-
-
-def env_raw(name: str) -> str | None:
-    """Raw value of ``MC_CITY_<name>``, or ``None`` when unset or blank."""
-    value = os.environ.get(f"{PREFIX}{name}")
-    if value is None or not value.strip():
-        return None
-    return value
-
-
-def env_str(name: str, default: str) -> str:
-    """String override, falling back to ``default`` when unset or blank."""
-    value = env_raw(name)
-    return default if value is None else value
-
-
-def env_int(name: str, default: int) -> int:
-    """Integer override, falling back to ``default`` when unset or blank."""
-    value = env_raw(name)
-    return default if value is None else int(value.strip())
-
-
-def env_set(name: str, default) -> set[str]:
-    """Comma/semicolon-separated string set, falling back to ``default``."""
-    value = env_raw(name)
-    if value is None:
-        return set(default)
-    return {part.strip() for part in value.replace(";", ",").split(",") if part.strip()}
-
+from config.env import env_raw
 
 # ------------------------------------------------------------ path constants
 APP_NAME = "Minecraft CityGen"
@@ -190,16 +160,13 @@ def region_dir_candidates(save_path: os.PathLike[str] | str | None) -> list[str]
     ]
 
 
+def _contains_region_files(region_dir: str) -> bool:
+    return bool(region_dir) and os.path.isdir(region_dir) and any(Path(region_dir).glob("r.*.*.mca"))
+
+
 def has_region_files(save_path: os.PathLike[str] | str | None) -> bool:
     """Return True when save_path contains at least one .mca region file."""
-    region_dir = resolve_region_dir(save_path)
-    if not region_dir or not os.path.isdir(region_dir):
-        return False
-    return any(Path(region_dir).glob("r.*.*.mca"))
-
-
-def _contains_region_files(region_dir: str) -> bool:
-    return os.path.isdir(region_dir) and any(Path(region_dir).glob("r.*.*.mca"))
+    return _contains_region_files(resolve_region_dir(save_path))
 
 
 def resolve_region_dir(save_path: os.PathLike[str] | str | None) -> str:

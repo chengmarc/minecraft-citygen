@@ -64,13 +64,14 @@ seed-driven road-layout preview, and rendering the city-layout preview.
 Internally it reuses the same road-network and placement logic as the final city
 build.
 
-**4. City.** [04_city/construct.py](04_city/construct.py) assembles the final
-result — builds the road grid, loads the catalog, generates placements from the
-seed, samples stack counts for three-piece buildings, assembles rotated building
-schematics, places roads and buildings into one master 3D grid, optionally fills
-non-road ground cells, and writes the Sponge `.schem` (with an offset so the
-schematic import origin lands correctly). [04_city/render.py](04_city/render.py)
-renders the final city schematic as an isometric PNG.
+**4. City.** [04_city/construct.py](04_city/construct.py) runs the final build
+in order — builds the road grid, loads the catalog, generates placements from the
+seed, then drives [`engine.schematic.city`](../engine/schematic/city.py) to seat
+rotated buildings (sampling stack counts for three-piece ones), compose roads and
+buildings into one master 3D grid, and fill empty lot cells — and writes the
+Sponge `.schem` (with an offset so the schematic import origin lands correctly).
+[04_city/render.py](04_city/render.py) renders that seed's city schematic as an
+isometric PNG.
 
 **5. World.** [05_world/export.py](05_world/export.py) reads the final city
 `.schem` and writes a standalone, ready-to-play world to
@@ -97,7 +98,7 @@ schematic, and the sign above the emerald provides the exported name (e.g.
 Fill props are authored in the road region and named with a `fill` token
 (`15_fill_1x1_A`, ...). Each is a self-contained 9x9 (one fine cell) asset
 carrying its own ground. `engine.schematic.road` keeps them out of the road tile
-set and exposes them via `load_fillers()`; `04_city/construct.py` drops a random,
+set and exposes them via `load_fillers()`; `engine.schematic.city` drops a random,
 randomly-rotated fill prop into every fully-empty non-road lot cell. The
 dedicated road-region ground-fill asset `18` is also required for ordinary empty
 lot ground; it is repeated across empty non-road, non-building columns and skips
