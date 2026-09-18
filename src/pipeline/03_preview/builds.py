@@ -26,11 +26,11 @@ def shade(rgb, delta):
     return tuple(_clamp(c + delta) for c in rgb)
 
 
-def _rect(draw, box, fill, outline=None, width=1):
+def _rect(draw, box, fill, outline=None):
     x0, y0, x1, y1 = box
     if x1 < x0 or y1 < y0:
         return
-    draw.rectangle([x0, y0, x1, y1], fill=fill, outline=outline, width=width)
+    draw.rectangle([x0, y0, x1, y1], fill=fill, outline=outline)
 
 
 def _subrects(rng, w, d, inset):

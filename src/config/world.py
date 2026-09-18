@@ -76,15 +76,8 @@ class BlockRegion:
     def as_tuple(self) -> tuple[tuple[int, int, int], tuple[int, int, int]]:
         return self.as_xyz_pair()
 
-    def as_flat_tuple(self) -> tuple[int, int, int, int, int, int]:
-        return self.x0, self.x1, self.z0, self.z1, self.y0, self.y1
-
     def as_xyz_pair(self) -> tuple[tuple[int, int, int], tuple[int, int, int]]:
         return (self.x0, self.y0, self.z0), (self.x1, self.y1, self.z1)
-
-    def to_env_value(self) -> str:
-        start, end = self.as_xyz_pair()
-        return f"({start}, {end})"
 
 
 @dataclass(frozen=True, slots=True)
@@ -109,12 +102,6 @@ class BuildRegion:
     def as_tuple(self) -> tuple[int, tuple[int, int, int], tuple[int, int, int]]:
         start, end = self.bounds.as_xyz_pair()
         return self.build_type, start, end
-
-    def as_flat_tuple(self) -> tuple[int, int, int, int, int, int, int]:
-        return (self.build_type, *self.bounds.as_flat_tuple())
-
-    def to_env_value(self) -> str:
-        return f"{self.build_type}, {self.bounds.to_env_value()}"
 
 
 # Forward-only compatibility floor. Older schematics can be upgraded forward into

@@ -10,6 +10,8 @@ from PIL import Image, ImageDraw
 from config.render import CONTACT_SHEET_BG
 from engine.render.fonts import label_font
 
+THUMB_PAD = 8  # horizontal clearance between a thumbnail and its cell edge
+
 
 def _open_contact_source(image_source):
     if isinstance(image_source, (str, bytes, os.PathLike)):
@@ -23,7 +25,6 @@ def write_contact(
     cols=8,
     cell_w=180,
     cell_h=180,
-    pad=8,
     on_progress=None,
     *,
     max_scale=1.0,
@@ -43,7 +44,7 @@ def write_contact(
         x0, y0 = c * cell_w, r * cell_h
         with _open_contact_source(im) as source:
             source_rgba = source if source.mode == "RGBA" else source.convert("RGBA")
-            scale = min((cell_w - pad * 2) / source_rgba.width, (cell_h - 28) / source_rgba.height, max_scale)
+            scale = min((cell_w - THUMB_PAD * 2) / source_rgba.width, (cell_h - 28) / source_rgba.height, max_scale)
             thumb = source_rgba.resize(
                 (max(1, int(source_rgba.width * scale)), max(1, int(source_rgba.height * scale))),
                 resample,
