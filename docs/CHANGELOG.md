@@ -8,6 +8,41 @@ The format is based on Keep a Changelog, and versions should match the release v
 
 No unreleased changes.
 
+## [1.2.0] - 2026-09-19
+
+### Changed
+
+- the Stage 3 preview and the Stage 4 build now share one placement entry
+  point with the same seeded random streams, so a preview and the city built
+  from the same seed always agree; odd grid sizes round down to even in both
+- the GUI passes generation settings to each stage as arguments instead of
+  `MC_CITY_*` environment overrides, and extraction opens the world per run
+  rather than caching it for the life of the process
+- Stage 4 render renders only the requested seed instead of every `.schem`
+  already on disk
+- restructured the source, engine, pipeline, GUI, and config READMEs, and moved
+  the release runbook to `docs/RELEASING.md`
+- consolidated ownership of block states, artifact paths, road tiles, and city
+  voxel composition, with module dependency rules now enforced by tests
+
+### Fixed
+
+- the first extraction no longer stalls near 6%: the GUI compiles the `numba`
+  isometric renderer in the background at launch, and the build-render
+  progress bar now tracks the showcase GIF so it reaches 100% when the contact
+  sheets are ready
+- the road contact sheet no longer cuts off fill props
+- `cave_air` and `void_air` are treated as air and no longer copied into city
+  grids
+- derived preview road tiles draw their edges in a fixed N/S/E/W order, so
+  mixed tiles render identically from run to run
+
+### Removed
+
+- dead code paths: unused ground detection, no-op placement rule hooks, GUI
+  pass-through wrappers, region env serializers, the world writer's standalone
+  CLI (use `pipeline.stages world`), and parameters no caller overrides
+
 ## [1.1.0] - 2026-09-15
 
 ### Added
