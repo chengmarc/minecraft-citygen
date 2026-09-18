@@ -9,7 +9,6 @@
     Download <a href="https://github.com/doubletrends/minecraft-citygen/releases/download/v1.1.0/Minecraft.CityGen-setup.exe">Windows Installer (.exe)</a> or
     <a href="https://github.com/doubletrends/minecraft-citygen/releases/download/v1.1.0/Minecraft.CityGen-portable-windows.zip">Compressed Portable (.zip)</a>
   </h3>
-  <br>
 </div>
 
 ### AI Disclaimer
