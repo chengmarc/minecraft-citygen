@@ -11,7 +11,8 @@ a stage's behavior is fixed once its config module is imported.
 
 | Module | Responsibility |
 |---|---|
-| [path.py](path.py) | Base layer: `env_*` typed override readers and runtime path/artifact discovery |
+| [env.py](env.py) | Base layer: `env_*` typed readers for `MC_CITY_*` overrides |
+| [path.py](path.py) | Runtime paths: app/resource roots, every artifact path, world-save region lookup |
 | [algo.py](algo.py) | Road-generation and city-placement tuning knobs |
 | [world.py](world.py) | Source world path, extraction regions, marker Y range, domain region models, version labels, schematic `DATA_VERSION` |
 | [render.py](render.py) | Render and preview style constants (tile sizes, ground fill) |
@@ -27,7 +28,7 @@ Non-code assets that ship in this package:
 ## The `MC_CITY_` override convention
 
 Every tunable in `config` can be overridden by an `MC_CITY_<NAME>` environment
-variable. The typed readers in `path.py` (`env_int`, `env_set`, `env_raw`, …)
+variable. The typed readers in `env.py` (`env_int`, `env_set`, `env_raw`, …)
 apply the override or fall back to the default. The GUI and CLI set these
 variables before importing/reloading a stage, which is how a run is configured
 without editing code.

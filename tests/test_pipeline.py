@@ -22,6 +22,7 @@ from pipeline import services
 from pipeline import stages
 from pipeline.stages import PIPELINE_STAGE_COMMANDS, PIPELINE_STAGE_MODULES
 from engine.schematic.transform import Tile
+from engine.schematic import city as city_grid
 from engine.world import marker_extract
 
 ROOT_DIR = Path(__file__).resolve().parents[1]
@@ -94,7 +95,6 @@ roads_extract = importlib.import_module("pipeline.01_roads.extract")
 builds_extract = importlib.import_module("pipeline.02_builds.extract")
 builds_render = importlib.import_module("pipeline.02_builds.render")
 roads_render = importlib.import_module("pipeline.01_roads.render")
-city_construct = importlib.import_module("pipeline.04_city.construct")
 world_export = importlib.import_module("pipeline.05_world.export")
 
 
@@ -277,7 +277,7 @@ def test_city_ground_fill_asset_uses_shared_marker_ground_plane():
         ground_offset=0,
     )
 
-    city_construct._place_ground_fill(
+    city_grid.place_ground_fill(
         grid,
         palette,
         build_mask,
@@ -287,9 +287,9 @@ def test_city_ground_fill_asset_uses_shared_marker_ground_plane():
         ground_fill_tile=tile,
     )
 
-    z0 = city_construct.PLAYER_ANCHOR_MARGIN
+    z0 = city_grid.PLAYER_ANCHOR_MARGIN
     z1 = z0 + CELL
-    x0 = city_construct.PLAYER_ANCHOR_MARGIN
+    x0 = city_grid.PLAYER_ANCHOR_MARGIN
     x1 = x0 + CELL
     assert np.count_nonzero(grid[3, z0:z1, x0:x1]) == CELL ** 2
     assert np.count_nonzero(grid[2, z0:z1, x0:x1]) == 0
@@ -301,7 +301,7 @@ def test_city_ground_fill_asset_uses_shared_marker_ground_plane():
         cells=[[["minecraft:oak_planks"]]],
         ground_offset=1,
     )
-    city_construct._place_ground_fill(
+    city_grid.place_ground_fill(
         grid,
         palette,
         build_mask,
@@ -326,7 +326,7 @@ def test_city_ground_fill_skips_cells_with_fill_props():
         ground_offset=0,
     )
 
-    city_construct._place_ground_fill(
+    city_grid.place_ground_fill(
         grid,
         palette,
         build_mask,
@@ -337,9 +337,9 @@ def test_city_ground_fill_skips_cells_with_fill_props():
         skip_cells={(0, 0)},
     )
 
-    z0 = city_construct.PLAYER_ANCHOR_MARGIN
+    z0 = city_grid.PLAYER_ANCHOR_MARGIN
     z1 = z0 + CELL
-    x0 = city_construct.PLAYER_ANCHOR_MARGIN
+    x0 = city_grid.PLAYER_ANCHOR_MARGIN
     x1 = x0 + CELL
     assert np.count_nonzero(grid[:, z0:z1, x0:x1]) == 0
 

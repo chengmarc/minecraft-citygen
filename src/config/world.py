@@ -9,7 +9,8 @@ from typing import Iterable
 
 import nbtlib
 
-from config.path import DEFAULT_WORLD, env_raw, env_str, region_dir_candidates, resolve_region_dir
+from config.env import env_raw, env_str
+from config.path import DEFAULT_WORLD, region_dir_candidates, resolve_region_dir
 
 
 def _coerce_xyz_point(values: Iterable[int]) -> tuple[int, int, int]:

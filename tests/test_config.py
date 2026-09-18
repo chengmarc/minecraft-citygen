@@ -6,6 +6,7 @@ import unittest
 from pathlib import Path
 from unittest import mock
 
+from config import env as config_env
 from config import path as config_path
 from config import world as config_world
 from config.world import BlockRegion, BuildRegion
@@ -15,7 +16,7 @@ from config.world import BlockRegion, BuildRegion
 
 class RegionAndWorldConfigTests(unittest.TestCase):
     def test_path_module_owns_runtime_helpers(self):
-        self.assertEqual(config_path.env_int("__TEST_UNKNOWN__", 7), 7)
+        self.assertEqual(config_env.env_int("__TEST_UNKNOWN__", 7), 7)
         self.assertTrue(config_path.ROOT)
         self.assertEqual(config_path.region_dir_candidates("world")[0], os.path.normpath("world/region"))
 

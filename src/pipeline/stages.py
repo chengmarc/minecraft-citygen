@@ -77,6 +77,7 @@ PIPELINE_STAGE_MODULES = ("pipeline.stages",)
 # Modules that bind MC_CITY_* config at import time, dependencies first; see
 # pipeline.services.configured_environment.
 PIPELINE_DEPENDENCY_MODULES = (
+    "config.env",
     "config.path",
     "config.algo",
     "config.world",
@@ -86,6 +87,7 @@ PIPELINE_DEPENDENCY_MODULES = (
     "engine.render.road_layout",
     "engine.schematic.road",
     "engine.schematic.building",
+    "engine.schematic.city",
     "engine.world.anvil_world_reader",
     "engine.world.writer",
 )
