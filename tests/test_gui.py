@@ -15,13 +15,14 @@ from PySide6 import QtWidgets  # noqa: E402
 
 from gui import app as gui_app  # noqa: E402
 from gui import launcher  # noqa: E402
-from gui.core import common  # noqa: E402
+from gui.core import algo_config, app_files, extraction_config  # noqa: E402
 from gui.tabs import extraction as extraction_module  # noqa: E402
 from gui.tabs import generation as generation_module  # noqa: E402
 from gui.tabs import preview as preview_module  # noqa: E402
 from gui.tabs.extraction import ExtractionTab  # noqa: E402
 from gui.tabs.generation import GenerationTab  # noqa: E402
 from gui.tabs.preview import PreviewTab  # noqa: E402
+from pipeline import stages  # noqa: E402
 
 
 def _qapp():
@@ -88,9 +89,9 @@ class LaunchGatingTests(unittest.TestCase):
 
     def test_first_launch_requires_extracted_assets_before_preview_or_build(self):
         with (
-            mock.patch.object(common, "load_saved_gui_config", return_value={}),
-            mock.patch.object(common, "clear_pipeline_artifacts"),
-            mock.patch.object(common, "extracted_assets_ready", return_value=False),
+            mock.patch.object(app_files, "load_saved_gui_config", return_value={}),
+            mock.patch.object(app_files, "clear_pipeline_artifacts"),
+            mock.patch.object(app_files, "extracted_assets_ready", return_value=False),
         ):
             window = gui_app.CityGeneratorQtApp()
 
@@ -98,7 +99,7 @@ class LaunchGatingTests(unittest.TestCase):
         self.assertFalse(window.generation_tab.controls.action_button.isEnabled())
         self.assertTrue(window.extraction_tab.extract_button.isEnabled())
 
-        with mock.patch.object(common, "extracted_assets_ready", return_value=True):
+        with mock.patch.object(app_files, "extracted_assets_ready", return_value=True):
             window.refresh_prerequisite_buttons()
 
         self.assertTrue(window.preview_tab.controls.action_button.isEnabled())
@@ -111,33 +112,23 @@ class GuiPipelineHandoffTests(unittest.TestCase):
         self.app = _qapp()
 
     def test_extraction_run_builds_env_and_runs_road_then_build_stages(self):
-        owner = _GuiOwner(extraction=common.default_extraction_tab_config())
+        owner = _GuiOwner(extraction=extraction_config.default_extraction_tab_config())
         calls = []
 
-        def fake_stage(name, progress_stage):
-            def run(*, env_overrides, progress=None):
-                calls.append((name, dict(env_overrides)))
-                if progress is not None:
-                    progress(progress_stage, 1, 1, "done")
-                return {"stage": name}
+        progress_stage = {"roads": stages.ROADS_EXTRACT, "builds": stages.BUILDS_EXTRACT}
 
-            return run
+        def fake_stage(name, *, env_overrides, progress=None):
+            calls.append((name, dict(env_overrides)))
+            if progress is not None:
+                progress(progress_stage[name], 1, 1, "done")
+            return {"stage": name}
 
         with (
             mock.patch.object(extraction_module, "has_region_files", return_value=True),
-            mock.patch.object(extraction_module.common, "stamp_version_env", return_value={"MC_CITY_DATA_VERSION": "4790"}),
-            mock.patch.object(
-                extraction_module.services,
-                "run_roads_stage",
-                side_effect=fake_stage("roads", extraction_module.services.ROADS_EXTRACT),
-            ),
-            mock.patch.object(
-                extraction_module.services,
-                "run_builds_stage",
-                side_effect=fake_stage("builds", extraction_module.services.BUILDS_EXTRACT),
-            ),
+            mock.patch.object(extraction_module.extraction_config, "stamp_version_env", return_value={"MC_CITY_DATA_VERSION": "4790"}),
+            mock.patch.object(extraction_module.services, "run_stage", side_effect=fake_stage),
             mock.patch.object(extraction_module.threading, "Thread", _ImmediateThread),
-            mock.patch.object(extraction_module.common, "save_progress_timing"),
+            mock.patch.object(extraction_module.app_files, "save_progress_timing"),
         ):
             tab = ExtractionTab(owner)
             tab.road_viewer.load_image = lambda _path: None
@@ -157,17 +148,17 @@ class GuiPipelineHandoffTests(unittest.TestCase):
         owner.close()
 
     def test_preview_run_passes_seed_size_and_algorithm_env_to_service(self):
-        owner = _GuiOwner(algo=common.default_algo_tab_config())
+        owner = _GuiOwner(algo=algo_config.default_algo_tab_config())
         calls = {}
 
-        def fake_preview(seed, fine, *, env_overrides, progress=None, logger=None):
-            calls.update(seed=seed, fine=fine, env=dict(env_overrides), logger=logger)
+        def fake_preview(stage_key, *, seed, fine, env_overrides, progress=None, logger=None):
+            calls.update(stage=stage_key, seed=seed, fine=fine, env=dict(env_overrides), logger=logger)
             if progress is not None:
-                progress(preview_module.services.PREVIEW, 4, 4, "Preview ready")
+                progress(stages.PREVIEW_CITY, 2, 2, "Rendered city layout preview")
             return {"seed": seed}
 
         with (
-            mock.patch.object(preview_module.services, "run_preview_stage", side_effect=fake_preview),
+            mock.patch.object(preview_module.services, "run_stage", side_effect=fake_preview),
             mock.patch.object(preview_module.threading, "Thread", _ImmediateThread),
         ):
             tab = PreviewTab(owner)
@@ -176,6 +167,7 @@ class GuiPipelineHandoffTests(unittest.TestCase):
             tab.controls.seed_edit.setText("42")
             tab._run_preview()
 
+        self.assertEqual(calls["stage"], "preview")
         self.assertEqual(calls["seed"], "42")
         self.assertEqual(calls["fine"], calls["env"]["MC_CITY_FINE"])
         self.assertIn("MC_CITY_GAP_BIG", calls["env"])
@@ -184,35 +176,33 @@ class GuiPipelineHandoffTests(unittest.TestCase):
         owner.close()
 
     def test_generation_run_exports_city_using_selected_source_world(self):
-        extraction_state = common.default_extraction_tab_config()
+        extraction_state = extraction_config.default_extraction_tab_config()
         extraction_state["world_path"] = "C:/minecraft/source-world"
-        owner = _GuiOwner(algo=common.default_algo_tab_config(), extraction=extraction_state)
+        owner = _GuiOwner(algo=algo_config.default_algo_tab_config(), extraction=extraction_state)
         calls = []
 
-        def record(name):
-            def run(seed, *args, env_overrides, progress=None, **_kwargs):
-                calls.append((name, seed, args, dict(env_overrides)))
-                if progress is not None:
-                    progress(name, 1, 1, "done")
-                return {"stage": name}
+        progress_stage = {"city": stages.CITY_RENDER, "world": stages.WORLD_EXPORT}
 
-            return run
+        def record(name, *, seed, env_overrides, progress=None, **params):
+            calls.append((name, seed, params, dict(env_overrides)))
+            if progress is not None:
+                progress(progress_stage[name], 1, 1, "done")
+            return {"stage": name}
 
         with (
-            mock.patch.object(generation_module.common, "stamp_version_env", return_value={"MC_CITY_DATA_VERSION": "4790"}),
-            mock.patch.object(generation_module.services, "run_city_stage", side_effect=record("city")),
-            mock.patch.object(generation_module.services, "run_world_stage", side_effect=record("world")),
+            mock.patch.object(generation_module.extraction_config, "stamp_version_env", return_value={"MC_CITY_DATA_VERSION": "4790"}),
+            mock.patch.object(generation_module.services, "run_stage", side_effect=record),
             mock.patch.object(generation_module.threading, "Thread", _ImmediateThread),
-            mock.patch.object(generation_module.common, "save_progress_timing"),
+            mock.patch.object(generation_module.app_files, "save_progress_timing"),
         ):
             tab = GenerationTab(owner)
             tab.city_viewer.load_image = lambda _path: None
             tab.controls.seed_edit.setText("9")
             tab._run_generate()
 
-        self.assertEqual([name for name, _seed, _args, _env in calls], ["city", "world"])
-        self.assertEqual(calls[0][2], (calls[0][3]["MC_CITY_FINE"],))
-        self.assertEqual(calls[1][2], ())
+        self.assertEqual([name for name, _seed, _params, _env in calls], ["city", "world"])
+        self.assertEqual(calls[0][2], {"fine": calls[0][3]["MC_CITY_FINE"]})
+        self.assertEqual(calls[1][2], {})
         for _name, seed, _args, env in calls:
             self.assertEqual(seed, "9")
             self.assertEqual(env["MC_CITY_SAVE"], "C:/minecraft/source-world")
@@ -230,9 +220,9 @@ class SavedGuiConfigTests(unittest.TestCase):
                 "extraction": {"world_path": "C:/world"},
             }
 
-            with mock.patch.object(common, "SAVED_GUI_CONFIG_PATH", str(config_path)):
-                common.save_saved_gui_config(sample)
-                loaded = common.load_saved_gui_config()
+            with mock.patch.object(app_files, "SAVED_GUI_CONFIG_PATH", str(config_path)):
+                app_files.save_saved_gui_config(sample)
+                loaded = app_files.load_saved_gui_config()
 
         self.assertEqual(loaded, sample)
 
@@ -244,10 +234,10 @@ class SavedGuiConfigTests(unittest.TestCase):
             legacy_path.write_text('{"render": {"seed": "4"}}', encoding="utf-8")
 
             with (
-                mock.patch.object(common, "SAVED_GUI_CONFIG_PATH", str(config_path)),
-                mock.patch.object(common, "LEGACY_SAVED_GUI_CONFIG_PATH", str(legacy_path)),
+                mock.patch.object(app_files, "SAVED_GUI_CONFIG_PATH", str(config_path)),
+                mock.patch.object(app_files, "LEGACY_SAVED_GUI_CONFIG_PATH", str(legacy_path)),
             ):
-                loaded = common.load_saved_gui_config()
+                loaded = app_files.load_saved_gui_config()
 
             self.assertEqual(loaded, sample)
             self.assertTrue(config_path.exists())

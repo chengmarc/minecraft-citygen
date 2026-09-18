@@ -4,17 +4,17 @@ from __future__ import annotations
 
 import time
 
-from pipeline import services
+from pipeline import stages
 
 PROGRESS_BAR_SCALE = 1000
 
 EXTRACTION_PHASE_WEIGHTS = [
-    (services.ROADS_EXTRACT, "scan", 1),
-    (services.ROADS_EXTRACT, "export", 5),
-    (services.ROADS_RENDER, "render", 3),
-    (services.BUILDS_EXTRACT, "scan", 8),
-    (services.BUILDS_EXTRACT, "export", 50),
-    (services.BUILDS_RENDER, "render", 33),
+    (stages.ROADS_EXTRACT, "scan", 1),
+    (stages.ROADS_EXTRACT, "export", 5),
+    (stages.ROADS_RENDER, "render", 3),
+    (stages.BUILDS_EXTRACT, "scan", 8),
+    (stages.BUILDS_EXTRACT, "export", 50),
+    (stages.BUILDS_RENDER, "render", 33),
 ]
 
 PREVIEW_STEP_WEIGHTS = [8, 8, 15, 69]

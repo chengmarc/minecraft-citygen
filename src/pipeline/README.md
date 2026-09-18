@@ -12,9 +12,9 @@ same way.
 
 | Module / package | Responsibility |
 |---|---|
-| [services.py](services.py) | In-process pipeline services used by both the GUI and CLI |
-| [stages.py](stages.py) | Central registry of stage modules plus the stage registry CLI |
-| [runtime.py](runtime.py) | `configured_environment` and the import-time config model helpers |
+| [stages.py](stages.py) | Stage registry (ordered steps per stage), `run_stage`, and the stage CLI |
+| [services.py](services.py) | `run_stage` under per-run `MC_CITY_*` overrides (`configured_environment`), used by the GUI |
+| [extraction.py](extraction.py), [rendering.py](rendering.py) | Helpers shared by the extract and render steps |
 | `01_roads/` | road extraction and road contact-sheet rendering |
 | `02_builds/` | building extraction, catalog writing, and building contact-sheet rendering |
 | `03_preview/` | road assets, build stand-ins, road-layout preview, and city-layout preview |
@@ -30,9 +30,9 @@ standalone Minecraft save.
 
 Pipeline stages read configuration from `MC_CITY_*` environment variables at
 import time through the `config` package. In-process callers should not mutate
-`os.environ` directly; call [`services.py`](services.py) functions with an
+`os.environ` directly; call [`services.run_stage`](services.py) with an
 `env_overrides` dict containing only the `MC_CITY_*` values needed for that run.
-[`runtime.py`](runtime.py) applies those values under a process-wide lock,
+[`services.configured_environment`](services.py) applies those values under a process-wide lock,
 reloads config/engine/stage modules in dependency order, runs the stage, then
 restores the previous environment and reloads again.
 
@@ -54,7 +54,7 @@ regions, exports individual `.schem` pieces, and writes
 placement. [02_builds/render.py](02_builds/render.py) renders those extracted
 building pieces and writes the building contact sheet.
 
-**3. Preview.** `stages.py run_preview` is the unified preview stage. It runs
+**3. Preview.** The `preview` stage in [stages.py](stages.py) runs
 [03_preview/roads.py](03_preview/roads.py),
 [03_preview/builds.py](03_preview/builds.py),
 [03_preview/grid.py](03_preview/grid.py), and

@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from gui.core import common
+from gui.core import algo_config
 
 
 class AlgoTabMixin:
@@ -21,7 +21,7 @@ class AlgoTabMixin:
             state = self.owner.get_saved_config_section(section)
             if state:
                 return state
-        return common.default_algo_tab_config()
+        return algo_config.default_algo_tab_config()
 
     def set_peer(self, peer):
         self._peer = peer

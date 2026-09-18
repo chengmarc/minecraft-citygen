@@ -13,6 +13,7 @@ import nbtlib
 from nbtlib import Byte, Compound, String
 
 from config.path import resolve_region_dir
+from engine.blocks import AIR_BLOCKS
 from engine.schematic.transform import BlockEntity
 from engine.schematic.writer import write_sponge_schem_grid
 from engine.world.anvil_world_reader import World
@@ -62,7 +63,7 @@ class WorldWriterRoundTripTests(unittest.TestCase):
                         name, props = world_writer.parse_state(state)
                         read_name, read_props = world.block(x, y + base_y, z)
                         if name == "minecraft:air":
-                            self.assertIn(read_name, world_writer.AIR_NAMES)
+                            self.assertIn(read_name, AIR_BLOCKS)
                         else:
                             self.assertEqual((read_name, read_props or None), (name, props or None))
 
@@ -109,7 +110,7 @@ class SchemToWorldTests(unittest.TestCase):
             # The saved player sits one block above a solid column (no void drop).
             px, py, pz = (float(v) for v in data["Player"]["Pos"])
             world = World(region_dir=resolve_region_dir(out), save_path=out)
-            self.assertNotIn(world.block(int(px), int(py) - 1, int(pz))[0], world_writer.AIR_NAMES)
+            self.assertNotIn(world.block(int(px), int(py) - 1, int(pz))[0], AIR_BLOCKS)
 
             # The app icon is written as the 64x64 world icon for the save list.
             from PIL import Image

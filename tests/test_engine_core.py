@@ -19,7 +19,7 @@ def _network_snapshot(net):
 
 class RoadNetworkTests(unittest.TestCase):
     def test_seeded_generation_is_stable(self):
-        size = R.make_size(40, even=True)
+        size = R.make_size(40)
         first = _network_snapshot(R.gen_networks(17, size=size))
         second = _network_snapshot(R.gen_networks(17, size=size))
         different = _network_snapshot(R.gen_networks(18, size=size))

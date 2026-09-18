@@ -2,24 +2,21 @@
 
 from __future__ import annotations
 
-import json
 import os
 import random
 import sys
 from pathlib import Path
 
-from PIL import Image, ImageDraw, ImageFont
+from PIL import Image, ImageDraw
 
 if __package__ in (None, ""):
     sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
-from config.path import BUILD_CATALOG, PREVIEW_BUILDS
-from config.render import BUILD_PREVIEW_COLORS, CONTACT_SHEET_BG
-from engine.core.city_layout import catalog_type
+from config.path import PREVIEW_BUILDS
+from config.render import BUILD_PREVIEW_COLORS
+from engine.render.contact_sheet import write_contact
+from engine.schematic.building import read_catalog
 from pipeline.stages import noop, run_stage_cli
-
-CATALOG = BUILD_CATALOG
-
 
 def _clamp(v):
     return max(0, min(255, int(v)))
@@ -27,15 +24,6 @@ def _clamp(v):
 
 def shade(rgb, delta):
     return tuple(_clamp(c + delta) for c in rgb)
-
-
-def font(size):
-    for name in ("arialbd.ttf", "arial.ttf"):
-        try:
-            return ImageFont.truetype(name, size)
-        except OSError:
-            pass
-    return ImageFont.load_default()
 
 
 def _rect(draw, box, fill, outline=None, width=1):
@@ -61,7 +49,7 @@ def _subrects(rng, w, d, inset):
 
 def render_building(key, meta):
     w, d = meta["size"]
-    building_type = catalog_type(meta)
+    building_type = meta["type"]
     rng = random.Random(int(key) * 104729 + building_type * 7919 + w * 37 + d)
     colors = BUILD_PREVIEW_COLORS[building_type]
 
@@ -101,29 +89,10 @@ def render_building(key, meta):
     return img
 
 
-def write_contact(images):
-    cols, cw, ch, pad = 8, 180, 150, 8
-    rows = (len(images) + cols - 1) // cols
-    sheet = Image.new("RGBA", (cols * cw, rows * ch), CONTACT_SHEET_BG)
-    d = ImageDraw.Draw(sheet)
-    label_font = font(13)
-    for i, (key, im) in enumerate(images):
-        r, c = divmod(i, cols)
-        x0, y0 = c * cw, r * ch
-        scale = min((cw - pad * 2) / im.width, (ch - 28) / im.height, 6.0)
-        thumb = im.resize((max(1, int(im.width * scale)), max(1, int(im.height * scale))), Image.Resampling.NEAREST)
-        sheet.alpha_composite(thumb, (x0 + (cw - thumb.width) // 2, y0 + ch - thumb.height - 6))
-        d.text((x0 + 6, y0 + 5), key, fill=(235, 235, 235, 255), font=label_font)
-    out = os.path.join(PREVIEW_BUILDS, "_contact_sheet.png")
-    sheet.save(out)
-    return out
-
-
 def run(*, key=None, logger=None, progress=None):
     logger = logger or noop
     progress = progress or noop
-    with open(CATALOG, encoding="utf-8") as fh:
-        catalog = json.load(fh)
+    catalog = read_catalog()
     keys = [key] if key else sorted(catalog)
     os.makedirs(PREVIEW_BUILDS, exist_ok=True)
 
@@ -141,7 +110,8 @@ def run(*, key=None, logger=None, progress=None):
 
     contact = None
     if not key:
-        contact = write_contact(images)
+        contact = os.path.join(PREVIEW_BUILDS, "_contact_sheet.png")
+        write_contact(images, contact, cols=8, cell_w=180, cell_h=150, max_scale=6.0, resample=Image.Resampling.NEAREST)
         logger(f"rendered {len(images)} pseudo builds -> {contact}")
     return {"count": len(images), "contact_sheet": contact}
 

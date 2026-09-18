@@ -20,7 +20,7 @@ import os
 import sys
 from pathlib import Path
 
-from PIL import Image, ImageDraw, ImageFont
+from PIL import Image, ImageDraw
 
 if __package__ in (None, ""):
     sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
@@ -28,6 +28,7 @@ if __package__ in (None, ""):
 from config.algo import CELL
 from config.path import PREVIEW_ROADS
 from config.render import CITY_GROUND_FILL_RGBA
+from engine.render.contact_sheet import write_contact
 from pipeline.stages import noop, run_stage_cli
 
 SMALL_PAD = 1
@@ -45,7 +46,6 @@ LINE_W = {"s": 1, "b": 2}
 DEADEND_EXT = 2
 DEADEND_PAD = 1
 
-OUT = PREVIEW_ROADS
 
 
 def line_span(center, width):
@@ -228,12 +228,12 @@ def make_fill_tile(canopy):
 def run(*, logger=None, progress=None):
     logger = logger or noop
     progress = progress or noop
-    os.makedirs(OUT, exist_ok=True)
+    os.makedirs(PREVIEW_ROADS, exist_ok=True)
     imgs = {}
     total = len(TILES) + len(FILL_TILES)
     for index, (name, (w, h, conns)) in enumerate(TILES.items(), start=1):
         img = make_tile(w, h, conns)
-        path = os.path.join(OUT, name + ".png")
+        path = os.path.join(PREVIEW_ROADS, name + ".png")
         img.save(path)
         imgs[name] = img
         logger(f"saved {name}.png ({w}x{h})")
@@ -241,34 +241,23 @@ def run(*, logger=None, progress=None):
 
     for offset, (name, canopy) in enumerate(FILL_TILES.items()):
         img = make_fill_tile(canopy)
-        path = os.path.join(OUT, name + ".png")
+        path = os.path.join(PREVIEW_ROADS, name + ".png")
         img.save(path)
         imgs[name] = img
         logger(f"saved {name}.png ({CELL}x{CELL})")
         progress(len(TILES) + offset + 1, total, name)
 
-    cols = 5
     zoom = 8
-    pad = 12
-    label_h = 22
-    cellw = CELL * 2 * zoom + pad
-    cellh = CELL * 2 * zoom + label_h + pad
-    rows = (len(TILES) + cols - 1) // cols
-    sheet = Image.new("RGBA", (cols * cellw + pad, rows * cellh + pad), (30, 30, 34, 255))
-    sd = ImageDraw.Draw(sheet)
-    try:
-        font = ImageFont.truetype("arial.ttf", 13)
-    except OSError:
-        font = ImageFont.load_default()
-    for i, (name, img) in enumerate(imgs.items()):
-        r, c = divmod(i, cols)
-        x = pad + c * cellw
-        y = pad + r * cellh
-        sd.text((x, y), name, fill=(230, 230, 230), font=font)
-        preview = img.resize((img.width * zoom, img.height * zoom), Image.Resampling.NEAREST)
-        sheet.alpha_composite(preview, (x, y + label_h))
-    contact_sheet = os.path.join(OUT, "_contact_sheet.png")
-    sheet.save(contact_sheet)
+    contact_sheet = os.path.join(PREVIEW_ROADS, "_contact_sheet.png")
+    write_contact(
+        list(imgs.items()),
+        contact_sheet,
+        cols=5,
+        cell_w=CELL * 2 * zoom + 12,
+        cell_h=CELL * 2 * zoom + 40,
+        max_scale=zoom,
+        resample=Image.Resampling.NEAREST,
+    )
     logger("saved _contact_sheet.png")
     return {"count": total, "contact_sheet": contact_sheet}
 

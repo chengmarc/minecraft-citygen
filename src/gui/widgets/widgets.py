@@ -6,7 +6,7 @@ from PySide6 import QtCore, QtGui, QtWidgets
 
 from config.algo import DEFAULT_SEED
 
-from gui.core import common
+from gui.core import algo_config, extraction_config
 from gui.core.theme import apply_button_icon, style_button
 
 
@@ -60,7 +60,7 @@ class AlgoControlsWidget(QtWidgets.QWidget):
     ):
         super().__init__(parent)
         self.widgets = {}
-        algo_state = common.create_config_values(state.get("algo"))
+        algo_state = algo_config.create_config_values(state.get("algo"))
 
         layout = QtWidgets.QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
@@ -94,7 +94,7 @@ class AlgoControlsWidget(QtWidgets.QWidget):
         row.addSpacing(8)
         row.addWidget(QtWidgets.QLabel("City Size"))
         city_size = QtWidgets.QComboBox(self)
-        city_size.addItems(list(common.CANVAS_SIZE_OPTIONS))
+        city_size.addItems(list(algo_config.CANVAS_SIZE_OPTIONS))
         city_size.setCurrentText(algo_state["FINE"])
         row.addWidget(city_size)
         self.widgets["FINE"] = city_size
@@ -102,7 +102,7 @@ class AlgoControlsWidget(QtWidgets.QWidget):
         row.addSpacing(8)
         row.addWidget(QtWidgets.QLabel("Road Density"))
         density = QtWidgets.QComboBox(self)
-        density.addItems(list(common.CLEARANCE_OPTIONS))
+        density.addItems(list(algo_config.CLEARANCE_OPTIONS))
         density.setCurrentText(algo_state["GAP_MIXED"])
         row.addWidget(density)
         self.widgets["GAP_MIXED"] = density
@@ -135,14 +135,14 @@ class AlgoControlsWidget(QtWidgets.QWidget):
         advanced_layout.setSpacing(10)
         groups_row = QtWidgets.QHBoxLayout()
         advanced_layout.addLayout(groups_row)
-        for title, names in common.PREVIEW_CONFIG_GROUPS:
+        for title, names in algo_config.PREVIEW_CONFIG_GROUPS:
             box = QtWidgets.QGroupBox(title, self)
             form = QtWidgets.QFormLayout(box)
             form.setContentsMargins(20, 20, 20, 20)
             form.setLabelAlignment(QtCore.Qt.AlignLeft)
             form.setVerticalSpacing(18)
             for name in names:
-                label, description = common.PREVIEW_CONFIG_LOOKUP[name]
+                label, description = algo_config.PREVIEW_CONFIG_LOOKUP[name]
                 widget = self._build_widget(name, algo_state[name], box)
                 widget.setToolTip(description)
                 form.addRow(label, widget)
@@ -158,7 +158,7 @@ class AlgoControlsWidget(QtWidgets.QWidget):
             return widget
         if name in {"FINE", "GAP_MIXED"}:
             raise RuntimeError(f"{name} is handled by the header row.")
-        minimum, maximum = common.PREVIEW_SLIDER_RANGES.get(name, (-99999, 99999))
+        minimum, maximum = algo_config.PREVIEW_SLIDER_RANGES.get(name, (-99999, 99999))
         widget = IntegerSliderControl(minimum, maximum, int(value), parent)
         return widget
 
@@ -188,7 +188,7 @@ class AlgoControlsWidget(QtWidgets.QWidget):
                 widget.valueChanged.connect(handler)
 
     def algo_values(self):
-        values = common.create_config_values()
+        values = algo_config.create_config_values()
         for name, widget in self.widgets.items():
             if isinstance(widget, QtWidgets.QLineEdit):
                 values[name] = widget.text().strip()
@@ -207,7 +207,7 @@ class AlgoControlsWidget(QtWidgets.QWidget):
 
     def set_state(self, state):
         """Apply state to all widgets without emitting change signals."""
-        algo = common.create_config_values(state.get("algo"))
+        algo = algo_config.create_config_values(state.get("algo"))
         self.set_advanced_visible(state.get("advanced", False), emit_change=False)
         self.seed_edit.blockSignals(True)
         self.seed_edit.setText(str(state.get("seed", DEFAULT_SEED)))
@@ -273,7 +273,7 @@ class ExtractionAreaGroup(QtWidgets.QGroupBox):
         if region is None:
             self._clear_selection()
         else:
-            start, end = common.region_to_xyz_pair(region)
+            start, end = extraction_config.region_to_xyz_pair(region)
             self.set_xyz_pair(start, end, emit_change=False)
 
     def connect_change_handler(self, handler):

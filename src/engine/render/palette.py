@@ -6,9 +6,8 @@ import csv
 
 from config.path import COLOR_RENDER_CSV
 from config.render import UNKNOWN_BLOCK_RGBA
+from engine.blocks import block_id
 
-
-UNKNOWN = UNKNOWN_BLOCK_RGBA
 
 
 def load_render_colors(path=COLOR_RENDER_CSV):
@@ -26,15 +25,5 @@ def load_render_colors(path=COLOR_RENDER_CSV):
 COLORS = load_render_colors()
 
 
-def block_id(state):
-    """Return a namespaced block id from a block state or base name."""
-    name = str(state).split("[", 1)[0]
-    return name if ":" in name else f"minecraft:{name}"
-
-
-def is_air(state):
-    return block_id(state) in {"minecraft:air", "minecraft:cave_air", "minecraft:void_air"}
-
-
-def block_color(state, default=UNKNOWN):
+def block_color(state, default=UNKNOWN_BLOCK_RGBA):
     return COLORS.get(block_id(state), default)

@@ -2,9 +2,6 @@
 
 from __future__ import annotations
 
-import json
-import os
-import random
 import sys
 from pathlib import Path
 
@@ -13,21 +10,20 @@ import numpy as np
 if __package__ in (None, ""):
     sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
-from config.algo import DEFAULT_SEED, FINE as DEFAULT_FINE
-from config.path import BUILD_CATALOG, CITY_SCHEM
+from config.algo import CELL, DEFAULT_SEED, FINE as DEFAULT_FINE
+from config.path import city_schem_path
 from config.render import CITY_ANCHOR_BLOCK, CITY_GROUND_Y
 from config.world import DATA_VERSION
-from engine.schematic.building import assemble
+from engine.schematic.building import assemble, is_stacked, read_catalog
 from engine.core.city_layout import (
     FACE_K,
-    PlacementRules,
-    find_lots,
-    load_catalog,
-    place_city,
+    FILLER_STREAM,
+    STACK_HEIGHT_STREAM,
     placement_origin,
-    validate_placements,
+    plan_city,
+    seeded_rng,
 )
-from engine.core.road_network import CELL, gen_networks, make_size
+from engine.core.road_network import gen_networks, make_size
 from engine.schematic.road import build as build_road_grid
 from engine.schematic.road import load_fillers
 from engine.schematic.road import load_ground_fill_tile
@@ -35,36 +31,8 @@ from engine.schematic.transform import rot_tile, translate_block_entities
 from engine.schematic.writer import write_sponge_schem_grid
 from pipeline.stages import noop, run_stage_cli
 
-BLOCKS_PER_CELL = CELL
 BUILD_SNAP_DROP = 1
 PLAYER_ANCHOR_MARGIN = 1
-
-
-def _resolve_fine(seed, fine):
-    """Pick the fine-cell grid edge, falling back to the configured default."""
-    return DEFAULT_FINE if fine is None else fine
-
-
-def _plan_placements(seed, network, size):
-    """Deterministically place buildings into the non-road lots for this seed."""
-    road_cells = network["road_cells"]
-    lots = find_lots(road_cells, size.fine)
-    rules = PlacementRules()
-    catalog = load_catalog(rules)
-    place_rng = random.Random(seed * 7 + 1)
-    rule_state = rules.new_state(place_rng)
-    placements = place_city(
-        road_cells,
-        lots,
-        catalog,
-        size.fine,
-        place_rng,
-        rules,
-        rule_state,
-        type2_frontage_cells=network["big_fine_cells"],
-    )
-    validate_placements(road_cells, placements, size.fine)
-    return placements
 
 
 def _city_ground_y(placements, catalog_meta):
@@ -84,33 +52,23 @@ def _seat_y(ground_y, ground_offset):
     return ground_y - ground_offset
 
 
-def _is_stacked(entry):
-    pieces = entry.get("pieces", {})
-    return all(name in pieces for name in ("bottom", "middle", "top"))
-
-
 def _assemble_instances(seed, placements, catalog_meta, ground_y):
     """Rotate and position each placed building; return (instances, tallest building top)."""
-    height_rng = random.Random(seed * 7 + 2)
+    height_rng = seeded_rng(seed, STACK_HEIGHT_STREAM)
     instances = []
     building_top = 0
     for placement in placements:
         building = placement.building
         entry = catalog_meta[building.num]
-        mid_sections = height_rng.randint(*entry.get("stack", [1, 1])) if _is_stacked(entry) else 0
+        mid_sections = height_rng.randint(*entry.get("stack", [1, 1])) if is_stacked(entry) else 0
         tile = rot_tile(assemble(building.num, mid_sections, catalog_meta), FACE_K[placement.facing])
-        px, pz = placement_origin(placement.rect, placement.facing, tile.width, tile.length, BLOCKS_PER_CELL)
+        px, pz = placement_origin(placement.rect, placement.facing, tile.width, tile.length, CELL)
         px += PLAYER_ANCHOR_MARGIN
         pz += PLAYER_ANCHOR_MARGIN
         y0 = _seat_y(ground_y, int(entry.get("ground_offset", CITY_GROUND_Y)))
         instances.append((tile, px, pz, y0))
         building_top = max(building_top, y0 + tile.height)
     return instances, building_top
-
-
-def _load_catalog_meta():
-    with open(BUILD_CATALOG, encoding="utf-8") as fh:
-        return json.load(fh)
 
 
 def _compose_grid(road_grid, road_palette, road_span, road_height, road_y0, out_span, max_height, instances, road_block_entities):
@@ -167,10 +125,7 @@ def _blit_tile(grid, master_palette, tile, px, pz, y0, build_mask=None):
                     continue
                 if build_mask is not None:
                     build_mask[gz, gx] = True
-                idx = master_palette.get(state)
-                if idx is None:
-                    idx = master_palette[state] = len(master_palette)
-                grid[gy, gz, gx] = idx
+                grid[gy, gz, gx] = _palette_index(master_palette, state)
 
 
 def _palette_index(master_palette, state):
@@ -229,10 +184,10 @@ def _place_ground_fill(
         for fx in range(size.fine):
             if (fx, fy) in road_cells or (fx, fy) in skip_cells:
                 continue
-            z0 = PLAYER_ANCHOR_MARGIN + fy * BLOCKS_PER_CELL
-            z1 = PLAYER_ANCHOR_MARGIN + (fy + 1) * BLOCKS_PER_CELL
-            x0 = PLAYER_ANCHOR_MARGIN + fx * BLOCKS_PER_CELL
-            x1 = PLAYER_ANCHOR_MARGIN + (fx + 1) * BLOCKS_PER_CELL
+            z0 = PLAYER_ANCHOR_MARGIN + fy * CELL
+            z1 = PLAYER_ANCHOR_MARGIN + (fy + 1) * CELL
+            x0 = PLAYER_ANCHOR_MARGIN + fx * CELL
+            x1 = PLAYER_ANCHOR_MARGIN + (fx + 1) * CELL
             for gz in range(z0, z1):
                 for gx in range(x0, x1):
                     if build_mask[gz, gx]:
@@ -249,10 +204,7 @@ def _place_ground_fill(
                     else:
                         for dy, state in column:
                             gy = y0 + dy
-                            idx = master_palette.get(state)
-                            if idx is None:
-                                idx = master_palette[state] = len(master_palette)
-                            grid[gy, gz, gx] = idx
+                            grid[gy, gz, gx] = _palette_index(master_palette, state)
     return []
 
 
@@ -271,9 +223,9 @@ def _place_fillers(grid, master_palette, build_mask, road_cells, size, ground_y,
         for fx in range(size.fine):
             if (fx, fy) in road_cells:
                 continue
-            z0 = PLAYER_ANCHOR_MARGIN + fy * BLOCKS_PER_CELL
-            x0 = PLAYER_ANCHOR_MARGIN + fx * BLOCKS_PER_CELL
-            if build_mask[z0:z0 + BLOCKS_PER_CELL, x0:x0 + BLOCKS_PER_CELL].any():
+            z0 = PLAYER_ANCHOR_MARGIN + fy * CELL
+            x0 = PLAYER_ANCHOR_MARGIN + fx * CELL
+            if build_mask[z0:z0 + CELL, x0:x0 + CELL].any():
                 continue
             tile = rot_tile(rng.choice(fillers), rng.randint(0, 3))
             y0 = _seat_y(ground_y, tile.ground_offset)
@@ -312,7 +264,7 @@ def _place_lot_fill(grid, master_palette, build_mask, road_cells, size, ground_y
     block_entities = []
     tree_cells = set()
     if fillers:
-        filler_rng = random.Random(seed * 7 + 3)
+        filler_rng = seeded_rng(seed, FILLER_STREAM)
         tree_cells, filler_block_entities = _place_fillers(
             grid, master_palette, build_mask, road_cells, size, ground_y, fillers, filler_rng
         )
@@ -358,28 +310,27 @@ def _write_city_schematic(
     return summary
 
 
-def run(*, seed=DEFAULT_SEED, fine=None, out=None, no_ground_fill=False, logger=None, progress=None):
+def run(*, seed=DEFAULT_SEED, fine=DEFAULT_FINE, out=None, no_ground_fill=False, logger=None, progress=None):
     logger = logger or noop
     progress = progress or noop
 
     def _step(n, label):
         progress(n, 8, label)
 
-    out = out or os.path.join(CITY_SCHEM, f"seed_{seed}.schem")
-    fine = _resolve_fine(seed, fine)
+    out = out or city_schem_path(seed)
     size = make_size(fine)
 
-    _step(0, "Building road grid")
-    road_grid, road_palette, (road_span, road_height, _), tile_count, road_ground_offset, road_block_entities = build_road_grid(fine, seed)
-
-    _step(1, "Generating road network")
+    _step(0, "Generating road network")
     network = gen_networks(seed, size=size)
 
+    _step(1, "Building road grid")
+    road_grid, road_palette, (road_span, road_height, _), tile_count, road_ground_offset, road_block_entities = build_road_grid(network)
+
     _step(2, "Loading building catalog")
-    catalog_meta = _load_catalog_meta()
+    catalog_meta = read_catalog()
 
     _step(3, "Planning placements")
-    placements = _plan_placements(seed, network, size)
+    _lots, placements = plan_city(seed, network, catalog_meta)
     city_ground_y = _city_ground_y(placements, catalog_meta)
     # `ground_y` is the shared plane roads, buildings, the dedicated lot
     # ground-fill asset, and tree props resolve against.
@@ -412,7 +363,7 @@ def run(*, seed=DEFAULT_SEED, fine=None, out=None, no_ground_fill=False, logger=
         out,
         city_ground_y,
         seed,
-        fine,
+        size.fine,
         tile_count,
         len(instances),
         filler_count,

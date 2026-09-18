@@ -8,25 +8,28 @@ import traceback
 
 from PySide6 import QtGui, QtWidgets
 
-from gui.core import common
+from gui.core import app_files
 from gui.widgets.qt_viewer import ensure_application
 from gui.tabs.extraction import ExtractionTab
 from gui.tabs.generation import GenerationTab
 from gui.tabs.preview import PreviewTab
 from gui.core.theme import configure_app_style
 
+APP_WIDTH = 1366
+APP_HEIGHT = 768
+
 
 class CityGeneratorQtApp(QtWidgets.QMainWindow):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("Minecraft CityGen")
-        self.resize(common.APP_WIDTH, common.APP_HEIGHT)
+        self.resize(APP_WIDTH, APP_HEIGHT)
         self.setMinimumSize(960, 720)
-        if os.path.exists(common.APP_ICON_PATH):
-            self.setWindowIcon(QtGui.QIcon(common.APP_ICON_PATH))
+        if os.path.exists(app_files.APP_ICON_PATH):
+            self.setWindowIcon(QtGui.QIcon(app_files.APP_ICON_PATH))
 
-        self._saved_gui_config = common.load_saved_gui_config()
-        common.clear_pipeline_artifacts()  # clean slate each launch; keeps exported worlds
+        self._saved_gui_config = app_files.load_saved_gui_config()
+        app_files.clear_pipeline_artifacts()  # clean slate each launch; keeps exported worlds
 
         self.preview_tab = PreviewTab(self)
         self.generation_tab = GenerationTab(self)
@@ -60,7 +63,7 @@ class CityGeneratorQtApp(QtWidgets.QMainWindow):
 
     def set_saved_config_section(self, section, value):
         self._saved_gui_config[section] = value
-        common.save_saved_gui_config(self._saved_gui_config)
+        app_files.save_saved_gui_config(self._saved_gui_config)
 
     def _refresh_after_gui_change(self, *_args):
         self.refresh_prerequisite_buttons()
@@ -81,7 +84,7 @@ class CityGeneratorQtApp(QtWidgets.QMainWindow):
         self.refresh_prerequisite_buttons()
 
     def _assets_ready(self):
-        return common.extracted_assets_ready()
+        return app_files.extracted_assets_ready()
 
     def preview_prerequisite_met(self):
         return self._assets_ready()
@@ -126,14 +129,14 @@ def main(argv: list[str] | None = None) -> int:
     except Exception:  # top-level crash boundary: log details and surface a dialog
         message = traceback.format_exc()
         try:
-            with open(common.STARTUP_ERROR_LOG, "w", encoding="utf-8") as fh:
+            with open(app_files.STARTUP_ERROR_LOG, "w", encoding="utf-8") as fh:
                 fh.write(message)
         except OSError:
             pass
         QtWidgets.QMessageBox.critical(
             None,
             "Minecraft CityGen",
-            f"GUI startup failed.\n\nDetails were written to:\n{common.STARTUP_ERROR_LOG}",
+            f"GUI startup failed.\n\nDetails were written to:\n{app_files.STARTUP_ERROR_LOG}",
         )
         raise
 

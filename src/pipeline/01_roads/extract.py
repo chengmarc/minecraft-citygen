@@ -18,12 +18,6 @@ from engine.schematic.writer import write_sponge_schem_cells
 from pipeline.extraction import chunk_scan_count, remove_existing_schems
 from pipeline.stages import noop, run_stage_cli
 
-(START_XYZ, END_XYZ) = ROAD_BOX.as_tuple()
-X0, _Y0, Z0 = START_XYZ
-X1, _Y1, Z1 = END_XYZ
-OUT = ROADS_SCHEM
-
-
 @lru_cache(maxsize=1)
 def get_world():
     return World()
@@ -44,9 +38,9 @@ def name_for(emerald):
 def run(*, logger=None, progress=None):
     logger = logger or noop
     progress = progress or noop
-    os.makedirs(OUT, exist_ok=True)
-    remove_existing_schems(OUT)
-    total_scan_chunks = chunk_scan_count(X0, X1, Z0, Z1)
+    os.makedirs(ROADS_SCHEM, exist_ok=True)
+    remove_existing_schems(ROADS_SCHEM)
+    total_scan_chunks = chunk_scan_count(ROAD_BOX.x0, ROAD_BOX.x1, ROAD_BOX.z0, ROAD_BOX.z1)
     progress(0, total_scan_chunks, "Scanning road region...")
 
     m_lo, m_hi = BUILD_MARKER_Y_RANGE.as_tuple()
@@ -55,7 +49,7 @@ def run(*, logger=None, progress=None):
         progress(done, total, "Scanning road region...")
 
     components, skipped = detect_marker_assets(
-        get_world(), X0, X1, Z0, Z1, (m_lo, m_hi),
+        get_world(), ROAD_BOX.x0, ROAD_BOX.x1, ROAD_BOX.z0, ROAD_BOX.z1, (m_lo, m_hi),
         on_progress=on_scan,
     )
     logger(f"{len(components)} marker components")
@@ -79,7 +73,7 @@ def run(*, logger=None, progress=None):
         height, length, width = len(cells), len(cells[0]), len(cells[0][0])
         write_sponge_schem_cells(
             cells,
-            os.path.join(OUT, name + ".schem"),
+            os.path.join(ROADS_SCHEM, name + ".schem"),
             DATA_VERSION,
             offset=(0, -comp.ground_offset, 0),
             block_entities=block_entities,
@@ -95,8 +89,8 @@ def run(*, logger=None, progress=None):
         )
     for name, dims in sorted(results):
         logger(f"  {name:32} {dims[0]:2}x{dims[1]}x{dims[2]:2} (WxHxL)")
-    logger(f"saved {len(results)} schematics to {OUT}")
-    return {"count": len(results), "output_dir": OUT, "items": [name for name, _dims in results]}
+    logger(f"saved {len(results)} schematics to {ROADS_SCHEM}")
+    return {"count": len(results), "output_dir": ROADS_SCHEM, "items": [name for name, _dims in results]}
 
 
 if __name__ == "__main__":

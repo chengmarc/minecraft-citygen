@@ -7,13 +7,17 @@ import threading
 
 from PySide6 import QtWidgets
 
-from pipeline import services
+from config.path import city_preview_path, grid_preview_path
+from pipeline import services, stages
 
-from gui.core import common, progress
+from gui.core import algo_config, progress
 from gui.core.workers import ProgressMixin, start_background_job
 from gui.tabs._algo import AlgoTabMixin
 from gui.widgets.qt_viewer import QtImageViewer
 from gui.widgets.widgets import AlgoControlsWidget
+
+
+PREVIEW_STEPS = {step.module: (index, step.label) for index, step in enumerate(stages.STAGES["preview"])}
 
 
 class PreviewTab(QtWidgets.QWidget, AlgoTabMixin, ProgressMixin):
@@ -69,27 +73,33 @@ class PreviewTab(QtWidgets.QWidget, AlgoTabMixin, ProgressMixin):
         layout.addWidget(self.progress_bar)
         self.refresh_prerequisite_state()
 
-    def _preview_milestone(self, completed):
-        return progress.weighted_milestone(
+    def _preview_milestone(self, step_index, completed, total):
+        return progress.weighted_item_milestone(
             progress.PREVIEW_STEP_WEIGHTS,
+            step_index,
             completed,
+            total,
             self.progress_bar.maximum(),
         )
 
-    def _on_pipeline_progress(self, _stage, completed, total, label):
-        total_i = max(int(total), 1)
-        completed_i = max(0, min(int(completed), total_i))
-        milestone = self._preview_milestone(completed_i)
+    def _on_pipeline_progress(self, stage, completed, total, _label):
+        step_index, step_label = PREVIEW_STEPS[stage]
+        total_f = float(total) if total > 0 else 1.0
+        completed_f = max(0.0, min(float(completed), total_f))
+        milestone = max(
+            self.progress_bar.value(),
+            int(round(self._preview_milestone(step_index, completed_f, total_f))),
+        )
         self._cancel_progress_animation()
         self.progress_bar.setValue(milestone)
-        if completed_i < min(total_i, len(progress.PREVIEW_STEP_WEIGHTS)):
-            next_ms = self._preview_milestone(completed_i + 1)
+        if completed_f < total_f:
+            next_ms = self._preview_milestone(step_index, completed_f + 1.0, total_f)
             self._progress_soft_target = progress.soft_target(milestone, next_ms, "preview")
             self._progress_timer.start(progress.creep_tick_ms("preview"))
-        self.set_status(label or "Generating previews")
+        self.set_status(step_label)
 
     def _reset_defaults(self):
-        self.controls.set_state(common.default_algo_tab_config())
+        self.controls.set_state(algo_config.default_algo_tab_config())
         self._save_algo_state()
 
     def _randomize_seed_and_run_preview(self):
@@ -103,13 +113,13 @@ class PreviewTab(QtWidgets.QWidget, AlgoTabMixin, ProgressMixin):
     def _run_preview(self):
         seed = self.controls.seed_edit.text().strip()
         try:
-            common.validate_seed(seed)
-            env = common.build_algo_env_from_values(self.controls.algo_values())
+            algo_config.validate_seed(seed)
+            env = algo_config.build_algo_env_from_values(self.controls.algo_values())
             fine = env["MC_CITY_FINE"]
-        except common.SeedError as exc:
+        except algo_config.SeedError as exc:
             QtWidgets.QMessageBox.critical(self, "Invalid seed", str(exc))
             return
-        except common.ConfigError as exc:
+        except algo_config.ConfigError as exc:
             QtWidgets.QMessageBox.critical(self, "Invalid preview config", str(exc))
             return
 
@@ -131,7 +141,7 @@ class PreviewTab(QtWidgets.QWidget, AlgoTabMixin, ProgressMixin):
             self.refresh_prerequisite_state()
 
         def job(on_progress):
-            services.run_preview_stage(seed, fine, env_overrides=env, progress=on_progress)
+            services.run_stage("preview", seed=seed, fine=fine, env_overrides=env, progress=on_progress)
             return seed, run_state
 
         start_background_job(
@@ -147,7 +157,7 @@ class PreviewTab(QtWidgets.QWidget, AlgoTabMixin, ProgressMixin):
 
     def _load_previews(self, payload):
         seed, run_state = payload
-        self.grid_viewer.load_image(common.grid_preview_path(seed))
-        self.city_viewer.load_image(common.city_preview_path(seed))
+        self.grid_viewer.load_image(grid_preview_path(seed))
+        self.city_viewer.load_image(city_preview_path(seed))
         if hasattr(self.owner, "mark_preview_complete"):
             self.owner.mark_preview_complete(run_state)

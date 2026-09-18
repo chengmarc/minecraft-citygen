@@ -13,9 +13,7 @@ from engine.core.road_network import (
     BIG_TILES,
     MIXED_TILES,
     SMALL_TILES,
-    gen_networks,
     iter_placements,
-    make_size,
     rot_ports,
 )
 from engine.schematic.reader import (
@@ -24,8 +22,6 @@ from engine.schematic.reader import (
     decode_schem_offset,
 )
 from engine.schematic.transform import Tile, rot_tile, translate_block_entities
-
-BLOCKS_PER_FINE_CELL = CELL
 
 # Fill props (e.g. 15_fill_1x1_A) share the road region and marker convention but
 # are not road-network tiles: they fill empty lot cells in the city, so they are
@@ -118,21 +114,20 @@ def schem_offsets(tiles):
 
 def placements(net):
     return [
-        (p.tile_name[:2], p.rotation, p.fx * BLOCKS_PER_FINE_CELL, p.fy * BLOCKS_PER_FINE_CELL)
+        (p.tile_name[:2], p.rotation, p.fx * CELL, p.fy * CELL)
         for p in iter_placements(net, layers=("big", "small", "mixed"))
     ]
 
 
-def build(fine, seed):
-    size = make_size(fine)
-    net = gen_networks(seed, size=size)
+def build(net):
+    """Stamp every road tile of ``net`` into one voxel grid."""
     tiles = load_tiles()
     road_ground_offsets = {tile.ground_offset for tile in tiles.values()}
     if len(road_ground_offsets) > 1:
         raise ValueError(f"road assets disagree on ground offsets: {sorted(road_ground_offsets)}")
     road_ground_offset = next(iter(road_ground_offsets), 0)
     offsets = schem_offsets(tiles)
-    span = size.span
+    span = net["size"].span
     max_height = max(tile.height for tile in tiles.values())
     grid = np.zeros((max_height, span, span), dtype=np.int16)
     palette = {"minecraft:air": 0}

@@ -8,7 +8,7 @@ import tempfile
 import unittest
 from unittest import mock
 
-from gui.core import common
+from gui.core import app_files
 
 
 class ClearPipelineArtifactsTests(unittest.TestCase):
@@ -23,8 +23,8 @@ class ClearPipelineArtifactsTests(unittest.TestCase):
             open(os.path.join(root, "01_roads", "schem", "a.schem"), "wb").close()
             open(os.path.join(root, "loose.png"), "wb").close()
 
-            with mock.patch.object(common, "ARTIFACTS", root), mock.patch.object(common, "SAVES", saves):
-                common.clear_pipeline_artifacts()
+            with mock.patch.object(app_files, "ARTIFACTS", root), mock.patch.object(app_files, "SAVES", saves):
+                app_files.clear_pipeline_artifacts()
 
             self.assertTrue(os.path.exists(os.path.join(world, "level.dat")))  # saves kept
             self.assertFalse(os.path.exists(os.path.join(root, "01_roads")))   # pipeline wiped
@@ -40,16 +40,16 @@ class ExtractedAssetsReadyTests(unittest.TestCase):
             os.makedirs(os.path.dirname(build_sheet))
 
             with (
-                mock.patch.object(common, "ROAD_CONTACT_SHEET", road_sheet),
-                mock.patch.object(common, "BUILD_CONTACT_SHEET", build_sheet),
+                mock.patch.object(app_files, "ROAD_CONTACT_SHEET", road_sheet),
+                mock.patch.object(app_files, "BUILD_CONTACT_SHEET", build_sheet),
             ):
-                self.assertFalse(common.extracted_assets_ready())
+                self.assertFalse(app_files.extracted_assets_ready())
 
                 open(road_sheet, "wb").close()
-                self.assertFalse(common.extracted_assets_ready())
+                self.assertFalse(app_files.extracted_assets_ready())
 
                 open(build_sheet, "wb").close()
-                self.assertTrue(common.extracted_assets_ready())
+                self.assertTrue(app_files.extracted_assets_ready())
 
 
 if __name__ == "__main__":

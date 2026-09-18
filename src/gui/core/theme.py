@@ -6,7 +6,7 @@ import os
 
 from PySide6 import QtCore, QtGui, QtWidgets
 
-from gui.core import common
+from gui.core import app_files
 
 # Design tokens for the Qt widget stylesheet. Keep colors semantic so the QSS
 # reads like a small design system instead of a pile of one-off hex values.
@@ -381,7 +381,7 @@ def style_button(button) -> None:
 
 
 def apply_button_icon(button, icon_name: str) -> None:
-    icon_path = os.path.join(common.ICON_DIR, icon_name)
+    icon_path = os.path.join(app_files.ICON_DIR, icon_name)
     if not os.path.exists(icon_path):
         return
     label = button.text().strip()

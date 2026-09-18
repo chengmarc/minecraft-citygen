@@ -135,6 +135,23 @@ SAVES = _artifact_dir("05_world", "saves")
 COLOR_RENDER_CSV = str(Path(CONFIG) / "color_render.csv")
 
 
+# Per-seed artifacts: every stage and the GUI derive these names from here.
+def grid_preview_path(seed) -> str:
+    return str(Path(PREVIEW_GRID) / f"seed_{seed}.png")
+
+
+def city_preview_path(seed) -> str:
+    return str(Path(PREVIEW_CITY) / f"seed_{seed}.png")
+
+
+def city_schem_path(seed) -> str:
+    return str(Path(CITY_SCHEM) / f"seed_{seed}.schem")
+
+
+def city_render_path(seed) -> str:
+    return str(Path(CITY_RENDERS) / f"seed_{seed}.png")
+
+
 # --------------------------------------------------------- world-save lookup
 def _normalized(path: os.PathLike[str] | str | None) -> str:
     if not path:

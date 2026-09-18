@@ -1,25 +1,23 @@
-"""Shared PNG render helpers for schematic/block previews."""
+"""Isometric rasterizer for schematic cells and voxel grids."""
 
 from __future__ import annotations
 
-import os
-from contextlib import nullcontext
-
 import numpy as np
 from numba import njit
-from PIL import Image, ImageDraw, ImageFont
+from PIL import Image
 
-from config.render import (CONTACT_SHEET_BG, ISO_MARGIN, ROAD_ASSET_ISO_BLOCK_H,
-                                  ROAD_ASSET_ISO_TILE_H, ROAD_ASSET_ISO_TILE_W,
-                                  UNKNOWN_BLOCK_RGBA)
-from engine.render.palette import block_color, is_air
+from config.render import (
+    FULL_SCHEM_ISO_BLOCK_H,
+    FULL_SCHEM_ISO_TILE_H,
+    FULL_SCHEM_ISO_TILE_W,
+    ISO_MARGIN,
+    ROAD_ASSET_ISO_BLOCK_H,
+    ROAD_ASSET_ISO_TILE_H,
+    ROAD_ASSET_ISO_TILE_W,
+)
+from engine.blocks import is_air
+from engine.render.palette import block_color
 from engine.schematic.reader import decode_schem_array
-
-TILE_W = ROAD_ASSET_ISO_TILE_W
-TILE_H = ROAD_ASSET_ISO_TILE_H
-BLOCK_H = ROAD_ASSET_ISO_BLOCK_H
-MARGIN = ISO_MARGIN
-UNKNOWN = UNKNOWN_BLOCK_RGBA
 
 
 def cells_to_grid(cells):
@@ -142,7 +140,14 @@ def _palette_arrays(inv):
     return solid, colors
 
 
-def render_grid_visible_iso(grid, inv, tile_w=4, tile_h=2, block_h=3, margin=MARGIN):
+def render_grid_visible_iso(
+    grid,
+    inv,
+    tile_w=FULL_SCHEM_ISO_TILE_W,
+    tile_h=FULL_SCHEM_ISO_TILE_H,
+    block_h=FULL_SCHEM_ISO_BLOCK_H,
+    margin=ISO_MARGIN,
+):
     H, L, W = grid.shape
     solid, colors = _palette_arrays(inv)
     hw = tile_w // 2
@@ -158,52 +163,23 @@ def render_grid_visible_iso(grid, inv, tile_w=4, tile_h=2, block_h=3, margin=MAR
     return Image.fromarray(img, "RGBA")
 
 
-def render_schem_visible_iso(path, tile_w=4, tile_h=2, block_h=3, margin=MARGIN):
+def render_schem_visible_iso(
+    path,
+    tile_w=FULL_SCHEM_ISO_TILE_W,
+    tile_h=FULL_SCHEM_ISO_TILE_H,
+    block_h=FULL_SCHEM_ISO_BLOCK_H,
+    margin=ISO_MARGIN,
+):
     _W, _H, _L, inv, grid = decode_schem_array(path)
     return render_grid_visible_iso(grid, inv, tile_w, tile_h, block_h, margin)
 
 
-def render_cells_visible_iso(cells, tile_w=TILE_W, tile_h=TILE_H, block_h=BLOCK_H, margin=MARGIN):
+def render_cells_visible_iso(
+    cells,
+    tile_w=ROAD_ASSET_ISO_TILE_W,
+    tile_h=ROAD_ASSET_ISO_TILE_H,
+    block_h=ROAD_ASSET_ISO_BLOCK_H,
+    margin=ISO_MARGIN,
+):
     _W, _H, _L, inv, grid = cells_to_grid(cells)
     return render_grid_visible_iso(grid, inv, tile_w, tile_h, block_h, margin)
-
-
-def font(size):
-    for name in ("arialbd.ttf", "arial.ttf"):
-        try:
-            return ImageFont.truetype(name, size)
-        except OSError:
-            pass
-    return ImageFont.load_default()
-
-
-def _open_contact_source(image_source):
-    if isinstance(image_source, (str, bytes, os.PathLike)):
-        return Image.open(image_source)
-    return nullcontext(image_source)
-
-
-def write_contact(images, out, cols=8, cell_w=180, cell_h=180, pad=8, on_progress=None):
-    rows = max(1, (len(images) + cols - 1) // cols)
-    sheet = Image.new("RGBA", (cols * cell_w, rows * cell_h), CONTACT_SHEET_BG)
-    d = ImageDraw.Draw(sheet)
-    label_font = font(13)
-    for i, (key, im) in enumerate(images):
-        r, c = divmod(i, cols)
-        x0, y0 = c * cell_w, r * cell_h
-        with _open_contact_source(im) as source:
-            source_rgba = source if source.mode == "RGBA" else source.convert("RGBA")
-            scale = min((cell_w - pad * 2) / source_rgba.width, (cell_h - 28) / source_rgba.height, 1.0)
-            thumb = source_rgba.resize(
-                (max(1, int(source_rgba.width * scale)), max(1, int(source_rgba.height * scale))),
-                Image.Resampling.LANCZOS,
-            )
-        sheet.alpha_composite(thumb, (x0 + (cell_w - thumb.width) // 2,
-                                      y0 + cell_h - thumb.height - 6))
-        d.text((x0 + 6, y0 + 5), key, fill=(235, 235, 235, 255), font=label_font)
-        if on_progress is not None:
-            on_progress(i + 1, len(images) + 1)
-    sheet.save(out)
-    if on_progress is not None:
-        on_progress(len(images) + 1, len(images) + 1)
-    return sheet

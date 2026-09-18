@@ -4,9 +4,9 @@ from __future__ import annotations
 
 from PySide6 import QtCore, QtWidgets
 
-from config.world import SAVE
+from config.world import SAVE, BlockRegion, BuildRegion
 
-from gui.core import common
+from gui.core import extraction_config
 from gui.core.theme import apply_button_icon, style_button
 from gui.widgets.widgets import AlgoControlsWidget, ExtractionAreaGroup
 
@@ -46,9 +46,9 @@ class ExtractionControlPanel(QtWidgets.QWidget):
         header.addSpacing(12)
         header.addWidget(QtWidgets.QLabel("Target Version"))
         self.version_combo = QtWidgets.QComboBox(self)
-        for label, value in common.version_selector_items():
+        for label, value in extraction_config.version_selector_items():
             self.version_combo.addItem(label, value)
-        self.select_version(state.get("target_version", common.AUTO_VERSION))
+        self.select_version(state.get("target_version", extraction_config.AUTO_VERSION))
         self.version_combo.setToolTip(
             "Lets you confirm which Minecraft version you plan to paste into. "
             "Minecraft CityGen still stamps the exported files to the source world's version."
@@ -113,9 +113,9 @@ class ExtractionControlPanel(QtWidgets.QWidget):
         current = self.version_combo.currentData()
         self.version_combo.blockSignals(True)
         self.version_combo.clear()
-        for label, value in common.version_selector_items(min_data_version):
+        for label, value in extraction_config.version_selector_items(min_data_version):
             self.version_combo.addItem(label, value)
-        self.select_version(current or common.AUTO_VERSION)
+        self.select_version(current or extraction_config.AUTO_VERSION)
         self.version_combo.blockSignals(False)
 
     def set_world_ready(self, ready):
@@ -136,11 +136,11 @@ class ExtractionControlPanel(QtWidgets.QWidget):
         end = region_state.get("end")
         if not (isinstance(start, list) and isinstance(end, list) and len(start) == 3 and len(end) == 3):
             return None
-        bounds = common.BlockRegion.from_xyz_pair(tuple(start), tuple(end))
+        bounds = BlockRegion.from_xyz_pair(tuple(start), tuple(end))
         if area_kind == "road":
             return bounds
         build_type = 1 if area_kind == "house" else 2
-        return common.BuildRegion(build_type, bounds)
+        return BuildRegion(build_type, bounds)
 
 
 class GenerationControlPanel(AlgoControlsWidget):

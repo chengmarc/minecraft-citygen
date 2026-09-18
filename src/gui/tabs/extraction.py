@@ -7,9 +7,10 @@ import threading
 from PySide6 import QtWidgets
 
 from config.path import has_region_files
-from pipeline import services
+from config.world import BlockRegion, BuildRegion, detect_world_data_version, release_name_for
+from pipeline import services, stages
 
-from gui.core import common, progress
+from gui.core import app_files, extraction_config, progress
 from gui.core.workers import ProgressMixin, start_background_job
 from gui.tabs.control import ExtractionControlPanel
 from gui.widgets.qt_viewer import QtImageViewer
@@ -22,16 +23,16 @@ EXTRACT_PHASE_INDEX = {
 EXTRACT_PHASE_WEIGHT_VALUES = [weight for _stage, _phase, weight in progress.EXTRACTION_PHASE_WEIGHTS]
 
 EXTRACT_STATUS_LABELS = {
-    (services.ROADS_EXTRACT, "scan"): "Scanning road region",
-    (services.ROADS_EXTRACT, "export"): "Extracting road pieces",
-    (services.ROADS_RENDER, "render"): "Building road contact sheet",
-    (services.BUILDS_EXTRACT, "scan"): "Scanning build regions",
-    (services.BUILDS_EXTRACT, "export"): "Extracting building pieces",
-    (services.BUILDS_RENDER, "render"): "Building asset sheet",
+    (stages.ROADS_EXTRACT, "scan"): "Scanning road region",
+    (stages.ROADS_EXTRACT, "export"): "Extracting road pieces",
+    (stages.ROADS_RENDER, "render"): "Building road contact sheet",
+    (stages.BUILDS_EXTRACT, "scan"): "Scanning build regions",
+    (stages.BUILDS_EXTRACT, "export"): "Extracting building pieces",
+    (stages.BUILDS_RENDER, "render"): "Building asset sheet",
 }
 
 def _extract_phase(stage, label):
-    if stage in (services.ROADS_EXTRACT, services.BUILDS_EXTRACT):
+    if stage in (stages.ROADS_EXTRACT, stages.BUILDS_EXTRACT):
         return "scan" if (label or "").startswith("Scanning") else "export"
     return "render"
 
@@ -60,8 +61,8 @@ class ExtractionTab(QtWidgets.QWidget, ProgressMixin):
         self.owner = owner
         self._init_progress_mixin()
         self._extract_timing = progress.ProgressTimingRecorder()
-        state = owner.get_saved_config_section("extraction") or common.default_extraction_tab_config()
-        common.clear_preview_cache()
+        state = owner.get_saved_config_section("extraction") or extraction_config.default_extraction_tab_config()
+        app_files.clear_preview_cache()
 
         layout = QtWidgets.QVBoxLayout(self)
         layout.setSpacing(0)
@@ -74,13 +75,13 @@ class ExtractionTab(QtWidgets.QWidget, ProgressMixin):
             "Extract assets to scan the selected road sample area and build a road contact sheet.",
             viewer_shell,
         )
-        self.road_viewer.image_path = common.ROAD_CONTACT_SHEET
+        self.road_viewer.image_path = app_files.ROAD_CONTACT_SHEET
         self.build_viewer = QtImageViewer(
             "Building Pieces Found",
             "Extract assets to scan the selected house and landmark areas and build a building contact sheet.",
             viewer_shell,
         )
-        self.build_viewer.image_path = common.BUILD_CONTACT_SHEET
+        self.build_viewer.image_path = app_files.BUILD_CONTACT_SHEET
         viewer_row.addWidget(self.road_viewer, 1)
         viewer_row.addWidget(self.build_viewer, 1)
         layout.addWidget(viewer_shell, 1)
@@ -140,8 +141,8 @@ class ExtractionTab(QtWidgets.QWidget, ProgressMixin):
 
     def _refresh_detected_version(self):
         path = self.world_edit.text().strip()
-        version = common.detect_world_data_version(path) if path else None
-        text = common.release_name_for(version) if version is not None else ""
+        version = detect_world_data_version(path) if path else None
+        text = release_name_for(version) if version is not None else ""
         self.detected_version_edit.setText(text)
         fm = self.detected_version_edit.fontMetrics()
         measure = text if text else self.detected_version_edit.placeholderText()
@@ -170,7 +171,7 @@ class ExtractionTab(QtWidgets.QWidget, ProgressMixin):
     def _current_config_state(self):
         return {
             "world_path": self.world_edit.text().strip(),
-            "target_version": self.version_combo.currentData() or common.AUTO_VERSION,
+            "target_version": self.version_combo.currentData() or extraction_config.AUTO_VERSION,
             "road": self._serialize_group_state(self.road_group, "Road"),
             "house": self._serialize_group_state(self.house_group, "House"),
             "landmark": self._serialize_group_state(self.landmark_group, "Landmark"),
@@ -183,7 +184,7 @@ class ExtractionTab(QtWidgets.QWidget, ProgressMixin):
         return {"start": list(start), "end": list(end)}
 
     def _default_xyz_pair(self, key):
-        defaults = common.default_extraction_tab_config()
+        defaults = extraction_config.default_extraction_tab_config()
         region_state = defaults[key]
         return tuple(region_state["start"]), tuple(region_state["end"])
 
@@ -205,7 +206,7 @@ class ExtractionTab(QtWidgets.QWidget, ProgressMixin):
             return
         self.world_edit.setText(folder)
         self.controls.clear_area_selections()
-        common.clear_pipeline_artifacts()
+        app_files.clear_pipeline_artifacts()
         self.road_viewer.set_message(
             "Extract assets to scan the selected road sample area and build a road contact sheet."
         )
@@ -251,19 +252,19 @@ class ExtractionTab(QtWidgets.QWidget, ProgressMixin):
 
     def _finish_extract_timing(self):
         def phase_key(event):
-            if event["stage"] == services.ROADS_EXTRACT:
+            if event["stage"] == stages.ROADS_EXTRACT:
                 prefix = "roads"
-            elif event["stage"] == services.ROADS_RENDER:
+            elif event["stage"] == stages.ROADS_RENDER:
                 prefix = "roads"
-            elif event["stage"] == services.BUILDS_EXTRACT:
+            elif event["stage"] == stages.BUILDS_EXTRACT:
                 prefix = "builds"
-            elif event["stage"] == services.BUILDS_RENDER:
+            elif event["stage"] == stages.BUILDS_RENDER:
                 prefix = "builds"
             else:
                 return None
             return f"{prefix}_{event['phase']}"
 
-        common.save_progress_timing(
+        app_files.save_progress_timing(
             "extraction",
             self._extract_timing.finish(
                 phase_key=phase_key,
@@ -324,15 +325,15 @@ class ExtractionTab(QtWidgets.QWidget, ProgressMixin):
             return
 
         env = {"MC_CITY_SAVE": state["world_path"].strip()}
-        env.update(common.stamp_version_env(state["world_path"].strip()))
+        env.update(extraction_config.stamp_version_env(state["world_path"].strip()))
         road_start, road_end = self.road_group.get_xyz_pair("Road")
-        env["MC_CITY_ROAD_BOX"] = common.BlockRegion.from_xyz_pair(road_start, road_end).to_env_value()
+        env["MC_CITY_ROAD_BOX"] = BlockRegion.from_xyz_pair(road_start, road_end).to_env_value()
         house_start, house_end = self.house_group.get_xyz_pair("House")
         landmark_start, landmark_end = self.landmark_group.get_xyz_pair("Landmark")
         env["MC_CITY_BUILD_TYPES"] = ";".join(
             [
-                common.BuildRegion(1, common.BlockRegion.from_xyz_pair(house_start, house_end)).to_env_value(),
-                common.BuildRegion(2, common.BlockRegion.from_xyz_pair(landmark_start, landmark_end)).to_env_value(),
+                BuildRegion(1, BlockRegion.from_xyz_pair(house_start, house_end)).to_env_value(),
+                BuildRegion(2, BlockRegion.from_xyz_pair(landmark_start, landmark_end)).to_env_value(),
             ]
         )
 
@@ -362,8 +363,8 @@ class ExtractionTab(QtWidgets.QWidget, ProgressMixin):
 
         def job(emit_progress):
             on_progress = coalesce_pipeline_progress(emit_progress)
-            services.run_roads_stage(env_overrides=env, progress=on_progress)
-            services.run_builds_stage(env_overrides=env, progress=on_progress)
+            services.run_stage("roads", env_overrides=env, progress=on_progress)
+            services.run_stage("builds", env_overrides=env, progress=on_progress)
             return run_state
 
         start_background_job(

@@ -7,20 +7,20 @@ import threading
 
 from PySide6 import QtWidgets
 
-from config.path import SAVES
+from config.path import SAVES, city_render_path
 from config.world import SAVE
-from pipeline import services
+from pipeline import services, stages
 
-from gui.core import common, progress
+from gui.core import algo_config, app_files, extraction_config, progress
 from gui.core.workers import ProgressMixin, start_background_job
 from gui.tabs._algo import AlgoTabMixin
 from gui.tabs.control import GenerationControlPanel
 from gui.widgets.qt_viewer import QtImageViewer
 
 GENERATION_STATUS_LABELS = {
-    services.CITY_CONSTRUCT: "Building city layout",
-    services.CITY_RENDER: "Rendering final city",
-    services.WORLD_EXPORT: "Exporting Minecraft world",
+    stages.CITY_CONSTRUCT: "Building city layout",
+    stages.CITY_RENDER: "Rendering final city",
+    stages.WORLD_EXPORT: "Exporting Minecraft world",
 }
 
 
@@ -68,13 +68,13 @@ class GenerationTab(QtWidgets.QWidget, AlgoTabMixin, ProgressMixin):
         """
         extraction = self.owner.get_saved_config_section("extraction") or {}
         world_path = str(extraction.get("world_path", SAVE))
-        return {"MC_CITY_SAVE": world_path, **common.stamp_version_env(world_path)}
+        return {"MC_CITY_SAVE": world_path, **extraction_config.stamp_version_env(world_path)}
 
     def _open_output_folder(self):
         """Open the exported-worlds folder so the user can copy a world into saves/."""
         os.makedirs(SAVES, exist_ok=True)
         try:
-            common.open_in_file_manager(SAVES)
+            app_files.open_in_file_manager(SAVES)
         except OSError as exc:
             QtWidgets.QMessageBox.critical(self, "Could not open worlds folder", str(exc))
 
@@ -83,15 +83,15 @@ class GenerationTab(QtWidgets.QWidget, AlgoTabMixin, ProgressMixin):
 
     def _finish_generation_timing(self):
         def phase_key(event):
-            if event["stage"] == services.CITY_CONSTRUCT:
+            if event["stage"] == stages.CITY_CONSTRUCT:
                 return "construct"
-            if event["stage"] == services.CITY_RENDER:
+            if event["stage"] == stages.CITY_RENDER:
                 return "render"
-            if event["stage"] == services.WORLD_EXPORT:
+            if event["stage"] == stages.WORLD_EXPORT:
                 return "export"
             return None
 
-        common.save_progress_timing(
+        app_files.save_progress_timing(
             "generation",
             self._generation_timing.finish(
                 phase_key=phase_key,
@@ -111,7 +111,7 @@ class GenerationTab(QtWidgets.QWidget, AlgoTabMixin, ProgressMixin):
 
         self._cancel_progress_animation()
 
-        if stage == services.CITY_CONSTRUCT:
+        if stage == stages.CITY_CONSTRUCT:
             milestone = progress.weighted_milestone(weights, n, progress.PROGRESS_BAR_SCALE)
             self.progress_bar.setValue(milestone)
             if n < len(c_weights):
@@ -119,7 +119,7 @@ class GenerationTab(QtWidgets.QWidget, AlgoTabMixin, ProgressMixin):
                 self._progress_soft_target = progress.soft_target(milestone, next_ms, "generation")
                 self._progress_timer.start(progress.creep_tick_ms("generation"))
         else:
-            if stage == services.CITY_RENDER:
+            if stage == stages.CITY_RENDER:
                 segment_index = len(c_weights)
             else:
                 segment_index = len(c_weights) + 1
@@ -148,13 +148,13 @@ class GenerationTab(QtWidgets.QWidget, AlgoTabMixin, ProgressMixin):
     def _run_generate(self):
         seed = self.controls.seed_edit.text().strip()
         try:
-            common.validate_seed(seed)
-            env = common.build_algo_env_from_values(self.controls.algo_values())
+            algo_config.validate_seed(seed)
+            env = algo_config.build_algo_env_from_values(self.controls.algo_values())
             fine = env["MC_CITY_FINE"]
-        except common.SeedError as exc:
+        except algo_config.SeedError as exc:
             QtWidgets.QMessageBox.critical(self, "Invalid seed", str(exc))
             return
-        except common.ConfigError as exc:
+        except algo_config.ConfigError as exc:
             QtWidgets.QMessageBox.critical(self, "Invalid city config", str(exc))
             return
 
@@ -167,7 +167,7 @@ class GenerationTab(QtWidgets.QWidget, AlgoTabMixin, ProgressMixin):
         self._generation_timing.start()
 
         def handle_success(payload):
-            self.city_viewer.load_image(common.city_render_path(payload))
+            self.city_viewer.load_image(city_render_path(payload))
             self._finish_generation_timing()
             self._finish_progress()
             self.set_status("Build complete")
@@ -177,8 +177,8 @@ class GenerationTab(QtWidgets.QWidget, AlgoTabMixin, ProgressMixin):
             self.refresh_prerequisite_state()
 
         def job(on_progress):
-            services.run_city_stage(seed, fine, env_overrides=env, progress=on_progress)
-            services.run_world_stage(seed, env_overrides=env, progress=on_progress)
+            services.run_stage("city", seed=seed, fine=fine, env_overrides=env, progress=on_progress)
+            services.run_stage("world", seed=seed, env_overrides=env, progress=on_progress)
             return seed
 
         start_background_job(

@@ -12,16 +12,13 @@ if __package__ in (None, ""):
 
 from config.path import ROADS_RENDERS, ROADS_SCHEM
 from config.render import ROAD_ASSET_ISO_BLOCK_H, ROAD_ASSET_ISO_TILE_H, ROAD_ASSET_ISO_TILE_W
-from engine.render.isometric import render_cells_visible_iso, write_contact
+from engine.render.isometric import render_cells_visible_iso
 from engine.schematic.reader import decode_schem_cells
 from pipeline.rendering import render_contact_sheet
 from pipeline.stages import run_stage_cli
 
-SCHEM = ROADS_SCHEM
-
-
 def run(*, logger=None, progress=None):
-    paths = sorted(glob.glob(os.path.join(SCHEM, "*.schem")))
+    paths = sorted(glob.glob(os.path.join(ROADS_SCHEM, "*.schem")))
 
     def render_path(path):
         name = os.path.splitext(os.path.basename(path))[0]
@@ -45,7 +42,6 @@ def run(*, logger=None, progress=None):
         logger=logger,
         progress=progress,
         item_label="roads",
-        contact_writer=write_contact,
     )
 
 
