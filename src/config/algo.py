@@ -1,29 +1,52 @@
-"""Algorithm tuning for grid generation and city placement."""
+"""Algorithm tuning for grid generation and city placement.
+
+:class:`Algo` holds the per-run knobs; the engine takes one as an argument and
+never reads :data:`ALGO`, which is only this process's default (the dataclass
+defaults under any ``MC_CITY_*`` overrides) for the pipeline to fall back on.
+"""
 
 from __future__ import annotations
 
+from dataclasses import dataclass, fields
+
 from config.env import env_int, env_set
 
-CELL = env_int("CELL", 9)              # simulation pixels and production blocks per fine cell
-FINE = env_int("FINE", 80)            # default fine grid edge (FINE x FINE cells); drivers may override
+CELL = 9  # simulation pixels and production blocks per fine cell; fixed by the asset geometry
 DEFAULT_SEED = env_int("DEFAULT_SEED", 5)
 
-# forced gap between parallel lines
-GAP_MIXED = env_int("GAP_MIXED", 5)    # fine-cell clearance between a small street and a big corridor band
-GAP_BIG = env_int("GAP_BIG", 5)        # coarse-cell spacing step between big avenues (higher = fewer big roads)
-GAP_SMALL = env_int("GAP_SMALL", 5)    # min fine-cell spacing between small streets (lower = more small roads)
 
-# forced padding from canvas edge
-PAD_BIG = env_int("PAD_BIG", 5)        # coarse-cell padding for big road positions from the grid edge
-PAD_SMALL = env_int("PAD_SMALL", 5)    # fine-cell padding for small road positions from the grid edge
+@dataclass(frozen=True)
+class Algo:
+    fine: int = 80  # fine grid edge (fine x fine cells); drivers may override
 
-# forced L-corners and T-intersections
-N_BIG_CORNERS = env_int("N_BIG_CORNERS", 5)
-N_SMALL_CORNERS = env_int("N_SMALL_CORNERS", 5)
-N_BIG_TEES = env_int("N_BIG_TEES", 5)
-N_SMALL_TEES = env_int("N_SMALL_TEES", 5)
+    # forced gap between parallel lines
+    gap_mixed: int = 5  # fine-cell clearance between a small street and a big corridor band
+    gap_big: int = 5  # coarse-cell spacing step between big avenues (higher = fewer big roads)
+    gap_small: int = 5  # min fine-cell spacing between small streets (lower = more small roads)
 
-BANNED_BUILDINGS = env_set("BANNED_BUILDINGS", set())  # building IDs to skip during placement
+    # forced padding from canvas edge
+    pad_big: int = 5  # coarse-cell padding for big road positions from the grid edge
+    pad_small: int = 5  # fine-cell padding for small road positions from the grid edge
 
-LANDMARK_SPACING = env_int("LANDMARK_SPACING", 5)  # min fine-cell distance between landmark footprints
-TYPE1_TOP_FIT_CHOICES = env_int("TYPE1_TOP_FIT_CHOICES", 5)
+    # forced L-corners and T-intersections
+    n_big_corners: int = 5
+    n_small_corners: int = 5
+    n_big_tees: int = 5
+    n_small_tees: int = 5
+
+    banned_buildings: frozenset[str] = frozenset()  # building IDs to skip during placement
+    landmark_spacing: int = 5  # min fine-cell distance between landmark footprints
+    type1_top_fit_choices: int = 5
+
+    @classmethod
+    def from_env(cls) -> "Algo":
+        """The defaults, each overridden by ``MC_CITY_<FIELD>`` when set."""
+        defaults = cls()
+        values = {}
+        for field in fields(cls):
+            name, default = field.name.upper(), getattr(defaults, field.name)
+            values[field.name] = frozenset(env_set(name, default)) if isinstance(default, frozenset) else env_int(name, default)
+        return cls(**values)
+
+
+ALGO = Algo.from_env()

@@ -8,10 +8,10 @@ import threading
 from PySide6 import QtWidgets
 
 from config.path import SAVES, city_render_path
-from config.world import SAVE
+from config.world import SAVE, source_data_version
 from pipeline import services, stages
 
-from gui.core import algo_config, app_files, extraction_config, progress
+from gui.core import algo_config, app_files, progress
 from gui.core.workers import ProgressMixin, start_background_job
 from gui.tabs._algo import AlgoTabMixin
 from gui.tabs.control import GenerationControlPanel
@@ -58,16 +58,15 @@ class GenerationTab(QtWidgets.QWidget, AlgoTabMixin, ProgressMixin):
         layout.addWidget(self.progress_bar)
         self.refresh_prerequisite_state()
 
-    def _source_env(self):
-        """Env pinning the source world for the render pipeline.
+    def _source_world(self):
+        """The source world path saved on the Extraction tab.
 
-        MC_CITY_SAVE lets the world-export stage read the source world's own
-        level.dat as the base for the exported world. The version stamp keeps the
-        schematic on the source version so outputs stay aligned with the source.
+        The world-export stage copies its level.dat as the base for the exported
+        world, and the schematic is stamped with its DataVersion so outputs stay
+        aligned with the source.
         """
         extraction = self.owner.get_saved_config_section("extraction") or {}
-        world_path = str(extraction.get("world_path", SAVE))
-        return {"MC_CITY_SAVE": world_path, **extraction_config.stamp_version_env(world_path)}
+        return str(extraction.get("world_path", SAVE))
 
     def _open_output_folder(self):
         """Open the exported-worlds folder so the user can copy a world into saves/."""
@@ -148,8 +147,7 @@ class GenerationTab(QtWidgets.QWidget, AlgoTabMixin, ProgressMixin):
         seed = self.controls.seed_edit.text().strip()
         try:
             algo_config.validate_seed(seed)
-            env = algo_config.build_algo_env_from_values(self.controls.algo_values())
-            fine = env["MC_CITY_FINE"]
+            algo = algo_config.build_algo_from_values(self.controls.algo_values())
         except algo_config.SeedError as exc:
             QtWidgets.QMessageBox.critical(self, "Invalid seed", str(exc))
             return
@@ -157,7 +155,8 @@ class GenerationTab(QtWidgets.QWidget, AlgoTabMixin, ProgressMixin):
             QtWidgets.QMessageBox.critical(self, "Invalid city config", str(exc))
             return
 
-        env.update(self._source_env())
+        save = self._source_world()
+        data_version = source_data_version(save)
 
         self.controls.action_button.setEnabled(False)
         self.set_status("Building city layout")
@@ -176,8 +175,8 @@ class GenerationTab(QtWidgets.QWidget, AlgoTabMixin, ProgressMixin):
             self.refresh_prerequisite_state()
 
         def job(on_progress):
-            services.run_stage("city", seed=seed, fine=fine, env_overrides=env, progress=on_progress)
-            services.run_stage("world", seed=seed, env_overrides=env, progress=on_progress)
+            services.run_stage("city", seed=seed, algo=algo, data_version=data_version, progress=on_progress)
+            services.run_stage("world", seed=seed, save=save, progress=on_progress)
             return seed
 
         start_background_job(

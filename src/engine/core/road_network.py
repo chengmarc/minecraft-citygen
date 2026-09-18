@@ -35,8 +35,7 @@ from __future__ import annotations
 import random
 from dataclasses import dataclass
 
-from config.algo import (CELL, FINE as DEFAULT_FINE, GAP_MIXED, GAP_BIG, GAP_SMALL, PAD_BIG, PAD_SMALL,
-                                N_BIG_CORNERS, N_SMALL_CORNERS, N_BIG_TEES, N_SMALL_TEES)
+from config.algo import CELL
 
 # direction unit vectors, clockwise from north
 DIRS = {"N": (0, -1), "E": (1, 0), "S": (0, 1), "W": (-1, 0)}
@@ -65,9 +64,6 @@ def make_size(fine):
     fine = int(fine)
     fine -= fine % 2
     return NetworkSize(fine=fine, coarse=fine // 2, span=fine * CELL)
-
-
-DEFAULT_SIZE = make_size(DEFAULT_FINE)
 
 
 # ---------------------------------------------------------------- tile catalogue
@@ -144,7 +140,7 @@ def _net_size(net, size=None):
     return net["size"] if size is None else size
 
 
-def _generate_avenues(rng, size, lo=2, hi=None, step=GAP_BIG):
+def _generate_avenues(rng, size, step, lo=2, hi=None):
     """Big avenues on the coarse grid, evenly spaced with a little jitter."""
     hi = size.coarse - 2 if hi is None else hi
     base = sorted({min(hi, max(lo, a + rng.randint(-1, 1)))
@@ -206,45 +202,47 @@ def _gap_to(v, a, b):
     return 0 if a <= v <= b else (a - v if v < a else v - b)
 
 
-def _generate_streets(band_iv, size, lo=2, hi=None):
+def _generate_streets(band_iv, size, algo, lo=2, hi=None):
     """Small streets that keep clear of big bands and each other."""
     hi = size.fine - 2 if hi is None else hi
     kept = []
     for v in range(lo, hi + 1):
         if v // 2 in (0, size.coarse - 1):
             continue
-        if any(_gap_to(v, a, b) < GAP_MIXED for a, b in band_iv):
+        if any(_gap_to(v, a, b) < algo.gap_mixed for a, b in band_iv):
             continue
-        if kept and v - kept[-1] < GAP_SMALL:
+        if kept and v - kept[-1] < algo.gap_small:
             continue                       # keep streets from clumping
         kept.append(v)
     return kept
 
 
-def _generate_big_network(rng, size):
+def _generate_big_network(rng, size, algo):
     # E-W avenues are padded vertically by choosing row positions away from
     # top/bottom. N-S avenues are padded horizontally by choosing column
     # positions away from left/right.
-    big_rows = _generate_avenues(rng, size, lo=PAD_BIG, hi=size.coarse - 1 - PAD_BIG)
-    big_cols = _generate_avenues(rng, size, lo=PAD_BIG, hi=size.coarse - 1 - PAD_BIG)
+    pad = algo.pad_big
+    big_rows = _generate_avenues(rng, size, algo.gap_big, lo=pad, hi=size.coarse - 1 - pad)
+    big_cols = _generate_avenues(rng, size, algo.gap_big, lo=pad, hi=size.coarse - 1 - pad)
     big_rows_ext = {r: (0, size.coarse - 1) for r in big_rows}
     big_cols_ext = {c: (0, size.coarse - 1) for c in big_cols}
 
-    _make_corners(rng, big_rows, big_cols, big_rows_ext, big_cols_ext, size.coarse, N_BIG_CORNERS)
+    _make_corners(rng, big_rows, big_cols, big_rows_ext, big_cols_ext, size.coarse, algo.n_big_corners)
     _make_tees(rng, [(big_rows_ext, big_rows, big_cols_ext, ()),
                      (big_cols_ext, big_cols, big_rows_ext, ())],
-               size.coarse, N_BIG_TEES)
+               size.coarse, algo.n_big_tees)
     return big_rows, big_cols, big_rows_ext, big_cols_ext
 
 
-def _generate_small_network(rng, size, big_rows, big_cols):
+def _generate_small_network(rng, size, algo, big_rows, big_cols):
     band_row_iv = [(2 * r, 2 * r + 1) for r in big_rows]
     band_col_iv = [(2 * c, 2 * c + 1) for c in big_cols]
     # E-W streets are padded vertically by choosing row positions away from
     # top/bottom. N-S streets are padded horizontally by choosing column
     # positions away from left/right.
-    small_rows = _generate_streets(band_row_iv, size, lo=PAD_SMALL, hi=size.fine - 1 - PAD_SMALL)
-    small_cols = _generate_streets(band_col_iv, size, lo=PAD_SMALL, hi=size.fine - 1 - PAD_SMALL)
+    pad = algo.pad_small
+    small_rows = _generate_streets(band_row_iv, size, algo, lo=pad, hi=size.fine - 1 - pad)
+    small_cols = _generate_streets(band_col_iv, size, algo, lo=pad, hi=size.fine - 1 - pad)
 
     # Small-street ends snap to a big corridor edge (mixed T) or a
     # perpendicular small street (small T).
@@ -253,18 +251,18 @@ def _generate_small_network(rng, size, big_rows, big_cols):
     small_rows_ext = {r: (0, size.fine - 1) for r in small_rows}
     small_cols_ext = {c: (0, size.fine - 1) for c in small_cols}
 
-    _make_corners(rng, small_rows, small_cols, small_rows_ext, small_cols_ext, size.fine, N_SMALL_CORNERS)
+    _make_corners(rng, small_rows, small_cols, small_rows_ext, small_cols_ext, size.fine, algo.n_small_corners)
     _make_tees(rng, [(small_rows_ext, small_rows, small_cols_ext, col_edges),
                      (small_cols_ext, small_cols, small_rows_ext, row_edges)],
-               size.fine, N_SMALL_TEES)
+               size.fine, algo.n_small_tees)
     return small_rows, small_cols, small_rows_ext, small_cols_ext
 
 
-def gen_networks(seed, size=None):
-    size = DEFAULT_SIZE if size is None else size
+def gen_networks(seed, size, algo):
+    """The seeded road network on a ``size`` grid, shaped by ``algo``'s road knobs."""
     rng = random.Random(seed)
-    big_rows, big_cols, big_rows_ext, big_cols_ext = _generate_big_network(rng, size)
-    small_rows, small_cols, small_rows_ext, small_cols_ext = _generate_small_network(rng, size, big_rows, big_cols)
+    big_rows, big_cols, big_rows_ext, big_cols_ext = _generate_big_network(rng, size, algo)
+    small_rows, small_cols, small_rows_ext, small_cols_ext = _generate_small_network(rng, size, algo, big_rows, big_cols)
 
     net = {
         "size": size,

@@ -2,8 +2,9 @@
 
 Configuration is the base layer of the source tree: it depends on nothing else in
 `src/` and everything else depends on it. Values are read from `MC_CITY_*`
-environment variables **at import time** and exposed as module-level constants, so
-a stage's behavior is fixed once its config module is imported.
+environment variables **once, at import time**, as this process's defaults.
+Per-run settings (`Algo`, the source save, regions, DataVersion) travel as
+arguments, so the engine never reads those defaults.
 
 ← Back to the [source architecture overview](../README.md).
 
@@ -13,7 +14,7 @@ a stage's behavior is fixed once its config module is imported.
 |---|---|
 | [env.py](env.py) | Base layer: `env_*` typed readers for `MC_CITY_*` overrides |
 | [path.py](path.py) | Runtime paths: app/resource roots, every artifact path, world-save region lookup |
-| [algo.py](algo.py) | Road-generation and city-placement tuning knobs |
+| [algo.py](algo.py) | `CELL`, and the `Algo` dataclass of road-generation and city-placement knobs (`ALGO`: the process default) |
 | [world.py](world.py) | Source world path, extraction regions, marker Y range, domain region models, version labels, schematic `DATA_VERSION` |
 | [render.py](render.py) | Render and preview style constants (tile sizes, ground fill) |
 | [doctor.py](doctor.py) | Environment diagnostics for first-run setup (`citygen-doctor`) |
@@ -27,17 +28,15 @@ Non-code assets that ship in this package:
 
 ## The `MC_CITY_` override convention
 
-Every tunable in `config` can be overridden by an `MC_CITY_<NAME>` environment
-variable. The typed readers in `env.py` (`env_int`, `env_set`, `env_raw`, …)
-apply the override or fall back to the default. The GUI and CLI set these
-variables before importing/reloading a stage, which is how a run is configured
-without editing code.
+Every tunable in `config` except `CELL` can be overridden by an
+`MC_CITY_<NAME>` environment variable (for `Algo`, the upper-cased field name,
+e.g. `MC_CITY_GAP_BIG`). The typed readers in `env.py` (`env_int`, `env_set`,
+`env_raw`, …) apply the override or fall back to the default. This sets the
+defaults for a CLI run without editing code.
 
-For in-process callers, the supported boundary is
-`pipeline.services.run_stage(stage, env_overrides={...})`. Pass only the `MC_CITY_*` keys
-needed for that run; `pipeline.services.configured_environment` temporarily
-applies them, reloads the import-time config graph, and restores the prior
-environment after the stage exits.
+In-process callers leave the environment alone: they pass per-run settings as
+stage parameters, e.g. `pipeline.services.run_stage("preview", seed=5,
+algo=replace(ALGO, gap_big=8))`.
 
 ## Version Compatibility
 
@@ -57,9 +56,9 @@ Handled by [world.py](world.py):
   its `level.dat`, else the **26.1.2 hard floor**, and clamped up to that floor).
   Stamping any newer version would skip the DataFixer and hole out blocks renamed
   since the source (e.g. `grass` → `short_grass`).
-- `DATA_VERSION` is pinned via `MC_CITY_DATA_VERSION` so construct/render stages —
-  which do not set `MC_CITY_SAVE` — stamp the source version rather than
-  re-detecting the default world.
+- Extraction stamps the version detected from its `save`. The construct stage
+  has no save, so the GUI passes it the source world's `data_version`; the CLI
+  default is `DATA_VERSION` (`MC_CITY_DATA_VERSION`, else the default world's).
 - The floor is `HARD_FLOOR_DATA_VERSION = 4790` (Minecraft 26.1.2). Because every
   stamp is ≥ this floor, outputs always use the **Sponge v3** container; the
   writer and reader in [`engine/schematic`](../engine/README.md#schematic-io)
@@ -73,17 +72,20 @@ Handled by [world.py](world.py):
 
 From [algo.py](algo.py):
 
-- `CELL` — blocks/pixels per fine cell (9)
-- `FINE` — grid edge in fine cells
+- `CELL` — blocks/pixels per fine cell (9); fixed, not overridable
 - `DEFAULT_SEED` — default generation seed
-- `GAP_BIG` / `GAP_SMALL` — spacing of big avenues (coarse grid) / small streets (fine grid)
-- `GAP_MIXED` — minimum clearance between a small street and a big-road band
-- `PAD_BIG` / `PAD_SMALL` — edge padding for big / small roads
-- `N_BIG_CORNERS` / `N_BIG_TEES` — forced avenue L-corners / T-intersections
-- `N_SMALL_CORNERS` / `N_SMALL_TEES` — forced street L-corners / T-intersections
-- `BANNED_BUILDINGS` — building IDs excluded from placement; empty by default
-- `TYPE1_TOP_FIT_CHOICES` — standard-building variation depth
-- `LANDMARK_SPACING` — minimum fine-cell distance between landmark footprints
+
+`Algo` fields:
+
+- `fine` — grid edge in fine cells
+- `gap_big` / `gap_small` — spacing of big avenues (coarse grid) / small streets (fine grid)
+- `gap_mixed` — minimum clearance between a small street and a big-road band
+- `pad_big` / `pad_small` — edge padding for big / small roads
+- `n_big_corners` / `n_big_tees` — forced avenue L-corners / T-intersections
+- `n_small_corners` / `n_small_tees` — forced street L-corners / T-intersections
+- `banned_buildings` — building IDs excluded from placement; empty by default
+- `type1_top_fit_choices` — standard-building variation depth
+- `landmark_spacing` — minimum fine-cell distance between landmark footprints
 
 From [world.py](world.py):
 

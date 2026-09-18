@@ -4,35 +4,39 @@ from __future__ import annotations
 
 import os
 import sys
-from functools import lru_cache
 from pathlib import Path
 
 if __package__ in (None, ""):
     sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
-from config.path import ROADS_SCHEM
-from config.world import BUILD_MARKER_Y_RANGE, DATA_VERSION, REGION_DIR, ROAD_BOX, SAVE
+from config.path import ROADS_SCHEM, resolve_region_dir
+from config.world import BUILD_MARKER_Y_RANGE, ROAD_BOX, SAVE, source_data_version
 from engine.world.anvil_world_reader import World
 from engine.world.marker_extract import detect_marker_assets, extract_cuboid, sign_text_above
 from engine.schematic.writer import write_sponge_schem_cells
 from pipeline.extraction import chunk_scan_count, remove_existing_schems
 from pipeline.step import noop, run_stage_cli
 
-@lru_cache(maxsize=1)
-def get_world():
-    return World(REGION_DIR, SAVE)
+def open_world(save):
+    return World(resolve_region_dir(save), save)
 
 
-def name_for(emerald):
-    return sign_text_above(get_world(), emerald).replace(" ", "").strip() or None
+def name_for(world, emerald):
+    return sign_text_above(world, emerald).replace(" ", "").strip() or None
 
 
-def run(*, logger=None, progress=None):
+def run(*, save=SAVE, road_box=ROAD_BOX, data_version=None, logger=None, progress=None):
+    """Extract the road assets marked inside ``road_box`` of the ``save`` world.
+
+    ``data_version`` defaults to the source world's own (see ``source_data_version``).
+    """
     logger = logger or noop
     progress = progress or noop
+    data_version = source_data_version(save) if data_version is None else data_version
+    world = open_world(save)
     os.makedirs(ROADS_SCHEM, exist_ok=True)
     remove_existing_schems(ROADS_SCHEM)
-    total_scan_chunks = chunk_scan_count(ROAD_BOX.x0, ROAD_BOX.x1, ROAD_BOX.z0, ROAD_BOX.z1)
+    total_scan_chunks = chunk_scan_count(road_box.x0, road_box.x1, road_box.z0, road_box.z1)
     progress(0, total_scan_chunks, "Scanning road region...")
 
     m_lo, m_hi = BUILD_MARKER_Y_RANGE.as_tuple()
@@ -41,7 +45,7 @@ def run(*, logger=None, progress=None):
         progress(done, total, "Scanning road region...")
 
     components, skipped = detect_marker_assets(
-        get_world(), ROAD_BOX.x0, ROAD_BOX.x1, ROAD_BOX.z0, ROAD_BOX.z1, (m_lo, m_hi),
+        world, road_box.x0, road_box.x1, road_box.z0, road_box.z1, (m_lo, m_hi),
         on_progress=on_scan,
     )
     logger(f"{len(components)} marker components")
@@ -51,7 +55,7 @@ def run(*, logger=None, progress=None):
     results = []
     total = len(components)
     for index, comp in enumerate(components, start=1):
-        name = name_for(comp.emerald)
+        name = name_for(world, comp.emerald)
         progress(index - 1, total, name)  # announce the asset before its (slow) extraction
         if name is None:
             logger(f"  !! no sign above emerald {comp.emerald}")
@@ -61,12 +65,12 @@ def run(*, logger=None, progress=None):
             logger(f"  !! road asset {name} has {len(comp.cuboids)} layers; expected 1 -- SKIPPED")
             progress(index, total, name)
             continue
-        cells, block_entities = extract_cuboid(get_world(), comp.cuboids[0], force_persistent_leaves=True)
+        cells, block_entities = extract_cuboid(world, comp.cuboids[0], force_persistent_leaves=True)
         height, length, width = len(cells), len(cells[0]), len(cells[0][0])
         write_sponge_schem_cells(
             cells,
             os.path.join(ROADS_SCHEM, name + ".schem"),
-            DATA_VERSION,
+            data_version,
             offset=(0, -comp.ground_offset, 0),
             block_entities=block_entities,
         )

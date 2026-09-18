@@ -113,8 +113,7 @@ class PreviewTab(QtWidgets.QWidget, AlgoTabMixin, ProgressMixin):
         seed = self.controls.seed_edit.text().strip()
         try:
             algo_config.validate_seed(seed)
-            env = algo_config.build_algo_env_from_values(self.controls.algo_values())
-            fine = env["MC_CITY_FINE"]
+            algo = algo_config.build_algo_from_values(self.controls.algo_values())
         except algo_config.SeedError as exc:
             QtWidgets.QMessageBox.critical(self, "Invalid seed", str(exc))
             return
@@ -136,7 +135,7 @@ class PreviewTab(QtWidgets.QWidget, AlgoTabMixin, ProgressMixin):
             self.refresh_prerequisite_state()
 
         def job(on_progress):
-            services.run_stage("preview", seed=seed, fine=fine, env_overrides=env, progress=on_progress)
+            services.run_stage("preview", seed=seed, algo=algo, progress=on_progress)
             return seed
 
         start_background_job(

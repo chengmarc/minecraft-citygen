@@ -4,6 +4,7 @@ import unittest
 
 import numpy as np
 
+from config.algo import Algo
 from engine.core import city_layout as C
 from engine.core import road_network as R
 from engine.render.isometric import render_grid_visible_iso
@@ -20,12 +21,19 @@ def _network_snapshot(net):
 class RoadNetworkTests(unittest.TestCase):
     def test_seeded_generation_is_stable(self):
         size = R.make_size(40)
-        first = _network_snapshot(R.gen_networks(17, size=size))
-        second = _network_snapshot(R.gen_networks(17, size=size))
-        different = _network_snapshot(R.gen_networks(18, size=size))
+        first = _network_snapshot(R.gen_networks(17, size, Algo()))
+        second = _network_snapshot(R.gen_networks(17, size, Algo()))
+        different = _network_snapshot(R.gen_networks(18, size, Algo()))
 
         self.assertEqual(first, second)
         self.assertNotEqual(first, different)
+
+    def test_generation_follows_the_algo_argument(self):
+        size = R.make_size(40)
+        default = _network_snapshot(R.gen_networks(17, size, Algo()))
+        sparse = _network_snapshot(R.gen_networks(17, size, Algo(gap_small=10)))
+
+        self.assertNotEqual(default["small_rows"], sparse["small_rows"])
 
 
 class CityLayoutTests(unittest.TestCase):
@@ -83,7 +91,7 @@ class CityLayoutTests(unittest.TestCase):
             fine,
             rng=random.Random(5),
             type2_frontage_cells=road_cells,
-            landmark_spacing=0,
+            algo=Algo(landmark_spacing=0),
         )
 
         self.assertEqual([p.building.num for p in placements if p.building.type == 2], ["020", "010"])
@@ -106,7 +114,7 @@ class CityLayoutTests(unittest.TestCase):
             fine,
             rng=random.Random(5),
             type2_frontage_cells=road_cells,
-            landmark_spacing=3,
+            algo=Algo(landmark_spacing=3),
         )
 
         type2 = [p for p in placements if p.building.type == 2]

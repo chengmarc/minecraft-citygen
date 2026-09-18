@@ -1,12 +1,14 @@
-"""Algorithm settings form: which knobs the GUI shows and how they become env.
+"""Algorithm settings form: which knobs the GUI shows and how they become an ``Algo``.
 
-Each knob maps to one ``MC_CITY_*`` override read by :mod:`config.algo`.
+Each knob names one :class:`config.algo.Algo` field, upper-cased.
 """
 
 from __future__ import annotations
 
-from config import algo
-from config.algo import DEFAULT_SEED
+from dataclasses import replace
+
+from config.algo import ALGO, DEFAULT_SEED
+from config.env import parse_set
 
 
 class SeedError(ValueError):
@@ -97,8 +99,8 @@ def selector_label(name, value):
 
 
 def config_default(name):
-    value = getattr(algo, name)
-    if isinstance(value, set):
+    value = getattr(ALGO, name.lower())
+    if isinstance(value, frozenset):
         return ", ".join(sorted(value))
     if name in SELECTOR_OPTIONS:
         label = selector_label(name, value)
@@ -127,22 +129,22 @@ def snapshot_config_values(config_values):
     }
 
 
-def build_algo_env_from_values(config_values):
+def build_algo_from_values(config_values):
+    """The :class:`config.algo.Algo` the form's text values describe."""
     normalized = snapshot_config_values(config_values)
-    env = {}
+    knobs = {}
     for name, _label, _description in PREVIEW_CONFIGS:
         value = normalized[name]
         if name == "BANNED_BUILDINGS":
-            env[f"MC_CITY_{name}"] = value
+            knobs[name.lower()] = frozenset(parse_set(value))
             continue
         if name in SELECTOR_OPTIONS:
             value = selector_value(name, value)
         try:
-            int(value)
+            knobs[name.lower()] = int(value)
         except ValueError as exc:
             raise ConfigError(f"{name} must be an integer.") from exc
-        env[f"MC_CITY_{name}"] = value
-    return env
+    return replace(ALGO, **knobs)
 
 
 def default_algo_tab_config():

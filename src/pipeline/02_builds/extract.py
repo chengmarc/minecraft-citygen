@@ -4,14 +4,13 @@ from __future__ import annotations
 
 import os
 import sys
-from functools import lru_cache
 from pathlib import Path
 
 if __package__ in (None, ""):
     sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
-from config.path import BUILD_CATALOG, BUILDS_SCHEM
-from config.world import BUILD_MARKER_Y_RANGE, BUILD_TYPES, DATA_VERSION, REGION_DIR, SAVE
+from config.path import BUILD_CATALOG, BUILDS_SCHEM, resolve_region_dir
+from config.world import BUILD_MARKER_Y_RANGE, BUILD_TYPES, SAVE, source_data_version
 from engine.world.anvil_world_reader import World
 from engine.world.marker_extract import detect_marker_assets, extract_cuboid, parse_range, sign_text_above
 from engine.schematic.building import STACK_PARTS, WHOLE, piece_path, write_catalog
@@ -20,16 +19,15 @@ from pipeline.extraction import chunk_scan_count, remove_existing_schems
 from pipeline.step import noop, run_stage_cli
 
 
-@lru_cache(maxsize=1)
-def get_world():
-    return World(REGION_DIR, SAVE)
+def open_world(save):
+    return World(resolve_region_dir(save), save)
 
 
-def detect_builds(build_type, x_a, x_b, z_a, z_b, *, on_scan_progress=None):
+def detect_builds(world, build_type, x_a, x_b, z_a, z_b, *, on_scan_progress=None):
     """Detect one- or three-layer builds from direct gold/diamond marker pairs."""
     m_lo, m_hi = BUILD_MARKER_Y_RANGE.as_tuple()
     components, skipped = detect_marker_assets(
-        get_world(), x_a, x_b, z_a, z_b, (m_lo, m_hi),
+        world, x_a, x_b, z_a, z_b, (m_lo, m_hi),
         on_progress=on_scan_progress,
     )
     builds = [
@@ -39,18 +37,24 @@ def detect_builds(build_type, x_a, x_b, z_a, z_b, *, on_scan_progress=None):
     return builds, skipped
 
 
-def stack_sign(emerald):
+def stack_sign(world, emerald):
     stack_labels = (r"stack\s*:\s*",)
-    return parse_range(sign_text_above(get_world(), emerald), stack_labels)
+    return parse_range(sign_text_above(world, emerald), stack_labels)
 
 
-def run(*, logger=None, progress=None):
+def run(*, save=SAVE, build_types=BUILD_TYPES, data_version=None, logger=None, progress=None):
+    """Extract the builds marked inside ``build_types``' regions of the ``save`` world.
+
+    ``data_version`` defaults to the source world's own (see ``source_data_version``).
+    """
     logger = logger or noop
     progress = progress or noop
+    data_version = source_data_version(save) if data_version is None else data_version
+    world = open_world(save)
     os.makedirs(BUILDS_SCHEM, exist_ok=True)
     remove_existing_schems(BUILDS_SCHEM)
 
-    region_data = [(r.build_type, *r.bounds.as_tuple()) for r in BUILD_TYPES]
+    region_data = [(r.build_type, *r.bounds.as_tuple()) for r in build_types]
     chunk_counts = [
         chunk_scan_count(xa, xb, za, zb)
         for _, (xa, _y0, za), (xb, _y1, zb) in region_data
@@ -68,7 +72,7 @@ def run(*, logger=None, progress=None):
         def on_scan(done, _total, _offset=offset):
             progress(_offset + done, total_scan_chunks, "Scanning build regions...")
 
-        detected, skipped = detect_builds(build_type, xa, xb, za, zb, on_scan_progress=on_scan)
+        detected, skipped = detect_builds(world, build_type, xa, xb, za, zb, on_scan_progress=on_scan)
         builds.extend(detected)
         logger(f"type {build_type} region: {len(detected)} builds from marker pairs")
         for xmn, zmn, reason in skipped:
@@ -85,11 +89,11 @@ def run(*, logger=None, progress=None):
             parts = (WHOLE,)
         else:
             parts = STACK_PARTS
-            stack_rng = stack_sign(emerald)
+            stack_rng = stack_sign(world, emerald)
             entry["stack"] = stack_rng if stack_rng is not None else [1, 1]
         for part, cuboid in zip(parts, cuboids):
-            cells, bes = extract_cuboid(get_world(), cuboid, force_persistent_leaves=True)
-            write_sponge_schem_cells(cells, piece_path(BUILDS_SCHEM, key, part), DATA_VERSION, block_entities=bes)
+            cells, bes = extract_cuboid(world, cuboid, force_persistent_leaves=True)
+            write_sponge_schem_cells(cells, piece_path(BUILDS_SCHEM, key, part), data_version, block_entities=bes)
             entry["pieces"][part] = cuboid[3] - cuboid[2] + 1
         catalog[key] = entry
         logger(f"extracted {key}")

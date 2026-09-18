@@ -17,12 +17,9 @@ from collections import deque
 from dataclasses import dataclass, field
 from typing import Any
 
-from config.algo import (
-    BANNED_BUILDINGS,
-    CELL,
-    LANDMARK_SPACING,
-    TYPE1_TOP_FIT_CHOICES,
-)
+from config.algo import CELL, Algo
+
+DEFAULT_ALGO = Algo()
 
 DIRS = {"N": (0, -1), "E": (1, 0), "S": (0, 1), "W": (-1, 0)}
 FACE_K = {"S": 0, "W": 1, "N": 2, "E": 3}
@@ -82,7 +79,7 @@ def normalize_building_id(value):
     return f"{int(text):03d}" if text.isdigit() else text
 
 
-def load_catalog(catalog_meta, banned_buildings=BANNED_BUILDINGS):
+def load_catalog(catalog_meta, banned_buildings=DEFAULT_ALGO.banned_buildings):
     """Placeable Buildings from raw ``buildings.json`` entries, best-scoring first."""
     banned = {normalize_building_id(value) for value in banned_buildings}
     buildings = []
@@ -258,7 +255,7 @@ def place_from_points(avail, points, facing, candidates, chooser, top_fit_choice
     return placed
 
 
-def place_type2(avail, frontage_cells, catalog, fine, landmark_spacing=LANDMARK_SPACING):
+def place_type2(avail, frontage_cells, catalog, fine, landmark_spacing=DEFAULT_ALGO.landmark_spacing):
     """Place each type-2 landmark at most once, largest footprint first."""
     placed = []
     candidates = sorted(
@@ -289,7 +286,7 @@ def place_type2(avail, frontage_cells, catalog, fine, landmark_spacing=LANDMARK_
     return placed
 
 
-def place_type1(avail, road_cells, lots, catalog, chooser, fine):
+def place_type1(avail, road_cells, lots, catalog, chooser, fine, top_fit_choices=DEFAULT_ALGO.type1_top_fit_choices):
     """Fill remaining lot frontage with type-1 buildings."""
     placed = []
     candidates = [b for b in catalog if b.type == 1]
@@ -302,21 +299,21 @@ def place_type1(avail, road_cells, lots, catalog, chooser, fine):
                         0 <= x + dx < n and 0 <= y + dy < n and
                         (x + dx, y + dy) in road_cells]
             placed += place_from_points(avail, sort_frontage(frontage, facing), facing,
-                                        candidates, chooser, TYPE1_TOP_FIT_CHOICES, fine)
+                                        candidates, chooser, top_fit_choices, fine)
     return placed
 
 
-def place_city(road_cells, lots, catalog, fine, rng, type2_frontage_cells=None, landmark_spacing=LANDMARK_SPACING):
+def place_city(road_cells, lots, catalog, fine, rng, type2_frontage_cells=None, algo=DEFAULT_ALGO):
     """Place type-2 buildings by longest big-road frontage, then fill with type-1."""
     avail = {cell for lot in lots for cell in lot}
     type2_frontage_cells = road_cells if type2_frontage_cells is None else type2_frontage_cells
     placed = []
-    placed += place_type2(avail, type2_frontage_cells, catalog, fine, landmark_spacing)
-    placed += place_type1(avail, road_cells, lots, catalog, rng, fine)
+    placed += place_type2(avail, type2_frontage_cells, catalog, fine, algo.landmark_spacing)
+    placed += place_type1(avail, road_cells, lots, catalog, rng, fine, algo.type1_top_fit_choices)
     return placed
 
 
-def plan_city(seed, net, catalog_meta):
+def plan_city(seed, net, catalog_meta, algo):
     """Lots and validated building placements for one seeded road network.
 
     The single placement entry point for both the Stage 3 preview and the
@@ -328,10 +325,11 @@ def plan_city(seed, net, catalog_meta):
     placements = place_city(
         road_cells,
         lots,
-        load_catalog(catalog_meta),
+        load_catalog(catalog_meta, algo.banned_buildings),
         fine,
         seeded_rng(seed, PLACEMENT_STREAM),
         type2_frontage_cells=net["big_fine_cells"],
+        algo=algo,
     )
     validate_placements(road_cells, placements, fine)
     return lots, placements

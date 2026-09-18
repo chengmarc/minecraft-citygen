@@ -27,9 +27,12 @@ def env_int(name: str, default: int) -> int:
     return default if value is None else int(value.strip())
 
 
+def parse_set(value: str) -> set[str]:
+    """The non-blank items of a comma/semicolon-separated string."""
+    return {part.strip() for part in value.replace(";", ",").split(",") if part.strip()}
+
+
 def env_set(name: str, default) -> set[str]:
     """Comma/semicolon-separated string set, falling back to ``default``."""
     value = env_raw(name)
-    if value is None:
-        return set(default)
-    return {part.strip() for part in value.replace(";", ",").split(",") if part.strip()}
+    return set(default) if value is None else parse_set(value)

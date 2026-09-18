@@ -33,8 +33,8 @@ application.pyw  ->  gui.launcher:main  ->  gui.app  (QApplication + main window
 - [theme.py](core/theme.py) — application styling: stylesheet, palette, and
   widget-decoration helpers.
 - [algo_config.py](core/algo_config.py) — the algorithm settings form: which
-  knobs the Preview/Build tabs show, their defaults, and the algo-value ↔
-  `MC_CITY_*` env mapping.
+  knobs the Preview/Build tabs show, their defaults, and the form values → `config.algo.Algo`
+  mapping.
 - [extraction_config.py](core/extraction_config.py) — extraction settings:
   default source world and asset regions, and the version stamp/selector.
 - [app_files.py](core/app_files.py) — files the GUI owns on disk: icons, the
@@ -66,15 +66,15 @@ application.pyw  ->  gui.launcher:main  ->  gui.app  (QApplication + main window
 
 ## How it drives the pipeline
 
-- The tabs collect settings into `MC_CITY_*` env overrides and call
+- The tabs collect settings into stage parameters (an `Algo`, the source save,
+  the extraction regions, the DataVersion) and call
   [`pipeline.services.run_stage`](../pipeline/README.md) from background workers,
   streaming progress back to the UI through the `workers` mixins.
 - The user-facing tab order maps to the numbered pipeline: Extract runs
   Stages 1 and 2, Preview runs Stage 3, and Build runs Stage 4
   followed by Stage 5.
-- The GUI passes only explicit `MC_CITY_*` overrides into `pipeline.services`,
-  which owns temporary environment mutation/reload/restore; GUI code should
-  not set process environment variables directly for a stage run.
+- The GUI never sets `MC_CITY_*` environment variables for a stage run; those
+  only set the process defaults at startup.
 - The Extraction tab detects and displays the source world's Minecraft version and
   offers the Target Version selector (see the
   [config guide](../config/README.md#version-compatibility)).

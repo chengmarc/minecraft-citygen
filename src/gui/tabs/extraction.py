@@ -306,17 +306,15 @@ class ExtractionTab(QtWidgets.QWidget, ProgressMixin):
             QtWidgets.QMessageBox.critical(self, "Invalid extraction region", str(exc))
             return
 
-        env = {"MC_CITY_SAVE": state["world_path"].strip()}
-        env.update(extraction_config.stamp_version_env(state["world_path"].strip()))
+        # Extraction stamps the source world's own DataVersion by default.
+        save = state["world_path"].strip()
         road_start, road_end = self.road_group.get_xyz_pair("Road")
-        env["MC_CITY_ROAD_BOX"] = BlockRegion.from_xyz_pair(road_start, road_end).to_env_value()
+        road_box = BlockRegion.from_xyz_pair(road_start, road_end)
         house_start, house_end = self.house_group.get_xyz_pair("House")
         landmark_start, landmark_end = self.landmark_group.get_xyz_pair("Landmark")
-        env["MC_CITY_BUILD_TYPES"] = ";".join(
-            [
-                BuildRegion(1, BlockRegion.from_xyz_pair(house_start, house_end)).to_env_value(),
-                BuildRegion(2, BlockRegion.from_xyz_pair(landmark_start, landmark_end)).to_env_value(),
-            ]
+        build_types = (
+            BuildRegion(1, BlockRegion.from_xyz_pair(house_start, house_end)),
+            BuildRegion(2, BlockRegion.from_xyz_pair(landmark_start, landmark_end)),
         )
 
         self._save_state()
@@ -334,8 +332,8 @@ class ExtractionTab(QtWidgets.QWidget, ProgressMixin):
 
         def job(emit_progress):
             on_progress = coalesce_pipeline_progress(emit_progress)
-            services.run_stage("roads", env_overrides=env, progress=on_progress)
-            services.run_stage("builds", env_overrides=env, progress=on_progress)
+            services.run_stage("roads", save=save, road_box=road_box, progress=on_progress)
+            services.run_stage("builds", save=save, build_types=build_types, progress=on_progress)
 
         start_background_job(
             self,

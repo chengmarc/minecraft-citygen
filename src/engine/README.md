@@ -34,16 +34,17 @@ Mixed pieces exist because a small road can cross a big corridor transversely; t
 overlap occupies exactly two fine cells, so the mixed art is `1x2`.
 
 **Big roads are generated first:** avenue positions are chosen on the coarse grid,
-spaced by `GAP_BIG` with `PAD_BIG` edge padding, evenly stepped then jittered by
+spaced by `gap_big` with `pad_big` edge padding (knobs of the `config.algo.Algo` passed to
+`gen_networks`), evenly stepped then jittered by
 `-1/0/+1`, with nearby duplicates collapsed to preserve minimum spacing. Some
 full-span roads are truncated into T-intersections and some pairs into L-corners
-(`N_BIG_TEES`, `N_BIG_CORNERS`).
+(`n_big_tees`, `n_big_corners`).
 
-**Small roads come next:** streets on the fine grid, spaced by `GAP_SMALL` with
-`PAD_SMALL` padding, filtered so they don't sit too close to big-road bands. The
-critical clearance rule is `GAP_MIXED` — the minimum fine-cell clearance between a
+**Small roads come next:** streets on the fine grid, spaced by `gap_small` with
+`pad_small` padding, filtered so they don't sit too close to big-road bands. The
+critical clearance rule is `gap_mixed` — the minimum fine-cell clearance between a
 small street and a big corridor band. Small roads also receive forced L-corners
-and T-intersections (`N_SMALL_CORNERS`, `N_SMALL_TEES`), and their endpoints snap
+and T-intersections (`n_small_corners`, `n_small_tees`), and their endpoints snap
 either to another small road or to the edge of a big corridor.
 
 **Overlap rules** keep compositing predictable: a small road never lives inside a
@@ -83,13 +84,13 @@ size in fine cells, and sorts buildings descending by physical score
 
 **Candidate selection.** Type-2 landmarks are tried once each, largest footprint
 first, and each takes the first fitting big-road frontage position that respects
-`LANDMARK_SPACING`. Type-1 buildings still check each frontage point in sorted
+`landmark_spacing`. Type-1 buildings still check each frontage point in sorted
 order, collect the first N fitting candidates, and choose randomly from that
-top-fit set (`TYPE1_TOP_FIT_CHOICES`) — variation without abandoning fit quality.
+top-fit set (`type1_top_fit_choices`) — variation without abandoning fit quality.
 
 **Repetition.** Type-2 buildings are landmarks and each catalog ID can be placed
 at most once in a generated city. Type-1 buildings have no repeat limit. Banned
-IDs (`BANNED_BUILDINGS`) are filtered before placement.
+IDs (`banned_buildings`) are filtered before placement.
 
 ## Schematic I/O
 
