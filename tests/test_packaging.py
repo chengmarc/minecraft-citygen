@@ -28,6 +28,7 @@ def test_pyinstaller_command_includes_numbered_pipeline_stage_modules():
 
 
 def test_pyinstaller_hidden_imports_mirror_the_stage_registry():
-    from pipeline.stages import PIPELINE_INTERNAL_MODULES
+    from pipeline.stages import STAGES
 
-    assert set(load_build_script().PIPELINE_STAGE_HIDDEN_IMPORTS) == set(PIPELINE_INTERNAL_MODULES)
+    stage_modules = {step.module for steps in STAGES.values() for step in steps}
+    assert set(load_build_script().PIPELINE_STAGE_HIDDEN_IMPORTS) == stage_modules

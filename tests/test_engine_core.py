@@ -136,7 +136,7 @@ class IsometricRendererTests(unittest.TestCase):
         grid = np.zeros((2, 2, 2), dtype=np.int32)
         grid[0, 0, 0] = 1
         grid[0, 1, 0] = 1
-        image = render_grid_visible_iso(grid, inv, tile_w=8, tile_h=4, block_h=4, margin=2)
+        image = render_grid_visible_iso(grid, inv, tile_w=8, tile_h=4, block_h=4)
 
         self.assertEqual(image.mode, "RGBA")
         self.assertGreater(image.width, 0)

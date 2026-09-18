@@ -13,6 +13,7 @@ from engine.world.anvil_world_reader import World
 from engine.render.palette import block_color
 
 BACKGROUND = (36, 40, 48)
+MAX_PREVIEW_SIZE = 2048
 REGION_FILE_PATTERN = re.compile(r"^r\.(-?\d+)\.(-?\d+)\.mca$")
 
 
@@ -39,7 +40,7 @@ def region_world_bounds(region_dir):
     )
 
 
-def render_topdown_preview(save_path, *, max_size=2048, on_progress=None):
+def render_topdown_preview(save_path, *, on_progress=None):
     from PIL import Image
 
     region_dir = resolve_region_dir(save_path)
@@ -47,7 +48,7 @@ def render_topdown_preview(save_path, *, max_size=2048, on_progress=None):
     x0, x1, z0, z1 = region_world_bounds(region_dir)
     span_x = x1 - x0 + 1
     span_z = z1 - z0 + 1
-    step = max(1, math.ceil(max(span_x, span_z) / max_size))
+    step = max(1, math.ceil(max(span_x, span_z) / MAX_PREVIEW_SIZE))
 
     width = math.ceil(span_x / step)
     height = math.ceil(span_z / step)

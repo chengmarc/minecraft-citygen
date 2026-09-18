@@ -108,7 +108,7 @@ def pair_gold_diamond_markers(golds, diamonds):
     return cuboids, skipped
 
 
-def group_marker_cuboids(cuboids, emeralds=()):
+def group_marker_cuboids(cuboids, emeralds):
     """Group cuboids by vertical alignment into one- or three-layer assets."""
     grouped = {}
     for cuboid, gold in cuboids:

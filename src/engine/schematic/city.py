@@ -49,7 +49,7 @@ def assemble_instances(seed, placements, catalog_meta, ground_y, builds_dir):
         entry = catalog_meta[building.num]
         mid_sections = height_rng.randint(*entry.get("stack", [1, 1])) if is_stacked(entry) else 0
         tile = rot_tile(assemble(builds_dir, building.num, mid_sections, catalog_meta), FACE_K[placement.facing])
-        px, pz = placement_origin(placement.rect, placement.facing, tile.width, tile.length, CELL)
+        px, pz = placement_origin(placement.rect, placement.facing, tile.width, tile.length)
         px += PLAYER_ANCHOR_MARGIN
         pz += PLAYER_ANCHOR_MARGIN
         y0 = seat_y(ground_y, int(entry.get("ground_offset", CITY_GROUND_Y)))
