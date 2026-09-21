@@ -8,8 +8,8 @@
   <h3>
     Turn your own Minecraft builds into an entire city.
     <br><br>
-    Download <a href="https://github.com/doubletrends/minecraft-citygen/releases/download/v1.2.0/Minecraft.CityGen-setup.exe">Windows Installer (.exe)</a> or
-    <a href="https://github.com/doubletrends/minecraft-citygen/releases/download/v1.2.0/Minecraft.CityGen-portable-windows.zip">Compressed Portable (.zip)</a>
+    Download <a href="https://github.com/chengmarc/minecraft-citygen/releases/download/v1.2.0/Minecraft.CityGen-setup.exe">Windows Installer (.exe)</a> or
+    <a href="https://github.com/chengmarc/minecraft-citygen/releases/download/v1.2.0/Minecraft.CityGen-portable-windows.zip">Compressed Portable (.zip)</a>
   </h3>
 </div>
 
