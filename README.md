@@ -1,4 +1,5 @@
 <div align="center">
+
   <img src="src/gui/icons/app-icon.svg" width="180"><br>
 
   <img src="docs/pics/badge-minecraft.svg">
