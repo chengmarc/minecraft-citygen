@@ -1,16 +1,18 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" role="img" aria-labelledby="title description">
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="-16 -16 1056 1056" role="img" aria-labelledby="title description">
   <title id="title">Minecraft City Generator</title>
   <desc id="description">Three ivory buildings with blue glass on a rounded green tile, constructed on one consistent isometric grid.</desc>
   <defs>
+    <path id="sq" d="M1024.0,512.0 L1023.9,628.2 L1023.8,665.3 L1023.4,692.3 L1023.0,714.2 L1022.5,733.0 L1021.8,749.6 L1021.0,764.6 L1020.0,778.3 L1019.0,791.0 L1017.8,802.7 L1016.5,813.8 L1015.1,824.2 L1013.5,834.0 L1011.8,843.3 L1010.0,852.2 L1008.0,860.7 L1006.0,868.7 L1003.7,876.5 L1001.4,883.9 L998.9,891.0 L996.3,897.8 L993.5,904.4 L990.6,910.7 L987.6,916.7 L984.4,922.6 L981.0,928.2 L977.5,933.6 L973.9,938.8 L970.1,943.8 L966.1,948.6 L962.0,953.3 L957.7,957.7 L953.3,962.0 L948.6,966.1 L943.8,970.1 L938.8,973.9 L933.6,977.5 L928.2,981.0 L922.6,984.4 L916.7,987.6 L910.7,990.6 L904.4,993.5 L897.8,996.3 L891.0,998.9 L883.9,1001.4 L876.5,1003.7 L868.7,1006.0 L860.7,1008.0 L852.2,1010.0 L843.3,1011.8 L834.0,1013.5 L824.2,1015.1 L813.8,1016.5 L802.7,1017.8 L791.0,1019.0 L778.3,1020.0 L764.6,1021.0 L749.6,1021.8 L733.0,1022.5 L714.2,1023.0 L692.3,1023.4 L665.3,1023.8 L628.2,1023.9 L512.0,1024.0 L395.8,1023.9 L358.7,1023.8 L331.7,1023.4 L309.8,1023.0 L291.0,1022.5 L274.4,1021.8 L259.4,1021.0 L245.7,1020.0 L233.0,1019.0 L221.3,1017.8 L210.2,1016.5 L199.8,1015.1 L190.0,1013.5 L180.7,1011.8 L171.8,1010.0 L163.3,1008.0 L155.3,1006.0 L147.5,1003.7 L140.1,1001.4 L133.0,998.9 L126.2,996.3 L119.6,993.5 L113.3,990.6 L107.3,987.6 L101.4,984.4 L95.8,981.0 L90.4,977.5 L85.2,973.9 L80.2,970.1 L75.4,966.1 L70.7,962.0 L66.3,957.7 L62.0,953.3 L57.9,948.6 L53.9,943.8 L50.1,938.8 L46.5,933.6 L43.0,928.2 L39.6,922.6 L36.4,916.7 L33.4,910.7 L30.5,904.4 L27.7,897.8 L25.1,891.0 L22.6,883.9 L20.3,876.5 L18.0,868.7 L16.0,860.7 L14.0,852.2 L12.2,843.3 L10.5,834.0 L8.9,824.2 L7.5,813.8 L6.2,802.7 L5.0,791.0 L4.0,778.3 L3.0,764.6 L2.2,749.6 L1.5,733.0 L1.0,714.2 L0.6,692.3 L0.2,665.3 L0.1,628.2 L0.0,512.0 L0.1,395.8 L0.2,358.7 L0.6,331.7 L1.0,309.8 L1.5,291.0 L2.2,274.4 L3.0,259.4 L4.0,245.7 L5.0,233.0 L6.2,221.3 L7.5,210.2 L8.9,199.8 L10.5,190.0 L12.2,180.7 L14.0,171.8 L16.0,163.3 L18.0,155.3 L20.3,147.5 L22.6,140.1 L25.1,133.0 L27.7,126.2 L30.5,119.6 L33.4,113.3 L36.4,107.3 L39.6,101.4 L43.0,95.8 L46.5,90.4 L50.1,85.2 L53.9,80.2 L57.9,75.4 L62.0,70.7 L66.3,66.3 L70.7,62.0 L75.4,57.9 L80.2,53.9 L85.2,50.1 L90.4,46.5 L95.8,43.0 L101.4,39.6 L107.3,36.4 L113.3,33.4 L119.6,30.5 L126.2,27.7 L133.0,25.1 L140.1,22.6 L147.5,20.3 L155.3,18.0 L163.3,16.0 L171.8,14.0 L180.7,12.2 L190.0,10.5 L199.8,8.9 L210.2,7.5 L221.3,6.2 L233.0,5.0 L245.7,4.0 L259.4,3.0 L274.4,2.2 L291.0,1.5 L309.8,1.0 L331.7,0.6 L358.7,0.2 L395.8,0.1 L512.0,0.0 L628.2,0.1 L665.3,0.2 L692.3,0.6 L714.2,1.0 L733.0,1.5 L749.6,2.2 L764.6,3.0 L778.3,4.0 L791.0,5.0 L802.7,6.2 L813.8,7.5 L824.2,8.9 L834.0,10.5 L843.3,12.2 L852.2,14.0 L860.7,16.0 L868.7,18.0 L876.5,20.3 L883.9,22.6 L891.0,25.1 L897.8,27.7 L904.4,30.5 L910.7,33.4 L916.7,36.4 L922.6,39.6 L928.2,43.0 L933.6,46.5 L938.8,50.1 L943.8,53.9 L948.6,57.9 L953.3,62.0 L957.7,66.3 L962.0,70.7 L966.1,75.4 L970.1,80.2 L973.9,85.2 L977.5,90.4 L981.0,95.8 L984.4,101.4 L987.6,107.3 L990.6,113.3 L993.5,119.6 L996.3,126.2 L998.9,133.0 L1001.4,140.1 L1003.7,147.5 L1006.0,155.3 L1008.0,163.3 L1010.0,171.8 L1011.8,180.7 L1013.5,190.0 L1015.1,199.8 L1016.5,210.2 L1017.8,221.3 L1019.0,233.0 L1020.0,245.7 L1021.0,259.4 L1021.8,274.4 L1022.5,291.0 L1023.0,309.8 L1023.4,331.7 L1023.8,358.7 L1023.9,395.8Z"/>
+    <clipPath id="tile"><use href="#sq"/></clipPath>
+    <radialGradient id="sheen" cx=".28" cy=".06" r=".75"><stop offset="0" stop-color="#fff" stop-opacity=".28"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></radialGradient>
+    <linearGradient id="tileRim" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#fff" stop-opacity=".7"/><stop offset=".4" stop-color="#fff" stop-opacity=".08"/><stop offset=".75" stop-color="#fff" stop-opacity=".04"/><stop offset="1" stop-color="#fff" stop-opacity=".4"/>
+    </linearGradient>
+    <filter id="ambient" filterUnits="userSpaceOnUse" x="-16" y="-16" width="1056" height="1056"><feGaussianBlur stdDeviation="6"/></filter>
+    <filter id="contact" filterUnits="userSpaceOnUse" x="-16" y="-16" width="1056" height="1056"><feGaussianBlur stdDeviation="3"/></filter>
     <radialGradient id="background" cx=".46" cy=".46" r=".65">
       <stop stop-color="#44D5EA"/><stop offset=".42" stop-color="#329BEE"/><stop offset="1" stop-color="#2935D5"/>
     </radialGradient>
-    <linearGradient id="gloss" x1="256" y1="22" x2="256" y2="260" gradientUnits="userSpaceOnUse">
-      <stop stop-color="#FFFFFF" stop-opacity=".15"/><stop offset=".38" stop-color="#FFFFFF" stop-opacity=".05"/><stop offset="1" stop-color="#FFFFFF" stop-opacity="0"/>
-    </linearGradient>
-    <linearGradient id="rim" x1="58" y1="42" x2="452" y2="466" gradientUnits="userSpaceOnUse">
-      <stop stop-color="#FFFFFF" stop-opacity=".32"/><stop offset=".28" stop-color="#7AF3FF" stop-opacity=".2"/><stop offset=".72" stop-color="#8B7CFF" stop-opacity=".14"/><stop offset="1" stop-color="#FFFFFF" stop-opacity=".22"/>
-    </linearGradient>
     <linearGradient id="grass" x1="0" y1="0" x2=".8" y2="1">
       <stop stop-color="#C1EA05"/><stop offset=".55" stop-color="#A4D800"/><stop offset="1" stop-color="#8FC100"/>
     </linearGradient>
@@ -39,8 +41,12 @@
       <path d="M256 347.8 310.04 379 319.256 384.321 265.216 415.521 256 410.2 201.96 379Z"/>
     </g>
   </defs>
-  <!-- Rounded enamel frame and lighting shared with the Alpha Verifier icon. -->
-  <rect x="18" y="18" width="476" height="476" rx="108" fill="url(#background)"/>
+  <!-- Squircle tile, sheen, rim and 4px drop shadow shared with the Bookmark OS and Agent 2B icons. -->
+  <use href="#sq" fill="url(#background)" opacity=".9" filter="url(#ambient)" transform="translate(512 512) scale(0.98) translate(-512 -512) translate(0 5)"/>
+  <use href="#sq" fill="#00156B" opacity=".6" filter="url(#contact)" transform="translate(0 3)"/>
+  <g clip-path="url(#tile)">
+  <rect width="1024" height="1024" fill="url(#background)"/>
+  <g transform="translate(0 3.5) scale(2.151261) translate(-18 -18)">
   <g transform="translate(256 256) scale(.9) translate(-256 -256)">
   <g transform="translate(0 12)">
   <!-- Shared projection: x = 256 + (u - v) * sqrt(3)/2; y = 320 + (u + v)/2 - z. -->
@@ -114,9 +120,9 @@
   </g>
   </g>
   </g>
-  <!-- Soft top reflection follows the frame's rounded contour. -->
-  <path d="M126 18H386C445.6468 18 494 66.3532 494 126V155C392 205 153 190 18 120C21.18 63.2 68.4 18 126 18Z" fill="url(#gloss)"/>
-  <ellipse cx="146" cy="77" rx="72" ry="24" fill="#FFFFFF" fill-opacity=".04" transform="rotate(-13 146 77)"/>
-  <rect x="19.5" y="19.5" width="473" height="473" rx="106.5" fill="none" stroke="url(#rim)" stroke-width="3"/>
-  <rect x="28" y="28" width="456" height="456" rx="99" fill="none" stroke="#00156B" stroke-opacity=".24" stroke-width="2"/>
+  </g>
+  <rect width="1024" height="1024" fill="url(#sheen)"/>
+  </g>
+  <use href="#sq" fill="none" stroke="url(#tileRim)" stroke-width="6" clip-path="url(#tile)"/>
+  <use href="#sq" fill="none" stroke="#00000026" stroke-width="3"/>
 </svg>
