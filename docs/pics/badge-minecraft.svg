@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 170 30" width="170" height="30" role="img" aria-label="Minecraft 26.1.2+">
+<title>Minecraft 26.1.2+</title>
+<clipPath id="r"><rect width="170" height="30" rx="8"/></clipPath>
+<g clip-path="url(#r)"><rect width="170" height="30" fill="url(#g1)"/><rect width="103" height="30" fill="#3d342b"/></g>
+<g transform="translate(11 7) scale(0.6666666666666666)"><path fill="url(#g0)" d="M4,2H20A2,2 0 0,1 22,4V20A2,2 0 0,1 20,22H4A2,2 0 0,1 2,20V4A2,2 0 0,1 4,2M6,6V10H10V12H8V18H10V16H14V18H16V12H14V10H18V6H14V10H10V6H6Z"/></g>
+<g font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif" font-size="13" font-weight="600">
+<text x="35" y="20.55" fill="#000" fill-opacity=".25" textLength="56.7" lengthAdjust="spacing">Minecraft</text><text x="35" y="19.55" fill="#ffffff" textLength="56.7" lengthAdjust="spacing">Minecraft</text>
+<text x="114" y="20.55" fill="#000" fill-opacity=".25" textLength="44.8" lengthAdjust="spacing">26.1.2+</text><text x="114" y="19.55" fill="#ffffff" textLength="44.8" lengthAdjust="spacing">26.1.2+</text>
+</g>
+<defs><linearGradient id="g0" gradientUnits="userSpaceOnUse" x1="2" y1="2" x2="22" y2="22"><stop offset="0" stop-color="#a4d800"/><stop offset="1" stop-color="#4c9a2a"/></linearGradient><linearGradient id="g1" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="403" y2="0"><stop offset="0" stop-color="#4f8a00"/><stop offset="0.5" stop-color="#1683a8"/><stop offset="1" stop-color="#2935d5"/></linearGradient></defs>
+</svg>
