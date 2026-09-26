@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="src/gui/icons/app-icon.svg" width="180">
+  <img src="src/gui/icons/app-icon.svg" width="180"><br>
 
   <img src="docs/pics/badge-minecraft.svg">
   <a href="https://github.com/chengmarc/minecraft-citygen/releases/latest/download/Minecraft.CityGen-setup.exe"><img src="docs/pics/badge-download.svg"></a>
