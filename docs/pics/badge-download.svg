@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 229 30" width="229" height="30" role="img" aria-label="Download Windows (1.2.0)">
+<title>Download Windows (1.2.0)</title>
+<clipPath id="r"><rect width="229" height="30" rx="8"/></clipPath>
+<g clip-path="url(#r)"><rect width="229" height="30" fill="url(#g1)"/><rect width="107" height="30" fill="#3d342b"/></g>
+<g transform="translate(11 7) scale(0.6666666666666666)"><path fill="url(#g0)" d="M10.6 3.4a1.4 1.4 0 0 1 2.8 0v8.2l2.6-2.6a1.4 1.4 0 0 1 2 2l-5 5a1.4 1.4 0 0 1-2 0l-5-5a1.4 1.4 0 0 1 2-2l2.6 2.6zM3.4 15a1.4 1.4 0 0 1 1.4 1.4v2.4c0 .2.2.4.4.4h13.6c.2 0 .4-.2.4-.4v-2.4a1.4 1.4 0 0 1 2.8 0v2.4a3.2 3.2 0 0 1-3.2 3.2H5.2A3.2 3.2 0 0 1 2 18.8v-2.4A1.4 1.4 0 0 1 3.4 15z"/></g>
+<g font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif" font-size="13" font-weight="600">
+<text x="35" y="20.55" fill="#000" fill-opacity=".25" textLength="61.3" lengthAdjust="spacing">Download</text><text x="35" y="19.55" fill="#ffffff" textLength="61.3" lengthAdjust="spacing">Download</text>
+<text x="118" y="20.55" fill="#000" fill-opacity=".25" textLength="99.5" lengthAdjust="spacing">Windows (1.2.0)</text><text x="118" y="19.55" fill="#ffffff" textLength="99.5" lengthAdjust="spacing">Windows (1.2.0)</text>
+</g>
+<defs><linearGradient id="g0" gradientUnits="userSpaceOnUse" x1="2" y1="2" x2="22" y2="22"><stop offset="0" stop-color="#a4d800"/><stop offset="0.5" stop-color="#44d5ea"/><stop offset="1" stop-color="#2935d5"/></linearGradient><linearGradient id="g1" gradientUnits="userSpaceOnUse" x1="-174" y1="0" x2="229" y2="0"><stop offset="0" stop-color="#4f8a00"/><stop offset="0.5" stop-color="#1683a8"/><stop offset="1" stop-color="#2935d5"/></linearGradient></defs>
+</svg>
