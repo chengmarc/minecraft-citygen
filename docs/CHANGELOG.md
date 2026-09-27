@@ -6,7 +6,19 @@ The format is based on Keep a Changelog, and versions should match the release v
 
 ## [Unreleased]
 
-No unreleased changes.
+### Added
+
+- `--msix` build option that packages the portable app as an MSIX for the
+  Microsoft Store (the Store signs it, so no code-signing certificate is needed)
+
+### Fixed
+
+- the frozen app no longer mistakes a read-only install folder (Program Files,
+  or the MSIX install location) for a writable one; `os.access` ignores folder
+  permissions on Windows, so it now probes with a real temp file
+- the Store (MSIX) build keeps its data in its real package folder, so the
+  exported-worlds folder opens in Explorer instead of pointing at a virtualized
+  path that only the app can see
 
 ## [1.2.0] - 2026-09-19
 
