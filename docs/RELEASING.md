@@ -57,6 +57,37 @@ python packaging/build_windows_release.py --clean --include-standalone
 This additionally writes `dist/release/Minecraft CityGen.exe`. It is for
 testing only; do not publish it.
 
+### Build the Microsoft Store package
+
+The Store takes an MSIX package and signs it itself, so no code-signing
+certificate is needed. The MSIX is uploaded to Partner Center, not published
+with the GitHub release.
+
+1. One time: copy the three values from Partner Center > the app > Product
+   identity into `MSIX_IDENTITY_NAME`, `MSIX_PUBLISHER`, and
+   `MSIX_PUBLISHER_DISPLAY_NAME` in
+   [build_windows_release.py](../packaging/build_windows_release.py).
+2. Build:
+
+   ```bash
+   python packaging/build_windows_release.py --clean --msix
+   ```
+
+   This additionally writes `dist/store/Minecraft CityGen.msix`.
+3. Smoke-test the packaged app before uploading. With Developer Mode on,
+   register the unpacked layout instead of installing the unsigned MSIX:
+
+   ```powershell
+   Add-AppxPackage -Register "build\release\msix\AppxManifest.xml"
+elease\msix\AppxManifest.xml"
+   ```
+
+   Run the same checks as the installer smoke test. Generated files should land
+   under `%LOCALAPPDATA%\Packages\<package family name>\LocalCache\Local\Minecraft CityGen\`,
+   and the saves folder should open in Explorer. Remove it afterwards with
+   `Get-AppxPackage chengmarc.MCCityGen | Remove-AppxPackage`.
+4. Upload the `.msix` in a new Partner Center submission.
+
 ### Keep the build in step with a new pipeline step
 
 Stage step modules are loaded by name through `importlib`, so PyInstaller
@@ -97,6 +128,7 @@ not required.
 | `dist/release/Minecraft CityGen-setup.exe` | yes |
 | `dist/release/Minecraft CityGen-portable-windows.zip` | yes |
 | `dist/release/Minecraft CityGen.exe` | no — only with `--include-standalone`, testing only |
+| `dist/store/Minecraft CityGen.msix` | no — only with `--msix`, uploaded to the Microsoft Store |
 
 ### Build prerequisites
 
@@ -105,10 +137,18 @@ not required.
 - [Inno Setup 6](https://jrsoftware.org/isinfo.php): `ISCC.exe` on `PATH` or in
   one of `%LOCALAPPDATA%\Programs\Inno Setup 6\`,
   `%ProgramFiles(x86)%\Inno Setup 6\`, `%ProgramFiles%\Inno Setup 6\`.
+- For `--msix` only: `makeappx.exe`, from either the full
+  [Windows SDK](https://developer.microsoft.com/windows/downloads/windows-sdk/)
+  (on `PATH` or under `%ProgramFiles(x86)%\Windows Kits\10\bin\<version>\x64\`)
+  or, much smaller (~22 MB), the
+  [Microsoft.Windows.SDK.BuildTools](https://www.nuget.org/packages/Microsoft.Windows.SDK.BuildTools)
+  NuGet package: download the `.nupkg`, rename it to `.zip`, and unzip it to
+  `%LOCALAPPDATA%\Minecraft CityGen Build\sdk-buildtools\`. No install or admin needed.
 
 ### Files
 
 | File | Role |
 |---|---|
-| [build_windows_release.py](../packaging/build_windows_release.py) | Builds the portable app, zip, installer, and optional one-file exe (`--clean`, `--include-standalone`) |
+| [build_windows_release.py](../packaging/build_windows_release.py) | Builds the portable app, zip, installer, optional one-file exe, and optional Store MSIX (`--clean`, `--include-standalone`, `--msix`) |
 | [windows_installer.iss](../packaging/windows_installer.iss) | Inno Setup script; receives version and output directory from the build script |
+| [AppxManifest.xml](../packaging/AppxManifest.xml) | MSIX manifest template; the build script fills in the Store identity and version |

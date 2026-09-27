@@ -6,6 +6,7 @@ import unittest
 from pathlib import Path
 from unittest import mock
 
+from config import path as config_path
 from config import world as config_world
 
 
@@ -57,6 +58,33 @@ class VersionTests(unittest.TestCase):
             self.assertIsNone(config_world.detect_world_data_version(tempdir))  # no level.dat
             (Path(tempdir) / "level.dat").write_bytes(b"not a real nbt file")
             self.assertIsNone(config_world.detect_world_data_version(tempdir))  # corrupt
+
+
+# --- frozen app data root -------------------------------------------------
+
+class FrozenAppRootTests(unittest.TestCase):
+    def test_package_family_name_is_empty_when_not_packaged(self):
+        self.assertEqual(config_path._package_family_name(), "")  # tests never run inside an MSIX
+
+    def test_packaged_app_writes_to_the_real_package_folder(self):
+        local = str(Path.home() / "AppData" / "Local")
+        with mock.patch.object(config_path, "_package_family_name", return_value="CityGen_abc123"), \
+                mock.patch.dict(os.environ, {"LOCALAPPDATA": local, "MC_CITY_APP_ROOT": ""}):
+            root = config_path._frozen_app_root()
+        expected = Path(local) / "Packages" / "CityGen_abc123" / "LocalCache" / "Local" / "Minecraft CityGen"
+        self.assertEqual(root, os.path.normpath(expected))
+
+    def test_unwritable_exe_dir_falls_back_to_user_data_root(self):
+        with mock.patch.object(config_path, "_package_family_name", return_value=""), \
+                mock.patch.object(config_path, "_is_writable_dir", return_value=False):
+            self.assertEqual(config_path._frozen_app_root(), config_path._user_data_root())
+
+    def test_is_writable_dir_probes_with_a_real_file(self):
+        with tempfile.TemporaryDirectory() as tempdir:
+            self.assertTrue(config_path._is_writable_dir(Path(tempdir)))
+            self.assertEqual(os.listdir(tempdir), [])  # the probe cleans up after itself
+            self.assertFalse(config_path._is_writable_dir(Path(tempdir) / "missing"))
+
 
 if __name__ == "__main__":
     unittest.main()

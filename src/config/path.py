@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import os
 import sys
+import tempfile
 from pathlib import Path
 
 from config.env import env_raw
@@ -53,9 +54,57 @@ def _user_data_root() -> str:
     return _norm(base / APP_NAME)
 
 
+def _package_family_name() -> str:
+    """The MSIX package family name when running as a packaged (Store) app, else ''."""
+    if not sys.platform.startswith("win"):
+        return ""
+    import ctypes
+
+    try:
+        get_family_name = ctypes.windll.kernel32.GetCurrentPackageFamilyName
+    except AttributeError:  # pre-Windows 8
+        return ""
+    length = ctypes.c_uint32(0)
+    # APPMODEL_ERROR_NO_PACKAGE (15700) when unpackaged; ERROR_INSUFFICIENT_BUFFER (122) when packaged.
+    if get_family_name(ctypes.byref(length), None) != 122:
+        return ""
+    buffer = ctypes.create_unicode_buffer(length.value)
+    if get_family_name(ctypes.byref(length), buffer) != 0:
+        return ""
+    return buffer.value
+
+
+def _packaged_data_root(family_name: str) -> str:
+    """Per-user data dir for the MSIX build, at its real (not virtualized) location.
+
+    A packaged app's writes under AppData are silently redirected into its package
+    folder, where Explorer cannot follow the original path. Writing straight to the
+    redirect target keeps "open saves folder" working and still gets wiped on uninstall.
+    """
+    override = env_raw("APP_ROOT")
+    if override:
+        return _norm(override)
+    base = os.environ.get("LOCALAPPDATA") or str(Path.home() / "AppData" / "Local")
+    return _norm(Path(base) / "Packages" / family_name / "LocalCache" / "Local" / APP_NAME)
+
+
+def _is_writable_dir(path: Path) -> bool:
+    # os.access(W_OK) on Windows only checks the read-only attribute, which folders
+    # ignore, so it reports Program Files as writable. Probe with a real file instead.
+    try:
+        with tempfile.TemporaryFile(dir=path):
+            pass
+    except OSError:
+        return False
+    return True
+
+
 def _frozen_app_root() -> str:
+    family_name = _package_family_name()
+    if family_name:
+        return _packaged_data_root(family_name)
     exe_root = Path(sys.executable).resolve().parent
-    if os.access(exe_root, os.W_OK):
+    if _is_writable_dir(exe_root):
         return _norm(exe_root)
     return _user_data_root()
 
