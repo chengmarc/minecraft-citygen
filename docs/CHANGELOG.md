@@ -6,6 +6,10 @@ The format is based on Keep a Changelog, and versions should match the release v
 
 ## [Unreleased]
 
+No unreleased changes.
+
+## [1.2.1] - 2026-09-28
+
 ### Added
 
 - `--msix` build option that packages the portable app as an MSIX for the
@@ -19,6 +23,11 @@ The format is based on Keep a Changelog, and versions should match the release v
 - the Store (MSIX) build keeps its data in its real package folder, so the
   exported-worlds folder opens in Explorer instead of pointing at a virtualized
   path that only the app can see
+
+### Changed
+
+- new app icon
+- README download and Minecraft badges are local SVGs instead of shields.io
 
 ## [1.2.0] - 2026-09-19
 

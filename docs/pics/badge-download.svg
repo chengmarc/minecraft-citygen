@@ -1,11 +1,11 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 229 30" width="229" height="30" role="img" aria-label="Windows Download (1.2.0)">
-<title>Windows Download (1.2.0)</title>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 229 30" width="229" height="30" role="img" aria-label="Windows Download (1.2.1)">
+<title>Windows Download (1.2.1)</title>
 <clipPath id="r"><rect width="229" height="30" rx="8"/></clipPath>
 <g clip-path="url(#r)"><rect width="229" height="30" fill="url(#g1)"/><rect width="102" height="30" fill="#3d342b"/></g>
 <g transform="translate(11 7) scale(0.6666666666666666)"><path fill="url(#g0)" d="M1 1h10.4v10.4H1zM12.6 1H23v10.4H12.6zM1 12.6h10.4V23H1zM12.6 12.6H23V23H12.6z"/></g>
 <g font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif" font-size="13" font-weight="600">
 <text x="35" y="20.55" fill="#000" fill-opacity=".25" textLength="55.9" lengthAdjust="spacing">Windows</text><text x="35" y="19.55" fill="#ffffff" textLength="55.9" lengthAdjust="spacing">Windows</text>
-<text x="113" y="20.55" fill="#000" fill-opacity=".25" textLength="104.9" lengthAdjust="spacing">Download (1.2.0)</text><text x="113" y="19.55" fill="#ffffff" textLength="104.9" lengthAdjust="spacing">Download (1.2.0)</text>
+<text x="113" y="20.55" fill="#000" fill-opacity=".25" textLength="104.9" lengthAdjust="spacing">Download (1.2.1)</text><text x="113" y="19.55" fill="#ffffff" textLength="104.9" lengthAdjust="spacing">Download (1.2.1)</text>
 </g>
 <defs><linearGradient id="g0" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="24" y2="24"><stop offset="0" stop-color="#40c4f5"/><stop offset="1" stop-color="#0078d4"/></linearGradient><linearGradient id="g1" gradientUnits="userSpaceOnUse" x1="-174" y1="0" x2="229" y2="0"><stop offset="0" stop-color="#4f8a00"/><stop offset="0.5" stop-color="#1683a8"/><stop offset="1" stop-color="#2935d5"/></linearGradient></defs>
 </svg>
