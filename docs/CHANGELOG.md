@@ -6,7 +6,10 @@ The format is based on Keep a Changelog, and versions should match the release v
 
 ## [Unreleased]
 
-No unreleased changes.
+### Removed
+
+- the portable Windows zip: GitHub Releases has the installer only, and the
+  Microsoft Store has the MSIX
 
 ## [1.2.1] - 2026-09-28
 
