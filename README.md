@@ -7,21 +7,26 @@
 
   <h1>MC CityGen - Procedural City Generator</h1>
   
+  <img src="store/listing/screenshot-1-promo.png">
+  <img src="store/listing/screenshot-3-styles.png">
+
 </div>
 
+## Generated Cities
+
 <table>
-  <tr><th>Modern City</th><th>Medieval City</th></tr>
+  <tr><th width="50%">Modern City</th><th width="50%">Medieval City</th></tr>
   <tr>
-    <td valign="bottom" align="center"><img src="docs/pics/modern_iso.png"></td>
-    <td valign="bottom" align="center"><img src="docs/pics/medieval_iso.png"></td>
+    <td valign="bottom" align="center"><img src="docs/pics/modern_iso.png" width="100%"></td>
+    <td valign="bottom" align="center"><img src="docs/pics/medieval_iso.png" width="100%"></td>
   </tr>
   <tr>
-    <td><img src="docs/pics/ingame1.png"></td>
-    <td><img src="docs/pics/ingame3.png"></td>
+    <td><img src="docs/pics/ingame1.png" width="100%"></td>
+    <td><img src="docs/pics/ingame3.png" width="100%"></td>
   </tr>
   <tr>
-    <td><img src="docs/pics/ingame2.png"></td>
-    <td><img src="docs/pics/ingame4.png"></td>
+    <td><img src="docs/pics/ingame2.png" width="100%"></td>
+    <td><img src="docs/pics/ingame4.png" width="100%"></td>
   </tr>
 </table>
 
@@ -69,7 +74,3 @@ Start at the [source architecture overview](src/README.md), then follow the
 package guides: [config](src/config/README.md), [engine](src/engine/README.md),
 [pipeline](src/pipeline/README.md), and [gui](src/gui/README.md). Releases
 follow the [release guide](docs/RELEASING.md).
-
-## AI Disclaimer
-
-> Every asset in this app was hand-built by the author, placed block by block, over a development period spanning 2017 to 2026. Code and implementation were developed with AI assistance from **Claude Fable** and **GPT Astra**.

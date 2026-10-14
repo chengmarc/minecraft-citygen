@@ -1,10 +1,10 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 144.3 50" width="144.3" height="50" role="img" aria-label="MC Java Edition 26.1.2+">
-<title>MC Java Edition 26.1.2+</title>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 164.3 50" width="164.3" height="50" role="img" aria-label="Minecraft Java Edition 26.1.2+">
+<title>Minecraft Java Edition 26.1.2+</title>
 <!-- Same black, rounded, two-line badge as uom-converter's, with a grass block. -->
-<rect width="144.3" height="50" rx="6" fill="#000"/>
+<rect width="164.3" height="50" rx="6" fill="#000"/>
 <g transform="translate(10 9.57) scale(1.2857) translate(12 12) scale(1.1) translate(-12 -12)"><path fill="#8b5a2b" d="M2 7L12 12.5V23L2 17.5z"/><path fill="#6b4321" d="M12 12.5L22 7V17.5L12 23z"/><path fill="#5f9e2c" d="M2 7L12 12.5V15.3L9.5 13.9V15.5L7 14.1V12.8L4.5 11.4V12.5L2 11.1z"/><path fill="#4a8021" d="M12 12.5L22 7V11.1L19.5 12.5V11.4L17 12.8V14.8L14.5 16.2V13.9L12 15.3z"/><path fill="#8fd14f" d="M12 1.5L22 7L12 12.5L2 7z"/></g>
 <g font-family="'Segoe UI', -apple-system, BlinkMacSystemFont, 'Noto Sans', Helvetica, Arial, sans-serif" fill="#fff">
-<text x="50" y="20" font-size="12" textLength="83" lengthAdjust="spacingAndGlyphs">MC Java Edition</text>
-<text x="50" y="39" font-size="21" textLength="68" lengthAdjust="spacingAndGlyphs">26.1.2+</text>
+<text x="50" y="20" font-size="12" textLength="103" lengthAdjust="spacingAndGlyphs">Java Edition 26.1.2+</text>
+<text x="50" y="39" font-size="21" textLength="89" lengthAdjust="spacingAndGlyphs">Minecraft</text>
 </g>
 </svg>
