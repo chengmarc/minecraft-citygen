@@ -122,7 +122,7 @@ Leave empty.
 ## Properties
 
 - **Category:** Utilities & tools. **Subcategory:** none.
-- **Privacy policy URL:** `https://github.com/chengmarc/minecraft-citygen/blob/main/PRIVACY.md`
+- **Privacy policy URL:** `https://github.com/chengmarc/minecraft-citygen/blob/main/store/PRIVACY.md`
 - **Website:** `https://github.com/chengmarc/minecraft-citygen`
 - **Support contact info:** `https://github.com/chengmarc/minecraft-citygen/issues`
 - **System requirements:** check Mouse under Minimum hardware (areas are chosen on a map). Leave every other row
