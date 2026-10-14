@@ -10,7 +10,7 @@ if __package__ in (None, ""):
     sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
 from config.algo import DEFAULT_SEED
-from config.path import APP_ICON, city_schem_path, exported_world_name, exported_world_path
+from config.path import WORLD_ICON, city_schem_path, exported_world_name, exported_world_path
 from config.world import SAVE
 from engine.world.writer import schem_to_world
 from pipeline.step import noop, run_stage_cli
@@ -27,7 +27,7 @@ def run(*, seed=DEFAULT_SEED, save=SAVE, out=None, logger=None, progress=None):
     # Copy the source world and replace only the output overworld region files.
     logger(f"building world from source level.dat: {os.path.join(save, 'level.dat')}")
     summary = schem_to_world(
-        schem, out, source_world=save, world_name=exported_world_name(seed), icon_path=APP_ICON, progress=progress
+        schem, out, source_world=save, world_name=exported_world_name(seed), icon_path=WORLD_ICON, progress=progress
     )
     logger(
         f"seed={seed}: wrote world to {out} "

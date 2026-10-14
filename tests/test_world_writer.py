@@ -13,7 +13,7 @@ import nbtlib
 from nbtlib import Byte, Compound, String
 from PIL import Image
 
-from config.path import APP_ICON, resolve_region_dir
+from config.path import WORLD_ICON, resolve_region_dir
 from config.world import HARD_FLOOR_DATA_VERSION
 from engine.blocks import AIR_BLOCKS, parse_state
 from engine.schematic.transform import BlockEntity
@@ -121,7 +121,7 @@ class SchemToWorldTests(unittest.TestCase):
 
     def test_exported_world_writes_the_given_icon_at_64px(self):
         with tempfile.TemporaryDirectory() as tmp:
-            out = self._export(tmp, icon_path=APP_ICON)
+            out = self._export(tmp, icon_path=WORLD_ICON)
             with Image.open(os.path.join(out, "icon.png")) as im:
                 size = im.size
 

@@ -123,8 +123,9 @@ ROOT = _app_root()
 CONFIG = str(Path(RESOURCE_ROOT) / "config")
 GUI = str(Path(RESOURCE_ROOT) / "gui")
 GUI_ICONS = str(Path(GUI) / "icons")
-APP_ICON = str(Path(GUI_ICONS) / "app-icon.png")  # window icon and exported worlds' save-list icon
+APP_ICON = str(Path(GUI_ICONS) / "app-icon.png")  # window icon
 DEFAULT_WORLD = str(Path(RESOURCE_ROOT) / "config" / "default_world")
+WORLD_ICON = str(Path(DEFAULT_WORLD) / "icon.png")  # save-list icon of the bundled world and every exported city
 ARTIFACTS = str(Path(ROOT) / "artifacts")
 
 
