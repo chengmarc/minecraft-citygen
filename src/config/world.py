@@ -201,8 +201,8 @@ ROAD_REGION = BlockRegion.from_xyz_pair((-80, 65, 16), (-17, 75, 127))
 ROAD_BOX = _env_block_region("ROAD_BOX", ROAD_REGION)
 
 # Build regions' y0/y1 is retained as catalog metadata; marker blocks define extracted geometry.
-BUILD_TYPE1_REGION = BuildRegion(1, BlockRegion.from_xyz_pair((-320, 64, -176), (-17, 65, -17)))
-BUILD_TYPE2_REGION = BuildRegion(2, BlockRegion.from_xyz_pair((16, 64, -304), (287, 65, 191)))
+BUILD_TYPE1_REGION = BuildRegion(1, BlockRegion.from_xyz_pair((-384, 64, -192), (-17, 65, -17)))
+BUILD_TYPE2_REGION = BuildRegion(2, BlockRegion.from_xyz_pair((16, 64, -320), (351, 65, 143)))
 
 BUILD_MARKER_Y_RANGE = VerticalRange(60, 230)
 BUILD_TYPES = _env_build_regions("BUILD_TYPES", (BUILD_TYPE1_REGION, BUILD_TYPE2_REGION))
