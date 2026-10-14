@@ -15,8 +15,8 @@ and a portable Windows zip — built by [packaging/](../packaging). Nothing in
    the other places that spell the version out to match:
    - `version` in [pyproject.toml](../pyproject.toml) — the build script
      passes it to the installer as `AppVersion`
-   - the version badge and the two download URLs in the root
-     [README.md](../README.md)
+   - nothing in the root [README.md](../README.md): its download badge
+     carries no version and links to `releases/latest`
 3. Update [CHANGELOG.md](CHANGELOG.md) with the release date and
    the final changes, and add `docs/release/RELEASE_NOTES_<version>.md`.
 4. Run the test suite:

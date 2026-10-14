@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 146.6 50" width="146.6" height="50" role="img" aria-label="Download .exe for Windows">
+<title>Download .exe for Windows</title>
+<!-- Same black, rounded, two-line badge as uom-converter's. -->
+<rect width="146.6" height="50" rx="6" fill="#000"/>
+<g transform="translate(10 9.57) scale(1.2857)"><path fill="url(#g)" d="M1 1h10.4v10.4H1zM12.6 1H23v10.4H12.6zM1 12.6h10.4V23H1zM12.6 12.6H23V23H12.6z"/></g>
+<g font-family="'Segoe UI', -apple-system, BlinkMacSystemFont, 'Noto Sans', Helvetica, Arial, sans-serif" fill="#fff">
+<text x="50" y="20" font-size="12" textLength="78" lengthAdjust="spacingAndGlyphs">Download .exe</text>
+<text x="50" y="39" font-size="21" textLength="85.3" lengthAdjust="spacingAndGlyphs">Windows</text>
+</g>
+<defs><linearGradient id="g" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="24" y2="24"><stop offset="0" stop-color="#40C4F5"/><stop offset="1" stop-color="#0078D4"/></linearGradient></defs>
+</svg>
