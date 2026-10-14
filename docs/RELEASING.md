@@ -131,10 +131,18 @@ branding.
 
 **What gets bundled.** The PyInstaller command
 (`base_pyinstaller_command`) collects the `pipeline` and `gui` packages, the
-hidden stage imports above, and three data sets: `gui/icons`,
-`config/color_render.csv`, and `config/default_world`. The root `README.md` is
-copied next to the app. A file the app loads at runtime that is not
+hidden stage imports above, and four data sets: `gui/icons`,
+`config/color_render.csv`, `config/default_world`, and the window icon,
+`app-icon.png`. The root `README.md` is copied next to the app. A file the app loads at runtime that is not
 in that list is missing from the release even though it works from a checkout.
+
+**One icon source.** `src/app-icon.svg` is the only icon in the repo. The build
+renders it to `build/release/app-icon.png` with headless Microsoft Edge, then
+makes the installer's `app-icon.ico`, the Store package logos, and the bundled
+window icon from that PNG. It uses Edge, not Qt's SVG renderer, because Qt
+ignores the clip path that rounds the tile and the blur filters. From a
+checkout, `python packaging/build_windows_release.py --icon-only` makes just the
+PNG, which the app then uses as its window icon.
 
 **CPU only.** The build includes CPU `numba` acceleration for rendering; CUDA is
 not required.
@@ -153,6 +161,7 @@ not required.
 
 - Windows; the build script exits on any other OS.
 - Build dependencies: `python -m pip install .[build]` (adds PyInstaller).
+- Microsoft Edge, which comes with Windows: it renders the app icon.
 - [Inno Setup 6](https://jrsoftware.org/isinfo.php): `ISCC.exe` on `PATH` or in
   one of `%LOCALAPPDATA%\Programs\Inno Setup 6\`,
   `%ProgramFiles(x86)%\Inno Setup 6\`, `%ProgramFiles%\Inno Setup 6\`.
