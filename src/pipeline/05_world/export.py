@@ -24,7 +24,6 @@ def run(*, seed=DEFAULT_SEED, save=SAVE, out=None, logger=None, progress=None):
         raise FileNotFoundError(f"City schematic not found: {schem}. Run Stage 4 first.")
     out = out or exported_world_path(seed)
 
-    # Copy the source world and replace only the output overworld region files.
     logger(f"building world from source level.dat: {os.path.join(save, 'level.dat')}")
     summary = schem_to_world(
         schem, out, source_world=save, world_name=exported_world_name(seed), icon_path=WORLD_ICON, progress=progress
