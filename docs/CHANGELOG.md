@@ -12,7 +12,7 @@ The format is based on Keep a Changelog, and versions should match the release v
 
 - the bundled world has a medieval set and five more landmarks, and the default
   extraction areas cover them
-- a 64 x 64 pixel-art save-list icon for the bundled world and every exported city
+- the app icon as the save-list icon of the bundled world and every exported city
 
 ### Fixed
 
@@ -35,6 +35,7 @@ The format is based on Keep a Changelog, and versions should match the release v
 
 - the portable Windows zip: GitHub Releases has the installer only, and the
   Microsoft Store has the MSIX
+- migration of 0.1.0 saved settings; settings saved by 1.x load as before
 
 ## [1.2.1] - 2026-09-28
 
