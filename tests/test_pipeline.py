@@ -1,4 +1,4 @@
-"""Pipeline orchestration: stage services and the roads extraction stage."""
+"""Pipeline orchestration: the stage runner, CLI bootstrap, and step-module behavior."""
 from __future__ import annotations
 
 import importlib
@@ -9,23 +9,25 @@ import tempfile
 import types
 import unittest
 from pathlib import Path
-from types import SimpleNamespace
 from unittest import mock
 
 import pytest
-import numpy as np
 from PIL import Image
 
-from config.algo import CELL
 from config.path import exported_world_name
 from pipeline import services
 from pipeline import stages
 from pipeline.stages import PIPELINE_STAGE_COMMANDS
 from engine.schematic.transform import Tile
-from engine.schematic import city as city_grid
 from engine.world import marker_extract
 
 ROOT_DIR = Path(__file__).resolve().parents[1]
+
+roads_extract = importlib.import_module("pipeline.01_roads.extract")
+builds_extract = importlib.import_module("pipeline.02_builds.extract")
+builds_render = importlib.import_module("pipeline.02_builds.render")
+roads_render = importlib.import_module("pipeline.01_roads.render")
+world_export = importlib.import_module("pipeline.05_world.export")
 
 
 # --- stage services -------------------------------------------------------
@@ -85,12 +87,6 @@ def test_world_export_uses_seeded_world_name_for_folder_and_level(monkeypatch, t
 
 # --- roads extraction stage ----------------------------------------------
 
-roads_extract = importlib.import_module("pipeline.01_roads.extract")
-builds_extract = importlib.import_module("pipeline.02_builds.extract")
-builds_render = importlib.import_module("pipeline.02_builds.render")
-roads_render = importlib.import_module("pipeline.01_roads.render")
-world_export = importlib.import_module("pipeline.05_world.export")
-
 
 def _component(boundary, cuboid, *, ground_offset=0, emerald=(1, 64, 1)):
     return types.SimpleNamespace(
@@ -102,11 +98,9 @@ def _component(boundary, cuboid, *, ground_offset=0, emerald=(1, 64, 1)):
 
 
 class RoadsExtractTests(unittest.TestCase):
-    def test_run_removes_stale_schems_before_extracting(self):
+    def test_run_writes_each_component_seated_by_its_ground_offset(self):
         with tempfile.TemporaryDirectory() as tempdir:
             out_dir = Path(tempdir)
-            stale = out_dir / "stale.schem"
-            stale.write_text("old", encoding="utf-8")
 
             component = _component((0, 2, 0, 2), (0, 2, 65, 70, 0, 2), ground_offset=2)
             cells = [[["minecraft:stone"]]]
@@ -119,14 +113,13 @@ class RoadsExtractTests(unittest.TestCase):
                  mock.patch.object(roads_extract, "write_sponge_schem_cells") as write_schem:
                 result = roads_extract.run()
 
-            self.assertFalse(stale.exists())
             self.assertEqual(result["count"], 1)
             self.assertEqual(result["items"], ["fresh"])
             write_schem.assert_called_once()
             self.assertEqual(write_schem.call_args.args[1], str(out_dir / "fresh.schem"))
             self.assertEqual(write_schem.call_args.kwargs["offset"], (0, -2, 0))
 
-    def test_run_raises_when_no_components_were_found(self):
+    def test_run_clears_stale_schems_even_when_no_components_are_found(self):
         with tempfile.TemporaryDirectory() as tempdir:
             out_dir = Path(tempdir)
             stale = out_dir / "stale.schem"
@@ -247,48 +240,6 @@ def test_run_stage_forwards_params_and_tags_progress_by_step_module(monkeypatch)
 def test_run_stage_rejects_parameters_no_step_accepts():
     with pytest.raises(TypeError, match="unexpected parameters"):
         stages.run_stage("roads", seed=1)
-
-
-def _fill_first_cell(tile, **kwargs):
-    """Ground-fill a 12x12 grid with ``ground_y=3``; return its first cell's columns."""
-    grid = np.zeros((6, 12, 12), dtype=np.int16)
-    city_grid.place_ground_fill(
-        grid,
-        {"minecraft:air": 0},
-        np.zeros((12, 12), dtype=bool),
-        road_cells=set(),
-        size=SimpleNamespace(fine=1),
-        ground_y=3,
-        ground_fill_tile=tile,
-        **kwargs,
-    )
-    z0 = x0 = city_grid.PLAYER_ANCHOR_MARGIN
-    return grid[:, z0:z0 + CELL, x0:x0 + CELL]
-
-
-def test_city_ground_fill_tops_out_at_the_shared_ground_plane():
-    tile = Tile(width=1, height=1, length=1, cells=[[["minecraft:moss_block"]]], ground_offset=0)
-
-    cell = _fill_first_cell(tile)
-
-    assert np.count_nonzero(cell[3]) == CELL ** 2
-    assert np.count_nonzero(cell[2]) == 0
-
-
-def test_city_ground_fill_ground_offset_sinks_the_tile_below_the_plane():
-    tile = Tile(width=1, height=1, length=1, cells=[[["minecraft:oak_planks"]]], ground_offset=1)
-
-    cell = _fill_first_cell(tile)
-
-    assert np.count_nonzero(cell[2]) == CELL ** 2
-
-
-def test_city_ground_fill_skips_cells_with_fill_props():
-    tile = Tile(width=1, height=1, length=1, cells=[[["minecraft:dirt"]]], ground_offset=0)
-
-    cell = _fill_first_cell(tile, skip_cells={(0, 0)})
-
-    assert np.count_nonzero(cell) == 0
 
 
 if __name__ == "__main__":

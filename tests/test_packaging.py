@@ -20,11 +20,8 @@ def test_pyinstaller_command_includes_numbered_pipeline_stage_modules():
 
     command = build.base_pyinstaller_command(onefile=False, icon_path=None)
 
-    for module_name in build.PIPELINE_STAGE_HIDDEN_IMPORTS:
-        assert ["--hidden-import", module_name] in [
-            command[i:i + 2]
-            for i in range(len(command) - 1)
-        ]
+    hidden = {value for flag, value in zip(command, command[1:]) if flag == "--hidden-import"}
+    assert set(build.PIPELINE_STAGE_HIDDEN_IMPORTS) <= hidden
 
 
 def test_pyinstaller_hidden_imports_mirror_the_stage_registry():
