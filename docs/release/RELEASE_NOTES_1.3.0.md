@@ -40,8 +40,8 @@ the Microsoft Store has the MSIX.
 
 - The bundled world has the medieval set and five more landmarks, and the
   default building areas are larger to include them.
-- The bundled world and every exported city have a 64 x 64 pixel-art icon in
-  MC's world list, drawn to stay sharp at that size.
+- The bundled world and every exported city show the app icon in MC's world
+  list.
 
 ### Packaging
 
@@ -67,6 +67,8 @@ the Microsoft Store has the MSIX.
 - When the install folder isn't writable, settings and outputs now live in
   `%LOCALAPPDATA%\MC CityGen`. A previous `%LOCALAPPDATA%\Minecraft CityGen`
   folder is left in place; copy anything you want to keep from it.
+- Saved settings from 0.1.0 are no longer carried over; the form starts from
+  its defaults. Settings saved by 1.x load as before.
 - Cities rendered with 1.3.0 look more saturated than the same seed rendered
   with 1.2.x. Layouts and exported worlds are unaffected.
 - Publish only `MC CityGen-setup.exe` to GitHub. Upload `MC CityGen.msix` to
