@@ -43,8 +43,10 @@ MSIX_LOGOS = {  # manifest asset name -> square size in pixels
     "Square44x44Logo.png": 44,
     "Square150x150Logo.png": 150,
 }
-ICON_PNG = SRC_ROOT / "gui" / "icons" / "app-icon.png"
+ICON_SVG = SRC_ROOT / "app-icon.svg"  # the one icon source; everything else is rendered from it at build time
+ICON_PNG = BUILD_ROOT / "app-icon.png"  # also bundled as the window icon (config.path.APP_ICON)
 ICON_ICO = BUILD_ROOT / "app-icon.ico"
+ICON_PNG_SIZE = 1024
 DEFAULT_WORLD_DIR = SRC_ROOT / "config" / "default_world"
 README_FILES = (
     (ROOT / "README.md", "README.md"),
@@ -92,12 +94,53 @@ def ensure_pyinstaller() -> None:
         ) from exc
 
 
+def find_edge() -> str | None:
+    for root in (os.environ.get("ProgramFiles(x86)"), os.environ.get("ProgramFiles")):
+        if root:
+            path = Path(root) / "Microsoft" / "Edge" / "Application" / "msedge.exe"
+            if path.is_file():
+                return str(path)
+    return None
+
+
+def render_icon_png() -> Path:
+    """Render app-icon.svg to ICON_PNG with headless Edge, which comes with Windows.
+
+    Not Qt's SVG renderer: it ignores the clip path that rounds the tile, and the blur filters.
+    """
+    edge = find_edge()
+    if edge is None:
+        raise SystemExit("Microsoft Edge was not found; it renders app-icon.svg to the PNG the build needs.")
+    BUILD_ROOT.mkdir(parents=True, exist_ok=True)
+    page = BUILD_ROOT / "app-icon.html"
+    page.write_text(
+        "<style>html,body{margin:0;background:transparent}"
+        f"img{{display:block;width:{ICON_PNG_SIZE}px;height:{ICON_PNG_SIZE}px}}</style>"
+        f'<img src="{ICON_SVG.as_uri()}">',
+        encoding="utf-8",
+    )
+    ICON_PNG.unlink(missing_ok=True)
+    subprocess.run(
+        [
+            edge, "--headless=new", "--disable-gpu", "--hide-scrollbars", "--allow-file-access-from-files",
+            f"--user-data-dir={BUILD_ROOT / 'edge-icon'}", "--force-device-scale-factor=1",
+            "--default-background-color=00000000", f"--window-size={ICON_PNG_SIZE},{ICON_PNG_SIZE}",
+            f"--screenshot={ICON_PNG}", page.as_uri(),
+        ],
+        check=False,
+        capture_output=True,
+    )
+    if not ICON_PNG.is_file():
+        raise SystemExit(f"Edge did not render {ICON_SVG.name} to {ICON_PNG}.")
+    return ICON_PNG
+
+
 def build_icon() -> Path | None:
+    render_icon_png()
     try:
         from PIL import Image
     except ImportError:
         return None
-    BUILD_ROOT.mkdir(parents=True, exist_ok=True)
     with Image.open(ICON_PNG) as image:
         image.save(
             ICON_ICO,
@@ -135,6 +178,8 @@ def base_pyinstaller_command(*, onefile: bool, icon_path: Path | None) -> list[s
         "gui",
         "--add-data",
         data_arg(SRC_ROOT / "gui" / "icons", "gui/icons"),
+        "--add-data",
+        data_arg(ICON_PNG, "."),
         "--add-data",
         data_arg(SRC_ROOT / "config" / "color_render.csv", "config"),
         "--add-data",
@@ -314,6 +359,11 @@ def parse_args() -> argparse.Namespace:
         action="store_true",
         help="also build the Microsoft Store package to dist/store",
     )
+    parser.add_argument(
+        "--icon-only",
+        action="store_true",
+        help="only render app-icon.svg to build/release/app-icon.png, the window icon when running from source",
+    )
     return parser.parse_args()
 
 
@@ -323,6 +373,9 @@ def main() -> int:
         raise SystemExit("This release script targets Windows only.")
     if args.clean:
         clean()
+    if args.icon_only:
+        print(render_icon_png())
+        return 0
     ensure_pyinstaller()
     version = load_version()
     if args.msix:
