@@ -9,9 +9,9 @@
 <style>
   html, body { width: 1366px; height: 768px; }
   /* Behind it all, an in-game shot (docs/pics/base.png) of grass and dirt blocks: it says which game this is for
-     without naming it. Shaded darker behind the caption, which also gets a soft shadow. */
+     without naming it, a little blurred so it reads as a backdrop. Shaded darker behind the caption, which also gets a soft shadow. */
   body::before { display: none; }
-  .backdrop { position: absolute; inset: 0; background: url(../docs/pics/base.png) center / cover no-repeat; }
+  .backdrop { position: absolute; inset: -12px; background: url(../docs/pics/base.png) center / cover no-repeat; filter: blur(4px); }
   .shade {
     position: absolute; inset: 0;
     background: linear-gradient(90deg, rgba(0, 0, 0, 0.6) 0%, rgba(0, 0, 0, 0.45) 32%, rgba(0, 0, 0, 0.1) 62%, rgba(0, 0, 0, 0.18) 100%);

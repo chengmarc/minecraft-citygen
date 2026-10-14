@@ -181,4 +181,5 @@ not required.
 | [windows_installer.iss](../packaging/windows_installer.iss) | Inno Setup script; receives version and output directory from the build script |
 | [AppxManifest.xml](../packaging/AppxManifest.xml) | MSIX manifest template; the build script fills in the Store identity and version |
 | [store/LISTING.md](../store/LISTING.md) | The Store listing's text, field by field |
+| [store/PRIVACY.md](../store/PRIVACY.md) | The privacy policy; its GitHub address is the listing's privacy policy URL |
 | [store/render.py](../store/render.py) | Renders the listing's images into `store/listing/` |

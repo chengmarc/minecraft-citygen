@@ -8,12 +8,22 @@
 <style>
   html, body { width: 100vw; height: 100vh; }
   body { display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
-  /* The grid fades out from the edges toward the icon. */
-  body::before { mask-image: radial-gradient(closest-side, transparent 35%, #000 100%); }
+  /* Behind it, the same in-game shot as the screenshots (docs/pics/base.png), a little blurred so it reads as a
+     backdrop, and shaded darker toward the middle, where the icon and the name sit. */
+  body { background: #000; }
+  body::before {
+    inset: -12px;
+    background:
+      radial-gradient(closest-side, rgba(0, 0, 0, 0.55), rgba(0, 0, 0, 0.25)),
+      url(../docs/pics/base.png) center / cover no-repeat;
+    filter: blur(4px);
+  }
 
-  img { position: relative; width: 52vmin; height: 52vmin; filter: drop-shadow(0 3vmin 6vmin rgba(4, 8, 50, 0.5)); }
-  h1 { position: relative; margin: 6vmin 0 0; font-size: 11vmin; line-height: 1; font-weight: 700; letter-spacing: -0.02em; }
-  p { position: relative; margin: 3vmin 0 0; font-size: 4.4vmin; font-weight: 500; color: rgba(255, 255, 255, 0.8); }
+  img { position: relative; width: 52vmin; height: 52vmin; filter: drop-shadow(0 3vmin 6vmin rgba(0, 0, 0, 0.55)); }
+  h1 { position: relative; margin: 6vmin 0 0; font-size: 11vmin; line-height: 1; font-weight: 700; letter-spacing: -0.02em; text-shadow: 0 0.6vmin 3vmin rgba(0, 0, 0, 0.7); }
+  /* Gradient text draws its shadow over itself, so the accent gets a drop shadow instead. */
+  h1 .brand { text-shadow: none; filter: drop-shadow(0 0.5vmin 1.5vmin rgba(0, 0, 0, 0.8)); }
+  p { position: relative; margin: 3vmin 0 0; font-size: 4.4vmin; font-weight: 500; color: rgba(255, 255, 255, 0.88); text-shadow: 0 0.4vmin 2vmin rgba(0, 0, 0, 0.75); }
 
   /* #tile: the icon alone, filling a transparent square. */
   .tile body { background: transparent; }
