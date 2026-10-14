@@ -329,18 +329,6 @@ def build_msix(version: str, app_dir: Path) -> Path:
     return MSIX_PATH
 
 
-def prune_release_artifacts(*, keep_installer: bool, keep_exe: bool) -> None:
-    RELEASE_DIST.mkdir(parents=True, exist_ok=True)
-    removable = [
-        (INSTALLER_EXE, keep_installer),
-        (ONEFILE_EXE, keep_exe),
-    ]
-    for path, keep in removable:
-        if keep or not path.exists():
-            continue
-        path.unlink()
-
-
 def clean() -> None:
     for path in (BUILD_ROOT, DIST_ROOT):
         shutil.rmtree(path, ignore_errors=True)
@@ -385,10 +373,8 @@ def main() -> int:
     installer_path = build_installer(version, app_dir)
     exe_path = build_onefile(icon_path) if args.include_standalone else None
     msix_path = build_msix(version, app_dir) if args.msix else None
-    prune_release_artifacts(
-        keep_installer=True,
-        keep_exe=args.include_standalone,
-    )
+    if not args.include_standalone:  # a standalone .exe left by an earlier build isn't part of this release
+        ONEFILE_EXE.unlink(missing_ok=True)
 
     print()
     print("Built artifacts:")

@@ -61,6 +61,15 @@ It downloads the MC client JAR into `tools/` as
 `color_render.csv`; rows use namespaced ids (`minecraft:stone`). Only the CSV
 ships with the app.
 
+Each row has the texture-sampled `r`, `g`, `b` and a more saturated
+`vivid_r`, `vivid_g`, `vivid_b`, which the renders use; a row with blank
+`vivid_*` falls back to `r`/`g`/`b`. To change only the saturation
+(`VIVID_SATURATION_EXPONENT` in the script) without downloading anything:
+
+```bash
+python tools/update_render_colors.py --vivid-only
+```
+
 ### Diagnose a first-run setup
 
 ```bash

@@ -6,7 +6,24 @@ The format is based on Keep a Changelog, and versions should match the release v
 
 ## [Unreleased]
 
+### Added
+
+- the bundled world has a medieval set and five more landmarks, and the default
+  extraction areas cover them
+- a 64 x 64 pixel-art save-list icon for the bundled world and every exported city
+
+### Fixed
+
+- a second extraction in the same session now builds with the newly extracted
+  buildings, not the previous extraction's
+
 ### Changed
+
+- new app icon, drawn from one source, `src/app-icon.svg`
+- the app's look follows the icon: a sky-blue tab row and title bar, grass-green
+  buttons, a dirt-brown progress bar, a sky behind the renders, and a blue map
+  selection
+- renders use more vivid block colours
 
 - renamed to MC CityGen, and the game is called MC throughout the app, its files and
   its docs. Settings and outputs now live in `%LOCALAPPDATA%\MC CityGen`; a

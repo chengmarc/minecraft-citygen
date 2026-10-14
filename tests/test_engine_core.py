@@ -143,3 +143,20 @@ class IsometricRendererTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+def test_render_colors_prefer_vivid_columns_and_fall_back_to_sampled_rgb(tmp_path, monkeypatch):
+    # color_render.csv contract: renders use vivid_*; a row whose vivid_* is blank
+    # (e.g. hand-added) still renders with its sampled r/g/b instead of vanishing.
+    from engine.render import palette
+
+    csv_path = tmp_path / "colors.csv"
+    csv_path.write_text(
+        "block_name,r,g,b,vivid_r,vivid_g,vivid_b\n"
+        "minecraft:dirt,100,80,60,120,80,40\n"
+        "minecraft:stone,90,90,90,,,\n",
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(palette, "COLOR_RENDER_CSV", str(csv_path))
+
+    assert palette.load_render_colors() == {"minecraft:dirt": (120, 80, 40), "minecraft:stone": (90, 90, 90)}

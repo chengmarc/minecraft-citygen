@@ -7,6 +7,7 @@ from pathlib import Path
 
 from PySide6 import QtCore, QtGui, QtWidgets
 
+from config.path import APP_NAME
 from gui.core.theme import COLOR
 
 
@@ -162,5 +163,5 @@ def ensure_application(argv=None):
     app = QtWidgets.QApplication.instance()
     if app is None:
         app = QtWidgets.QApplication(list(argv or [sys.argv[0]]))
-        app.setApplicationName("MC CityGen")
+        app.setApplicationName(APP_NAME)
     return app
