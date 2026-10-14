@@ -18,7 +18,6 @@ ICON_DIR = GUI_ICONS
 APP_ICON_PATH = APP_ICON
 STARTUP_ERROR_LOG = os.path.join(ROOT, "application_startup_error.log")
 PROGRESS_TIMINGS_PATH = os.path.join(ARTIFACTS, "progress_timings.json")
-LEGACY_SAVED_GUI_CONFIG_PATH = os.path.join(ROOT, "citygen_saved_config.json")
 SAVED_GUI_CONFIG_PATH = os.path.join(ROOT, "src", "config", "citygen.json")
 
 
@@ -27,12 +26,6 @@ def extracted_assets_ready():
 
 
 def load_saved_gui_config():
-    if not os.path.exists(SAVED_GUI_CONFIG_PATH) and os.path.exists(LEGACY_SAVED_GUI_CONFIG_PATH):
-        try:
-            os.makedirs(os.path.dirname(SAVED_GUI_CONFIG_PATH), exist_ok=True)
-            os.replace(LEGACY_SAVED_GUI_CONFIG_PATH, SAVED_GUI_CONFIG_PATH)
-        except OSError:
-            pass
     if not os.path.exists(SAVED_GUI_CONFIG_PATH):
         return {}
     try:

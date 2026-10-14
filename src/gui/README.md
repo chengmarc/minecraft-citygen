@@ -113,7 +113,7 @@ Files the GUI writes (`ROOT` is the app root, see the
 
 | Path | Contents |
 |---|---|
-| `ROOT/src/config/citygen.json` | Saved settings; a legacy `ROOT/citygen_saved_config.json` is migrated on load. Git-ignored |
+| `ROOT/src/config/citygen.json` | Saved settings. Git-ignored |
 | `ROOT/artifacts/progress_timings.json` | Measured Extract/Build step timings for weight tuning |
 | `ROOT/artifacts/world_preview/` | Cached top-down world previews for the region dialog |
 | `ROOT/application_startup_error.log` | Written if the app fails to start |

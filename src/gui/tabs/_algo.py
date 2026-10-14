@@ -8,18 +8,13 @@ from gui.core import algo_config, app_files
 class AlgoTabMixin:
     blocked_tooltip = "Complete Extract Assets first."
     ready_tooltip = ""
-    legacy_state_sections = ()
 
     def _init_algo_tab(self, owner):
         self.owner = owner
         self._peer = None
 
     def _load_algo_state(self):
-        for section in ("algo", *self.legacy_state_sections):
-            state = self.owner.get_saved_config_section(section)
-            if state:
-                return state
-        return algo_config.default_algo_tab_config()
+        return self.owner.get_saved_config_section("algo") or algo_config.default_algo_tab_config()
 
     def set_peer(self, peer):
         self._peer = peer
