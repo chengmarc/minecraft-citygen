@@ -17,14 +17,25 @@ class ImageGraphicsView(QtWidgets.QGraphicsView):
         self.setDragMode(QtWidgets.QGraphicsView.ScrollHandDrag)
         self.setTransformationAnchor(QtWidgets.QGraphicsView.AnchorUnderMouse)
         self.setResizeAnchor(QtWidgets.QGraphicsView.AnchorUnderMouse)
-        self.setViewportUpdateMode(QtWidgets.QGraphicsView.SmartViewportUpdate)
+        # Full updates: the sky is painted in the view's own coordinates, so a scroll can't just shift what's drawn.
+        self.setViewportUpdateMode(QtWidgets.QGraphicsView.FullViewportUpdate)
         self.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOff)
         self.setVerticalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOff)
-        self.setBackgroundBrush(QtGui.QColor(COLOR["viewer_bg"]))
         self.setFrameShape(QtWidgets.QFrame.NoFrame)
         self.setRenderHints(
             QtGui.QPainter.SmoothPixmapTransform | QtGui.QPainter.TextAntialiasing
         )
+
+    def drawBackground(self, painter, rect):
+        """The canvas: a sky gradient that stays put while the image is zoomed or dragged across it."""
+        painter.save()
+        painter.resetTransform()
+        viewport = self.viewport().rect()
+        sky = QtGui.QLinearGradient(0, viewport.top(), 0, viewport.bottom())
+        sky.setColorAt(0, QtGui.QColor(COLOR["canvas_top"]))
+        sky.setColorAt(1, QtGui.QColor(COLOR["canvas_bottom"]))
+        painter.fillRect(viewport, sky)
+        painter.restore()
 
     def wheelEvent(self, event):
         delta = event.angleDelta().y()
