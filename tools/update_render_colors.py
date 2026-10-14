@@ -8,6 +8,7 @@ the generator itself is not part of the packaged runtime.
 from __future__ import annotations
 
 import argparse
+import colorsys
 import csv
 import hashlib
 import json
@@ -467,12 +468,30 @@ def apply_renamed_aliases(
     return [(name, *rgb) for name, rgb in sorted(by_name.items())]
 
 
+# The renders use a more vivid copy of each colour (the vivid_* columns): texture averages come out dull, and the
+# renders read better with the game's colours a step brighter. Saturation follows s' = 1 - (1 - s) ** exponent, which
+# lifts muted colours (dirt, wood, grass) the most, leaves fully saturated ones alone, and keeps grays gray.
+VIVID_SATURATION_EXPONENT = 1.6
+
+
+def vivid(rgb: tuple[int, int, int]) -> tuple[int, int, int]:
+    hue, lightness, saturation = colorsys.rgb_to_hls(*(channel / 255 for channel in rgb))
+    saturation = 1 - (1 - saturation) ** VIVID_SATURATION_EXPONENT
+    return tuple(round(channel * 255) for channel in colorsys.hls_to_rgb(hue, lightness, saturation))
+
+
 def write_csv(rows: list[tuple[str, int, int, int]], output_path: Path) -> None:
     output_path.parent.mkdir(parents=True, exist_ok=True)
     with output_path.open("w", newline="", encoding="utf-8") as fh:
         writer = csv.writer(fh)
-        writer.writerow(["block_name", "r", "g", "b"])
-        writer.writerows(rows)
+        writer.writerow(["block_name", "r", "g", "b", "vivid_r", "vivid_g", "vivid_b"])
+        writer.writerows((name, r, g, b, *vivid((r, g, b))) for name, r, g, b in rows)
+
+
+def read_csv(path: Path) -> list[tuple[str, int, int, int]]:
+    """The sampled colours of an existing CSV, for --vivid-only."""
+    with path.open(newline="", encoding="utf-8-sig") as fh:
+        return [(row["block_name"], int(row["r"]), int(row["g"]), int(row["b"])) for row in csv.DictReader(fh)]
 
 
 def parse_args() -> argparse.Namespace:
@@ -489,12 +508,22 @@ def parse_args() -> argparse.Namespace:
         default=DEFAULT_OUTPUT,
         help=f"Output CSV path. Defaults to {DEFAULT_OUTPUT}.",
     )
+    parser.add_argument(
+        "--vivid-only",
+        action="store_true",
+        help="Only recompute the vivid_* columns of the existing CSV; nothing is downloaded.",
+    )
     return parser.parse_args()
 
 
 def main() -> int:
     args = parse_args()
     output_path = args.output.expanduser().resolve()
+    if args.vivid_only:
+        rows = read_csv(output_path)
+        write_csv(rows, output_path)
+        print(f"recomputed the vivid colours of {len(rows)} rows in {output_path}")
+        return 0
     version_id, jar_path = download_client_jar(args.version)
 
     with MCTopColorExtractor(jar_path) as extractor:
