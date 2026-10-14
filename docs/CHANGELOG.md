@@ -6,6 +6,8 @@ The format is based on Keep a Changelog, and versions should match the release v
 
 ## [Unreleased]
 
+## [1.3.0] - 2026-10-14
+
 ### Added
 
 - the bundled world has a medieval set and five more landmarks, and the default
@@ -24,7 +26,6 @@ The format is based on Keep a Changelog, and versions should match the release v
   buttons, a dirt-brown progress bar, a sky behind the renders, and a blue map
   selection
 - renders use more vivid block colours
-
 - renamed to MC CityGen, and the game is called MC throughout the app, its files and
   its docs. Settings and outputs now live in `%LOCALAPPDATA%\MC CityGen`; a
   previous install's `%LOCALAPPDATA%\Minecraft CityGen` folder is left in place
