@@ -11,7 +11,6 @@ from __future__ import annotations
 import numpy as np
 
 from config.algo import CELL
-from config.render import CITY_ANCHOR_BLOCK, CITY_GROUND_Y
 from engine.blocks import is_air
 from engine.core.city_layout import FACE_K, STACK_HEIGHT_STREAM, placement_origin, seeded_rng
 from engine.schematic.building import assemble, is_stacked
@@ -22,6 +21,8 @@ from engine.schematic.transform import rot_tile, translate_block_entities
 # lower than the roads without clipping below y=0 of the output schematic.
 BUILD_SNAP_DROP = 1
 PLAYER_ANCHOR_MARGIN = 1
+CITY_GROUND_Y = 1  # ground plane, and the default ground_offset of an asset without one
+CITY_ANCHOR_BLOCK = "minecraft:smooth_stone"  # solid block for the origin anchor column
 
 
 def city_ground_y(placements, catalog_meta):
