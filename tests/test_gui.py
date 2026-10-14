@@ -4,9 +4,7 @@ from __future__ import annotations
 
 import importlib
 import os
-import tempfile
 import unittest
-from pathlib import Path
 from unittest import mock
 
 # Qt widgets need a platform plugin; run headless so the suite works in CI.

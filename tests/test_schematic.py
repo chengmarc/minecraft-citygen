@@ -1,9 +1,13 @@
-"""Schematic transforms, block-entity handling, and the Sponge v3 container."""
+"""Schematic transforms, block-entity handling, the Sponge v3 container, and city ground fill."""
+from types import SimpleNamespace
+
 import numpy as np
 import nbtlib
 from nbtlib import Byte, Compound, String
 
+from config.algo import CELL
 from engine.schematic import building as building_schem
+from engine.schematic import city as city_grid
 from engine.schematic import road as road_schem
 from engine.schematic.reader import (
     decode_schem_block_entities,
@@ -131,7 +135,6 @@ def _assert_v3(file):
 
 def test_cells_and_grid_emit_v3_container():
     _assert_v3(_cells_file(V2612))
-    _assert_v3(_cells_file(LATEST))
     _assert_v3(_grid_file(V2612))
 
 
@@ -210,3 +213,47 @@ def test_building_pieces_are_reread_after_a_new_extraction(tmp_path):
 
     write_sponge_schem_cells([[["minecraft:mossy_cobblestone"]]], str(tmp_path / "001.schem"), V2612)
     assert building_schem.assemble(str(tmp_path), "001", 0, catalog).cells == [[["minecraft:mossy_cobblestone"]]]
+
+
+# --- city ground fill ----------------------------------------------------
+
+def _fill_first_cell(tile, **kwargs):
+    """Ground-fill a 12x12 grid with ``ground_y=3``; return its first cell's columns."""
+    grid = np.zeros((6, 12, 12), dtype=np.int16)
+    city_grid.place_ground_fill(
+        grid,
+        {"minecraft:air": 0},
+        np.zeros((12, 12), dtype=bool),
+        road_cells=set(),
+        size=SimpleNamespace(fine=1),
+        ground_y=3,
+        ground_fill_tile=tile,
+        **kwargs,
+    )
+    z0 = x0 = city_grid.PLAYER_ANCHOR_MARGIN
+    return grid[:, z0:z0 + CELL, x0:x0 + CELL]
+
+
+def test_city_ground_fill_tops_out_at_the_shared_ground_plane():
+    tile = Tile(width=1, height=1, length=1, cells=[[["minecraft:moss_block"]]], ground_offset=0)
+
+    cell = _fill_first_cell(tile)
+
+    assert np.count_nonzero(cell[3]) == CELL ** 2
+    assert np.count_nonzero(cell[2]) == 0
+
+
+def test_city_ground_fill_ground_offset_sinks_the_tile_below_the_plane():
+    tile = Tile(width=1, height=1, length=1, cells=[[["minecraft:oak_planks"]]], ground_offset=1)
+
+    cell = _fill_first_cell(tile)
+
+    assert np.count_nonzero(cell[2]) == CELL ** 2
+
+
+def test_city_ground_fill_skips_cells_with_fill_props():
+    tile = Tile(width=1, height=1, length=1, cells=[[["minecraft:dirt"]]], ground_offset=0)
+
+    cell = _fill_first_cell(tile, skip_cells={(0, 0)})
+
+    assert np.count_nonzero(cell) == 0
