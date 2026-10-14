@@ -13,7 +13,7 @@ from config.path import WORLD_PREVIEW_CACHE, resolve_region_dir
 from engine.render.topdown import render_topdown_preview
 
 from gui.widgets.qt_viewer import QtImageViewer
-from gui.core.theme import ACCENT_RGB
+from gui.core.theme import SELECTION_RGB
 from gui.core.workers import RegionPreviewSignals
 
 CHUNK_SIZE = 16
@@ -282,8 +282,8 @@ class RegionSelectorDialog(QtWidgets.QDialog):
             (world_x1 + 1 - world_x0) / step,
             (world_z1 + 1 - world_z0) / step,
         )
-        brush = QtGui.QBrush(QtGui.QColor(*ACCENT_RGB, 90))
-        pen = QtGui.QPen(QtGui.QColor(*ACCENT_RGB))
+        brush = QtGui.QBrush(QtGui.QColor(*SELECTION_RGB, 90))
+        pen = QtGui.QPen(QtGui.QColor(*SELECTION_RGB))
         pen.setWidthF(2.0)
         self.viewer.set_overlay_rect(rect, pen, brush)
 

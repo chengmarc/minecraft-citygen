@@ -33,6 +33,9 @@ COLOR = {
     "surface_muted": "#e1ded8",
     "surface_sunken": "#d2cec8",
     "viewer_bg": "#ffffff",
+    # The canvas behind the renders: a sky, deeper at the top, nearly white at the bottom, for the city to float in.
+    "canvas_top": "#b8dbf7",
+    "canvas_bottom": "#f1f8fe",
     "border": "#d9d4ce",
     "border_strong": "#b2aca4",
     "text": "#2a221a",
@@ -75,8 +78,9 @@ BIG_BUTTON_FONT_SIZE = 16
 STATUS_CHIP_FONT_SIZE = 11
 ICON_BUTTON_FONT_SCALE = 1.8
 
-# ACCENT_RGB is kept for non-QSS drawing code such as selection overlays.
-ACCENT_RGB = (61, 146, 29)
+# The area selected on the world map (non-QSS drawing): a strong sky blue, since the map itself is mostly grass and
+# dirt, where the green of the actions would disappear.
+SELECTION_RGB = (30, 136, 229)
 SHADOW_RGB = (42, 32, 22)
 BIG_BUTTON_WIDTH = 158
 
@@ -371,7 +375,8 @@ QFrame#qtImageViewer {{
 }}
 
 QWidget#viewerShell {{
-    background: {COLOR["viewer_bg"]};
+    background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+        stop:0 {COLOR["canvas_top"]}, stop:1 {COLOR["canvas_bottom"]});
     border-radius: {RADIUS["md"]}px;
 }}
 
