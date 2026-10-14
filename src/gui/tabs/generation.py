@@ -25,7 +25,6 @@ GENERATION_STATUS_LABELS = {
 
 
 class GenerationTab(QtWidgets.QWidget, AlgoTabMixin, ProgressMixin):
-    legacy_state_sections = ("render",)
     ready_tooltip = "Build the final schematic, render, and export world."
 
     def __init__(self, owner):

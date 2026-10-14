@@ -189,25 +189,6 @@ class GuiPipelineHandoffTests(unittest.TestCase):
         owner.close()
 
 
-class SavedGuiConfigTests(unittest.TestCase):
-    def test_load_saved_gui_config_migrates_legacy_root_file(self):
-        with tempfile.TemporaryDirectory() as tempdir:
-            config_path = Path(tempdir) / "src" / "config" / "citygen.json"
-            legacy_path = Path(tempdir) / "citygen_saved_config.json"
-            sample = {"render": {"seed": "4"}}
-            legacy_path.write_text('{"render": {"seed": "4"}}', encoding="utf-8")
-
-            with (
-                mock.patch.object(app_files, "SAVED_GUI_CONFIG_PATH", str(config_path)),
-                mock.patch.object(app_files, "LEGACY_SAVED_GUI_CONFIG_PATH", str(legacy_path)),
-            ):
-                loaded = app_files.load_saved_gui_config()
-
-            self.assertEqual(loaded, sample)
-            self.assertTrue(config_path.exists())
-            self.assertFalse(legacy_path.exists())
-
-
 class ProgressWeightMirrorTests(unittest.TestCase):
     """GUI progress weights are hand-tuned per pipeline step; keep one per step."""
 

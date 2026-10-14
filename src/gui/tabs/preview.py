@@ -21,7 +21,6 @@ PREVIEW_STEPS = {step.module: (index, step.label) for index, step in enumerate(s
 
 
 class PreviewTab(QtWidgets.QWidget, AlgoTabMixin, ProgressMixin):
-    legacy_state_sections = ("preview",)
     ready_tooltip = "Generate a fast road and city layout preview."
 
     def __init__(self, owner):
