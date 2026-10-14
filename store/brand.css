@@ -1,0 +1,37 @@
+/* The look shared by the Store's designed images (logo.html, shots.html): the icon's blue tile as the background, its
+   grass green as the accent, and a faint block grid. Sizes are relative where a page is rendered at more than one size. */
+
+:root {
+  --night: #0c1450;   /* the tile's deepest blue, darker */
+  --sky: #4fb7f0;
+  --cobalt: #2a3fd6;
+  --grass: #9bd94a;
+  --brand: linear-gradient(90deg, #c4ef6a, var(--grass) 50%, #5fb52e);
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; overflow: hidden; }
+
+body {
+  position: relative;
+  font-family: "Segoe UI Variable Display", "Segoe UI", system-ui, sans-serif;
+  color: #fff;
+  background:
+    radial-gradient(60% 75% at 0% 0%, color-mix(in srgb, var(--sky) 45%, transparent), transparent 70%),
+    radial-gradient(55% 70% at 100% 100%, color-mix(in srgb, var(--cobalt) 80%, transparent), transparent 70%),
+    linear-gradient(135deg, #1b3fc0 0%, #18268f 50%, var(--night) 100%);
+}
+
+/* A block grid, one cell per block. Each page fades it out where its content sits, with mask-image. */
+body::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.07) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.07) 1px, transparent 1px);
+  background-size: 24px 24px;
+}
+
+/* Text in the grass gradient. */
+.brand { background: var(--brand); -webkit-background-clip: text; background-clip: text; color: transparent; }
