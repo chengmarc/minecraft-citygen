@@ -2,8 +2,8 @@
 
   <img src="src/gui/icons/app-icon.svg" width="180"><br>
 
-  <img src="docs/badges/badge-minecraft.svg" height="50">
   <a href="https://github.com/chengmarc/minecraft-citygen/releases/latest/download/Minecraft.CityGen-setup.exe"><img src="docs/badges/badge-download.svg" height="50"></a>
+  <img src="docs/badges/badge-minecraft.svg" height="50">
 
   <h1>Minecraft CityGen - Procedural City Generator</h1>
   
