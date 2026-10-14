@@ -145,7 +145,9 @@ How [world.py](world.py) applies it:
 | [doctor.py](doctor.py) | `citygen-doctor` environment diagnostics |
 
 Shipped data: `default_world/` (the bundled MC 26.1.2 source world) and
-`color_render.csv` (the renderer palette). Both are listed in
+`color_render.csv` (the renderer palette). The world's `icon.png` is also the
+save-list icon of every exported city (`WORLD_ICON`); it is drawn by
+[tools/make_world_icon.py](../../tools/make_world_icon.py). Both are listed in
 `[tool.setuptools.package-data]` in [pyproject.toml](../../pyproject.toml) and in
 the [PyInstaller data set](../../docs/RELEASING.md#explanation).
 
