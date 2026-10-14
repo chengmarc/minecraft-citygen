@@ -1,8 +1,8 @@
 # Releasing — Windows builds
 
 How the source tree becomes the two end-user deliverables — a Windows installer
-and a portable Windows zip — built by [packaging/](../packaging). Nothing in
-`packaging/` ships inside the app.
+for GitHub Releases and an MSIX package for the Microsoft Store — built by
+[packaging/](../packaging). Nothing in `packaging/` ships inside the app.
 
 ← Back to the [source architecture overview](../src/README.md).
 
@@ -33,8 +33,8 @@ and a portable Windows zip — built by [packaging/](../packaging). Nothing in
    python packaging/build_windows_release.py --clean
    ```
 
-6. Confirm `dist/release/` holds exactly the two
-   [release artifacts](#release-artifacts).
+6. Confirm `dist/release/` holds only the installer
+   (see [release artifacts](#release-artifacts)).
 7. Install the installer on a non-dev machine or a clean VM and smoke-test the
    real user flow:
    - first launch succeeds, with no unexpected dependency prompts
@@ -46,7 +46,7 @@ and a portable Windows zip — built by [packaging/](../packaging). Nothing in
    - the exported world loads in Minecraft with the player standing on the city
    - uninstall works cleanly
 8. Tag the release in git only after the installer has been verified.
-9. Publish the two release artifacts.
+9. Publish the installer as the GitHub release.
 
 ### Build a standalone exe for testing
 
@@ -122,7 +122,7 @@ cannot see them. When you add or rename a step in
 **Why only `dist/release/` is published.** The build also leaves raw PyInstaller
 output in `dist/portable/` and `dist/onefile/`; those are intermediates. The
 script prunes `dist/release/` to the curated artifacts so a release upload is
-always the same two files.
+always the one installer.
 
 **Why the app shows no version number.** The git tag is the single source of
 truth for the release version. Packaging metadata (`pyproject.toml` version,
@@ -133,7 +133,7 @@ branding.
 (`base_pyinstaller_command`) collects the `pipeline` and `gui` packages, the
 hidden stage imports above, and three data sets: `gui/icons`,
 `config/color_render.csv`, and `config/default_world`. The root `README.md` is
-copied next to the portable app. A file the app loads at runtime that is not
+copied next to the app. A file the app loads at runtime that is not
 in that list is missing from the release even though it works from a checkout.
 
 **CPU only.** The build includes CPU `numba` acceleration for rendering; CUDA is
@@ -146,7 +146,6 @@ not required.
 | File | Published |
 |---|---|
 | `dist/release/Minecraft CityGen-setup.exe` | yes |
-| `dist/release/Minecraft CityGen-portable-windows.zip` | yes |
 | `dist/release/Minecraft CityGen.exe` | no — only with `--include-standalone`, testing only |
 | `dist/store/Minecraft CityGen.msix` | no — only with `--msix`, uploaded to the Microsoft Store |
 
@@ -169,7 +168,7 @@ not required.
 
 | File | Role |
 |---|---|
-| [build_windows_release.py](../packaging/build_windows_release.py) | Builds the portable app, zip, installer, optional one-file exe, and optional Store MSIX (`--clean`, `--include-standalone`, `--msix`) |
+| [build_windows_release.py](../packaging/build_windows_release.py) | Builds the app folder, the installer, an optional one-file exe, and the optional Store MSIX (`--clean`, `--include-standalone`, `--msix`) |
 | [windows_installer.iss](../packaging/windows_installer.iss) | Inno Setup script; receives version and output directory from the build script |
 | [AppxManifest.xml](../packaging/AppxManifest.xml) | MSIX manifest template; the build script fills in the Store identity and version |
 | [store/LISTING.md](../store/LISTING.md) | The Store listing's text, field by field |

@@ -2,7 +2,6 @@
 
 Default output:
 - dist/release/Minecraft CityGen-setup.exe
-- dist/release/Minecraft CityGen-portable-windows.zip
 
 Optional outputs:
 - dist/release/Minecraft CityGen.exe
@@ -29,8 +28,6 @@ ONEFILE_DIST = DIST_ROOT / "onefile"
 RELEASE_DIST = DIST_ROOT / "release"
 STORE_DIST = DIST_ROOT / "store"
 APP_NAME = "Minecraft CityGen"
-ZIP_BASENAME = "Minecraft CityGen-portable-windows"
-ZIP_PATH = RELEASE_DIST / f"{ZIP_BASENAME}.zip"
 ONEFILE_EXE = RELEASE_DIST / f"{APP_NAME}.exe"
 INSTALLER_EXE = RELEASE_DIST / f"{APP_NAME}-setup.exe"
 MSIX_PATH = STORE_DIST / f"{APP_NAME}.msix"
@@ -177,19 +174,6 @@ def build_onefile(icon_path: Path | None) -> Path:
     return ONEFILE_EXE
 
 
-def build_zip(app_dir: Path) -> Path:
-    RELEASE_DIST.mkdir(parents=True, exist_ok=True)
-    if ZIP_PATH.exists():
-        ZIP_PATH.unlink()
-    archive = shutil.make_archive(
-        str(RELEASE_DIST / ZIP_BASENAME),
-        "zip",
-        root_dir=PORTABLE_DIST,
-        base_dir=APP_NAME,
-    )
-    return Path(archive)
-
-
 def find_iscc() -> str | None:
     path = shutil.which("ISCC")
     if path:
@@ -300,11 +284,10 @@ def build_msix(version: str, app_dir: Path) -> Path:
     return MSIX_PATH
 
 
-def prune_release_artifacts(*, keep_installer: bool, keep_zip: bool, keep_exe: bool) -> None:
+def prune_release_artifacts(*, keep_installer: bool, keep_exe: bool) -> None:
     RELEASE_DIST.mkdir(parents=True, exist_ok=True)
     removable = [
         (INSTALLER_EXE, keep_installer),
-        (ZIP_PATH, keep_zip),
         (ONEFILE_EXE, keep_exe),
     ]
     for path, keep in removable:
@@ -347,19 +330,16 @@ def main() -> int:
     icon_path = build_icon()
     app_dir = build_portable(icon_path)
     installer_path = build_installer(version, app_dir)
-    zip_path = build_zip(app_dir)
     exe_path = build_onefile(icon_path) if args.include_standalone else None
     msix_path = build_msix(version, app_dir) if args.msix else None
     prune_release_artifacts(
         keep_installer=True,
-        keep_zip=True,
         keep_exe=args.include_standalone,
     )
 
     print()
     print("Built artifacts:")
     print(f"- {installer_path}")
-    print(f"- {zip_path}")
     if exe_path is not None:
         print(f"- {exe_path}")
     if msix_path is not None:
