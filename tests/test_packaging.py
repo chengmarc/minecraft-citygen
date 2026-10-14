@@ -56,4 +56,17 @@ def test_msix_manifest_renders_to_valid_xml_with_the_store_identity(monkeypatch)
     assert identity.get("Version") == "1.2.0.0"
     assert root.find("m:Applications/m:Application", ns).get("Executable") == f"{build.APP_NAME}.exe"
     for logo in build.MSIX_LOGOS:
-        assert f"Assets\{logo}" in ET.tostring(root, encoding="unicode")
+        assert f"Assets\\{logo}" in ET.tostring(root, encoding="unicode")
+
+
+def test_packaging_mirrors_the_app_name_from_config():
+    # The build script and installer don't import config.path, so they repeat the
+    # name; a rename that misses one ships an installer for a missing .exe.
+    from config.path import APP_NAME
+
+    build = load_build_script()
+    iss = (Path(__file__).resolve().parents[1] / "packaging" / "windows_installer.iss").read_text(encoding="utf-8")
+
+    assert (build.APP_NAME, build.MSIX_DISPLAY_NAME) == (APP_NAME, APP_NAME)
+    assert f'#define AppName "{APP_NAME}"' in iss
+    assert f'Filename: "{{app}}\\{APP_NAME}.exe"' in iss

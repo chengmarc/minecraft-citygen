@@ -9,6 +9,7 @@ import traceback
 
 from PySide6 import QtGui, QtWidgets
 
+from config.path import APP_NAME
 from gui.core import app_files
 from gui.widgets.qt_viewer import ensure_application
 from gui.tabs.extraction import ExtractionTab
@@ -23,7 +24,7 @@ APP_HEIGHT = 768
 class CityGeneratorQtApp(QtWidgets.QMainWindow):
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("MC CityGen")
+        self.setWindowTitle(APP_NAME)
         self.resize(APP_WIDTH, APP_HEIGHT)
         self.setMinimumSize(960, 720)
         if os.path.exists(app_files.APP_ICON_PATH):
@@ -126,7 +127,7 @@ def main(argv: list[str] | None = None) -> int:
             pass
         QtWidgets.QMessageBox.critical(
             None,
-            "MC CityGen",
+            APP_NAME,
             f"GUI startup failed.\n\nDetails were written to:\n{app_files.STARTUP_ERROR_LOG}",
         )
         raise

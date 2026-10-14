@@ -153,7 +153,8 @@ when the assets follow the conventions exactly:
   see [pipeline outputs](pipeline/README.md#outputs)), `build/` and `dist/`
   (packaging), `.pytest_cache/`.
 - **Repo maintenance scripts** in [tools/](../tools): `update_render_colors.py`
-  (see the [config guide](config/README.md#refresh-the-render-palette)) and
+  (see the [config guide](config/README.md#refresh-the-render-palette)),
+  `make_world_icon.py`, which draws the bundled world's save-list icon, and
   `remove_init_and_pycache.py`, which deletes every `__pycache__` and
   `__init__.py`.
 - **No `__init__.py`.** Every package under `src/` is a namespace package;
