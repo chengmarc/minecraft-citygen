@@ -12,8 +12,8 @@
 <table>
   <tr><th>Modern City</th><th>Medieval City</th></tr>
   <tr>
-    <td valign="bottom" align="center"><img src="docs/pics/modern.gif"></td>
-    <td valign="bottom" align="center"><img src="docs/pics/medieval.gif"></td>
+    <td valign="bottom" align="center"><img src="docs/pics/modern_iso.png"></td>
+    <td valign="bottom" align="center"><img src="docs/pics/medieval_iso.png"></td>
   </tr>
   <tr>
     <td><img src="docs/pics/ingame1.png"></td>
@@ -31,12 +31,6 @@
 | --- | --- |
 | <img src="docs/pics/assets_modern.png" alt="Modern built-in asset sheet" width="100%"> | <img src="docs/pics/assets_modern.gif" alt="Modern built-in assets animated preview" width="100%"> | 
 | <img src="docs/pics/assets_medieval.png" alt="Medieval built-in asset sheet" width="100%"> | <img src="docs/pics/assets_medieval.gif" alt="Medieval built-in assets animated preview" width="100%"> | 
-
-# User Interface
-
-| Extraction | Preview & Generation |
-| --- | --- |
-| <img src="docs/pics/ui1.png" alt="UI Image 1" width="100%"> | <img src="docs/pics/ui2.png" alt="UI Image 2" width="100%"> |
 
 # Tutorial - Marking Your Own Assets
 
