@@ -183,11 +183,9 @@ SAVE = env_str("SAVE", DEFAULT_WORLD)
 REGION_DIR_CANDIDATES = tuple(region_dir_candidates(SAVE))
 REGION_DIR = resolve_region_dir(SAVE)
 
-# Default schematic DataVersion for stages that have no source save (construct).
-# Forward-only compatibility means this is always the source world's own version,
-# so schematic import stays aligned with the source data. Resolves to
-# MC_CITY_DATA_VERSION, else SAVE's detected version, else the hard floor; always
-# clamped up to the hard floor. The GUI passes the source world's version instead.
+# Default stamp for stages that have no source save (construct): MC_CITY_DATA_VERSION,
+# else SAVE's detected version, else the hard floor; always clamped up to the floor.
+# The GUI passes the source world's version instead.
 def _resolve_data_version() -> int:
     raw = env_raw("DATA_VERSION")
     if raw is not None:
