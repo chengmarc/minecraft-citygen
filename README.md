@@ -2,10 +2,10 @@
 
   <img src="src/gui/icons/app-icon.svg" width="180"><br>
 
-  <a href="https://github.com/chengmarc/minecraft-citygen/releases/latest/download/Minecraft.CityGen-setup.exe"><img src="docs/badges/badge-download.svg" height="50"></a>
-  <img src="docs/badges/badge-minecraft.svg" height="50">
+  <a href="https://github.com/chengmarc/minecraft-citygen/releases/latest/download/MC.CityGen-setup.exe"><img src="docs/badges/badge-download.svg" height="50"></a>
+  <img src="docs/badges/badge-mc.svg" height="50">
 
-  <h1>Minecraft CityGen - Procedural City Generator</h1>
+  <h1>MC CityGen - Procedural City Generator</h1>
   
 </div>
 
@@ -40,7 +40,7 @@
 
 # Tutorial - Marking Your Own Assets
 
-**Minecraft CityGen** builds cities from structures you mark up inside your own Minecraft world,
+**MC CityGen** builds cities from structures you mark up inside your own MC world,
 using a handful of marker blocks.
 
 For buildings, place: 

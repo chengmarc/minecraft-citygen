@@ -50,7 +50,7 @@ def default_extraction_tab_config():
 def version_selector_items(min_data_version=None):
     """(label, value) pairs for the paste-target dropdown, newest first.
 
-    Indicator only: it lists the Minecraft versions the output can be pasted into
+    Indicator only: it lists the MC versions the output can be pasted into
     -- the source version and newer -- so the user can confirm the target. It
     does not affect the stamp, which is always the source version (see
     config.world.source_data_version). When min_data_version is given, only versions at

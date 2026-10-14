@@ -76,7 +76,7 @@ saving one pushes the state into the other (`AlgoTabMixin.set_peer` in
 [tabs/_algo.py](tabs/_algo.py)), so the city you preview is the one you build.
 
 **Version display only.** The Extract tab shows the source world's detected
-Minecraft version and a Target Version selector. The selector doesn't change
+MC version and a Target Version selector. The selector doesn't change
 what's written — see the
 [config guide](../config/README.md#version-compatibility).
 

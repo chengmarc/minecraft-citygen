@@ -1,9 +1,9 @@
 # Privacy Policy
 
-**Minecraft CityGen (MC CityGen)**
-Last updated: September 30, 2026
+**MC CityGen**
+Last updated: October 14, 2026
 
-This policy covers Minecraft CityGen on every platform it ships on, including the Microsoft Store edition ("MC CityGen"), the Windows installer, the portable build, and running from source.
+This policy covers MC CityGen on every platform it ships on, including the Microsoft Store edition, the Windows installer, the portable build, and running from source.
 
 ## Summary
 
@@ -12,7 +12,7 @@ CityGen does not collect, store, send, or share any personal information. It wor
 ## What the app does with data
 
 - **No network access.** CityGen has no telemetry, analytics, crash reporting, advertising, accounts, or update checks. It never sends data to the developer or to anyone else.
-- **Local files only.** The app reads the Minecraft world folders you choose. It writes its outputs (generated worlds, schematics, previews), your saved settings, and a startup error log if one is needed. All of these stay in the app's data folder on your computer:
+- **Local files only.** The app reads the MC world folders you choose. It writes its outputs (generated worlds, schematics, previews), your saved settings, and a startup error log if one is needed. All of these stay in the app's data folder on your computer:
   - Microsoft Store edition: `%LOCALAPPDATA%\Packages\<package>\LocalCache\Local\` (removed when you uninstall the app)
   - Other Windows builds: `%LOCALAPPDATA%\` or the install folder
   - macOS and Linux: your user's application data folder

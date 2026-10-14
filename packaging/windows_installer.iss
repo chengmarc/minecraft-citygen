@@ -1,4 +1,4 @@
-#define AppName "Minecraft CityGen"
+#define AppName "MC CityGen"
 #ifndef AppVersion
   #define AppVersion "0.0.0"
 #endif
@@ -9,14 +9,14 @@
   #define OutputDir "."
 #endif
 #ifndef OutputBaseFilename
-  #define OutputBaseFilename "Minecraft CityGen-setup"
+  #define OutputBaseFilename "MC CityGen-setup"
 #endif
 
 [Setup]
 AppId={{E1622F56-1DDB-4F95-BD84-B0BC71A0CE83}
 AppName={#AppName}
 AppVersion={#AppVersion}
-AppPublisher=Minecraft CityGen
+AppPublisher=MC CityGen
 DefaultDirName={autopf}\{#AppName}
 DefaultGroupName={#AppName}
 DisableProgramGroupPage=yes
@@ -28,7 +28,7 @@ WizardStyle=modern
 ArchitecturesInstallIn64BitMode=x64compatible
 PrivilegesRequired=lowest
 SetupIconFile={#SourceDir}\app-icon.ico
-UninstallDisplayIcon={app}\Minecraft CityGen.exe
+UninstallDisplayIcon={app}\MC CityGen.exe
 
 [Languages]
 Name: "english"; MessagesFile: "compiler:Default.isl"
@@ -40,11 +40,11 @@ Name: "desktopicon"; Description: "Create a desktop shortcut"; Flags: unchecked
 Source: "{#SourceDir}\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
 
 [Icons]
-Name: "{autoprograms}\{#AppName}"; Filename: "{app}\Minecraft CityGen.exe"
-Name: "{autodesktop}\{#AppName}"; Filename: "{app}\Minecraft CityGen.exe"; Tasks: desktopicon
+Name: "{autoprograms}\{#AppName}"; Filename: "{app}\MC CityGen.exe"
+Name: "{autodesktop}\{#AppName}"; Filename: "{app}\MC CityGen.exe"; Tasks: desktopicon
 
 [Run]
-Filename: "{app}\Minecraft CityGen.exe"; Description: "Launch {#AppName}"; Flags: nowait postinstall skipifsilent
+Filename: "{app}\MC CityGen.exe"; Description: "Launch {#AppName}"; Flags: nowait postinstall skipifsilent
 
 [Code]
 var
@@ -69,7 +69,7 @@ begin
 
   Form := CreateCustomForm(ScaleX(430), ScaleY(170), False, True);
   try
-    Form.Caption := 'Uninstall Minecraft CityGen';
+    Form.Caption := 'Uninstall MC CityGen';
 
     DescriptionLabel := TNewStaticText.Create(Form);
     DescriptionLabel.AutoSize := False;
@@ -128,9 +128,9 @@ procedure DeleteGeneratedDataDirectory(Path: String);
 begin
   if DirExists(Path) then
   begin
-    Log('Deleting Minecraft CityGen generated data: ' + Path);
+    Log('Deleting MC CityGen generated data: ' + Path);
     if not DelTree(Path, True, True, True) then
-      Log('Minecraft CityGen generated data could not be fully deleted: ' + Path);
+      Log('MC CityGen generated data could not be fully deleted: ' + Path);
   end;
 end;
 
@@ -140,10 +140,10 @@ begin
   DeleteGeneratedDataDirectory(ExpandConstant('{app}\src\config'));
   RemoveDir(ExpandConstant('{app}\src'));
 
-  DeleteGeneratedDataDirectory(ExpandConstant('{localappdata}\Minecraft CityGen\artifacts'));
-  DeleteGeneratedDataDirectory(ExpandConstant('{localappdata}\Minecraft CityGen\src\config'));
-  RemoveDir(ExpandConstant('{localappdata}\Minecraft CityGen\src'));
-  RemoveDir(ExpandConstant('{localappdata}\Minecraft CityGen'));
+  DeleteGeneratedDataDirectory(ExpandConstant('{localappdata}\MC CityGen\artifacts'));
+  DeleteGeneratedDataDirectory(ExpandConstant('{localappdata}\MC CityGen\src\config'));
+  RemoveDir(ExpandConstant('{localappdata}\MC CityGen\src'));
+  RemoveDir(ExpandConstant('{localappdata}\MC CityGen'));
 end;
 
 procedure CurUninstallStepChanged(CurUninstallStep: TUninstallStep);
@@ -153,6 +153,6 @@ begin
     if DeleteGeneratedDataSelected then
       DeleteGeneratedData()
     else
-      Log('Keeping Minecraft CityGen generated artifacts and saved settings.');
+      Log('Keeping MC CityGen generated artifacts and saved settings.');
   end;
 end;

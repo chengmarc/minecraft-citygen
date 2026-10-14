@@ -48,7 +48,7 @@ run_stage("preview", seed=5, algo=replace(ALGO, gap_big=8))
 
 ### Refresh the render palette
 
-When the target Minecraft version gains blocks, regenerate
+When the target MC version gains blocks, regenerate
 `color_render.csv`, the isometric renderer's block colors:
 
 ```bash
@@ -56,8 +56,8 @@ python tools/update_render_colors.py                 # latest release
 python tools/update_render_colors.py --version 26.1.2
 ```
 
-It downloads the Minecraft client JAR into `tools/` as
-`minecraft-client-<version>.jar` (do not commit it) and overwrites
+It downloads the MC client JAR into `tools/` as
+`mc-client-<version>.jar` (do not commit it) and overwrites
 `color_render.csv`; rows use namespaced ids (`minecraft:stone`). Only the CSV
 ships with the app.
 
@@ -94,9 +94,9 @@ lets two settings coexist in one process.
 - **Repo checkout** — the repository root.
 - **Frozen app (PyInstaller)** — the exe's folder when writable, else the
   per-user data dir.
-- **Installed package** — the per-user data dir: `%LOCALAPPDATA%\Minecraft CityGen`
-  on Windows, `~/Library/Application Support/Minecraft CityGen` on macOS,
-  `$XDG_DATA_HOME` (or `~/.local/share`)`/Minecraft CityGen` on Linux.
+- **Installed package** — the per-user data dir: `%LOCALAPPDATA%\MC CityGen`
+  on Windows, `~/Library/Application Support/MC CityGen` on macOS,
+  `$XDG_DATA_HOME` (or `~/.local/share`)`/MC CityGen` on Linux.
   `MC_CITY_APP_ROOT` replaces this per-user dir.
 
 `path.RESOURCE_ROOT` is separate: where the read-only bundled files are
@@ -110,7 +110,7 @@ schematic, so block *content* is version-transparent. The one thing that is not
 is the `DataVersion` stamped on the schematic: an older schematic can be upgraded
 forward into a newer world, but a newer one cannot be downgraded safely.
 
-Minecraft CityGen commits to **forward-only** compatibility. The export target is
+MC CityGen commits to **forward-only** compatibility. The export target is
 always the source world's own version or newer, so every block in the palette is
 guaranteed to exist in the target. Forward upgrade is left to downstream import
 or load tooling; there is no downgrade or "missing block" computation.
@@ -118,7 +118,7 @@ or load tooling; there is no downgrade or "missing block" computation.
 How [world.py](world.py) applies it:
 
 - Outputs are **always stamped with the source world's `DataVersion`**, read from
-  its `level.dat` and clamped up to the hard floor (Minecraft 26.1.2). Stamping
+  its `level.dat` and clamped up to the hard floor (MC 26.1.2). Stamping
   any newer version would skip the DataFixer and hole out blocks renamed since
   the source (e.g. `grass` → `short_grass`).
 - Extraction stamps the version detected from its `save`. The construct stage
@@ -144,7 +144,7 @@ How [world.py](world.py) applies it:
 | [render.py](render.py) | Render and preview style constants (tile sizes, ground fill, colors) |
 | [doctor.py](doctor.py) | `citygen-doctor` environment diagnostics |
 
-Shipped data: `default_world/` (the bundled Minecraft 26.1.2 source world) and
+Shipped data: `default_world/` (the bundled MC 26.1.2 source world) and
 `color_render.csv` (the renderer palette). Both are listed in
 `[tool.setuptools.package-data]` in [pyproject.toml](../../pyproject.toml) and in
 the [PyInstaller data set](../../docs/RELEASING.md#explanation).

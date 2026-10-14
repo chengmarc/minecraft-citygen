@@ -103,7 +103,7 @@ class SchemToWorldTests(unittest.TestCase):
 
     def test_exported_world_is_stamped_with_the_schematic_data_version(self):
         with tempfile.TemporaryDirectory() as tmp:
-            out = self._export(tmp, world_name="Minecraft CityGen World 5")
+            out = self._export(tmp, world_name="MC CityGen World 5")
             data = nbtlib.load(os.path.join(out, "level.dat"))["Data"]
 
         # World version matches the schematic's own stamp, not the ambient env.
@@ -205,13 +205,13 @@ class SchemToWorldTests(unittest.TestCase):
     def test_export_renames_save_and_recenters_player_in_the_overworld(self):
         with tempfile.TemporaryDirectory() as tmp:
             source = self._fake_source_world(tmp, 4790)  # player saved in the nether
-            out = self._export(tmp, source_world=source, world_name="Minecraft CityGen World 7")
+            out = self._export(tmp, source_world=source, world_name="MC CityGen World 7")
             data = nbtlib.load(os.path.join(out, "level.dat"))["Data"]
 
         self.assertEqual(
             (str(data["LevelName"]), str(data["Player"]["Dimension"]),
              (int(data["SpawnX"]), int(data["SpawnY"]), int(data["SpawnZ"]))),
-            ("Minecraft CityGen World 7", "minecraft:overworld", (0, 65, 0)),
+            ("MC CityGen World 7", "minecraft:overworld", (0, 65, 0)),
         )
 
     def test_source_without_player_still_gets_centered_spawn(self):
@@ -221,10 +221,10 @@ class SchemToWorldTests(unittest.TestCase):
             out = os.path.join(tmp, "world")
             self._write_schem(schem)
 
-            world_writer.schem_to_world(schem, out, source_world=source, world_name="Minecraft CityGen World 9")  # must not raise
+            world_writer.schem_to_world(schem, out, source_world=source, world_name="MC CityGen World 9")  # must not raise
 
             data = nbtlib.load(os.path.join(out, "level.dat"))["Data"]
-            self.assertEqual(str(data["LevelName"]), "Minecraft CityGen World 9")
+            self.assertEqual(str(data["LevelName"]), "MC CityGen World 9")
             self.assertEqual(str(data["Player"]["Dimension"]), "minecraft:overworld")
             self.assertEqual((int(data["SpawnX"]), int(data["SpawnY"]), int(data["SpawnZ"])), (0, 65, 0))
 

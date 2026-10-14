@@ -1,8 +1,8 @@
-# Minecraft CityGen 1.1.0 Release Notes
+# MC CityGen 1.1.0 Release Notes
 
 Released on September 15, 2026.
 
-Minecraft CityGen 1.1.0 makes building authoring more flexible by decoupling
+MC CityGen 1.1.0 makes building authoring more flexible by decoupling
 layer count from placement type. A building can now be a one-layer or
 three-layer asset independently of whether it is a repeatable type-1 building or
 a unique type-2 landmark. This release also refreshes the public project
@@ -24,7 +24,7 @@ release artifacts.
   Control tab.
 - **Renderer consistency.** `numba` is now a required dependency, so release
   builds use the accelerated rendering path by default.
-- **Refreshed identity.** The app now has the Minecraft CityGen branding pass,
+- **Refreshed identity.** The app now has the MC CityGen branding pass,
   updated icon assets, README badges, current download links, and a reorganized
   screenshot/GIF gallery.
 
@@ -59,7 +59,7 @@ release artifacts.
 
 ### Documentation and packaging
 
-- Rebuilt the README around the current Minecraft CityGen brand, screenshots,
+- Rebuilt the README around the current MC CityGen brand, screenshots,
   asset showcases, and release links.
 - Explicitly included the numbered pipeline stage modules in Windows release
   bundles, so frozen extraction can import `pipeline.01_roads` and the rest of
@@ -74,7 +74,7 @@ release artifacts.
   older artifacts. Building type and layer count are now independent, and fresh
   catalog metadata is the safest path.
 - For release builds, use the curated artifacts only:
-  `Minecraft CityGen-setup.exe` and `Minecraft CityGen-portable-windows.zip`.
+  `MC CityGen-setup.exe` and `MC CityGen-portable-windows.zip`.
 
 ## Verification
 

@@ -1,4 +1,4 @@
-# Minecraft CityGen 0.2.1 Release Notes
+# MC CityGen 0.2.1 Release Notes
 
 Released on August 20, 2026.
 

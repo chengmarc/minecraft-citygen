@@ -1,7 +1,7 @@
-# Minecraft CityGen — source architecture
+# MC CityGen — source architecture
 
-The technical entry point. Minecraft CityGen turns a small hand-built asset set —
-roads and buildings marked up inside a Minecraft world — into a complete city,
+The technical entry point. MC CityGen turns a small hand-built asset set —
+roads and buildings marked up inside an MC world — into a complete city,
 exported as a schematic and as a playable world. This page covers the whole
 tree; each package guide covers one boundary.
 
@@ -144,9 +144,9 @@ when the assets follow the conventions exactly:
 - **Python** `>= 3.10`. Runtime dependencies (`numpy`, `nbtlib`, `numba`,
   `PySide6`, `Pillow`) and entry points (`citygen`, `citygen-doctor`) are
   declared in [pyproject.toml](../pyproject.toml).
-- **Input:** a Minecraft **Java Edition** world, 1.18+ Anvil format. Bedrock
+- **Input:** an MC **Java Edition** world, 1.18+ Anvil format. Bedrock
   and older formats are not supported.
-- **Output:** Sponge `.schem` v3, and standalone worlds. Minimum Minecraft
+- **Output:** Sponge `.schem` v3, and standalone worlds. Minimum MC
   version 26.1.2, forward-only — see the
   [config guide](config/README.md#version-compatibility).
 - **Generated directories** (all git-ignored): `artifacts/` (pipeline outputs,

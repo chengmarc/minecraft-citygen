@@ -1,4 +1,4 @@
-"""PySide6 host shell for Minecraft CityGen: main window and process entry point."""
+"""PySide6 host shell for MC CityGen: main window and process entry point."""
 
 from __future__ import annotations
 
@@ -23,7 +23,7 @@ APP_HEIGHT = 768
 class CityGeneratorQtApp(QtWidgets.QMainWindow):
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("Minecraft CityGen")
+        self.setWindowTitle("MC CityGen")
         self.resize(APP_WIDTH, APP_HEIGHT)
         self.setMinimumSize(960, 720)
         if os.path.exists(app_files.APP_ICON_PATH):
@@ -45,7 +45,7 @@ class CityGeneratorQtApp(QtWidgets.QMainWindow):
         tab_bar = tabs.tabBar()
         tab_bar.setTabToolTip(
             extraction_index,
-            "Step 1 of 3: Choose a Minecraft world and extract road, house, and landmark assets.",
+            "Step 1 of 3: Choose an MC world and extract road, house, and landmark assets.",
         )
         tab_bar.setTabToolTip(
             preview_index,
@@ -53,7 +53,7 @@ class CityGeneratorQtApp(QtWidgets.QMainWindow):
         )
         tab_bar.setTabToolTip(
             generation_index,
-            "Step 3 of 3: Build the city, render it, and export the Minecraft world.",
+            "Step 3 of 3: Build the city, render it, and export the MC world.",
         )
         self.setCentralWidget(tabs)
         self.refresh_prerequisite_buttons()
@@ -73,7 +73,7 @@ class CityGeneratorQtApp(QtWidgets.QMainWindow):
 
 
 def _parse_args(argv: list[str]) -> tuple[argparse.Namespace, list[str]]:
-    parser = argparse.ArgumentParser(prog="citygen", description="Minecraft CityGen Qt application.")
+    parser = argparse.ArgumentParser(prog="citygen", description="MC CityGen Qt application.")
     parser.add_argument(
         "--qt-style",
         dest="style_name",
@@ -84,7 +84,7 @@ def _parse_args(argv: list[str]) -> tuple[argparse.Namespace, list[str]]:
         "--no-custom-theme",
         dest="use_custom_theme",
         action="store_false",
-        help="Use the plain Qt style instead of the bundled Minecraft CityGen theme.",
+        help="Use the plain Qt style instead of the bundled MC CityGen theme.",
     )
     parser.set_defaults(use_custom_theme=True)
     # Unrecognized args (e.g. Qt platform flags) are forwarded to QApplication.
@@ -124,7 +124,7 @@ def main(argv: list[str] | None = None) -> int:
             pass
         QtWidgets.QMessageBox.critical(
             None,
-            "Minecraft CityGen",
+            "MC CityGen",
             f"GUI startup failed.\n\nDetails were written to:\n{app_files.STARTUP_ERROR_LOG}",
         )
         raise

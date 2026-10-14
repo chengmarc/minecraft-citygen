@@ -1,4 +1,4 @@
-"""Marker-based asset extraction from a Minecraft world.
+"""Marker-based asset extraction from an MC world.
 
 Road tiles, fill props, and buildings all use direct gold/diamond marker pairs:
 one pair exports a whole asset, and three vertically aligned pairs export

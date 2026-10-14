@@ -105,11 +105,11 @@ class BuildRegion:
 
 
 # Forward-only compatibility floor. Older schematics can be upgraded forward into
-# newer Minecraft versions, but backward is impossible, so every stamp is clamped
+# newer MC versions, but backward is impossible, so every stamp is clamped
 # up to this floor.
-HARD_FLOOR_DATA_VERSION = 4790  # Minecraft 26.1.2
+HARD_FLOOR_DATA_VERSION = 4790  # MC 26.1.2
 
-# DataVersion -> Minecraft release name, used only to label the detected source
+# DataVersion -> MC release name, used only to label the detected source
 # world in the GUI. Hand-maintained (display only): add newer releases as they
 # ship; an unknown DataVersion just falls back to its raw number, so a missing
 # entry is purely cosmetic.

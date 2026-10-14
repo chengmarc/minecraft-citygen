@@ -20,7 +20,7 @@ from gui.widgets.qt_viewer import QtImageViewer
 GENERATION_STATUS_LABELS = {
     stages.CITY_CONSTRUCT: "Building city layout",
     stages.CITY_RENDER: "Rendering final city",
-    stages.WORLD_EXPORT: "Exporting Minecraft world",
+    stages.WORLD_EXPORT: "Exporting MC world",
 }
 
 
@@ -39,7 +39,7 @@ class GenerationTab(QtWidgets.QWidget, AlgoTabMixin, ProgressMixin):
         layout.setSpacing(0)
         self.city_viewer = QtImageViewer(
             "Final City Render",
-            "Build city to create the schematic, the render, and the exported Minecraft world.",
+            "Build city to create the schematic, the render, and the exported MC world.",
             self,
         )
         layout.addWidget(self.city_viewer, 1)

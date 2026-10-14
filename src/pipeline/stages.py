@@ -61,7 +61,7 @@ STAGES = {
         Step("render", "Rendering final city", CITY_RENDER, ("seed",)),
     ),
     "world": (
-        Step("export", "Exporting Minecraft world", WORLD_EXPORT, ("seed", "save", "out")),
+        Step("export", "Exporting MC world", WORLD_EXPORT, ("seed", "save", "out")),
     ),
 }
 

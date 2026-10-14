@@ -46,7 +46,7 @@ class WorldConfigEnvTests(unittest.TestCase):
 
 class VersionTests(unittest.TestCase):
     def test_supported_data_version_floor_is_sponge_v3_floor(self):
-        self.assertEqual(config_world.HARD_FLOOR_DATA_VERSION, 4790)  # Minecraft 26.1.2
+        self.assertEqual(config_world.HARD_FLOOR_DATA_VERSION, 4790)  # MC 26.1.2
 
     def test_detect_world_data_version_reads_bundled_world(self):
         world = Path(__file__).resolve().parents[1] / "src" / "config" / "default_world"
@@ -71,7 +71,7 @@ class FrozenAppRootTests(unittest.TestCase):
         with mock.patch.object(config_path, "_package_family_name", return_value="CityGen_abc123"), \
                 mock.patch.dict(os.environ, {"LOCALAPPDATA": local, "MC_CITY_APP_ROOT": ""}):
             root = config_path._frozen_app_root()
-        expected = Path(local) / "Packages" / "CityGen_abc123" / "LocalCache" / "Local" / "Minecraft CityGen"
+        expected = Path(local) / "Packages" / "CityGen_abc123" / "LocalCache" / "Local" / "MC CityGen"
         self.assertEqual(root, os.path.normpath(expected))
 
     def test_unwritable_exe_dir_falls_back_to_user_data_root(self):

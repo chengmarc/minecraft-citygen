@@ -3,9 +3,9 @@ requires = ["setuptools>=69"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "minecraft-city-generator"
+name = "mc-city-generator"
 version = "1.2.1"
-description = "Procedural Minecraft city generation pipelines."
+description = "Procedural MC city generation pipelines."
 readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [
@@ -18,7 +18,7 @@ dependencies = [
 
 [project.optional-dependencies]
 build = [
-    "minecraft-city-generator",
+    "mc-city-generator",
     "pyinstaller>=6.10,<8",
 ]
 

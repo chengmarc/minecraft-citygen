@@ -176,7 +176,7 @@ class ExtractionTab(QtWidgets.QWidget, ProgressMixin):
     def _browse_world(self):
         folder = QtWidgets.QFileDialog.getExistingDirectory(
             self,
-            "Select Minecraft World Folder",
+            "Select MC World Folder",
             self.world_edit.text().strip() or "",
         )
         if not folder:
@@ -184,9 +184,9 @@ class ExtractionTab(QtWidgets.QWidget, ProgressMixin):
         if not has_region_files(folder):
             QtWidgets.QMessageBox.warning(
                 self,
-                "Not a Minecraft world",
+                "Not an MC world",
                 f"No region files (.mca) were found in:\n{folder}\n\n"
-                "Please select a valid Minecraft world folder.",
+                "Please select a valid MC world folder.",
             )
             return
         self.world_edit.setText(folder)
@@ -208,7 +208,7 @@ class ExtractionTab(QtWidgets.QWidget, ProgressMixin):
             QtWidgets.QMessageBox.critical(
                 self,
                 "Missing world path",
-                "Choose a valid Minecraft world before selecting an area on the map.",
+                "Choose a valid MC world before selecting an area on the map.",
             )
             return
         label = {"road": "Road", "house": "House", "landmark": "Landmark"}[key]

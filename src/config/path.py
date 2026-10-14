@@ -9,7 +9,7 @@ from pathlib import Path
 
 from config.env import env_raw
 
-APP_NAME = "Minecraft CityGen"
+APP_NAME = "MC CityGen"
 SOURCE_ROOT = str(Path(__file__).resolve().parents[1])
 _REQUIRED_PACKAGE_DIRS = ("config", "engine", "gui", "pipeline")
 _REPO_MARKERS = (".git", "application.pyw", "pyproject.toml")
@@ -154,7 +154,7 @@ PREVIEW_CITY = _artifact_dir("03_preview", "city")
 CITY_SCHEM = _artifact_dir("04_city", "schem")
 CITY_RENDERS = _artifact_dir("04_city", "renders")
 
-# Standalone Minecraft worlds exported from the final city (one folder per seed).
+# Standalone MC worlds exported from the final city (one folder per seed).
 SAVES = _artifact_dir("05_world", "saves")
 EXPORTED_WORLD_NAME = f"{APP_NAME} World"
 

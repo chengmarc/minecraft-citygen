@@ -1,4 +1,4 @@
-"""Minecraft block-state strings: ``name[prop=val,...]`` parsing, formatting, and air."""
+"""MC block-state strings: ``name[prop=val,...]`` parsing, formatting, and air."""
 
 from __future__ import annotations
 

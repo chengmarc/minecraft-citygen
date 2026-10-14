@@ -1,7 +1,7 @@
 # pipeline — stage orchestration
 
 Runs [engine](../engine/README.md) work in five numbered stages, from a marked-up
-Minecraft world to a city schematic and a ready-to-play world. The pipeline
+MC world to a city schematic and a ready-to-play world. The pipeline
 decides which artifact paths and settings each engine call gets; the engine
 does the work.
 
@@ -196,7 +196,7 @@ artifacts/03_preview/grid/seed_<n>.png        road layout
 artifacts/03_preview/city/seed_<n>.png        city layout
 artifacts/04_city/schem/seed_<n>.schem        final city (Sponge v3)
 artifacts/04_city/renders/seed_<n>.png
-artifacts/05_world/saves/Minecraft CityGen World <n>/   playable world; copy into .minecraft/saves/
+artifacts/05_world/saves/MC CityGen World <n>/   playable world; copy into .minecraft/saves/
 ```
 
 `<n>` is the seed. Every path is defined in [config/path.py](../config/path.py).
