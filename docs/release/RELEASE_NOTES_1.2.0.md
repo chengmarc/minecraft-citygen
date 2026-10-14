@@ -1,8 +1,8 @@
-# Minecraft CityGen 1.2.0 Release Notes
+# MC CityGen 1.2.0 Release Notes
 
 Released on September 19, 2026.
 
-Minecraft CityGen 1.2.0 is a reliability and maintenance release. The preview
+MC CityGen 1.2.0 is a reliability and maintenance release. The preview
 and the final build now share one placement path, so what you preview is what
 gets built. The first extraction no longer appears to stall, and a handful of
 rendering and block-copy bugs are fixed. Most of the remaining work is internal:
@@ -63,7 +63,7 @@ still the only release artifacts.
 - If you called the world writer module directly, use
   `python -m pipeline.stages world` instead.
 - Publish only the curated artifacts:
-  `Minecraft CityGen-setup.exe` and `Minecraft CityGen-portable-windows.zip`.
+  `MC CityGen-setup.exe` and `MC CityGen-portable-windows.zip`.
 
 ## Verification
 

@@ -158,7 +158,7 @@ class GuiPipelineHandoffTests(unittest.TestCase):
 
     def test_generation_run_exports_city_using_selected_source_world(self):
         extraction_state = extraction_config.default_extraction_tab_config()
-        extraction_state["world_path"] = "C:/minecraft/source-world"
+        extraction_state["world_path"] = "C:/mc/source-world"
         owner = _GuiOwner(algo=algo_config.default_algo_tab_config(), extraction=extraction_state)
         calls = []
 
@@ -183,7 +183,7 @@ class GuiPipelineHandoffTests(unittest.TestCase):
 
         self.assertEqual([name for name, _seed, _params in calls], ["city", "world"])
         self.assertEqual(calls[0][2], {"algo": ALGO, "data_version": 4790})
-        self.assertEqual(calls[1][2], {"save": "C:/minecraft/source-world"})
+        self.assertEqual(calls[1][2], {"save": "C:/mc/source-world"})
         self.assertEqual([seed for _name, seed, _params in calls], ["9", "9"])
         tab.close()
         owner.close()

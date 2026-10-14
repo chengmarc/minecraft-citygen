@@ -1,4 +1,4 @@
-# Minecraft CityGen 0.3.0 Release Notes
+# MC CityGen 0.3.0 Release Notes
 
 Released on August 20, 2026.
 
@@ -12,7 +12,7 @@ WorldEdit auto-copy step has been removed.
 
 - The 1,100-line `gui/qt_app.py` was split into focused modules, and the Qt image
   viewer gained a public overlay API so dialogs no longer reach into its internals.
-- The renderer palette now honours Minecraft's biome tinting, so leaves and grass
+- The renderer palette now honours MC's biome tinting, so leaves and grass
   are green and water is blue instead of gray.
 - `clear_cache.py` moved into `tools/` and now also clears build, packaging, and
   test caches.

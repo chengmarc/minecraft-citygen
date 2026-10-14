@@ -44,7 +44,7 @@ def test_msix_manifest_renders_to_valid_xml_with_the_store_identity(monkeypatch)
     import xml.etree.ElementTree as ET
 
     build = load_build_script()
-    monkeypatch.setattr(build, "MSIX_IDENTITY_NAME", "12345Publisher.MinecraftCityGen")
+    monkeypatch.setattr(build, "MSIX_IDENTITY_NAME", "12345Publisher.MCCityGen")
     monkeypatch.setattr(build, "MSIX_PUBLISHER", "CN=00000000-0000-0000-0000-000000000000")
     monkeypatch.setattr(build, "MSIX_PUBLISHER_DISPLAY_NAME", "Publisher")
 
@@ -52,7 +52,7 @@ def test_msix_manifest_renders_to_valid_xml_with_the_store_identity(monkeypatch)
 
     ns = {"m": "http://schemas.microsoft.com/appx/manifest/foundation/windows10"}
     identity = root.find("m:Identity", ns)
-    assert identity.get("Name") == "12345Publisher.MinecraftCityGen"
+    assert identity.get("Name") == "12345Publisher.MCCityGen"
     assert identity.get("Version") == "1.2.0.0"
     assert root.find("m:Applications/m:Application", ns).get("Executable") == f"{build.APP_NAME}.exe"
     for logo in build.MSIX_LOGOS:

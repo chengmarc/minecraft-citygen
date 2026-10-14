@@ -1,4 +1,4 @@
-"""Export a city ``.schem`` into a copied Minecraft world save.
+"""Export a city ``.schem`` into a copied MC world save.
 
 The inverse of :mod:`engine.world.anvil_world_reader`. It slices the city voxel
 grid into 16x16x16 sections, bit-packs each section's ``block_states`` the same
@@ -8,7 +8,7 @@ overworld region files, player/spawn location, save-list name, and icon are
 changed, so the output keeps the source world's native save structure.
 
 Scope is deliberately small: just place the city in the copied world. No
-lighting is baked (``isLightOn`` is false so Minecraft relights on load).
+lighting is baked (``isLightOn`` is false so MC relights on load).
 """
 
 from __future__ import annotations
@@ -35,14 +35,14 @@ from engine.schematic.reader import (
 )
 
 # Standard overworld build range; heightmap values are stored relative to the
-# world floor and Minecraft uses 9 bits per column for a 384-tall world.
+# world floor and MC uses 9 bits per column for a 384-tall world.
 MIN_WORLD_Y = -64
 WORLD_HEIGHT = 384
 HEIGHTMAP_BITS = (WORLD_HEIGHT).bit_length()  # 9
 
 TARGET_GROUND_Y = 64  # world Y the city ground plane is seated at
 
-WORLD_ICON_SIZE = 64  # icon.png edge Minecraft shows in the save list
+WORLD_ICON_SIZE = 64  # icon.png edge MC shows in the save list
 
 # Coarse progress steps a world export reports (read, compose, encode, level, done).
 WORLD_WRITE_STEPS = 4

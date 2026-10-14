@@ -30,7 +30,7 @@ def _print_path(label: str, value: str, *, exists: bool | None = None) -> None:
 
 
 def main() -> int:
-    print("Minecraft CityGen environment doctor")
+    print("MC CityGen environment doctor")
     print(f"python: {sys.version.split()[0]} ({platform.platform()})")
     print(f"executable: {sys.executable}")
     _print_path("app root", ROOT, exists=os.path.isdir(ROOT))
@@ -56,7 +56,7 @@ def main() -> int:
     print()
 
     if not SAVE or not os.path.isdir(REGION_DIR):
-        print("Action: set MC_CITY_SAVE to your Minecraft world folder or paste it into the Extraction tab.")
+        print("Action: set MC_CITY_SAVE to your MC world folder or paste it into the Extraction tab.")
 
     return 1 if missing else 0
 

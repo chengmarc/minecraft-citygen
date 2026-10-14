@@ -1,8 +1,8 @@
-# Minecraft CityGen 1.2.1 Release Notes
+# MC CityGen 1.2.1 Release Notes
 
 Released on September 28, 2026.
 
-Minecraft CityGen 1.2.1 is a packaging release that brings the app to the
+MC CityGen 1.2.1 is a packaging release that brings the app to the
 Microsoft Store as **MC CityGen**. It also fixes how the installed app picks
 the folder it writes to, and ships a new app icon. City generation and its
 output are unchanged.
@@ -14,7 +14,7 @@ output are unchanged.
   code-signed. The app is now also packaged as an MSIX, which the Store signs
   itself. The GitHub installer and portable zip are still available.
 - **Writable-folder fix.** The app keeps its artifacts next to the exe when
-  that folder is writable, and in `%LOCALAPPDATA%\Minecraft CityGen` otherwise.
+  that folder is writable, and in `%LOCALAPPDATA%\MC CityGen` otherwise.
   The check used `os.access`, which on Windows ignores folder permissions and so
   reported Program Files as writable. It now tests by writing a real temp file.
 - **New app icon.**
@@ -24,7 +24,7 @@ output are unchanged.
 ### Packaging
 
 - `python packaging/build_windows_release.py --msix` also writes
-  `dist/store/Minecraft CityGen.msix` from the portable build, using
+  `dist/store/MC CityGen.msix` from the portable build, using
   `packaging/AppxManifest.xml`. It needs `makeappx.exe`, from either the full
   Windows SDK or the ~22 MB `Microsoft.Windows.SDK.BuildTools` NuGet package.
 - The MSIX version is the release version with a `.0` added (`1.2.1.0`).
@@ -32,7 +32,7 @@ output are unchanged.
 ### App data location
 
 - In the Store build, generated files live in
-  `%LOCALAPPDATA%\Packages\chengmarc.MCCityGen_v8ssbrv406ypg\LocalCache\Local\Minecraft CityGen\`.
+  `%LOCALAPPDATA%\Packages\chengmarc.MCCityGen_v8ssbrv406ypg\LocalCache\Local\MC CityGen\`.
   Windows would redirect writes there anyway. Writing to that path directly
   means the saves folder opens in Explorer, and uninstalling the Store app
   removes the data.
@@ -50,8 +50,8 @@ output are unchanged.
 - The Store app keeps its own data and does not see artifacts from an installer
   or portable copy.
 - Publish the curated artifacts to GitHub:
-  `Minecraft CityGen-setup.exe` and `Minecraft CityGen-portable-windows.zip`.
-  Upload `Minecraft CityGen.msix` to Partner Center, not to GitHub.
+  `MC CityGen-setup.exe` and `MC CityGen-portable-windows.zip`.
+  Upload `MC CityGen.msix` to Partner Center, not to GitHub.
 
 ## Verification
 

@@ -23,9 +23,9 @@ class ExtractionControlPanel(QtWidgets.QWidget):
 
         header = QtWidgets.QHBoxLayout()
         layout.addLayout(header)
-        header.addWidget(QtWidgets.QLabel("Minecraft World"))
+        header.addWidget(QtWidgets.QLabel("MC World"))
         self.world_edit = QtWidgets.QLineEdit(str(state.get("world_path", SAVE)), self)
-        self.world_edit.setPlaceholderText("Select a Minecraft world folder")
+        self.world_edit.setPlaceholderText("Select an MC world folder")
         self.world_edit.setFixedWidth(420)
         header.addWidget(self.world_edit)
 
@@ -40,7 +40,7 @@ class ExtractionControlPanel(QtWidgets.QWidget):
         self.detected_version_edit = QtWidgets.QLineEdit(self)
         self.detected_version_edit.setReadOnly(True)
         self.detected_version_edit.setPlaceholderText("-")
-        self.detected_version_edit.setToolTip("The Minecraft version of the world you selected.")
+        self.detected_version_edit.setToolTip("The MC version of the world you selected.")
         header.addWidget(self.detected_version_edit)
 
         header.addSpacing(12)
@@ -50,8 +50,8 @@ class ExtractionControlPanel(QtWidgets.QWidget):
             self.version_combo.addItem(label, value)
         self.select_version(state.get("target_version", extraction_config.AUTO_VERSION))
         self.version_combo.setToolTip(
-            "Lets you confirm which Minecraft version you plan to paste into. "
-            "Minecraft CityGen still stamps the exported files to the source world's version."
+            "Lets you confirm which MC version you plan to paste into. "
+            "MC CityGen still stamps the exported files to the source world's version."
         )
         header.addWidget(self.version_combo)
 
@@ -69,7 +69,7 @@ class ExtractionControlPanel(QtWidgets.QWidget):
 
         self.road_group = ExtractionAreaGroup(
             "Road Area",
-            "Choose an area that contains the road pieces you want Minecraft CityGen to reuse.",
+            "Choose an area that contains the road pieces you want MC CityGen to reuse.",
             "road",
             self._region_from_state(state.get("road"), area_kind="road"),
             self,

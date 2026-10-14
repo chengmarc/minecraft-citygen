@@ -1,11 +1,11 @@
-"""Build Windows release artifacts for Minecraft CityGen.
+"""Build Windows release artifacts for MC CityGen.
 
 Default output:
-- dist/release/Minecraft CityGen-setup.exe
+- dist/release/MC CityGen-setup.exe
 
 Optional outputs:
-- dist/release/Minecraft CityGen.exe
-- dist/store/Minecraft CityGen.msix (Microsoft Store upload; not a release artifact)
+- dist/release/MC CityGen.exe
+- dist/store/MC CityGen.msix (Microsoft Store upload; not a release artifact)
 """
 
 from __future__ import annotations
@@ -27,7 +27,7 @@ PORTABLE_DIST = DIST_ROOT / "portable"
 ONEFILE_DIST = DIST_ROOT / "onefile"
 RELEASE_DIST = DIST_ROOT / "release"
 STORE_DIST = DIST_ROOT / "store"
-APP_NAME = "Minecraft CityGen"
+APP_NAME = "MC CityGen"
 ONEFILE_EXE = RELEASE_DIST / f"{APP_NAME}.exe"
 INSTALLER_EXE = RELEASE_DIST / f"{APP_NAME}-setup.exe"
 MSIX_PATH = STORE_DIST / f"{APP_NAME}.msix"
@@ -208,7 +208,7 @@ def build_installer(version: str, app_dir: Path) -> Path:
     ]
     run(command)
     if not INSTALLER_EXE.exists():
-        raise SystemExit("Installer build completed without producing Minecraft CityGen-setup.exe.")
+        raise SystemExit("Installer build completed without producing MC CityGen-setup.exe.")
     return INSTALLER_EXE
 
 
@@ -252,7 +252,7 @@ def find_makeappx() -> str | None:
     bin_dirs = [
         Path(os.environ.get("ProgramFiles(x86)", "")) / "Windows Kits" / "10" / "bin",
         # Unzipped Microsoft.Windows.SDK.BuildTools NuGet package: the tools without the full SDK.
-        Path(os.environ.get("LOCALAPPDATA", "")) / "Minecraft CityGen Build" / "sdk-buildtools" / "bin",
+        Path(os.environ.get("LOCALAPPDATA", "")) / "MC CityGen Build" / "sdk-buildtools" / "bin",
     ]
     candidates = sorted(
         (path for bin_dir in bin_dirs for path in bin_dir.glob("10.*/x64/makeappx.exe")),
@@ -307,7 +307,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--include-standalone",
         action="store_true",
-        help="also publish the standalone Minecraft CityGen.exe to dist/release",
+        help="also publish the standalone MC CityGen.exe to dist/release",
     )
     parser.add_argument(
         "--msix",

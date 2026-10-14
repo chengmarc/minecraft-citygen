@@ -6,6 +6,13 @@ The format is based on Keep a Changelog, and versions should match the release v
 
 ## [Unreleased]
 
+### Changed
+
+- renamed to MC CityGen, and the game is called MC throughout the app, its files and
+  its docs. Settings and outputs now live in `%LOCALAPPDATA%\MC CityGen`; a
+  previous install's `%LOCALAPPDATA%\Minecraft CityGen` folder is left in place
+- the installer is `MC CityGen-setup.exe`, and the Python package `mc-city-generator`
+
 ### Removed
 
 - the portable Windows zip: GitHub Releases has the installer only, and the
@@ -30,7 +37,7 @@ The format is based on Keep a Changelog, and versions should match the release v
 ### Changed
 
 - new app icon
-- README download and Minecraft badges are local SVGs instead of shields.io
+- README download and MC badges are local SVGs instead of shields.io
 
 ## [1.2.0] - 2026-09-19
 
@@ -74,7 +81,7 @@ The format is based on Keep a Changelog, and versions should match the release v
 - building layer count is now decoupled from placement type: one-layer and
   three-layer assets can be used as either repeatable type-1 buildings or unique
   type-2 landmarks
-- a refreshed Minecraft CityGen brand pass, including the new app icon, README
+- a refreshed MC CityGen brand pass, including the new app icon, README
   badge/download links, and organized screenshot/GIF gallery assets
 - a Control tab for centralized generation settings and preview defaults reset
   controls
@@ -133,14 +140,14 @@ The format is based on Keep a Changelog, and versions should match the release v
 
 ## [1.0.0] - 2026-08-25
 
-The world-export milestone. Alongside the WorldEdit-ready `.schem`, Minecraft CityGen now
-exports the finished city as a standalone, ready-to-play Minecraft world, so a
+The world-export milestone. Alongside the WorldEdit-ready `.schem`, MC CityGen now
+exports the finished city as a standalone, ready-to-play MC world, so a
 city can be explored in-game with no mods.
 
 ### Added
 
 - **standalone world export** — the finished city can be exported as a
-  ready-to-play Minecraft world (`artifacts/saves/seed_<n>_world/`) with the
+  ready-to-play MC world (`artifacts/saves/seed_<n>_world/`) with the
   city centred on the world origin and the player spawned on solid ground, so it
   can be walked around in-game with no WorldEdit required. Exposed as pipeline
   stage 5 (`pipeline/05_world`) and run automatically by the Generation tab
@@ -341,7 +348,7 @@ byte-identical results (decoded) against the previous implementation.
 ### Added
 
 - installable project metadata and command entry points for the GUI and environment doctor
-- a bundled default Minecraft world that ships with the app
+- a bundled default MC world that ships with the app
 - Windows installer build pipeline with PyInstaller, Inno Setup, and local packaging hooks for Tcl/Tk
 - installer-only release flow with a documented Windows release command
 - release support docs in `README.md`, plus this changelog and `RELEASING.md`
@@ -352,7 +359,7 @@ byte-identical results (decoded) against the previous implementation.
 - hard-coded machine-specific default paths were replaced with bundled defaults and explicit environment overrides
 - frozen builds now package Tcl/Tk explicitly instead of relying on PyInstaller's broken auto-detection on this Python install
 - the isometric renderer now works without `numba`, while using CPU `numba` acceleration when it is available
-- release artifacts are now published to `dist/release`, with `Minecraft CityGen-setup.exe` as the primary deliverable
+- release artifacts are now published to `dist/release`, with `MC CityGen-setup.exe` as the primary deliverable
 
 ### Fixed
 

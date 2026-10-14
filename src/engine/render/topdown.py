@@ -27,7 +27,7 @@ def _region_coords(region_dir):
 def region_world_bounds(region_dir):
     coords = list(_region_coords(region_dir))
     if not coords:
-        raise FileNotFoundError(f"No Minecraft region files were found in {region_dir}")
+        raise FileNotFoundError(f"No MC region files were found in {region_dir}")
     min_rx = min(rx for rx, _rz in coords)
     max_rx = max(rx for rx, _rz in coords)
     min_rz = min(rz for _rx, rz in coords)

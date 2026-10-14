@@ -43,7 +43,7 @@ for GitHub Releases and an MSIX package for the Microsoft Store — built by
    - Build completes: city `.schem`, isometric render, and exported world
    - generated files land in the expected `artifacts/` folders; the exported
      world appears under `artifacts/05_world/saves/` and "Copy World" opens it
-   - the exported world loads in Minecraft with the player standing on the city
+   - the exported world loads in MC with the player standing on the city
    - uninstall works cleanly
 8. Tag the release in git only after the installer has been verified.
 9. Publish the installer as the GitHub release.
@@ -54,7 +54,7 @@ for GitHub Releases and an MSIX package for the Microsoft Store — built by
 python packaging/build_windows_release.py --clean --include-standalone
 ```
 
-This additionally writes `dist/release/Minecraft CityGen.exe`. It is for
+This additionally writes `dist/release/MC CityGen.exe`. It is for
 testing only; do not publish it.
 
 ### Build the Microsoft Store package
@@ -73,7 +73,7 @@ with the GitHub release.
    python packaging/build_windows_release.py --clean --msix
    ```
 
-   This additionally writes `dist/store/Minecraft CityGen.msix`.
+   This additionally writes `dist/store/MC CityGen.msix`.
 3. Smoke-test the packaged app before uploading. With Developer Mode on,
    register the unpacked layout instead of installing the unsigned MSIX:
 
@@ -82,7 +82,7 @@ with the GitHub release.
    ```
 
    Run the same checks as the installer smoke test. Generated files should land
-   under `%LOCALAPPDATA%\Packages\<package family name>\LocalCache\Local\Minecraft CityGen\`,
+   under `%LOCALAPPDATA%\Packages\<package family name>\LocalCache\Local\MC CityGen\`,
    and the saves folder should open in Explorer. Remove it afterwards with
    `Get-AppxPackage chengmarc.MCCityGen | Remove-AppxPackage`.
 4. Upload the `.msix` in a new Partner Center submission. If the app's look or
@@ -145,9 +145,9 @@ not required.
 
 | File | Published |
 |---|---|
-| `dist/release/Minecraft CityGen-setup.exe` | yes |
-| `dist/release/Minecraft CityGen.exe` | no — only with `--include-standalone`, testing only |
-| `dist/store/Minecraft CityGen.msix` | no — only with `--msix`, uploaded to the Microsoft Store |
+| `dist/release/MC CityGen-setup.exe` | yes |
+| `dist/release/MC CityGen.exe` | no — only with `--include-standalone`, testing only |
+| `dist/store/MC CityGen.msix` | no — only with `--msix`, uploaded to the Microsoft Store |
 
 ### Build prerequisites
 
@@ -162,7 +162,7 @@ not required.
   or, much smaller (~22 MB), the
   [Microsoft.Windows.SDK.BuildTools](https://www.nuget.org/packages/Microsoft.Windows.SDK.BuildTools)
   NuGet package: download the `.nupkg`, rename it to `.zip`, and unzip it to
-  `%LOCALAPPDATA%\Minecraft CityGen Build\sdk-buildtools\`. No install or admin needed.
+  `%LOCALAPPDATA%\MC CityGen Build\sdk-buildtools\`. No install or admin needed.
 
 ### Files
 

@@ -3,19 +3,20 @@
 Everything to paste into Partner Center → MC CityGen → Store listing, in the page's order, then the other fields the
 submission asks for. Images are in [listing/](listing/), rendered by `python store/render.py`.
 
-The listing says "MC CityGen", not "Minecraft CityGen": the name reserved in Partner Center
-(`MSIX_DISPLAY_NAME` in [build_windows_release.py](../packaging/build_windows_release.py)). Minecraft's usage
-guidelines don't allow "Minecraft" in a product's name, and ask for the disclaimer at the end of the description.
+The app and its listing call the game "MC": Mojang's usage guidelines don't allow its name in a product's name,
+and the Store has turned down submissions that used it. The name only appears where the guidelines ask for it: the
+disclaimer at the end of the description and the trademark credit. The app's name is the one reserved in Partner
+Center (`MSIX_DISPLAY_NAME` in [build_windows_release.py](../packaging/build_windows_release.py)).
 
 ## Description
 
 ```
-Build a whole Minecraft city from a handful of buildings.
+Build a whole MC city from a handful of buildings.
 
-MC CityGen takes the roads and buildings you mark up in your own Minecraft world and grows them into a complete city: an avenue and street network, houses along every block, and landmarks spaced through it. The finished city comes out as a world you can open in Minecraft and as a .schem schematic for your own world.
+MC CityGen takes the roads and buildings you mark up in your own MC world and grows them into a complete city: an avenue and street network, houses along every block, and landmarks spaced through it. The finished city comes out as a world you can open in MC and as a .schem schematic for your own world.
 
 How it works
-• Extract: point it at a Minecraft world and choose the road, house and landmark areas on its map.
+• Extract: point it at an MC world and choose the road, house and landmark areas on its map.
 • Preview: see the road network and the building layout before anything is built.
 • Build: get the schematic, a rendered picture of the city, and a playable world.
 
@@ -32,7 +33,7 @@ Works offline. No account, no ads, no tracking.
 
 Requirements
 • Windows 10 or 11, 64-bit
-• Minecraft: Java Edition 26.1.2 or later, to play the cities it makes
+• MC: Java Edition 26.1.2 or later, to play the cities it makes
 
 MC CityGen is open source under the Apache 2.0 license.
 
@@ -66,7 +67,7 @@ Open source (Apache 2.0)
 Upload in this order (the first is shown first):
 
 1. `listing/screenshot-1-promo.png`: a finished city, as the app renders it
-2. `listing/screenshot-2-world.png`: the exported world in Minecraft
+2. `listing/screenshot-2-world.png`: the exported world in MC
 3. `listing/screenshot-3-assets.png`: the built-in modern asset set
 4. `listing/screenshot-4-markers.png`: marking up your own building
 5. `listing/screenshot-5-styles.png`: a medieval city
@@ -92,7 +93,7 @@ Leave empty.
 - **Short description** (270 characters or fewer):
 
   ```
-  Grow a whole Minecraft city from a handful of buildings you mark up in your own world. Preview the roads and layout, then export a playable world and a .schem schematic. For Minecraft: Java Edition 26.1.2+. Works offline.
+  Grow a whole MC city from a handful of buildings you mark up in your own world. Preview the roads and layout, then export a playable world and a .schem schematic. For MC: Java Edition 26.1.2+. Works offline.
   ```
 
 ## Additional information
@@ -101,7 +102,7 @@ Leave empty.
 
   ```
   city generator
-  Minecraft city
+  MC city
   procedural city
   schematic
   Java Edition
@@ -114,7 +115,7 @@ Leave empty.
   Minimum hardware:
 
   ```
-  Minecraft: Java Edition 26.1.2 or later, to open the worlds it makes. Not needed to run the app.
+  MC: Java Edition 26.1.2 or later, to open the worlds it makes. Not needed to run the app.
   ```
 
 - **Copyright and trademark info:** `© 2026 chengmarc. Minecraft is a trademark of Mojang Synergies AB.`
@@ -142,11 +143,11 @@ purchases, no location sharing and no network access.
 - **Restricted capabilities → runFullTrust:**
 
   ```
-  MC CityGen is a desktop app built with Python and Qt (PyInstaller), packaged with the Desktop Bridge. runFullTrust is required for any packaged Win32 desktop app to launch its executable (EntryPoint="Windows.FullTrustApplication"). It is used only to run the app itself. The app does not access the network; it reads the Minecraft world folder the user chooses and writes its outputs to its own app data folder.
+  MC CityGen is a desktop app built with Python and Qt (PyInstaller), packaged with the Desktop Bridge. runFullTrust is required for any packaged Win32 desktop app to launch its executable (EntryPoint="Windows.FullTrustApplication"). It is used only to run the app itself. The app does not access the network; it reads the MC world folder the user chooses and writes its outputs to its own app data folder.
   ```
 
 - **Notes for certification:**
 
   ```
-  No account, sign-in, internet connection or Minecraft install is needed. The app comes with a sample world already selected, with its road, house and landmark areas chosen. Click Extract and wait for it to finish, then the Preview tab's Preview button, then the Build tab's Build button. Build shows a rendered picture of the finished city; Copy World opens the folder with the exported world.
+  No account, sign-in, internet connection or MC install is needed. The app comes with a sample world already selected, with its road, house and landmark areas chosen. Click Extract and wait for it to finish, then the Preview tab's Preview button, then the Build tab's Build button. Build shows a rendered picture of the finished city; Copy World opens the folder with the exported world.
   ```

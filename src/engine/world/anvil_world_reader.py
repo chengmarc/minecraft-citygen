@@ -32,7 +32,7 @@ def _checked_region_paths(region_dir, save_path):
 def _missing_region_dir_message(save_path, checked_paths):
     checked_lines = "\n".join(f"- {path}" for path in checked_paths) or "- <save>/region"
     return (
-        "Minecraft world region directory not found.\n"
+        "MC world region directory not found.\n"
         f"Configured save: {save_path or '<not set>'}\n"
         "Checked:\n"
         f"{checked_lines}\n"

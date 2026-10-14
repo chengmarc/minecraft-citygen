@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-"""Regenerate the renderer block-color lookup CSV from a downloaded Minecraft client JAR.
+"""Regenerate the renderer block-color lookup CSV from a downloaded MC client JAR.
 
 This is a maintenance script. The app still ships only ``src/config/color_render.csv``;
 the generator itself is not part of the packaged runtime.
@@ -28,7 +28,7 @@ VERSION_MANIFEST_URL = "https://piston-meta.mojang.com/mc/game/version_manifest_
 HTTP_TIMEOUT_SECONDS = 120
 
 # Historical block ids that were renamed in later versions. The generator scans a
-# single (modern) client JAR, which no longer carries the old ids -- but Minecraft CityGen
+# single (modern) client JAR, which no longer carries the old ids -- but MC CityGen
 # copies block strings verbatim from the *source* world, so an export from an
 # older world still contains e.g. `minecraft:grass` (now `short_grass`). We emit
 # an alias row for each, reusing the current block's colour, so the renderer
@@ -114,7 +114,7 @@ class Face:
     tinted: bool
 
 
-class MinecraftTopColorExtractor:
+class MCTopColorExtractor:
     def __init__(self, jar_path: Path) -> None:
         self.jar_path = jar_path
         self.zf = zipfile.ZipFile(jar_path)
@@ -122,7 +122,7 @@ class MinecraftTopColorExtractor:
         self.model_cache: dict[str, dict] = {}
         self.texture_cache: dict[str, tuple[Image.Image, tuple[int, int]]] = {}
 
-    def __enter__(self) -> "MinecraftTopColorExtractor":
+    def __enter__(self) -> "MCTopColorExtractor":
         return self
 
     def __exit__(self, *_exc_info) -> None:
@@ -396,7 +396,7 @@ class MinecraftTopColorExtractor:
 
 
 def load_json_url(url: str) -> dict:
-    request = urllib.request.Request(url, headers={"User-Agent": "Minecraft CityGen render palette updater"})
+    request = urllib.request.Request(url, headers={"User-Agent": "MC CityGen render palette updater"})
     with urllib.request.urlopen(request, timeout=HTTP_TIMEOUT_SECONDS) as response:
         return json.load(response)
 
@@ -415,7 +415,7 @@ def resolve_version_metadata(version: str | None) -> tuple[str, dict]:
     for item in manifest["versions"]:
         if item.get("id") == version_id:
             return version_id, item
-    raise SystemExit(f"Minecraft version not found in manifest: {version_id}")
+    raise SystemExit(f"MC version not found in manifest: {version_id}")
 
 
 def download_client_jar(version: str | None) -> tuple[str, Path]:
@@ -423,18 +423,18 @@ def download_client_jar(version: str | None) -> tuple[str, Path]:
     version_manifest = load_json_url(version_metadata["url"])
     client = version_manifest.get("downloads", {}).get("client")
     if not client:
-        raise SystemExit(f"Minecraft version {version_id} does not expose a client download.")
+        raise SystemExit(f"MC version {version_id} does not expose a client download.")
 
     download_url = client["url"]
     expected_sha1 = client.get("sha1")
-    jar_path = TOOLS_DIR / f"minecraft-client-{version_id}.jar"
+    jar_path = TOOLS_DIR / f"mc-client-{version_id}.jar"
     temp_path = jar_path.with_suffix(".jar.part")
     TOOLS_DIR.mkdir(parents=True, exist_ok=True)
 
     if jar_path.is_file() and expected_sha1 and sha1_file(jar_path) == expected_sha1:
         return version_id, jar_path
 
-    request = urllib.request.Request(download_url, headers={"User-Agent": "Minecraft CityGen render palette updater"})
+    request = urllib.request.Request(download_url, headers={"User-Agent": "MC CityGen render palette updater"})
     with urllib.request.urlopen(request, timeout=HTTP_TIMEOUT_SECONDS) as response:
         with temp_path.open("wb") as fh:
             shutil.copyfileobj(response, fh)
@@ -477,11 +477,11 @@ def write_csv(rows: list[tuple[str, int, int, int]], output_path: Path) -> None:
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
-        description="Download a Minecraft client JAR and regenerate src/config/color_render.csv."
+        description="Download an MC client JAR and regenerate src/config/color_render.csv."
     )
     parser.add_argument(
         "--version",
-        help="Minecraft version id to download. Defaults to the latest release in Mojang's manifest.",
+        help="MC version id to download. Defaults to the latest release in Mojang's manifest.",
     )
     parser.add_argument(
         "--output",
@@ -497,7 +497,7 @@ def main() -> int:
     output_path = args.output.expanduser().resolve()
     version_id, jar_path = download_client_jar(args.version)
 
-    with MinecraftTopColorExtractor(jar_path) as extractor:
+    with MCTopColorExtractor(jar_path) as extractor:
         rows = apply_renamed_aliases(extractor.extract())
     write_csv(rows, output_path)
     print(f"downloaded {version_id} client JAR to {jar_path}")
