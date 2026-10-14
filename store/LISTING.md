@@ -24,7 +24,7 @@ Your buildings, your style
 Mark a building with a gold block and a diamond block at opposite corners, and an emerald block at ground level. Stack three marked pieces and the building grows taller or shorter to fit the city. Modern towers, medieval walls: the city takes the look of whatever you build.
 
 Ready to use
-A modern asset set, built by hand block by block, comes with the app, so you can make a city before you build anything.
+A modern and a medieval asset set, built by hand block by block, come with the app, so you can make a city before you build anything.
 
 Tune the city
 City size, road density, avenue and street spacing, turns and T-junctions, house style variety and landmark spacing. A seed makes any city again.
@@ -56,7 +56,7 @@ Exports a playable world and a .schem schematic
 A rendered picture of every city
 Mark up your own buildings with three blocks: gold, diamond, emerald
 Stackable buildings that grow to fit the city
-A hand-built modern asset set included
+Hand-built modern and medieval asset sets included
 Tune size, road density, spacing, turns and building mix
 Works offline: no account, no ads, no tracking
 Open source (Apache 2.0)
@@ -66,13 +66,10 @@ Open source (Apache 2.0)
 
 Upload in this order (the first is shown first):
 
-1. `listing/screenshot-1-promo.png`: a finished city, as the app renders it
-2. `listing/screenshot-2-world.png`: the exported world in MC
-3. `listing/screenshot-3-assets.png`: the built-in modern asset set
-4. `listing/screenshot-4-markers.png`: marking up your own building
-5. `listing/screenshot-5-styles.png`: a medieval city
-6. `listing/screenshot-6-app.png`: the Preview tab
-
+1. `listing/screenshot-1-promo.png`: the app with a finished modern city
+2. `listing/screenshot-2-seeds.png`: the app with another modern city
+3. `listing/screenshot-3-styles.png`: the app with a medieval town
+4. `listing/screenshot-4-size.png`: the app with a small medieval town
 ## Store logos
 
 | Slot | File |
