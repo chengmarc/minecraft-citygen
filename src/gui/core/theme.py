@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
+import ctypes
 import os
+import sys
 
 from PySide6 import QtCore, QtGui, QtWidgets
 
@@ -10,35 +12,54 @@ from gui.core import app_files
 
 # Design tokens for the Qt widget stylesheet. Keep colors semantic so the QSS
 # reads like a small design system instead of a pile of one-off hex values.
+#
+# The window is layered like the app icon: sky blue at the top (the strip behind
+# the tabs), grass green in the middle (everything you act on: buttons, the
+# selected tab, focus), and dirt brown at the bottom (the progress bar, on the
+# faint brown ground of the window). New colors should follow the same layers.
 COLOR = {
-    "app_bg": "#edf2f7",
-    "content_bg": "#e5edf7",
+    # Sky: the tab row along the top of the window.
+    "sky": "#cfe4f8",
+    "sky_tab": "#e6f1fc",
+    "sky_tab_hover": "#f4f9fe",
+    "sky_border": "#aecbe8",
+    "sky_text": "#2f5274",
+    # The faintest dirt brown for the window and its panels: nearly gray, just warm, so the green actions stand out.
+    "app_bg": "#f2f0ed",
+    "content_bg": "#e9e6e2",
     "surface": "#ffffff",
-    "surface_alt": "#f8fbff",
-    "surface_panel": "#eef5fc",
-    "surface_muted": "#d9e3ef",
-    "surface_sunken": "#cfdae8",
-    "viewer_bg": "#d7e4f2",
-    "border": "#d1dbe8",
-    "border_strong": "#a7b6c8",
-    "text": "#17202b",
-    "text_soft": "#334155",
-    "muted": "#657386",
-    "accent": "#1f5ed5",
-    "accent_hover": "#184fb8",
-    "accent_pressed": "#123d91",
-    "accent_soft": "#dbe8ff",
-    "accent_border": "#7ea2ee",
-    "accent_disabled": "#b8c4d6",
-    "button_top": "#d2dfef",
-    "button": "#b8cbe6",
-    "button_hover": "#aac0df",
-    "button_pressed": "#98b0d2",
-    "disabled": "#e4e9f1",
+    "surface_alt": "#faf9f7",
+    "surface_panel": "#f5f3f0",
+    "surface_muted": "#e1ded8",
+    "surface_sunken": "#d2cec8",
+    "viewer_bg": "#ffffff",
+    "border": "#d9d4ce",
+    "border_strong": "#b2aca4",
+    "text": "#2a221a",
+    "text_soft": "#4a3e32",
+    "muted": "#7a6d60",
+    # Grass green for the actions: the app icon's, deep enough for white text.
+    "accent_top": "#5cbf2a",
+    "accent": "#3d921d",
+    "accent_hover": "#327c16",
+    "accent_pressed": "#26620f",
+    "accent_soft": "#e2f3d5",
+    "accent_border": "#93cf6c",
+    "accent_disabled": "#c8d3bb",
+    # The smaller buttons are grass green too, at their own size.
+    "button_top": "#5cbf2a",
+    "button": "#3d921d",
+    "button_hover": "#327c16",
+    "button_pressed": "#26620f",
+    "button_text": "#ffffff",
+    "disabled": "#e5e2de",
     "disabled_text": "#ffffff",
-    "success_bg": "#dff4e8",
-    "success_border": "#afdcbc",
-    "success_text": "#1c6a45",
+    "success_bg": "#e2f3d5",
+    "success_border": "#a9d98a",
+    "success_text": "#2d6a12",
+    # Dirt: the bottom of the window, the progress bar.
+    "dirt_top": "#b67a3f",
+    "dirt": "#8b5a2b",
 }
 
 RADIUS = {
@@ -55,13 +76,12 @@ STATUS_CHIP_FONT_SIZE = 11
 ICON_BUTTON_FONT_SCALE = 1.8
 
 # ACCENT_RGB is kept for non-QSS drawing code such as selection overlays.
-ACCENT_RGB = (36, 87, 197)
-SHADOW_RGB = (23, 32, 43)
+ACCENT_RGB = (61, 146, 29)
+SHADOW_RGB = (42, 32, 22)
 BIG_BUTTON_WIDTH = 158
 
 APP_STYLESHEET = f"""
 QMainWindow, QDialog {{
-    background: {COLOR["app_bg"]};
     color: {COLOR["text"]};
     selection-background-color: {COLOR["accent"]};
     selection-color: white;
@@ -72,16 +92,18 @@ QWidget {{
     color: {COLOR["text"]};
 }}
 
+/* The sky: the window's own colour, which only the tab row shows, since the tab pages cover the rest. After the
+   QWidget rule, which would otherwise paint over it. */
+QMainWindow {{
+    background: {COLOR["sky"]};
+}}
+
 QLabel {{
     background: transparent;
 }}
 
-QTabWidget {{
-    background: {COLOR["app_bg"]};
-}}
-
-QTabBar {{
-    background: {COLOR["app_bg"]};
+QTabWidget, QTabBar {{
+    background: transparent;
 }}
 
 QTabWidget::pane {{
@@ -91,10 +113,10 @@ QTabWidget::pane {{
 }}
 
 QTabBar::tab {{
-    background: {COLOR["surface_muted"]};
-    color: {COLOR["text_soft"]};
-    border: 1px solid {COLOR["border"]};
-    border-bottom-color: {COLOR["surface_muted"]};
+    background: {COLOR["sky_tab"]};
+    color: {COLOR["sky_text"]};
+    border: 1px solid {COLOR["sky_border"]};
+    border-bottom-color: {COLOR["sky_border"]};
     border-top-left-radius: {RADIUS["md"]}px;
     border-top-right-radius: {RADIUS["md"]}px;
     padding: 10px 20px;
@@ -107,15 +129,15 @@ QTabBar::tab:first {{
 }}
 
 QTabBar::tab:hover {{
-    background: {COLOR["accent_soft"]};
-    color: {COLOR["accent_pressed"]};
+    background: {COLOR["sky_tab_hover"]};
 }}
 
+/* The front tab is the page's own colour, so it opens into the page below. */
 QTabBar::tab:selected {{
-    background: {COLOR["surface"]};
+    background: {COLOR["app_bg"]};
     color: {COLOR["accent"]};
-    border-color: {COLOR["border"]};
-    border-bottom-color: {COLOR["surface"]};
+    border-color: {COLOR["sky_border"]};
+    border-bottom-color: {COLOR["app_bg"]};
     font-weight: 750;
 }}
 
@@ -166,7 +188,7 @@ QPushButton {{
     min-height: {CONTROL_HEIGHT}px;
     background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
         stop:0 {COLOR["button_top"]}, stop:1 {COLOR["button"]});
-    color: {COLOR["accent_pressed"]};
+    color: {COLOR["button_text"]};
     font-size: {NORMAL_BUTTON_FONT_SIZE}pt;
     font-weight: 700;
 }}
@@ -187,7 +209,7 @@ QPushButton:focus {{
 QPushButton#primaryButton,
 QPushButton[bigButton="true"] {{
     background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
-        stop:0 #3778ee, stop:1 {COLOR["accent"]});
+        stop:0 {COLOR["accent_top"]}, stop:1 {COLOR["accent"]});
     border-color: {COLOR["accent"]};
     color: white;
     font-size: {BIG_BUTTON_FONT_SIZE}pt;
@@ -247,7 +269,8 @@ QProgressBar {{
 
 QProgressBar::chunk {{
     border-radius: {RADIUS["sm"]}px;
-    background: {COLOR["accent"]};
+    background: qlineargradient(x1:0, y1:0, x2:1, y2:0,
+        stop:0 {COLOR["dirt_top"]}, stop:1 {COLOR["dirt"]});
 }}
 
 QLabel#statusLabel {{
@@ -312,7 +335,7 @@ QToolButton#advancedToggle {{
     min-height: {CONTROL_HEIGHT}px;
     background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
         stop:0 {COLOR["button_top"]}, stop:1 {COLOR["button"]});
-    color: {COLOR["accent_pressed"]};
+    color: {COLOR["button_text"]};
     font-weight: 700;
 }}
 
@@ -401,6 +424,37 @@ def apply_button_icon(button, icon_name: str) -> None:
         font.setPointSizeF(base * ICON_BUTTON_FONT_SCALE)
     font.setBold(True)
     button.setFont(font)
+
+
+# DwmSetWindowAttribute attributes for the title bar's colours (Windows 11 and later).
+_DWMWA_BORDER_COLOR = 34
+_DWMWA_CAPTION_COLOR = 35
+_DWMWA_TEXT_COLOR = 36
+
+
+def apply_title_bar_color(window) -> None:
+    """Paint the window's native title bar in the sky colour, so it runs into the tab row below it.
+
+    Windows 11 only; older Windows and other systems keep their own title bar.
+    """
+    if sys.platform != "win32":
+        return
+
+    def colorref(color: str) -> ctypes.c_uint:  # COLORREF is 0x00BBGGRR
+        r, g, b = (int(color[i:i + 2], 16) for i in (1, 3, 5))
+        return ctypes.c_uint(r | g << 8 | b << 16)
+
+    try:
+        hwnd = ctypes.c_void_p(int(window.winId()))
+        for attribute, color in (
+            (_DWMWA_CAPTION_COLOR, COLOR["sky"]),
+            (_DWMWA_BORDER_COLOR, COLOR["sky"]),
+            (_DWMWA_TEXT_COLOR, COLOR["sky_text"]),
+        ):
+            value = colorref(color)
+            ctypes.windll.dwmapi.DwmSetWindowAttribute(hwnd, attribute, ctypes.byref(value), ctypes.sizeof(value))
+    except (AttributeError, OSError):  # boundary: no dwmapi, or an older Windows without these attributes
+        pass
 
 
 def available_qt_styles() -> list[str]:

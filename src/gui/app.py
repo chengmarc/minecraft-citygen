@@ -14,7 +14,7 @@ from gui.widgets.qt_viewer import ensure_application
 from gui.tabs.extraction import ExtractionTab
 from gui.tabs.generation import GenerationTab
 from gui.tabs.preview import PreviewTab
-from gui.core.theme import configure_app_style
+from gui.core.theme import apply_title_bar_color, configure_app_style
 
 APP_WIDTH = 1366
 APP_HEIGHT = 768
@@ -113,6 +113,8 @@ def main(argv: list[str] | None = None) -> int:
     try:
         window = CityGeneratorQtApp()
         window.show()
+        if options.use_custom_theme:
+            apply_title_bar_color(window)
         threading.Thread(target=_warm_up_renderer, daemon=True).start()
         return app.exec()
     except Exception:  # top-level crash boundary: log details and surface a dialog
