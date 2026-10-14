@@ -79,14 +79,34 @@ with the GitHub release.
 
    ```powershell
    Add-AppxPackage -Register "build\release\msix\AppxManifest.xml"
-elease\msix\AppxManifest.xml"
    ```
 
    Run the same checks as the installer smoke test. Generated files should land
    under `%LOCALAPPDATA%\Packages\<package family name>\LocalCache\Local\Minecraft CityGen\`,
    and the saves folder should open in Explorer. Remove it afterwards with
    `Get-AppxPackage chengmarc.MCCityGen | Remove-AppxPackage`.
-4. Upload the `.msix` in a new Partner Center submission.
+4. Upload the `.msix` in a new Partner Center submission. If the app's look or
+   the pictures in `docs/pics/` changed, re-render the listing images first
+   (below).
+
+### Fill in the Partner Center submission
+
+[`store/LISTING.md`](../store/LISTING.md) has every field to paste, in Partner
+Center's order: the description, features, keywords, system requirements, the
+wording for the `runFullTrust` restricted capability and the notes for
+certification. Its images are in `store/listing/`.
+
+### Re-render the listing images
+
+```bash
+python store/render.py
+```
+
+It redraws `store/listing/` with Microsoft Edge in headless mode, from
+`store/logo.html` (box art, poster art, tile icon) and `store/shots.html` (the
+screenshots). The screenshots put a caption beside a picture from `docs/pics/`;
+change the captions or pictures in `shots.html`, and the matching claims in
+`LISTING.md` with them.
 
 ### Keep the build in step with a new pipeline step
 
@@ -152,3 +172,5 @@ not required.
 | [build_windows_release.py](../packaging/build_windows_release.py) | Builds the portable app, zip, installer, optional one-file exe, and optional Store MSIX (`--clean`, `--include-standalone`, `--msix`) |
 | [windows_installer.iss](../packaging/windows_installer.iss) | Inno Setup script; receives version and output directory from the build script |
 | [AppxManifest.xml](../packaging/AppxManifest.xml) | MSIX manifest template; the build script fills in the Store identity and version |
+| [store/LISTING.md](../store/LISTING.md) | The Store listing's text, field by field |
+| [store/render.py](../store/render.py) | Renders the listing's images into `store/listing/` |

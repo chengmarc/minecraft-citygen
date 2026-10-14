@@ -1,0 +1,31 @@
+<!doctype html>
+<!-- The Store's box art (1:1) and poster art (9:16), and with #tile its app tile icon: render.py loads this page at
+     each size. Everything is sized from the shorter side, so one layout serves both arts. -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="brand.css">
+<style>
+  html, body { width: 100vw; height: 100vh; }
+  body { display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
+  /* The grid fades out from the edges toward the icon. */
+  body::before { mask-image: radial-gradient(closest-side, transparent 35%, #000 100%); }
+
+  img { position: relative; width: 52vmin; height: 52vmin; filter: drop-shadow(0 3vmin 6vmin rgba(4, 8, 50, 0.5)); }
+  h1 { position: relative; margin: 6vmin 0 0; font-size: 11vmin; line-height: 1; font-weight: 700; letter-spacing: -0.02em; }
+  p { position: relative; margin: 3vmin 0 0; font-size: 4.4vmin; font-weight: 500; color: rgba(255, 255, 255, 0.8); }
+
+  /* #tile: the icon alone, filling a transparent square. */
+  .tile body { background: transparent; }
+  .tile body::before, .tile h1, .tile p { display: none; }
+  /* In pixels: headless Edge keeps a minimum window size, larger than the tile, and shoots its top-left corner. */
+  .tile img { position: fixed; left: 0; top: 0; width: 300px; height: 300px; filter: none; }
+</style>
+<script>if (location.hash === "#tile") document.documentElement.className = "tile";</script>
+</head>
+<body>
+  <img src="../src/gui/icons/app-icon.svg" alt="">
+  <h1>MC <span class="brand">CityGen</span></h1>
+  <p>Procedural City Generator</p>
+</body>
+</html>

@@ -1,0 +1,97 @@
+<!doctype html>
+<!-- The Store's screenshots: render.py loads this page at 1366 x 768 (rendered at 2x) once per shot, named by the
+     hash (#promo, #world, #assets, #markers, #styles, #app). Each is a caption on the left and a real picture on the
+     right, from docs/pics/: the app's own city render, the exported world in Minecraft, the asset sheet, the marker
+     tutorial, or the app's window. Needs Edge's --allow-file-access-from-files, to read those files from file://. -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="brand.css">
+<style>
+  html, body { width: 1366px; height: 768px; }
+  /* The grid fades out behind the picture. */
+  body::before { mask-image: linear-gradient(90deg, #000 0%, rgba(0, 0, 0, 0.6) 30%, transparent 55%); }
+
+  .caption { position: absolute; left: 60px; top: 0; bottom: 0; width: 330px; display: flex; flex-direction: column; justify-content: center; }
+  .caption .app { display: flex; align-items: center; gap: 12px; margin-bottom: 34px; font-size: 19px; font-weight: 600; }
+  .caption .app img { width: 44px; height: 44px; }
+  .caption .app small { display: block; margin-top: 1px; font-size: 14px; font-weight: 400; color: rgba(255, 255, 255, 0.72); }
+  h1 { margin: 0; font-size: 40px; line-height: 1.1; font-weight: 700; letter-spacing: -0.02em; }
+  .caption p { margin: 20px 0 0; font: 400 17px/1.5 "Segoe UI Variable Text", "Segoe UI", sans-serif; color: rgba(255, 255, 255, 0.8); }
+  .facts { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 28px; }
+  .facts span {
+    padding: 6px 13px; border-radius: 999px; font: 600 13px "Segoe UI Variable Text", "Segoe UI", sans-serif;
+    background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.22);
+  }
+
+  /* The picture, fitted into the right of the shot. */
+  .picture {
+    position: absolute; right: 44px; top: 50%; transform: translateY(-50%);
+    border-radius: 10px; overflow: hidden;
+    box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.16), 0 32px 80px rgba(2, 6, 40, 0.6), 0 10px 24px rgba(2, 6, 40, 0.35);
+  }
+  /* Up to 900 x 680, whole: a tall picture keeps its shape and the frame shrinks to it. */
+  .picture img { display: block; max-width: 900px; max-height: 680px; }
+</style>
+</head>
+<body>
+  <div class="caption">
+    <div class="app"><img src="../src/gui/icons/app-icon.svg" alt=""><span>MC CityGen<small>Procedural City Generator</small></span></div>
+    <h1 id="title"></h1>
+    <p id="text"></p>
+    <div class="facts" id="facts"></div>
+  </div>
+  <div class="picture"><img id="picture" alt=""></div>
+<script>
+  // One entry per shot. LISTING.md makes the same claims in words; change both together.
+  const SHOTS = {
+    promo: {
+      title: "A whole city from the buildings you make",
+      text: "Mark up a few roads and buildings in your Minecraft world. CityGen lays out the streets and fills them.",
+      facts: ["Java Edition 26.1.2+", "Works offline"],
+      picture: "../docs/pics/isometric1.png",
+    },
+    world: {
+      title: "Walk its streets",
+      text: "Every city comes out as a world you can open in Minecraft, and as a schematic for your own world.",
+      facts: ["Playable world", ".schem schematic"],
+      picture: "../docs/pics/ingame1.png",
+    },
+    assets: {
+      title: "Hand-built buildings included",
+      text: "A modern asset set, built block by block, is ready to use: houses, towers, landmarks and roads.",
+      facts: ["Houses", "Landmarks", "Roads"],
+      picture: "../docs/pics/assets_modern.png",
+    },
+    markers: {
+      title: "Bring your own buildings",
+      text: "Put a gold block and a diamond block at opposite corners, and an emerald at ground level. That is the whole markup.",
+      facts: ["Gold", "Diamond", "Emerald"],
+      picture: "../docs/pics/type1.png",
+    },
+    styles: {
+      title: "Any style you build",
+      text: "The city takes the look of the buildings you give it, from glass towers to castle walls.",
+      facts: ["Modern", "Medieval", "Yours"],
+      picture: "../docs/pics/ingame3.png",
+    },
+    app: {
+      title: "Preview before you build",
+      text: "See the road network and the building layout first. Tune city size, road density and spacing, then build.",
+      facts: ["Extract", "Preview", "Build"],
+      picture: "../docs/pics/ui2.png",
+    },
+  };
+
+  const shot = SHOTS[location.hash.slice(1)] || SHOTS.promo;
+  document.getElementById("title").textContent = shot.title;
+  document.getElementById("text").textContent = shot.text;
+  document.getElementById("picture").src = shot.picture;
+  for (const fact of shot.facts) {
+    const chip = document.createElement("span");
+    chip.textContent = fact;
+    document.getElementById("facts").append(chip);
+  }
+</script>
+</body>
+</html>
