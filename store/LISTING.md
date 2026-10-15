@@ -1,76 +1,108 @@
-# Microsoft Store listing — English (United States)
+# Microsoft Store listing — MC CityGen
 
-Everything to paste into Partner Center → MC CityGen → Store listing, in the page's order, then the other fields the
-submission asks for. Images are in [listing/](listing/), rendered by `python store/render.py`.
+Everything to paste into Partner Center for MC CityGen, in the submission's order: Properties, Store listings
+(English (United States)), Submission options. Pricing and availability, Age ratings and Packages are filled in
+Partner Center directly. Images are in [listing/](listing/), rendered by `python store/render.py`.
 
 The app and its listing call the game "MC": Mojang's usage guidelines don't allow its name in a product's name,
 and the Store has turned down submissions that used it. The name only appears where the guidelines ask for it: the
 disclaimer at the end of the description and the trademark credit. The app's name is the one reserved in Partner
 Center (`MSIX_DISPLAY_NAME` in [build_windows_release.py](../packaging/build_windows_release.py)).
 
-## Description
+## Properties
+
+- **Category:** Utilities & tools. **Subcategory:** none.
+- **Privacy policy:** paste the whole of [PRIVACY.md](PRIVACY.md) as it is; it is plain text written for the box.
+- **Website:**
+
+  ```
+  https://github.com/chengmarc/minecraft-citygen
+  ```
+
+- **Support contact info:**
+
+  ```
+  https://github.com/chengmarc/minecraft-citygen/issues
+  ```
+
+- **System requirements:** check Mouse under Minimum hardware (areas are chosen on a map). Leave every other row
+  unchecked and empty.
+- **Product declarations:** none apply. Leave "This product has been tested to meet accessibility guidelines"
+  unchecked unless it has been.
+
+## Store listings — English (United States)
+
+### Description
 
 ```
-Build a whole MC city from a handful of buildings.
+Want a whole MC city, without placing every building by hand?
 
-MC CityGen takes the roads and buildings you mark up in your own MC world and grows them into a complete city: an avenue and street network, houses along every block, and landmarks spaced through it. The finished city comes out as a world you can open in MC and as a .schem schematic for your own world.
+Build a handful of buildings in your own MC world, mark each one with three blocks, and get back a complete city in their style: avenues and streets, houses along every block, and landmarks spaced through it. Open it as a ready-to-play world, or take the .schem schematic into a world of your own.
 
-How it works
-• Extract: point it at an MC world and choose the road, house and landmark areas on its map.
-• Preview: see the road network and the building layout before anything is built.
-• Build: get the schematic, a rendered picture of the city, and a playable world.
+Make your first city right away
+• Two hand-built asset sets, modern and medieval, come with the app, so your first city needs no building at all.
+• A sample world is ready to go: Extract, Preview, Build.
 
-Your buildings, your style
-Mark a building with a gold block and a diamond block at opposite corners, and an emerald block at ground level. Stack three marked pieces and the building grows taller or shorter to fit the city. Modern towers, medieval walls: the city takes the look of whatever you build.
+Bring your own buildings
+• Mark a building with a gold block and a diamond block at opposite corners, and an emerald block at ground level.
+• Stack three marked pieces, and your tower grows taller or shorter to fit the city.
+• Modern towers, medieval walls: the city takes the look of whatever you build.
 
-Ready to use
-A modern and a medieval asset set, built by hand block by block, come with the app, so you can make a city before you build anything.
+See it before you build it
+• Preview the road network and the building layout, and build only when you like what you see.
+• Every build gives you a rendered picture of the whole city.
 
-Tune the city
-City size, road density, avenue and street spacing, turns and T-junctions, house style variety and landmark spacing. A seed makes any city again.
+Make it yours
+• Five city sizes, from a village to a metropolis.
+• Tune road density, avenue and street spacing, turns and T-junctions, and the building mix.
+• Roll a new seed for a new city, or keep a seed to make the same city again.
 
-Works offline. No account, no ads, no tracking.
+Nothing to sign up for
+• Works offline. No account, no ads, no tracking.
+• Open source under the Apache 2.0 license.
 
-Requirements
-• Windows 10 or 11, 64-bit
-• MC: Java Edition 26.1.2 or later, to play the cities it makes
-
-MC CityGen is open source under the Apache 2.0 license.
+Requirements and limits
+• Windows 10 or 11, 64-bit.
+• MC: Java Edition 26.1.2 or later, to play the cities it makes. You don't need it to run the app.
+• Your buildings must face south.
 
 NOT AN OFFICIAL MINECRAFT PRODUCT. NOT APPROVED BY OR ASSOCIATED WITH MOJANG OR MICROSOFT.
 ```
 
-## What's new in this version
+### What's new in this version
 
 Leave blank: this is the first submission.
 
-## Product features
+### Product features
 
-One per line in Partner Center ("Add more" for each):
+One per line in Partner Center ("Add more" for each). Each finishes "With this app, you can …":
 
 ```
-Grows a whole city from the buildings you make
-Avenues, streets, houses and landmarks, laid out for you
-Preview the roads and buildings before you build
-Exports a playable world and a .schem schematic
-A rendered picture of every city
-Mark up your own buildings with three blocks: gold, diamond, emerald
-Stackable buildings that grow to fit the city
-Hand-built modern and medieval asset sets included
-Tune size, road density, spacing, turns and building mix
-Works offline: no account, no ads, no tracking
-Open source (Apache 2.0)
+Grow a whole city from a handful of buildings you make
+Get avenues, streets, houses and landmarks laid out for you
+Start right away with hand-built modern and medieval asset sets
+Use your own buildings, marked with three blocks: gold, diamond and emerald
+Have stacked buildings grow taller or shorter to fit the city
+Preview the roads and the building layout before you build
+Play your city as a ready-to-open world, or take it anywhere as a .schem schematic
+See a rendered picture of every city you build
+Pick a city size, from a village to a metropolis
+Tune road density, street spacing, turns and the building mix
+Make the same city again from its seed, or roll a new one
+Work offline, with no account, no ads and no tracking
+Read and change the code: open source under Apache 2.0
 ```
 
-## Screenshots
+### Screenshots
 
-Upload in this order (the first is shown first):
+Upload in this order (the first is shown first). Each is the app's Build tab with a finished city:
 
-1. `listing/screenshot-1-promo.png`: the app with a finished modern city
-2. `listing/screenshot-2-seeds.png`: the app with another modern city
-3. `listing/screenshot-3-styles.png`: the app with a medieval town
-4. `listing/screenshot-4-size.png`: the app with a small medieval town
-## Store logos
+1. `listing/screenshot-1-promo.png`: a whole modern city from the buildings you make
+2. `listing/screenshot-2-seeds.png`: the same buildings, a new city from a new seed
+3. `listing/screenshot-3-styles.png`: a medieval town, the city taking your buildings' style
+4. `listing/screenshot-4-size.png`: a small town, from village to metropolis
+
+### Store logos
 
 | Slot | File |
 |---|---|
@@ -79,64 +111,62 @@ Upload in this order (the first is shown first):
 | 1:1 App tile icon (300 × 300) | `listing/store-logo-300.png` |
 | 150 × 150, 71 × 71 | Leave empty; the Store takes them from the package. |
 
-## Trailers, Xbox images
+### Trailers, Xbox images
 
 Leave empty.
 
-## Supplemental fields
+### Supplemental fields
 
-- **Short title:** leave empty.
+- **Short title:** leave empty; the name is short.
 - **Voice title:** leave empty.
 - **Short description** (270 characters or fewer):
 
   ```
-  Grow a whole MC city from a handful of buildings you mark up in your own world. Preview the roads and layout, then export a playable world and a .schem schematic. For MC: Java Edition 26.1.2+. Works offline.
+  Turn a handful of buildings from your MC world into a whole city: streets, houses and landmarks in your style, or start with the built-in modern and medieval sets. Play it as a world or export a .schem. For Java Edition 26.1.2+. Works offline.
   ```
 
-## Additional information
+### Additional information
 
 - **Keywords** (up to 7, 40 characters each, 21 words in all):
 
   ```
   city generator
-  MC city
   procedural city
-  schematic
-  Java Edition
-  world generator
   city builder
+  schematic generator
+  world generator
+  medieval town
+  Java Edition
   ```
 
-- **Additional system requirements** (each line one item, 200 characters each):
-
-  Minimum hardware:
+- **Additional system requirements** (each line one item, 200 characters each), under Minimum hardware:
 
   ```
   MC: Java Edition 26.1.2 or later, to open the worlds it makes. Not needed to run the app.
   ```
 
-- **Copyright and trademark info:** `© 2026 chengmarc. Minecraft is a trademark of Mojang Synergies AB.`
-- **Additional license terms:** `Apache License 2.0: https://github.com/chengmarc/minecraft-citygen/blob/main/LICENSE`
-- **Developed by:** `chengmarc`
+- **Copyright and trademark info:**
 
-## Properties
+  ```
+  © 2026 chengmarc. Minecraft is a trademark of Mojang Synergies AB.
+  ```
 
-- **Category:** Utilities & tools. **Subcategory:** none.
-- **Privacy policy URL:** `https://github.com/chengmarc/minecraft-citygen/blob/main/store/PRIVACY.md`
-- **Website:** `https://github.com/chengmarc/minecraft-citygen`
-- **Support contact info:** `https://github.com/chengmarc/minecraft-citygen/issues`
-- **System requirements:** check Mouse under Minimum hardware (areas are chosen on a map). Leave every other row
-  unchecked and empty.
-- **Product declarations:** none apply. Leave "This product has been tested to meet accessibility guidelines"
-  unchecked unless it has been.
+- **Additional license terms:**
 
-## Age ratings
+  ```
+  Apache License 2.0: https://github.com/chengmarc/minecraft-citygen/blob/main/LICENSE
+  ```
 
-In the questionnaire, none of the parts apply: the app has no user-to-user communication, no generated text, no
-purchases, no location sharing and no network access.
+- **Developed by:**
+
+  ```
+  chengmarc
+  ```
 
 ## Submission options
 
+- **Publishing hold options:** publish as soon as it passes certification, unless a release is being timed for a
+  weekend or a game update, when MC players are most active.
 - **Restricted capabilities → runFullTrust:**
 
   ```
@@ -146,5 +176,5 @@ purchases, no location sharing and no network access.
 - **Notes for certification:**
 
   ```
-  No account, sign-in, internet connection or MC install is needed. The app comes with a sample world already selected, with its road, house and landmark areas chosen. Click Extract and wait for it to finish, then the Preview tab's Preview button, then the Build tab's Build button. Build shows a rendered picture of the finished city; Copy World opens the folder with the exported world.
+  No account, sign-in, internet connection or MC install is needed. The app opens with a sample world already selected, with its road, house and landmark areas chosen. On the Extract tab, click Extract and wait for it to finish. On the Preview tab, click Preview to see the road network and building layout. On the Build tab, click Build: it shows a rendered picture of the finished city. Copy then opens the folder with the exported world.
   ```
