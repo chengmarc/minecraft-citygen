@@ -34,7 +34,7 @@ MSIX_PATH = STORE_DIST / f"{APP_NAME}.msix"
 MSIX_LAYOUT = BUILD_ROOT / "msix"
 MSIX_MANIFEST_TEMPLATE = ROOT / "packaging" / "AppxManifest.xml"
 # From Partner Center > Product identity once the app name is reserved for the MSIX listing.
-MSIX_IDENTITY_NAME = "chengmarc.MCCityGen"
+MSIX_IDENTITY_NAME = "chengmarc.167357377D6E6"
 MSIX_PUBLISHER = "CN=58F02A86-A694-404A-8E09-F891292262CA"
 MSIX_PUBLISHER_DISPLAY_NAME = "chengmarc"
 MSIX_DISPLAY_NAME = "MC CityGen"  # must match the app name reserved in Partner Center

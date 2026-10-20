@@ -84,7 +84,7 @@ with the GitHub release.
    Run the same checks as the installer smoke test. Generated files should land
    under `%LOCALAPPDATA%\Packages\<package family name>\LocalCache\Local\MC CityGen\`,
    and the saves folder should open in Explorer. Remove it afterwards with
-   `Get-AppxPackage chengmarc.MCCityGen | Remove-AppxPackage`.
+   `Get-AppxPackage chengmarc.167357377D6E6 | Remove-AppxPackage`.
 4. Upload the `.msix` in a new Partner Center submission. If the app's look or
    the pictures in `docs/pics/` changed, re-render the listing images first
    (below).
