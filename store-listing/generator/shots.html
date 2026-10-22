@@ -11,7 +11,7 @@
   /* Behind it all, an in-game shot (docs/pics/base.png) of grass and dirt blocks: it says which game this is for
      without naming it, a little blurred so it reads as a backdrop. Shaded darker behind the caption, which also gets a soft shadow. */
   body::before { display: none; }
-  .backdrop { position: absolute; inset: -12px; background: url(../docs/pics/base.png) center / cover no-repeat; filter: blur(4px); }
+  .backdrop { position: absolute; inset: -12px; background: url(../../docs/pics/base.png) center / cover no-repeat; filter: blur(4px); }
   .shade {
     position: absolute; inset: 0;
     background: linear-gradient(90deg, rgba(0, 0, 0, 0.6) 0%, rgba(0, 0, 0, 0.45) 32%, rgba(0, 0, 0, 0.1) 62%, rgba(0, 0, 0, 0.18) 100%);
@@ -50,22 +50,22 @@
     promo: {
       title: 'A whole city from <span class="brand">the buildings you make.</span>',
       text: "Mark up a few roads and buildings in your MC world, and get back streets, houses and landmarks, ready to play.",
-      window: "../docs/pics/promo1.png",
+      window: "../../docs/pics/promo1.png",
     },
     styles: {
       title: 'Any style<br><span class="brand">you build.</span>',
       text: "Your city takes the look of the buildings you give it. This medieval town comes from the built-in medieval set.",
-      window: "../docs/pics/promo3.png",
+      window: "../../docs/pics/promo3.png",
     },
     seeds: {
       title: 'Every seed,<br><span class="brand">a new city.</span>',
       text: "Same buildings, new streets. Roll a new seed, or tune road density, spacing and the building mix, and build again.",
-      window: "../docs/pics/promo2.png",
+      window: "../../docs/pics/promo2.png",
     },
     size: {
       title: 'From a village<br><span class="brand">to a metropolis.</span>',
       text: "Pick one of five city sizes, and preview the roads and the layout before you build.",
-      window: "../docs/pics/promo4.png",
+      window: "../../docs/pics/promo4.png",
     },
   };
 
@@ -75,7 +75,7 @@
     <div class="backdrop"></div>
     <div class="shade"></div>
     <div class="caption">
-      <div class="app"><img src="../src/app-icon.svg" alt=""><span>MC CityGen<small>Procedural City Generator</small></span></div>
+      <div class="app"><img src="../../src/app-icon.svg" alt=""><span>MC CityGen<small>Procedural City Generator</small></span></div>
       <h1>${shot.title}</h1>
       <p>${shot.text}</p>
       <div class="facts">${FACTS.map(f => `<span>${f}</span>`).join("")}</div>

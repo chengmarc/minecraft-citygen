@@ -1,4 +1,4 @@
-"""Runtime paths: app/resource roots, artifact locations, and world-save region lookup."""
+"""Runtime paths: app/resource roots, the app's data folder, and world-save region lookup."""
 
 from __future__ import annotations
 
@@ -126,45 +126,70 @@ GUI_ICONS = str(Path(GUI) / "icons")
 # The window icon: a PNG the release build renders from src/app-icon.svg (Qt's SVG renderer can't draw it) and
 # bundles beside the app; from a checkout, that build's copy, or none until
 # `python packaging/build_windows_release.py --icon-only` has made it.
-_APP_ICON_CANDIDATES = (Path(RESOURCE_ROOT) / "app-icon.png", Path(ROOT) / "build" / "release" / "app-icon.png")
+_APP_ICON_CANDIDATES = (Path(RESOURCE_ROOT) / "app-icon.png", Path(ROOT) / "build" / "packaging" / "app-icon.png")
 APP_ICON = str(next((path for path in _APP_ICON_CANDIDATES if path.is_file()), _APP_ICON_CANDIDATES[0]))
 DEFAULT_WORLD = str(Path(RESOURCE_ROOT) / "config" / "default_world")
 WORLD_ICON = str(Path(DEFAULT_WORLD) / "icon.png")  # save-list icon of the bundled world and every exported city
-ARTIFACTS = str(Path(ROOT) / "artifacts")
+# Everything the app writes: pipeline outputs, exported worlds, caches, and the saved settings.
+APP_DATA = str(Path(ROOT) / "appdata")
+SETTINGS = str(Path(APP_DATA) / "citygen.json")
 
 
-def _artifact_dir(*parts: str) -> str:
-    return str(Path(ARTIFACTS).joinpath(*parts))
+def _migrate_legacy_data(root: Path, *, installed: bool) -> None:
+    """Move data from before 1.4.0 into appdata/: root/artifacts/ and root/src/config/citygen.json.
+
+    Runs once per data root; a failed move leaves the old data where it was, for the user to copy.
+    """
+    old_data, new_data = root / "artifacts", root / "appdata"
+    old_settings, new_settings = root / "src" / "config" / "citygen.json", new_data / "citygen.json"
+    try:
+        if old_data.is_dir() and not new_data.exists():
+            old_data.rename(new_data)
+        if old_settings.is_file() and not new_settings.exists():
+            new_data.mkdir(parents=True, exist_ok=True)
+            old_settings.replace(new_settings)
+            if installed:  # an installed copy's src/config/ held only the settings
+                (root / "src" / "config").rmdir()
+                (root / "src").rmdir()
+    except OSError:
+        pass
+
+
+_migrate_legacy_data(Path(ROOT), installed=getattr(sys, "frozen", False))
+
+
+def _data_dir(*parts: str) -> str:
+    return str(Path(APP_DATA).joinpath(*parts))
 
 
 CONTACT_SHEET = "_contact_sheet.png"  # every asset folder's labelled thumbnail grid
 
-ROADS_SCHEM = _artifact_dir("01_roads", "schem")
-ROADS_RENDERS = _artifact_dir("01_roads", "renders")
+ROADS_SCHEM = _data_dir("01_roads", "schem")
+ROADS_RENDERS = _data_dir("01_roads", "renders")
 ROADS_CONTACT_SHEET = str(Path(ROADS_RENDERS) / CONTACT_SHEET)
 
-BUILDS_SCHEM = _artifact_dir("02_builds", "schem")
-BUILDS_RENDERS = _artifact_dir("02_builds", "renders")
+BUILDS_SCHEM = _data_dir("02_builds", "schem")
+BUILDS_RENDERS = _data_dir("02_builds", "renders")
 BUILDS_CONTACT_SHEET = str(Path(BUILDS_RENDERS) / CONTACT_SHEET)
-BUILD_CATALOG = _artifact_dir("02_builds", "buildings.json")
-BUILDS_GIF = _artifact_dir("02_builds", "buildings.gif")
+BUILD_CATALOG = _data_dir("02_builds", "buildings.json")
+BUILDS_GIF = _data_dir("02_builds", "buildings.gif")
 
-PREVIEW_ROADS = _artifact_dir("03_preview", "roads")
+PREVIEW_ROADS = _data_dir("03_preview", "roads")
 PREVIEW_ROADS_CONTACT_SHEET = str(Path(PREVIEW_ROADS) / CONTACT_SHEET)
-PREVIEW_BUILDS = _artifact_dir("03_preview", "builds")
+PREVIEW_BUILDS = _data_dir("03_preview", "builds")
 PREVIEW_BUILDS_CONTACT_SHEET = str(Path(PREVIEW_BUILDS) / CONTACT_SHEET)
-PREVIEW_GRID = _artifact_dir("03_preview", "grid")
-PREVIEW_CITY = _artifact_dir("03_preview", "city")
+PREVIEW_GRID = _data_dir("03_preview", "grid")
+PREVIEW_CITY = _data_dir("03_preview", "city")
 
-CITY_SCHEM = _artifact_dir("04_city", "schem")
-CITY_RENDERS = _artifact_dir("04_city", "renders")
+CITY_SCHEM = _data_dir("04_city", "schem")
+CITY_RENDERS = _data_dir("04_city", "renders")
 
 # Standalone MC worlds exported from the final city (one folder per seed).
-SAVES = _artifact_dir("05_world", "saves")
+SAVES = _data_dir("05_world", "saves")
 EXPORTED_WORLD_NAME = f"{APP_NAME} World"
 
 # Cached top-down world renders for the GUI region selector.
-WORLD_PREVIEW_CACHE = _artifact_dir("world_preview")
+WORLD_PREVIEW_CACHE = _data_dir("world_preview")
 
 COLOR_RENDER_CSV = str(Path(CONFIG) / "color_render.csv")
 

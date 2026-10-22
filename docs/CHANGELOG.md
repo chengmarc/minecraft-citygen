@@ -6,6 +6,22 @@ The format is based on Keep a Changelog, and versions should match the release v
 
 ## [Unreleased]
 
+### Changed
+
+- everything the app writes, settings included, is in one `appdata/` folder, was
+  `artifacts/` and `src/config/citygen.json`. The first launch moves an existing
+  `artifacts/` folder and saved settings there; the uninstaller's "delete generated
+  data" option removes both the new and the old folders
+- the build writes only what ships to `dist/`: `MC CityGen-setup.exe`, and
+  `MC CityGen.exe` and `MC CityGen.msix` when asked for, was `dist/release/` and
+  `dist/store/`. PyInstaller's app folder and the other intermediates are in
+  `build/packaging/`
+- the Store listing is in `store-listing/`, was `store/`: the logos at its top, the
+  screenshots in `desktop/`, and what renders them in `generator/`
+- repo scripts are in `scripts/`, was `tools/`; the palette updater downloads the MC
+  client JAR into `build/`
+- release notes are in `docs/release-notes/`, was `docs/release/`
+
 ## [1.3.0] - 2026-10-14
 
 ### Added

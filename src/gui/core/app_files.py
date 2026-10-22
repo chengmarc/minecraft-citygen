@@ -10,15 +10,15 @@ import subprocess
 import sys
 
 from config.path import (
-    APP_ICON, ARTIFACTS, BUILDS_CONTACT_SHEET, GUI_ICONS, ROADS_CONTACT_SHEET, ROOT, SAVES, WORLD_PREVIEW_CACHE,
+    APP_DATA, APP_ICON, BUILDS_CONTACT_SHEET, GUI_ICONS, ROADS_CONTACT_SHEET, ROOT, SAVES, SETTINGS, WORLD_PREVIEW_CACHE,
 )
 
 
 ICON_DIR = GUI_ICONS
 APP_ICON_PATH = APP_ICON
 STARTUP_ERROR_LOG = os.path.join(ROOT, "application_startup_error.log")
-PROGRESS_TIMINGS_PATH = os.path.join(ARTIFACTS, "progress_timings.json")
-SAVED_GUI_CONFIG_PATH = os.path.join(ROOT, "src", "config", "citygen.json")
+PROGRESS_TIMINGS_PATH = os.path.join(APP_DATA, "progress_timings.json")
+SAVED_GUI_CONFIG_PATH = SETTINGS
 
 
 def extracted_assets_ready():
@@ -87,18 +87,19 @@ def clear_preview_cache():
 
 
 def clear_pipeline_artifacts():
-    """Wipe every pipeline artifact but keep exported worlds (05_world/saves/).
+    """Wipe every pipeline artifact but keep exported worlds (05_world/saves/) and the saved settings.
 
     Shared by app launch and switching worlds so both start from the same clean
-    slate; only the standalone worlds under saves/ survive.
+    slate; only the standalone worlds under saves/ and the settings survive.
     """
-    if not os.path.isdir(ARTIFACTS):
+    if not os.path.isdir(APP_DATA):
         return
     keep = os.path.normpath(SAVES)
-    for entry in os.listdir(ARTIFACTS):
-        path = os.path.join(ARTIFACTS, entry)
+    settings = os.path.normpath(SAVED_GUI_CONFIG_PATH)
+    for entry in os.listdir(APP_DATA):
+        path = os.path.join(APP_DATA, entry)
         normalized = os.path.normpath(path)
-        if normalized == keep:
+        if normalized in (keep, settings):
             continue
         if os.path.isdir(path):
             if keep.startswith(normalized + os.sep):

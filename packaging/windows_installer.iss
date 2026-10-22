@@ -136,10 +136,13 @@ end;
 
 procedure DeleteGeneratedData();
 begin
+  // appdata\ since 1.4.0; artifacts\ and src\config\ for a copy that never ran 1.4.0 to move them.
+  DeleteGeneratedDataDirectory(ExpandConstant('{app}\appdata'));
   DeleteGeneratedDataDirectory(ExpandConstant('{app}\artifacts'));
   DeleteGeneratedDataDirectory(ExpandConstant('{app}\src\config'));
   RemoveDir(ExpandConstant('{app}\src'));
 
+  DeleteGeneratedDataDirectory(ExpandConstant('{localappdata}\MC CityGen\appdata'));
   DeleteGeneratedDataDirectory(ExpandConstant('{localappdata}\MC CityGen\artifacts'));
   DeleteGeneratedDataDirectory(ExpandConstant('{localappdata}\MC CityGen\src\config'));
   RemoveDir(ExpandConstant('{localappdata}\MC CityGen\src'));

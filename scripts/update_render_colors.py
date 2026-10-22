@@ -23,7 +23,7 @@ from PIL import Image
 
 
 ROOT = Path(__file__).resolve().parents[1]
-TOOLS_DIR = ROOT / "tools"
+JAR_DIR = ROOT / "build"  # the downloaded client JAR, kept so a re-run skips the download
 DEFAULT_OUTPUT = ROOT / "src" / "config" / "color_render.csv"
 VERSION_MANIFEST_URL = "https://piston-meta.mojang.com/mc/game/version_manifest_v2.json"
 HTTP_TIMEOUT_SECONDS = 120
@@ -428,9 +428,9 @@ def download_client_jar(version: str | None) -> tuple[str, Path]:
 
     download_url = client["url"]
     expected_sha1 = client.get("sha1")
-    jar_path = TOOLS_DIR / f"mc-client-{version_id}.jar"
+    jar_path = JAR_DIR / f"mc-client-{version_id}.jar"
     temp_path = jar_path.with_suffix(".jar.part")
-    TOOLS_DIR.mkdir(parents=True, exist_ok=True)
+    JAR_DIR.mkdir(parents=True, exist_ok=True)
 
     if jar_path.is_file() and expected_sha1 and sha1_file(jar_path) == expected_sha1:
         return version_id, jar_path

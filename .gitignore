@@ -7,7 +7,7 @@ __pycache__/
 
 build/
 dist/
+appdata/
 artifacts/
 
-src/config/citygen.json
 application_startup_error.log

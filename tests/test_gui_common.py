@@ -12,7 +12,7 @@ from gui.core import app_files
 
 
 class ClearPipelineArtifactsTests(unittest.TestCase):
-    def test_wipes_pipeline_artifacts_but_keeps_saves(self):
+    def test_wipes_pipeline_artifacts_but_keeps_saves_and_settings(self):
         with tempfile.TemporaryDirectory() as root:
             saves = os.path.join(root, "05_world", "saves")
             world = os.path.join(saves, "MC CityGen World 5")
@@ -22,13 +22,20 @@ class ClearPipelineArtifactsTests(unittest.TestCase):
             os.makedirs(os.path.join(root, "01_roads", "schem"))
             open(os.path.join(root, "01_roads", "schem", "a.schem"), "wb").close()
             open(os.path.join(root, "loose.png"), "wb").close()
+            settings = os.path.join(root, "citygen.json")
+            open(settings, "w").close()
 
-            with mock.patch.object(app_files, "ARTIFACTS", root), mock.patch.object(app_files, "SAVES", saves):
+            with (
+                mock.patch.object(app_files, "APP_DATA", root),
+                mock.patch.object(app_files, "SAVES", saves),
+                mock.patch.object(app_files, "SAVED_GUI_CONFIG_PATH", settings),
+            ):
                 app_files.clear_pipeline_artifacts()
 
             self.assertTrue(os.path.exists(os.path.join(world, "level.dat")))  # saves kept
             self.assertFalse(os.path.exists(os.path.join(root, "01_roads")))   # pipeline wiped
             self.assertFalse(os.path.exists(os.path.join(root, "loose.png")))  # loose files wiped
+            self.assertTrue(os.path.exists(settings))                           # settings kept
 
 
 class ExtractedAssetsReadyTests(unittest.TestCase):

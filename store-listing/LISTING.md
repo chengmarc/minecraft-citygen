@@ -2,7 +2,8 @@
 
 Everything to paste into Partner Center for MC CityGen, in the submission's order: Properties, Store listings
 (English (United States)), Submission options. Pricing and availability, Age ratings and Packages are filled in
-Partner Center directly. Images are in [listing/](listing/), rendered by `python store/render.py`.
+Partner Center directly. Images are beside this file (the screenshots in [desktop/](desktop/)), rendered by
+`python store-listing/generator/render.py`.
 
 The app and its listing call the game "MC": Mojang's usage guidelines don't allow its name in a product's name,
 and the Store has turned down submissions that used it. The name only appears where the guidelines ask for it: the
@@ -97,18 +98,18 @@ Read and change the code: open source under Apache 2.0
 
 Upload in this order (the first is shown first). Each is the app's Build tab with a finished city:
 
-1. `listing/screenshot-1-promo.png`: a whole modern city from the buildings you make
-2. `listing/screenshot-2-seeds.png`: the same buildings, a new city from a new seed
-3. `listing/screenshot-3-styles.png`: a medieval town, the city taking your buildings' style
-4. `listing/screenshot-4-size.png`: a small town, from village to metropolis
+1. `desktop/screenshot-1-promo.png`: a whole modern city from the buildings you make
+2. `desktop/screenshot-2-seeds.png`: the same buildings, a new city from a new seed
+3. `desktop/screenshot-3-styles.png`: a medieval town, the city taking your buildings' style
+4. `desktop/screenshot-4-size.png`: a small town, from village to metropolis
 
 ### Store logos
 
 | Slot | File |
 |---|---|
-| 9:16 Poster art (1440 × 2160) | `listing/poster-art-1440x2160.png`: the main logo on Windows 10/11 |
-| 1:1 Box art (2160 × 2160) | `listing/box-art-2160.png` |
-| 1:1 App tile icon (300 × 300) | `listing/store-logo-300.png` |
+| 9:16 Poster art (1440 × 2160) | `poster-art-1440x2160.png`: the main logo on Windows 10/11 |
+| 1:1 Box art (2160 × 2160) | `box-art-2160.png` |
+| 1:1 App tile icon (300 × 300) | `store-logo-300.png` |
 | 150 × 150, 71 × 71 | Leave empty; the Store takes them from the package. |
 
 ### Trailers, Xbox images

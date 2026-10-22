@@ -40,7 +40,7 @@ def _load_fill_assets(no_ground_fill):
     ground_fill_tile = load_ground_fill_tile(ROADS_SCHEM)
     if ground_fill_tile is None:
         raise FileNotFoundError(
-            "missing road ground-fill asset 18 in artifacts/01_roads/schem; run Stage 1 first"
+            "missing road ground-fill asset 18 in appdata/01_roads/schem; run Stage 1 first"
         )
     return fillers, ground_fill_tile
 

@@ -31,8 +31,8 @@ before committing.
 
 ### Reset local state
 
-Delete `artifacts/` (everything the pipeline generates), `build/` and `dist/`
-(packaging output), and `src/config/citygen.json` (saved GUI settings). All are
+Delete `appdata/` (everything the app writes: pipeline outputs, exported worlds,
+saved GUI settings) and `build/` and `dist/` (packaging output). All are
 git-ignored and regenerate on the next run.
 
 ## Tutorial: add a tuning knob end to end
@@ -67,7 +67,7 @@ coarse cells.
    MC_CITY_BIG_JITTER=3 python src/pipeline/stages.py preview --seed 5
    ```
 
-   Compare `artifacts/03_preview/grid/seed_5.png` against a run without the
+   Compare `appdata/03_preview/grid/seed_5.png` against a run without the
    variable.
 
 4. **Show it in the app.** In [gui/core/algo_config.py](gui/core/algo_config.py),
@@ -149,10 +149,10 @@ when the assets follow the conventions exactly:
 - **Output:** Sponge `.schem` v3, and standalone worlds. Minimum MC
   version 26.1.2, forward-only — see the
   [config guide](config/README.md#version-compatibility).
-- **Generated directories** (all git-ignored): `artifacts/` (pipeline outputs,
-  see [pipeline outputs](pipeline/README.md#outputs)), `build/` and `dist/`
+- **Generated directories** (all git-ignored): `appdata/` (what the app writes:
+  [pipeline outputs](pipeline/README.md#outputs), exported worlds, saved settings), `build/` and `dist/`
   (packaging), `.pytest_cache/`.
-- **Repo maintenance scripts** in [tools/](../tools): `update_render_colors.py`
+- **Repo maintenance scripts** in [scripts/](../scripts): `update_render_colors.py`
   (see the [config guide](config/README.md#refresh-the-render-palette)) and
   `remove_init_and_pycache.py`, which deletes every `__pycache__` and
   `__init__.py`.

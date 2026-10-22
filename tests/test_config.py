@@ -88,3 +88,46 @@ class FrozenAppRootTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+# --- config.path legacy data migration -------------------------------------
+
+class LegacyDataMigrationTests(unittest.TestCase):
+    def _legacy_root(self, root: Path) -> None:
+        (root / "artifacts" / "05_world" / "saves" / "World 5").mkdir(parents=True)
+        (root / "src" / "config").mkdir(parents=True)
+        (root / "src" / "config" / "citygen.json").write_text("{}", encoding="utf-8")
+
+    def test_moves_artifacts_and_settings_into_appdata(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            self._legacy_root(root)
+
+            config_path._migrate_legacy_data(root, installed=True)
+
+            self.assertTrue((root / "appdata" / "05_world" / "saves" / "World 5").is_dir())
+            self.assertTrue((root / "appdata" / "citygen.json").is_file())
+            self.assertFalse((root / "artifacts").exists())
+            self.assertFalse((root / "src").exists())  # an installed copy's src/ held only the settings
+
+    def test_keeps_src_in_a_checkout(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            self._legacy_root(root)
+
+            config_path._migrate_legacy_data(root, installed=False)
+
+            self.assertTrue((root / "appdata" / "citygen.json").is_file())
+            self.assertTrue((root / "src" / "config").is_dir())
+
+    def test_leaves_existing_appdata_alone(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            self._legacy_root(root)
+            (root / "appdata").mkdir()
+            (root / "appdata" / "citygen.json").write_text('{"new": true}', encoding="utf-8")
+
+            config_path._migrate_legacy_data(root, installed=True)
+
+            self.assertTrue((root / "artifacts").is_dir())  # not merged into an existing appdata/
+            self.assertEqual((root / "appdata" / "citygen.json").read_text(encoding="utf-8"), '{"new": true}')
