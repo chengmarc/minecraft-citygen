@@ -52,12 +52,12 @@ When the target MC version gains blocks, regenerate
 `color_render.csv`, the isometric renderer's block colors:
 
 ```bash
-python tools/update_render_colors.py                 # latest release
-python tools/update_render_colors.py --version 26.1.2
+python scripts/update_render_colors.py                 # latest release
+python scripts/update_render_colors.py --version 26.1.2
 ```
 
-It downloads the MC client JAR into `tools/` as
-`mc-client-<version>.jar` (do not commit it) and overwrites
+It downloads the MC client JAR into `build/` as
+`mc-client-<version>.jar` and overwrites
 `color_render.csv`; rows use namespaced ids (`minecraft:stone`). Only the CSV
 ships with the app.
 
@@ -67,7 +67,7 @@ Each row has the texture-sampled `r`, `g`, `b` and a more saturated
 (`VIVID_SATURATION_EXPONENT` in the script) without downloading anything:
 
 ```bash
-python tools/update_render_colors.py --vivid-only
+python scripts/update_render_colors.py --vivid-only
 ```
 
 ### Diagnose a first-run setup
@@ -98,7 +98,7 @@ lets two settings coexist in one process.
 
 ### Where outputs go
 
-`path.ROOT` is where `artifacts/` lives. It is resolved once:
+`path.ROOT` is where `appdata/` lives. It is resolved once:
 
 - **Repo checkout** — the repository root.
 - **Frozen app (PyInstaller)** — the exe's folder when writable, else the

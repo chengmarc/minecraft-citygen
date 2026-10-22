@@ -20,7 +20,7 @@ them. If the change needs a new tuning value, add it as an `Algo` field
 
 ```bash
 python -m pytest -q tests/test_engine_core.py
-python src/pipeline/stages.py preview --seed 5   # then open artifacts/03_preview/grid/seed_5.png
+python src/pipeline/stages.py preview --seed 5   # then open appdata/03_preview/grid/seed_5.png
 ```
 
 ### Change building placement

@@ -60,7 +60,7 @@ Preview or construct progress weight (step 4), and a missing layer (step 5).
 
 Follow the marker conventions in [In-world asset conventions](#in-world-asset-conventions),
 then run `roads` and `builds` and check the contact sheets in
-`artifacts/01_roads/renders/` and `artifacts/02_builds/renders/`. An asset
+`appdata/01_roads/renders/` and `appdata/02_builds/renders/`. An asset
 missing from a sheet had malformed markers and was skipped.
 
 ## Explanation
@@ -81,7 +81,7 @@ default in `config` (read once from `MC_CITY_*` at startup). Nothing reads
 `os.environ` between runs and nothing is reloaded.
 [services.py](services.py) adds two things for the GUI: text-to-int coercion,
 and `PIPELINE_LOCK`, which runs stages one at a time because every stage reads
-and writes the same `artifacts/` directories.
+and writes the same `appdata/` directories.
 
 ### The stages
 
@@ -170,7 +170,7 @@ The root README has an illustrated walkthrough; this is the exact contract.
 
 ### `buildings.json`
 
-Written by Stage 2 to `artifacts/02_builds/buildings.json`, read through
+Written by Stage 2 to `appdata/02_builds/buildings.json`, read through
 [`engine.schematic.building`](../engine/schematic/building.py). Keys are
 sequential IDs (`"001"`, `"002"`, …). Each entry:
 
@@ -186,17 +186,17 @@ sequential IDs (`"001"`, `"002"`, …). Each entry:
 ### Outputs
 
 ```text
-artifacts/01_roads/schem/*.schem              road pieces and fill props
-artifacts/01_roads/renders/*.png              + _contact_sheet.png
-artifacts/02_builds/schem/*.schem             <id>.schem or <id>_<part>.schem
-artifacts/02_builds/renders/*.png             + _contact_sheet.png
-artifacts/02_builds/buildings.json
-artifacts/03_preview/{roads,builds}/*.png     preview stand-ins
-artifacts/03_preview/grid/seed_<n>.png        road layout
-artifacts/03_preview/city/seed_<n>.png        city layout
-artifacts/04_city/schem/seed_<n>.schem        final city (Sponge v3)
-artifacts/04_city/renders/seed_<n>.png
-artifacts/05_world/saves/MC CityGen World <n>/   playable world; copy into .minecraft/saves/
+appdata/01_roads/schem/*.schem              road pieces and fill props
+appdata/01_roads/renders/*.png              + _contact_sheet.png
+appdata/02_builds/schem/*.schem             <id>.schem or <id>_<part>.schem
+appdata/02_builds/renders/*.png             + _contact_sheet.png
+appdata/02_builds/buildings.json
+appdata/03_preview/{roads,builds}/*.png     preview stand-ins
+appdata/03_preview/grid/seed_<n>.png        road layout
+appdata/03_preview/city/seed_<n>.png        city layout
+appdata/04_city/schem/seed_<n>.schem        final city (Sponge v3)
+appdata/04_city/renders/seed_<n>.png
+appdata/05_world/saves/MC CityGen World <n>/   playable world; copy into .minecraft/saves/
 ```
 
 `<n>` is the seed. Every path is defined in [config/path.py](../config/path.py).

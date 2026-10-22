@@ -18,7 +18,7 @@ for GitHub Releases and an MSIX package for the Microsoft Store — built by
    - nothing in the root [README.md](../README.md): its download badge
      carries no version and links to `releases/latest`
 3. Update [CHANGELOG.md](CHANGELOG.md) with the release date and
-   the final changes, and add `docs/release/RELEASE_NOTES_<version>.md`.
+   the final changes, and add `docs/release-notes/RELEASE_NOTES_<version>.md`.
 4. Run the test suite:
 
    ```bash
@@ -33,7 +33,7 @@ for GitHub Releases and an MSIX package for the Microsoft Store — built by
    python packaging/build_windows_release.py --clean
    ```
 
-6. Confirm `dist/release/` holds only the installer
+6. Confirm `dist/` holds only the installer
    (see [release artifacts](#release-artifacts)).
 7. Install the installer on a non-dev machine or a clean VM and smoke-test the
    real user flow:
@@ -41,8 +41,8 @@ for GitHub Releases and an MSIX package for the Microsoft Store — built by
    - the Extract tab accepts a world path and extraction completes
    - Preview completes
    - Build completes: city `.schem`, isometric render, and exported world
-   - generated files land in the expected `artifacts/` folders; the exported
-     world appears under `artifacts/05_world/saves/` and "Copy World" opens it
+   - generated files land in the expected `appdata/` folders; the exported
+     world appears under `appdata/05_world/saves/` and "Copy World" opens it
    - the exported world loads in MC with the player standing on the city
    - uninstall works cleanly
 8. Tag the release in git only after the installer has been verified.
@@ -54,7 +54,7 @@ for GitHub Releases and an MSIX package for the Microsoft Store — built by
 python packaging/build_windows_release.py --clean --include-standalone
 ```
 
-This additionally writes `dist/release/MC CityGen.exe`. It is for
+This additionally writes `dist/MC CityGen.exe`. It is for
 testing only; do not publish it.
 
 ### Build the Microsoft Store package
@@ -73,7 +73,7 @@ with the GitHub release.
    python packaging/build_windows_release.py --clean --msix
    ```
 
-   This additionally writes `dist/store/MC CityGen.msix`.
+   This additionally writes `dist/MC CityGen.msix`.
 3. Smoke-test the packaged app before uploading. With Developer Mode on,
    register the unpacked layout instead of installing the unsigned MSIX:
 
@@ -91,19 +91,20 @@ with the GitHub release.
 
 ### Fill in the Partner Center submission
 
-[`store/LISTING.md`](../store/LISTING.md) has every field to paste, in Partner
+[`store-listing/LISTING.md`](../store-listing/LISTING.md) has every field to paste, in Partner
 Center's order: the description, features, keywords, system requirements, the
 wording for the `runFullTrust` restricted capability and the notes for
-certification. Its images are in `store/listing/`.
+certification. Its images are beside it: the logos in `store-listing/`, the
+screenshots in `store-listing/desktop/`.
 
 ### Re-render the listing images
 
 ```bash
-python store/render.py
+python store-listing/generator/render.py
 ```
 
-It redraws `store/listing/` with Microsoft Edge in headless mode, from
-`store/logo.html` (box art, poster art, tile icon) and `store/shots.html` (the
+It redraws `store-listing/` with Microsoft Edge in headless mode, from
+`store-listing/generator/logo.html` (box art, poster art, tile icon) and `store-listing/generator/shots.html` (the
 screenshots). The screenshots put a caption beside a picture from `docs/pics/`;
 change the captions or pictures in `shots.html`, and the matching claims in
 `LISTING.md` with them.
@@ -119,10 +120,11 @@ cannot see them. When you add or rename a step in
 
 ## Explanation
 
-**Why only `dist/release/` is published.** The build also leaves raw PyInstaller
-output in `dist/portable/` and `dist/onefile/`; those are intermediates. The
-script prunes `dist/release/` to the curated artifacts so a release upload is
-always the one installer.
+**Why only `dist/` is published.** `dist/` holds only what ships. Everything
+on the way (PyInstaller's app folder and work files in `build/packaging/portable/`
+and `build/packaging/onefile/`, the MSIX layout, the rendered icons) stays in
+`build/packaging/`, and the script removes a standalone exe an earlier build
+left in `dist/`, so a release upload is always the one installer.
 
 **Why the app shows no version number.** The git tag is the single source of
 truth for the release version. Packaging metadata (`pyproject.toml` version,
@@ -137,7 +139,7 @@ hidden stage imports above, and four data sets: `gui/icons`,
 in that list is missing from the release even though it works from a checkout.
 
 **One icon source.** `src/app-icon.svg` is the only icon in the repo. The build
-renders it to `build/release/app-icon.png` with headless Microsoft Edge, then
+renders it to `build/packaging/app-icon.png` with headless Microsoft Edge, then
 makes the installer's `app-icon.ico`, the Store package logos, and the bundled
 window icon from that PNG. It uses Edge, not Qt's SVG renderer, because Qt
 ignores the clip path that rounds the tile and the blur filters. From a
@@ -153,9 +155,9 @@ not required.
 
 | File | Published |
 |---|---|
-| `dist/release/MC CityGen-setup.exe` | yes |
-| `dist/release/MC CityGen.exe` | no — only with `--include-standalone`, testing only |
-| `dist/store/MC CityGen.msix` | no — only with `--msix`, uploaded to the Microsoft Store |
+| `dist/MC CityGen-setup.exe` | yes |
+| `dist/MC CityGen.exe` | no — only with `--include-standalone`, testing only |
+| `dist/MC CityGen.msix` | no — only with `--msix`, uploaded to the Microsoft Store |
 
 ### Build prerequisites
 
@@ -180,6 +182,6 @@ not required.
 | [build_windows_release.py](../packaging/build_windows_release.py) | Builds the app folder, the installer, an optional one-file exe, and the optional Store MSIX (`--clean`, `--include-standalone`, `--msix`) |
 | [windows_installer.iss](../packaging/windows_installer.iss) | Inno Setup script; receives version and output directory from the build script |
 | [AppxManifest.xml](../packaging/AppxManifest.xml) | MSIX manifest template; the build script fills in the Store identity and version |
-| [store/LISTING.md](../store/LISTING.md) | The Store listing's text, field by field |
-| [store/PRIVACY.md](../store/PRIVACY.md) | The privacy policy; its GitHub address is the listing's privacy policy URL |
-| [store/render.py](../store/render.py) | Renders the listing's images into `store/listing/` |
+| [store-listing/LISTING.md](../store-listing/LISTING.md) | The Store listing's text, field by field |
+| [store-listing/PRIVACY.md](../store-listing/PRIVACY.md) | The privacy policy; its GitHub address is the listing's privacy policy URL |
+| [store-listing/generator/render.py](../store-listing/generator/render.py) | Renders the listing's images into `store-listing/` |

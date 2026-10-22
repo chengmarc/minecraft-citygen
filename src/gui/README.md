@@ -49,7 +49,7 @@ pattern. Only `pipeline.services` and `pipeline.stages` may be imported from
 
 Progress bars are weighted per step by hand in
 [core/progress.py](core/progress.py). Extract and Build runs write measured
-timings to `artifacts/progress_timings.json`; set the weights from those. Keep one weight
+timings to `appdata/progress_timings.json`; set the weights from those. Keep one weight
 per step: `tests/test_gui.py` checks that the preview and construct weight lists
 match the pipeline's steps, so adding a step fails the test until you add a
 weight.
@@ -68,7 +68,7 @@ because every later stage reads the extracted assets.
 
 **Every launch starts from a clean slate.** On startup, and when the user
 switches source worlds, `app_files.clear_pipeline_artifacts` wipes
-`artifacts/` except `05_world/saves/`. Extracted assets from a different world
+`appdata/` except `05_world/saves/` and the saved settings. Extracted assets from a different world
 can't leak into a new city, and exported worlds are never deleted.
 
 **Preview and Build are peers.** Both edit the same seed and `Algo` form;
@@ -113,9 +113,9 @@ Files the GUI writes (`ROOT` is the app root, see the
 
 | Path | Contents |
 |---|---|
-| `ROOT/src/config/citygen.json` | Saved settings. Git-ignored |
-| `ROOT/artifacts/progress_timings.json` | Measured Extract/Build step timings for weight tuning |
-| `ROOT/artifacts/world_preview/` | Cached top-down world previews for the region dialog |
+| `ROOT/appdata/citygen.json` | Saved settings. Git-ignored |
+| `ROOT/appdata/progress_timings.json` | Measured Extract/Build step timings for weight tuning |
+| `ROOT/appdata/world_preview/` | Cached top-down world previews for the region dialog |
 | `ROOT/application_startup_error.log` | Written if the app fails to start |
 
 Opening an output folder uses `os.startfile` on Windows, `open` on macOS, and

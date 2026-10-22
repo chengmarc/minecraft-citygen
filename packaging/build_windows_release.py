@@ -1,11 +1,14 @@
 """Build Windows release artifacts for MC CityGen.
 
 Default output:
-- dist/release/MC CityGen-setup.exe
+- dist/MC CityGen-setup.exe
 
 Optional outputs:
-- dist/release/MC CityGen.exe
-- dist/store/MC CityGen.msix (Microsoft Store upload; not a release artifact)
+- dist/MC CityGen.exe
+- dist/MC CityGen.msix (Microsoft Store upload; not a release artifact)
+
+dist/ holds only these; everything on the way (PyInstaller's app folder and work files, the MSIX
+layout, the rendered icons) is in build/packaging/.
 """
 
 from __future__ import annotations
@@ -21,16 +24,14 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 SRC_ROOT = ROOT / "src"
-BUILD_ROOT = ROOT / "build" / "release"
+BUILD_ROOT = ROOT / "build" / "packaging"
 DIST_ROOT = ROOT / "dist"
-PORTABLE_DIST = DIST_ROOT / "portable"
-ONEFILE_DIST = DIST_ROOT / "onefile"
-RELEASE_DIST = DIST_ROOT / "release"
-STORE_DIST = DIST_ROOT / "store"
+PORTABLE_BUILD = BUILD_ROOT / "portable"  # the app folder the installer and the MSIX are made from
+ONEFILE_BUILD = BUILD_ROOT / "onefile"
 APP_NAME = "MC CityGen"
-ONEFILE_EXE = RELEASE_DIST / f"{APP_NAME}.exe"
-INSTALLER_EXE = RELEASE_DIST / f"{APP_NAME}-setup.exe"
-MSIX_PATH = STORE_DIST / f"{APP_NAME}.msix"
+ONEFILE_EXE = DIST_ROOT / f"{APP_NAME}.exe"
+INSTALLER_EXE = DIST_ROOT / f"{APP_NAME}-setup.exe"
+MSIX_PATH = DIST_ROOT / f"{APP_NAME}.msix"
 MSIX_LAYOUT = BUILD_ROOT / "msix"
 MSIX_MANIFEST_TEMPLATE = ROOT / "packaging" / "AppxManifest.xml"
 # From Partner Center > Product identity once the app name is reserved for the MSIX listing.
@@ -165,9 +166,9 @@ def base_pyinstaller_command(*, onefile: bool, icon_path: Path | None) -> list[s
         "--name",
         APP_NAME,
         "--distpath",
-        str(ONEFILE_DIST if onefile else PORTABLE_DIST),
+        str(ONEFILE_BUILD if onefile else PORTABLE_BUILD),
         "--workpath",
-        str(BUILD_ROOT / ("onefile" if onefile else "portable")),
+        str(BUILD_ROOT / "work" / ("onefile" if onefile else "portable")),
         "--specpath",
         str(BUILD_ROOT / "spec"),
         "--paths",
@@ -201,9 +202,9 @@ def copy_docs(target_dir: Path) -> None:
 
 
 def build_portable(icon_path: Path | None) -> Path:
-    shutil.rmtree(PORTABLE_DIST, ignore_errors=True)
+    shutil.rmtree(PORTABLE_BUILD, ignore_errors=True)
     run(base_pyinstaller_command(onefile=False, icon_path=icon_path))
-    app_dir = PORTABLE_DIST / APP_NAME
+    app_dir = PORTABLE_BUILD / APP_NAME
     copy_docs(app_dir)
     if icon_path is not None and icon_path.exists():
         shutil.copy2(icon_path, app_dir / icon_path.name)
@@ -211,10 +212,10 @@ def build_portable(icon_path: Path | None) -> Path:
 
 
 def build_onefile(icon_path: Path | None) -> Path:
-    shutil.rmtree(ONEFILE_DIST, ignore_errors=True)
-    RELEASE_DIST.mkdir(parents=True, exist_ok=True)
+    shutil.rmtree(ONEFILE_BUILD, ignore_errors=True)
+    DIST_ROOT.mkdir(parents=True, exist_ok=True)
     run(base_pyinstaller_command(onefile=True, icon_path=icon_path))
-    built = ONEFILE_DIST / f"{APP_NAME}.exe"
+    built = ONEFILE_BUILD / f"{APP_NAME}.exe"
     shutil.copy2(built, ONEFILE_EXE)
     return ONEFILE_EXE
 
@@ -240,14 +241,14 @@ def build_installer(version: str, app_dir: Path) -> Path:
         raise SystemExit(
             "Inno Setup was not found. Install it first so the installer can be built."
         )
-    RELEASE_DIST.mkdir(parents=True, exist_ok=True)
+    DIST_ROOT.mkdir(parents=True, exist_ok=True)
     if INSTALLER_EXE.exists():
         INSTALLER_EXE.unlink()
     command = [
         iscc,
         f"/DAppVersion={version}",
         f"/DSourceDir={app_dir}",
-        f"/DOutputDir={RELEASE_DIST}",
+        f"/DOutputDir={DIST_ROOT}",
         f"/DOutputBaseFilename={INSTALLER_EXE.stem}",
         str(ROOT / "packaging" / "windows_installer.iss"),
     ]
@@ -324,7 +325,7 @@ def build_msix(version: str, app_dir: Path) -> Path:
         for name, size in MSIX_LOGOS.items():
             image.resize((size, size), Image.LANCZOS).save(assets / name)
 
-    STORE_DIST.mkdir(parents=True, exist_ok=True)
+    DIST_ROOT.mkdir(parents=True, exist_ok=True)
     run([makeappx, "pack", "/o", "/d", str(MSIX_LAYOUT), "/p", str(MSIX_PATH)])
     return MSIX_PATH
 
@@ -340,17 +341,17 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--include-standalone",
         action="store_true",
-        help="also publish the standalone MC CityGen.exe to dist/release",
+        help="also publish the standalone MC CityGen.exe to dist/",
     )
     parser.add_argument(
         "--msix",
         action="store_true",
-        help="also build the Microsoft Store package to dist/store",
+        help="also build the Microsoft Store package to dist/",
     )
     parser.add_argument(
         "--icon-only",
         action="store_true",
-        help="only render app-icon.svg to build/release/app-icon.png, the window icon when running from source",
+        help="only render app-icon.svg to build/packaging/app-icon.png, the window icon when running from source",
     )
     return parser.parse_args()
 
