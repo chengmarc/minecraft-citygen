@@ -136,7 +136,7 @@ SETTINGS = str(Path(APP_DATA) / "citygen.json")
 
 
 def _migrate_legacy_data(root: Path, *, installed: bool) -> None:
-    """Move data from before 1.4.0 into appdata/: root/artifacts/ and root/src/config/citygen.json.
+    """Move data from 1.3.0 and earlier into appdata/: root/artifacts/ and root/src/config/citygen.json.
 
     Runs once per data root; a failed move leaves the old data where it was, for the user to copy.
     """
