@@ -136,7 +136,7 @@ end;
 
 procedure DeleteGeneratedData();
 begin
-  // appdata\ since 1.4.0; artifacts\ and src\config\ for a copy that never ran 1.4.0 to move them.
+  // appdata\ now; artifacts\ and src\config\ for a copy from 1.3.0 or earlier that never moved them.
   DeleteGeneratedDataDirectory(ExpandConstant('{app}\appdata'));
   DeleteGeneratedDataDirectory(ExpandConstant('{app}\artifacts'));
   DeleteGeneratedDataDirectory(ExpandConstant('{app}\src\config'));
