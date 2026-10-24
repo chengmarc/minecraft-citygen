@@ -43,6 +43,8 @@ Add a method to [bridge.py](bridge.py)'s `Api`, which the page calls as
 the page as events. See `AlgoTabs.run_preview` in [algo.py](algo.py) for
 the full pattern. Only `pipeline.services` and `pipeline.stages` may be imported
 from `gui/`; `tests/test_dependencies.py` rejects anything deeper.
+The one exception is the region map's picture: [world_map.py](world_map.py) calls
+the engine directly, because it's a view of the source world, not a pipeline stage.
 
 ### Re-tune a progress bar
 
@@ -111,7 +113,8 @@ src/application.pyw  ->  gui.app:main  (window + server + bridge)  ->  static/ (
 | [server.py](server.py) | What the page can load: itself, the app icon, files under `appdata/` |
 | [bridge.py](bridge.py) | `Api`: every call the page makes |
 | [session.py](session.py) | Saved settings, and background runs that report to the page |
-| [extract.py](extract.py) | **Extract**: source world, sample areas and their defaults, the version selector, the region map's cached world preview, Stages 1–2 |
+| [extract.py](extract.py) | **Extract**: source world, sample areas and their defaults, the version selector, Stages 1–2 |
+| [world_map.py](world_map.py) | The region map's picture: the world's top-down preview, rendered once per world and cached |
 | [algo.py](algo.py) | **Preview** (Stage 3) and **Build** (Stages 4–5): the algorithm form, form values → `Algo` |
 | [progress.py](progress.py) | Per-step progress weights, milestones, run-bar segments, and timing records |
 | [files.py](files.py) | Files the GUI owns (below), artifact cleanup, opening folders |

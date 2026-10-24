@@ -35,7 +35,17 @@ PART_LAYERS = {
         "stages": 3,
         "services": 4,
     },
-    "gui": {"files": 0, "progress": 0, "server": 0, "session": 1, "algo": 1, "extract": 1, "bridge": 2, "app": 3},
+    "gui": {
+        "files": 0,
+        "progress": 0,
+        "server": 0,
+        "world_map": 0,
+        "session": 1,
+        "algo": 1,
+        "extract": 1,
+        "bridge": 2,
+        "app": 3,
+    },
 }
 
 # This process's per-run defaults, read from MC_CITY_* overrides. The engine takes
