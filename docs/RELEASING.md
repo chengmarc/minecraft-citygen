@@ -133,8 +133,8 @@ branding.
 
 **What gets bundled.** The PyInstaller command
 (`base_pyinstaller_command`) collects the `pipeline` and `gui` packages, the
-hidden stage imports above, and six data sets: `gui/icons`, the page in
-`gui/web/static`, `config/color_render.csv`, `config/default_world`, the window icon,
+hidden stage imports above, and five data sets: the page in `gui/web/static`
+(its icons included), `config/color_render.csv`, `config/default_world`, the window icon,
 `app-icon.ico`, and `app-icon.svg`, which the page shows as its brand. The root `README.md` is copied next to the app. A file the app loads at runtime that is not
 in that list is missing from the release even though it works from a checkout.
 

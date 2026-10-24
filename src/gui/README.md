@@ -64,7 +64,7 @@ nothing from pywebview, so `tests/test_gui_web.py` exercises it without a window
 
 **The page is served, not loaded from disk.** [web/server.py](web/server.py) is
 a small WSGI app that pywebview runs on 127.0.0.1: the page from `web/static/`,
-the button icons from `icons/`, and previews and renders from `appdata/` by URL,
+its icons included, and previews and renders from `appdata/` by URL,
 each with its modification time in the URL so a new run never shows a stale image.
 
 **The GUI never touches `os.environ` for a run.** Each tab passes its settings
@@ -114,12 +114,12 @@ application.pyw  ->  gui.launcher:main  ->  gui.web.app  (window + server + brid
 | [core/title_bar.py](core/title_bar.py) | The native title bar's colours (Windows 11) |
 | **`web/`** | The app |
 | [web/app.py](web/app.py) | Process entry: arguments, the WebView2 check, the window, top-level error handling |
-| [web/server.py](web/server.py) | What the page can load: itself, the icons, files under `appdata/` |
+| [web/server.py](web/server.py) | What the page can load: itself, the app icon, files under `appdata/` |
 | [web/bridge.py](web/bridge.py) | `Api`: every call the page makes |
 | [web/session.py](web/session.py) | Saved settings, and background runs that report to the page |
 | [web/extract.py](web/extract.py) | **Extract**: source world, sample areas, region map, Stages 1–2 |
 | [web/algo.py](web/algo.py) | **Preview** (Stage 3) and **Build** (Stages 4–5) |
-| [web/static/](web/static/) | The page: `index.html`, `app.css` (the colours), `components.js`, `region.js`, `app.js` |
+| [web/static/](web/static/) | The page: `index.html`, `app.css` (the colours), `components.js`, `region.js`, `app.js`, and the button icons in `icons/` |
 
 Files the GUI writes (`ROOT` is the app root, see the
 [config guide](../config/README.md#where-outputs-go)):

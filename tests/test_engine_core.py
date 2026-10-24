@@ -160,3 +160,15 @@ def test_render_colors_prefer_vivid_columns_and_fall_back_to_sampled_rgb(tmp_pat
     monkeypatch.setattr(palette, "COLOR_RENDER_CSV", str(csv_path))
 
     assert palette.load_render_colors() == {"minecraft:dirt": (120, 80, 40), "minecraft:stone": (90, 90, 90)}
+
+
+def test_contact_sheet_is_transparent_between_thumbnails(tmp_path):
+    from PIL import Image
+
+    from engine.render.contact_sheet import write_contact
+
+    thumb = Image.new("RGBA", (20, 20), (200, 40, 40, 255))
+    sheet = write_contact([("a", thumb)], tmp_path / "sheet.png", cols=2, cell_w=60, cell_h=60)
+
+    assert sheet.getpixel((sheet.width - 1, sheet.height - 1))[3] == 0   # the empty second cell
+    assert Image.open(tmp_path / "sheet.png").mode == "RGBA"

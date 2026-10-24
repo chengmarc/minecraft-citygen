@@ -178,8 +178,6 @@ def base_pyinstaller_command(*, onefile: bool, icon_path: Path | None) -> list[s
         "--collect-submodules",
         "gui",
         "--add-data",
-        data_arg(SRC_ROOT / "gui" / "icons", "gui/icons"),
-        "--add-data",
         data_arg(SRC_ROOT / "gui" / "web" / "static", "gui/web/static"),
         "--add-data",
         data_arg(ICON_ICO, "."),

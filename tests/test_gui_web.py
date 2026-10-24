@@ -336,6 +336,13 @@ class ServerTests(unittest.TestCase):
 
         self.assertEqual(status, "404 Not Found")
 
+    def test_the_page_serves_its_own_icons(self):
+        status, headers, body = self.get("/icons/extract.png")
+
+        self.assertEqual(status, "200 OK")
+        self.assertEqual(headers["Content-Type"], "image/png")
+        self.assertTrue(body.startswith(b"\x89PNG"))
+
     def test_the_page_is_served_with_its_content_types(self):
         for path, content_type in (("/", "text/html"), ("/app.js", "text/javascript"), ("/app.css", "text/css")):
             status, headers, _body = self.get(path)

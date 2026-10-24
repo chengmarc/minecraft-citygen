@@ -1,4 +1,4 @@
-"""What the window's local server serves: the page, its icons, and the images the app writes.
+"""What the window's local server serves: the page (its icons among its files), and the images the app writes.
 
 A plain WSGI app, which pywebview runs on 127.0.0.1. Each route serves one folder
 and nothing outside it.
@@ -11,12 +11,11 @@ import os
 from pathlib import Path
 from urllib.parse import quote, unquote
 
-from config.path import APP_DATA, GUI_ICONS, RESOURCE_ROOT
+from config.path import APP_DATA, RESOURCE_ROOT
 
 STATIC = Path(__file__).resolve().parent / "static"
 ROUTES = {
     "/files/": Path(APP_DATA),
-    "/icons/": Path(GUI_ICONS),
     "/": STATIC,
 }
 # Single files, ahead of the routes: the app icon, which the page shows as the brand.

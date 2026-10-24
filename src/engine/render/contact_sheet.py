@@ -7,7 +7,7 @@ from contextlib import nullcontext
 
 from PIL import Image, ImageDraw
 
-from config.render import CONTACT_SHEET_BG
+from config.render import CONTACT_SHEET_BG, CONTACT_SHEET_LABEL, CONTACT_SHEET_LABEL_OUTLINE
 from engine.render.fonts import label_font
 
 THUMB_PAD = 8  # horizontal clearance between a thumbnail and its cell edge
@@ -51,7 +51,8 @@ def write_contact(
             )
         sheet.alpha_composite(thumb, (x0 + (cell_w - thumb.width) // 2,
                                       y0 + cell_h - thumb.height - 6))
-        d.text((x0 + 6, y0 + 5), key, fill=(235, 235, 235, 255), font=font)
+        d.text((x0 + 6, y0 + 5), key, fill=CONTACT_SHEET_LABEL, font=font,
+               stroke_width=2, stroke_fill=CONTACT_SHEET_LABEL_OUTLINE)
         if on_progress is not None:
             on_progress(i + 1, len(images) + 1)
     sheet.save(out)

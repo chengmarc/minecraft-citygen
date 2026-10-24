@@ -11,7 +11,11 @@ FULL_SCHEM_ISO_TILE_H = 2
 FULL_SCHEM_ISO_BLOCK_H = 3
 
 ISO_MARGIN = 16
-CONTACT_SHEET_BG = (30, 30, 34, 255)
+# Contact sheets are transparent, so they sit on whatever shows them (the app's sky canvas). Their labels are dark
+# with a white outline, readable on a light background or a dark one.
+CONTACT_SHEET_BG = (0, 0, 0, 0)
+CONTACT_SHEET_LABEL = (42, 34, 26, 255)
+CONTACT_SHEET_LABEL_OUTLINE = (255, 255, 255, 255)
 UNKNOWN_BLOCK_RGBA = (255, 0, 255)
 
 CITY_GROUND_FILL_RGBA = (159, 159, 159, 255)
