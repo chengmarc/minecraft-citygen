@@ -42,10 +42,16 @@
   /* The area selected on the region map: a strong sky blue, since the map itself is mostly grass and dirt. */
   --selection: rgb(30, 136, 229);
   --selection-fill: rgba(30, 136, 229, 0.3);
-  /* Shadows are warm, lit from above, like everything else here. */
-  --shadow-sm: 0 1px 2px rgba(74, 52, 30, 0.08);
-  --shadow-md: 0 2px 4px rgba(74, 52, 30, 0.06), 0 8px 24px rgba(74, 52, 30, 0.08);
+  /* Shadows are warm and lit from above, like everything else here: each depth a tight contact shadow under a
+     soft ambient one. --lift is the top edge catching the light, for surfaces that sit up off another. */
+  --shadow-sm: 0 1px 2px rgba(74, 52, 30, 0.10), 0 2px 6px rgba(74, 52, 30, 0.06);
   --shadow-lg: 0 4px 12px rgba(74, 52, 30, 0.10), 0 24px 64px rgba(74, 52, 30, 0.18);
+  /* The viewers and the dock: one level, side by side on the window, so their shadow stays within the 12px gap
+     between them instead of falling on each other. */
+  --shadow-panel: 0 1px 2px rgba(74, 52, 30, 0.16), 0 3px 8px -2px rgba(74, 52, 30, 0.24);
+  --shadow-sunken: inset 0 1px 2px rgba(74, 52, 30, 0.10);
+  --lift: inset 0 1px 0 rgba(255, 255, 255, 0.7);
+  --glow-green: 0 1px 2px rgba(38, 98, 15, 0.3), 0 6px 16px -4px rgba(61, 146, 29, 0.4);
   --radius-sm: 6px;
   --radius-md: 10px;
   --radius-lg: 14px;
@@ -75,7 +81,7 @@ h2, h3, p { margin: 0; }
 [hidden] { display: none !important; }
 :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
-/* --- Icons: the white PNGs in icons/, used as masks so they take the text colour. */
+/* --- Icons: the SVGs in icons/, line drawings on a 24px grid, used as masks so they take the text colour. */
 .icon {
   display: inline-block;
   flex: none;
@@ -85,16 +91,14 @@ h2, h3, p { margin: 0; }
   -webkit-mask: var(--icon) center / contain no-repeat;
   mask: var(--icon) center / contain no-repeat;
 }
-.icon-extract { --icon: url(/icons/extract.png); }
-.icon-folder { --icon: url(/icons/folder.png); }
-.icon-refresh { --icon: url(/icons/refresh.png); }
-.icon-render { --icon: url(/icons/render.png); }
-.icon-reset { --icon: url(/icons/reset.png); }
-.icon-map {
-  --icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linejoin='round'%3E%3Cpath d='M3 6l6-3 6 3 6-3v15l-6 3-6-3-6 3z'/%3E%3Cpath d='M9 3v15M15 6v15'/%3E%3C/svg%3E");
-}
+.icon-extract { --icon: url(/icons/extract.svg); }
+.icon-folder { --icon: url(/icons/folder.svg); }
+.icon-refresh { --icon: url(/icons/refresh.svg); }
+.icon-render { --icon: url(/icons/render.svg); }
+.icon-reset { --icon: url(/icons/reset.svg); }
+.icon-map { --icon: url(/icons/map.svg); }
 
-/* --- The sky: brand, steps, and two pixel clouds drifting behind them. */
+/* --- The sky: brand, steps, and eight pixel clouds drifting behind them. */
 .sky {
   position: relative;
   display: flex;
@@ -143,10 +147,17 @@ h2, h3, p { margin: 0; }
     0 16px rgba(255, 255, 255, 0.75), 8px 16px rgba(255, 255, 255, 0.75), 16px 16px rgba(255, 255, 255, 0.75),
     24px 16px rgba(255, 255, 255, 0.75), 32px 16px rgba(255, 255, 255, 0.75), 40px 16px rgba(255, 255, 255, 0.75),
     48px 16px rgba(255, 255, 255, 0.75);
-  animation: drift 120s linear infinite;
+  animation: drift 30s linear infinite;
 }
-.cloud-a { top: 14px; animation-delay: -40s; }
-.cloud-b { top: 32px; transform: scale(0.7); animation-duration: 210s; animation-delay: -150s; }
+/* Each at its own height, size and speed, and part-way through its crossing, so they never move in step. */
+.cloud-a { top: 14px; animation-delay: -10s; }
+.cloud-b { top: 32px; transform: scale(0.7); animation-duration: 52s; animation-delay: -37s; }
+.cloud-c { top: 6px; transform: scale(0.55); animation-duration: 42s; animation-delay: -25s; }
+.cloud-d { top: 24px; transform: scale(0.85); animation-duration: 36s; animation-delay: -4s; }
+.cloud-e { top: 40px; transform: scale(0.5); animation-duration: 47s; animation-delay: -31s; }
+.cloud-f { top: 2px; transform: scale(0.75); animation-duration: 39s; animation-delay: -18s; }
+.cloud-g { top: 18px; transform: scale(0.6); animation-duration: 57s; animation-delay: -46s; }
+.cloud-h { top: 36px; transform: scale(0.9); animation-duration: 33s; animation-delay: -22s; }
 @keyframes drift { from { left: 105%; } to { left: -20%; } }
 
 /* Equal columns in a bar sized to its content: every step as wide as the widest. */
@@ -165,7 +176,7 @@ h2, h3, p { margin: 0; }
   transition: background-color 160ms var(--ease);
 }
 .step:hover { background: rgba(255, 255, 255, 0.45); }
-.step[aria-selected="true"] { background: var(--app-bg); }
+.step[aria-selected="true"] { background: var(--app-bg); box-shadow: 0 -2px 10px rgba(47, 82, 116, 0.14); }
 .step-text { display: flex; flex-direction: column; line-height: 1.2; }
 .step-text b { font-weight: 650; }
 .step-text small { font-size: 12px; opacity: 0.75; }
@@ -190,8 +201,8 @@ h2, h3, p { margin: 0; }
   position: absolute;
   inset: 0;
   background: var(--accent);
-  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 12.5l4 4 8-9'/%3E%3C/svg%3E") center / 16px no-repeat;
-  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 12.5l4 4 8-9'/%3E%3C/svg%3E") center / 16px no-repeat;
+  -webkit-mask: url(/icons/check.svg) center / 16px no-repeat;
+  mask: url(/icons/check.svg) center / 16px no-repeat;
 }
 .step[aria-selected="true"].done .step-num { background: var(--accent); }
 .step[aria-selected="true"].done .step-num::after { background: #fff; }
@@ -207,7 +218,7 @@ h2, h3, p { margin: 0; }
   background: var(--app-bg);
 }
 /* A tab's contents fade in, not the page itself, whose ground would flash the sky behind it. */
-.page > * { animation: page-in 220ms var(--ease); }
+.page > * { animation: page-in 1000ms var(--ease); }
 
 /* The ground the window stands on: a strip of dirt along its bottom, a line of grass on top, like the icon's
    grass block. Below every page, so it's the same on every tab. */
@@ -232,7 +243,7 @@ body::after {
   overflow: hidden;
   border-radius: var(--radius-lg);
   background: linear-gradient(var(--canvas-top), var(--canvas-bottom));
-  box-shadow: inset 0 0 0 1px rgba(47, 82, 116, 0.12);
+  box-shadow: inset 0 0 0 1px rgba(47, 82, 116, 0.12), var(--shadow-panel);
 }
 .viewer.has-image { cursor: grab; }
 .viewer.dragging { cursor: grabbing; }
@@ -255,6 +266,7 @@ body::after {
   border-radius: 999px;
   background: rgba(255, 255, 255, 0.72);
   backdrop-filter: blur(8px);
+  box-shadow: var(--shadow-sm);
   color: var(--sky-text);
   font-size: 12px;
   font-weight: 600;
@@ -317,7 +329,7 @@ body::after {
   padding: 16px;
   border-radius: var(--radius-lg);
   background: var(--surface);
-  box-shadow: var(--shadow-md);
+  box-shadow: var(--lift), var(--shadow-panel);
 }
 .dock-row { display: flex; align-items: flex-end; gap: 12px; }
 .dock-row .spacer { flex: 1; }
@@ -345,13 +357,14 @@ select, input[type="text"] {
   border: 1px solid var(--border-strong);
   border-radius: var(--radius-sm);
   background: var(--surface);
+  box-shadow: var(--shadow-sunken);
   transition: border-color 140ms var(--ease), box-shadow 140ms var(--ease);
 }
 select:hover, input[type="text"]:hover { border-color: var(--muted); }
 select:focus, input[type="text"]:focus {
   outline: 0;
   border-color: var(--accent);
-  box-shadow: 0 0 0 3px rgba(61, 146, 29, 0.18);
+  box-shadow: var(--shadow-sunken), 0 0 0 3px rgba(61, 146, 29, 0.18);
 }
 select { padding-right: 6px; }
 input[readonly] { background: var(--surface-panel); border-color: var(--border); color: var(--text-soft); }
@@ -385,12 +398,12 @@ input[readonly]:hover, input[readonly]:focus { border-color: var(--border); box-
   background: linear-gradient(var(--accent-top), var(--accent));
   border-color: var(--accent-hover);
   color: #fff;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.28), 0 1px 2px rgba(38, 98, 15, 0.3);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.28), var(--glow-green);
   text-shadow: 0 1px 0 rgba(38, 98, 15, 0.35);
 }
 .btn.primary:hover:not(:disabled) {
   background: linear-gradient(#66c934, var(--accent-hover));
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.28), 0 4px 14px rgba(61, 146, 29, 0.35);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.28), 0 2px 4px rgba(38, 98, 15, 0.3), 0 10px 24px -6px rgba(61, 146, 29, 0.5);
 }
 .btn.primary:active:not(:disabled) { background: var(--accent-pressed); box-shadow: inset 0 2px 3px rgba(0, 0, 0, 0.2); }
 .btn.primary:disabled {
@@ -448,7 +461,19 @@ input[readonly]:hover, input[readonly]:focus { border-color: var(--border); box-
   transition: grid-template-rows 240ms var(--ease), margin-top 240ms var(--ease);
 }
 .advanced.open { grid-template-rows: 1fr; margin-top: 0; }
-.advanced-inner { display: flex; gap: 12px; min-height: 0; overflow: hidden; }
+/* Clipped for the slide, with room around the groups for their shadows (the margins give it back). That room is
+   all that's left of it closed, so closed it's hidden too: once the slide ends, and at once when it opens. */
+.advanced-inner {
+  display: flex;
+  gap: 12px;
+  min-height: 0;
+  margin: -4px -8px -10px;
+  padding: 4px 8px 10px;
+  overflow: hidden;
+  visibility: hidden;
+  transition: visibility 0s linear 240ms;
+}
+.advanced.open .advanced-inner { visibility: visible; transition-delay: 0s; }
 
 fieldset {
   flex: 1;
@@ -458,6 +483,7 @@ fieldset {
   border: 0;
   border-radius: var(--radius-md);
   background: var(--surface-panel);
+  box-shadow: var(--lift), 0 0 0 1px rgba(74, 52, 30, 0.06), var(--shadow-sm);
 }
 legend {
   float: left;
@@ -529,6 +555,7 @@ input[type="range"]:focus-visible::-webkit-slider-thumb { box-shadow: 0 0 0 4px 
   padding: 12px 12px 12px 16px;
   border-radius: var(--radius-md);
   background: var(--surface-panel);
+  box-shadow: var(--lift), 0 0 0 1px rgba(74, 52, 30, 0.06), var(--shadow-sm);
 }
 .area-top { grid-area: top; display: flex; align-items: center; gap: 8px; }
 .area-top h3 { font: 650 14px var(--font-display); }
