@@ -58,7 +58,7 @@ def default_extraction_tab_config():
 
 
 def version_selector_items(min_data_version=None):
-    """(label, value) pairs for the paste-target dropdown, newest first.
+    """The paste-target dropdown's values, newest first after ``AUTO_VERSION`` (which text.js names).
 
     Indicator only: it lists the MC versions the output can be pasted into
     -- the source version and newer -- so the user can confirm the target. It
@@ -66,13 +66,11 @@ def version_selector_items(min_data_version=None):
     config.world.source_data_version). When min_data_version is given, only versions at
     or above it are listed.
     """
-    items = [("Auto", AUTO_VERSION)]
-    items.extend(
-        (name, name)
+    return [AUTO_VERSION] + [
+        name
         for dv, name in sorted(RELEASE_NAMES.items(), reverse=True)
         if min_data_version is None or dv >= min_data_version
-    )
-    return items
+    ]
 
 
 # --- The tab
@@ -138,7 +136,7 @@ class ExtractTab:
         version = detect_world_data_version(path) if path else None
         versions = version_selector_items(version)
         target = saved.get("target_version", AUTO_VERSION)
-        if target not in [value for _label, value in versions]:
+        if target not in versions:
             target = AUTO_VERSION
         areas = {}
         for key in AREAS:
@@ -148,7 +146,7 @@ class ExtractTab:
             "worldPath": path,
             "worldReady": self.world_ready(),
             "sourceVersion": release_name_for(version) if version is not None else "",
-            "versions": [{"label": label, "value": value} for label, value in versions],
+            "versions": versions,
             "targetVersion": target,
             "areas": areas,
         }

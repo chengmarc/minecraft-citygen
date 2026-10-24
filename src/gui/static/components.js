@@ -387,13 +387,15 @@ class AlgoControls {
 
     const prefix = root.closest(".page").id;
     for (const spec of form.selectors) {
+      const [name, tip] = TEXT.form.knobs[spec.name];
       const label = document.createElement("label");
-      label.textContent = spec.label;
+      label.textContent = name;
       label.htmlFor = `${prefix}-${spec.name}`;
       const select = document.createElement("select");
       select.id = label.htmlFor;
-      select.title = spec.description;
-      for (const option of spec.options) select.add(new Option(option, option));
+      select.title = tip;
+      const words = TEXT.form.options[spec.name];
+      for (const value of spec.options) select.add(new Option(words[value] ?? value, value));
       select.addEventListener("change", onChange);
       const field = document.createElement("div");
       field.className = "select-field";
@@ -404,7 +406,7 @@ class AlgoControls {
 
     for (const group of form.groups) {
       const fieldset = document.createElement("fieldset");
-      fieldset.setAttribute("aria-label", group.title);   // no heading shown: the group is named for screen readers
+      fieldset.setAttribute("aria-label", TEXT.form.groups[group.code]);   // no heading shown: named for screen readers
       for (const spec of group.fields) fieldset.append(this.buildRow(prefix, spec, onChange));
       $(".advanced-inner", this.panel).append(fieldset);
     }
@@ -413,9 +415,10 @@ class AlgoControls {
   buildRow(prefix, spec, onChange) {
     const row = document.createElement("div");
     row.className = "form-row";
-    row.title = spec.description;
+    const [name, tip] = TEXT.form.knobs[spec.name];
+    row.title = tip;
     const label = document.createElement("label");
-    label.textContent = spec.label;
+    label.textContent = name;
     label.htmlFor = `${prefix}-${spec.name}`;
     row.append(label);
 
@@ -423,7 +426,7 @@ class AlgoControls {
       const input = document.createElement("input");
       input.type = "text";
       input.id = label.htmlFor;
-      input.placeholder = spec.placeholder;
+      input.placeholder = TEXT.form.placeholders[spec.name] ?? "";
       input.addEventListener("input", onChange);
       row.append(input);
       this.fields[spec.name] = { get: () => input.value.trim(), set: (v) => { input.value = v; } };
@@ -455,7 +458,7 @@ class AlgoControls {
 
   setAdvanced(visible) {
     this.toggle.setAttribute("aria-expanded", String(visible));
-    $("span", this.toggle).textContent = visible ? "Fewer settings" : "More settings";
+    $("span", this.toggle).textContent = visible ? TEXT.form.fewer : TEXT.form.more;
     this.panel.classList.toggle("open", visible);
     this.panel.inert = !visible;   // closed, its fields can't take focus
   }

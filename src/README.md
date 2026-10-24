@@ -71,9 +71,10 @@ coarse cells.
    variable.
 
 4. **Show it in the app.** In [gui/algo.py](gui/algo.py),
-   add `("BIG_JITTER", "Avenue wobble", "…")` to `PREVIEW_CONFIGS`, put
-   `"BIG_JITTER"` in the "Avenue and Street shape" group, and give it a slider
-   range such as `(0, 3)`.
+   add `"BIG_JITTER"` to `KNOBS`, put it in the `"shape"` group, and give it a
+   slider range such as `(0, 3)`. Then name it in
+   [gui/static/text.js](gui/static/text.js): `BIG_JITTER: ["Avenue wobble", "…"]`
+   in `TEXT.form.knobs`.
 
 5. **Test it.** Add a case next to `test_generation_follows_the_algo_argument` in
    `tests/test_engine_core.py`, then run `python -m pytest -q`.

@@ -17,7 +17,8 @@ class TabRun {
     this.tab = tab;
     this.text = TEXT.tabs[tab];
     this.ground = $(`.ground-run[data-tab="${tab}"]`);   // shown while its tab is
-    this.progress = new ProgressBar($(".progress", this.ground), { segments });
+    const named = segments.map(({ code, start, end }) => ({ label: TEXT.segments[tab][code], start, end }));
+    this.progress = new ProgressBar($(".progress", this.ground), { segments: named });
     this.button = button;
     this.step = step;
     this.running = false;
@@ -122,7 +123,9 @@ async function start() {
   const showExtraction = ({ extraction, gates }) => {
     if (document.activeElement !== worldPath) worldPath.value = extraction.worldPath;
     sourceVersion.value = extraction.sourceVersion;
-    targetVersion.replaceChildren(...extraction.versions.map(({ label, value }) => new Option(label, value)));
+    targetVersion.replaceChildren(
+      ...extraction.versions.map((value) => new Option(value === "auto" ? TEXT.autoVersion : value, value)),
+    );
     targetVersion.value = extraction.targetVersion;
     for (const card of $$(".area-card")) {
       const { chunks } = extraction.areas[card.dataset.area];
