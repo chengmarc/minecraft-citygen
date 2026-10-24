@@ -22,10 +22,6 @@ from gui.server import image
 
 # --- The form: which knobs show, and how their values become an ``Algo``
 
-class SeedError(ValueError):
-    """Raised when the seed field does not hold a valid integer."""
-
-
 class ConfigError(ValueError):
     """Raised when an algorithm/city config value is invalid."""
 
@@ -120,32 +116,19 @@ def config_default(name):
     return str(value)
 
 
-def algo_defaults_snapshot():
-    return {name: config_default(name) for name, _label, _description in PREVIEW_CONFIGS}
-
-
-def create_config_values(initial=None):
-    values = algo_defaults_snapshot()
-    if initial:
-        for name in values:
-            if name in initial:
-                values[name] = str(initial[name])
-    return values
-
-
-def snapshot_config_values(config_values):
+def form_values(saved=None):
+    """Every knob's value as text: the saved one, else the default."""
     return {
-        name: str(config_values[name]).strip()
+        name: str(saved[name]).strip() if saved and name in saved else config_default(name)
         for name, _label, _description in PREVIEW_CONFIGS
     }
 
 
-def build_algo_from_values(config_values):
-    """The :class:`config.algo.Algo` the form's text values describe."""
-    normalized = snapshot_config_values(config_values)
+def build_algo_from_values(values):
+    """The :class:`config.algo.Algo` that :func:`form_values` describes."""
     knobs = {}
     for name, _label, _description in PREVIEW_CONFIGS:
-        value = normalized[name]
+        value = values[name]
         if name == "BANNED_BUILDINGS":
             knobs[name.lower()] = frozenset(parse_set(value))
             continue
@@ -161,15 +144,8 @@ def build_algo_from_values(config_values):
 def default_algo_tab_config():
     return {
         "seed": str(DEFAULT_SEED),
-        "algo": algo_defaults_snapshot(),
+        "algo": form_values(),
     }
-
-
-def validate_seed(seed):
-    try:
-        int(seed)
-    except ValueError as exc:
-        raise SeedError("Seed must be an integer.") from exc
 
 
 # --- The tabs
@@ -277,7 +253,7 @@ class AlgoTabs:
 
     def state(self):
         saved = self._settings.get("algo") or default_algo_tab_config()
-        return {**saved, "algo": create_config_values(saved.get("algo"))}
+        return {**saved, "algo": form_values(saved.get("algo"))}
 
     def save(self, state):
         self._settings.set("algo", state)
@@ -289,7 +265,7 @@ class AlgoTabs:
 
     def _algo(self, state):
         try:
-            return build_algo_from_values(create_config_values(state.get("algo"))), None
+            return build_algo_from_values(form_values(state.get("algo"))), None
         except ConfigError as exc:
             return None, {"code": "invalid_config", "detail": str(exc)}
 
@@ -325,9 +301,9 @@ class AlgoTabs:
         self.save(state)
         seed = str(state.get("seed", "")).strip()
         try:
-            validate_seed(seed)
-        except SeedError as exc:
-            return {"error": {"code": "invalid_seed", "detail": str(exc)}}
+            int(seed)
+        except ValueError:
+            return {"error": {"code": "invalid_seed", "detail": "Seed must be an integer."}}
         algo, error = self._algo(state)
         if error:
             return {"error": error}

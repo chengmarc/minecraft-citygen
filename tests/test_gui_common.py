@@ -28,7 +28,7 @@ class ClearPipelineArtifactsTests(unittest.TestCase):
             with (
                 mock.patch.object(files, "APP_DATA", root),
                 mock.patch.object(files, "SAVES", saves),
-                mock.patch.object(files, "SAVED_GUI_CONFIG_PATH", settings),
+                mock.patch.object(files, "SETTINGS", settings),
             ):
                 files.clear_pipeline_artifacts()
 
