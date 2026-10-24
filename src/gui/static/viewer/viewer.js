@@ -13,8 +13,8 @@ class ImageViewer {
       '<img alt="" draggable="false"><div class="viewer-overlay" hidden></div></div></div>' +
       '<div class="viewer-placeholder"><i class="icon"></i><p></p></div>' +
       '<span class="viewer-caption"></span>' +
-      '<div class="viewer-tools"><button type="button" data-zoom="-1" title="Zoom out">\u2212</button><output></output>' +
-      '<button type="button" data-zoom="1" title="Zoom in">+</button></div>';
+      '<div class="viewer-tools"><button type="button" data-zoom="-1">\u2212</button><output></output>' +
+      '<button type="button" data-zoom="1">+</button></div>';
     this.layer = $(".viewer-layer", root);
     this.img = $("img", root);
     this.overlay = $(".viewer-overlay", root);
@@ -25,6 +25,7 @@ class ImageViewer {
     for (const button of $$(".viewer-tools button", root)) {
       button.addEventListener("pointerdown", (event) => event.stopPropagation());   // not a pan
       button.addEventListener("dblclick", (event) => event.stopPropagation());
+      button.title = Number(button.dataset.zoom) > 0 ? TEXT.zoomIn : TEXT.zoomOut;
       button.addEventListener("click", () => this.zoomBy(Number(button.dataset.zoom) * 2));
     }
     this.interceptPointer = null;   // (event) => true to take a press away from panning
@@ -77,7 +78,7 @@ class ImageViewer {
     try {
       await next.decode();
     } catch {
-      this.setMessage(`Failed to load image:\n${payload.src}`);
+      this.setMessage(TEXT.imageFailed(payload.src));
       return false;
     }
     const size = { width: next.naturalWidth, height: next.naturalHeight };
