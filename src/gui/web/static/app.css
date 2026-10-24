@@ -1,0 +1,306 @@
+/* The window is layered like the app icon: sky blue along the top (the tab row), grass green for everything you
+   act on (buttons, the front tab, focus), and dirt brown at the bottom (the progress bar, on the faint brown ground
+   of the window). New colours should follow the same layers. gui/web/app.py repeats --sky, --sky-text and --app-bg
+   for the native title bar and the window behind the page. */
+:root {
+  /* Sky: the tab row along the top of the window. */
+  --sky: #cfe4f8;
+  --sky-tab: #e6f1fc;
+  --sky-tab-hover: #f4f9fe;
+  --sky-border: #aecbe8;
+  --sky-text: #2f5274;
+  /* The faintest dirt brown for the window and its panels: nearly gray, just warm, so the green actions stand out. */
+  --app-bg: #f2f0ed;
+  --surface: #ffffff;
+  --surface-alt: #faf9f7;
+  --surface-panel: #f5f3f0;
+  --surface-muted: #e1ded8;
+  --surface-sunken: #d2cec8;
+  /* The canvas behind the renders: a sky, deeper at the top, nearly white at the bottom, for the city to float in. */
+  --canvas-top: #b8dbf7;
+  --canvas-bottom: #f1f8fe;
+  --border: #d9d4ce;
+  --border-strong: #b2aca4;
+  --text: #2a221a;
+  --text-soft: #4a3e32;
+  --muted: #7a6d60;
+  /* Grass green for the actions: the app icon's, deep enough for white text. */
+  --accent-top: #5cbf2a;
+  --accent: #3d921d;
+  --accent-hover: #327c16;
+  --accent-pressed: #26620f;
+  --accent-soft: #e2f3d5;
+  --accent-border: #93cf6c;
+  --accent-disabled: #c8d3bb;
+  --disabled: #e5e2de;
+  --success-bg: #e2f3d5;
+  --success-border: #a9d98a;
+  --success-text: #2d6a12;
+  /* Dirt: the bottom of the window, the progress bar. */
+  --dirt-top: #b67a3f;
+  --dirt: #8b5a2b;
+  /* The area selected on the region map: a strong sky blue, since the map itself is mostly grass and dirt. */
+  --selection: rgb(30, 136, 229);
+  --selection-fill: rgba(30, 136, 229, 0.35);
+  --shadow: rgba(42, 32, 22, 0.23);
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
+  --big-button-width: 158px;
+}
+
+* { box-sizing: border-box; }
+
+html, body { height: 100%; margin: 0; }
+
+body {
+  display: flex;
+  flex-direction: column;
+  background: var(--sky);
+  color: var(--text);
+  font: 13px "Segoe UI", system-ui, sans-serif;
+  user-select: none;
+}
+
+button, input, select { font: inherit; color: inherit; }
+button { cursor: pointer; }
+button:disabled { cursor: default; }
+h2, h3, p { margin: 0; }
+[hidden] { display: none !important; }
+
+/* Tabs: the front tab is the page's own colour, so it opens into the page below. */
+.tabs { display: flex; gap: 6px; padding: 6px 0 0 8px; }
+
+.tab {
+  padding: 10px 20px;
+  border: 1px solid var(--sky-border);
+  border-bottom: 0;
+  border-radius: var(--radius-md) var(--radius-md) 0 0;
+  background: var(--sky-tab);
+  color: var(--sky-text);
+  font-weight: 650;
+}
+.tab:hover { background: var(--sky-tab-hover); }
+.tab[aria-selected="true"] { background: var(--app-bg); color: var(--accent); font-weight: 750; }
+
+.page {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  padding: 12px;
+  background: var(--app-bg);
+}
+
+/* Viewers: a sky that stays put while the image is zoomed or dragged across it. */
+.viewers { flex: 1; min-height: 0; display: flex; gap: 12px; margin-bottom: 20px; }
+
+.viewer {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: linear-gradient(var(--canvas-top), var(--canvas-bottom));
+}
+.viewer.has-image { cursor: grab; }
+.viewer.dragging { cursor: grabbing; }
+
+.viewer-layer { position: absolute; top: 0; left: 0; transform-origin: 0 0; }
+.viewer-layer img { display: block; }
+.viewer-overlay {
+  position: absolute;
+  border: 2px solid var(--selection);
+  background: var(--selection-fill);
+  pointer-events: none;
+}
+
+.viewer-placeholder {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  color: var(--muted);
+  text-align: center;
+  white-space: pre-line;
+}
+
+/* Controls */
+.controls-row { display: flex; align-items: center; gap: 8px; }
+.controls-row .spacer { flex: 1; }
+.controls-row .gap { margin-left: 12px; }
+.selectors { display: contents; }
+.selectors label { margin-left: 8px; }
+
+select, input[type="text"] {
+  height: 40px;
+  padding: 0 8px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+}
+select:focus, input[type="text"]:focus { outline: 0; border: 2px solid var(--accent); padding: 0 7px; }
+input[readonly] { background: var(--surface-panel); color: var(--muted); }
+input[readonly]:focus { border: 1px solid var(--border-strong); padding: 0 8px; }
+.world-path { width: 420px; min-width: 0; flex-shrink: 1; user-select: text; }
+.source-version { width: 9em; }
+
+/* Buttons: grass green, small for the secondary actions, big for each tab's own. */
+.small, .toggle, .big {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: linear-gradient(var(--accent-top), var(--accent));
+  color: #fff;
+  font-weight: 700;
+}
+.small, .toggle { height: 40px; padding: 0 16px; }
+.toggle { margin-left: 8px; }
+.small.wide { width: 100%; }
+.small:hover, .toggle:hover, .big:hover { background: var(--accent-hover); border-color: var(--accent-border); }
+.small:active, .toggle:active, .big:active { background: var(--accent-pressed); }
+.small:focus-visible, .toggle:focus-visible, .big:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.small:disabled, .toggle:disabled { background: var(--disabled); border-color: var(--disabled); }
+.small.plain { background: var(--surface); border-color: var(--border-strong); color: var(--text); }
+.small.plain:hover { background: var(--surface-alt); }
+.toggle[aria-pressed="true"] { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); }
+.toggle[aria-pressed="true"]:hover { background: var(--surface-alt); }
+
+.big {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: var(--big-button-width);
+  min-height: 52px;
+  border-color: var(--accent);
+  font-size: 21px;
+  box-shadow: 0 4px 18px var(--shadow);
+}
+.big:hover { border-color: var(--accent-hover); }
+.big:disabled {
+  background: var(--accent-disabled);
+  border-color: var(--accent-disabled);
+  box-shadow: none;
+}
+
+/* Extract: one card per sample area. */
+.areas { display: flex; gap: 10px; margin-top: 20px; }
+
+.area-card {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 18px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--surface-alt);
+}
+.area-header { display: flex; align-items: center; justify-content: space-between; }
+.area-header h3 { font-size: 14px; font-weight: 700; }
+.area-detail { color: var(--muted); }
+
+.chip {
+  min-width: 106px;
+  padding: 5px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface-muted);
+  color: var(--muted);
+  font-size: 11pt;
+  font-weight: 700;
+  text-align: center;
+}
+.chip.selected { border-color: var(--success-border); background: var(--success-bg); color: var(--success-text); }
+
+/* Preview and Build: the advanced form. */
+.advanced { display: flex; gap: 10px; margin-top: 20px; }
+
+fieldset {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  padding: 12px 20px 20px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--surface-panel);
+}
+legend { padding: 0 4px; color: var(--text-soft); font-weight: 600; }
+
+.form-row { display: grid; grid-template-columns: 9.5em 1fr; align-items: center; gap: 12px; margin-top: 18px; }
+.form-row input[type="text"] { width: 100%; }
+
+/* Slider: a sunken groove, a grass handle, one tick per value below it. */
+.slider { display: flex; align-items: center; gap: 10px; }
+.slider-track { position: relative; flex: 1; }
+.slider-track::after {
+  content: "";
+  position: absolute;
+  left: 8px;
+  right: 8px;
+  bottom: -4px;
+  height: 4px;
+  border-right: 1px solid var(--border-strong);
+  background: repeating-linear-gradient(to right, var(--border-strong) 0 1px, transparent 1px calc(100% / var(--ticks)));
+}
+.slider output { min-width: 28px; text-align: right; }
+
+input[type="range"] { width: 100%; height: 16px; margin: 0; appearance: none; background: transparent; }
+input[type="range"]::-webkit-slider-runnable-track { height: 6px; border-radius: 3px; background: var(--surface-sunken); }
+input[type="range"]::-webkit-slider-thumb {
+  width: 16px;
+  height: 16px;
+  margin-top: -5px;
+  appearance: none;
+  border-radius: 8px;
+  background: var(--accent);
+}
+input[type="range"]:hover::-webkit-slider-thumb { background: var(--accent-hover); }
+input[type="range"]:focus { outline: 0; }
+
+/* Status and the dirt progress bar */
+.run { margin-top: 8px; }
+.status { min-height: 1.4em; margin-bottom: 4px; color: var(--muted); }
+
+.progress {
+  height: 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface-muted);
+  overflow: hidden;
+}
+.progress-chunk {
+  width: 0;
+  height: 100%;
+  border-radius: var(--radius-sm);
+  background: linear-gradient(to right, var(--dirt-top), var(--dirt));
+}
+/* Busy, with no way to tell how far: a short stretch of dirt sliding across. */
+.progress.indeterminate .progress-chunk { width: 30%; animation: slide 1.2s ease-in-out infinite alternate; }
+@keyframes slide { from { transform: translateX(-10%); } to { transform: translateX(243%); } }
+
+/* Dialogs */
+dialog {
+  padding: 20px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--app-bg);
+  color: var(--text);
+  box-shadow: 0 12px 40px var(--shadow);
+}
+dialog::backdrop { background: rgba(42, 34, 26, 0.3); }
+dialog h2 { margin-bottom: 12px; font-size: 16px; }
+.dialog-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 16px; }
+
+#error-dialog { max-width: 480px; }
+#error-dialog p { white-space: pre-wrap; user-select: text; }
+
+.region-dialog { width: min(980px, 94vw); height: min(720px, 92vh); }
+.region-dialog[open] { display: flex; flex-direction: column; }
+.region-dialog .viewer { flex: 1; }
+.region-dialog .status { margin: 8px 0 4px; }

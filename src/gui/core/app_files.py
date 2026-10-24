@@ -1,20 +1,16 @@
-"""Files the GUI owns on disk: icons, saved settings, timings, and artifact cleanup."""
+"""Files the GUI owns on disk: the window icon, saved settings, timings, and artifact cleanup."""
 
 from __future__ import annotations
 
-import glob
 import json
 import os
 import shutil
 import subprocess
 import sys
 
-from config.path import (
-    APP_DATA, APP_ICON, BUILDS_CONTACT_SHEET, GUI_ICONS, ROADS_CONTACT_SHEET, ROOT, SAVES, SETTINGS, WORLD_PREVIEW_CACHE,
-)
+from config.path import APP_DATA, APP_ICON, BUILDS_CONTACT_SHEET, ROADS_CONTACT_SHEET, ROOT, SAVES, SETTINGS
 
 
-ICON_DIR = GUI_ICONS
 APP_ICON_PATH = APP_ICON
 STARTUP_ERROR_LOG = os.path.join(ROOT, "application_startup_error.log")
 PROGRESS_TIMINGS_PATH = os.path.join(APP_DATA, "progress_timings.json")
@@ -73,17 +69,6 @@ def _remove_file(path):
         os.remove(path)
     except OSError:
         pass
-
-
-def _clear_dir(directory):
-    if os.path.isdir(directory):
-        for path in glob.glob(os.path.join(directory, "*")):
-            _remove_file(path)
-
-
-def clear_preview_cache():
-    """Delete all cached world top-down preview images."""
-    _clear_dir(WORLD_PREVIEW_CACHE)
 
 
 def clear_pipeline_artifacts():

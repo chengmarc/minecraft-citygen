@@ -1,4 +1,4 @@
-"""GUI helpers that don't need Qt: the shared artifact clearing.
+"""GUI file helpers: the shared artifact clearing.
 
 ``clear_pipeline_artifacts`` is used both on launch and when switching worlds, so
 both paths get the same clean slate.

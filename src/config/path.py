@@ -123,10 +123,9 @@ ROOT = _app_root()
 CONFIG = str(Path(RESOURCE_ROOT) / "config")
 GUI = str(Path(RESOURCE_ROOT) / "gui")
 GUI_ICONS = str(Path(GUI) / "icons")
-# The window icon: a PNG the release build renders from src/app-icon.svg (Qt's SVG renderer can't draw it) and
-# bundles beside the app; from a checkout, that build's copy, or none until
-# `python packaging/build_windows_release.py --icon-only` has made it.
-_APP_ICON_CANDIDATES = (Path(RESOURCE_ROOT) / "app-icon.png", Path(ROOT) / "build" / "packaging" / "app-icon.png")
+# The window icon: an .ico the release build renders from src/app-icon.svg and bundles beside the app; from a
+# checkout, that build's copy, or none until `python packaging/build_windows_release.py --icon-only` has made it.
+_APP_ICON_CANDIDATES = (Path(RESOURCE_ROOT) / "app-icon.ico", Path(ROOT) / "build" / "packaging" / "app-icon.ico")
 APP_ICON = str(next((path for path in _APP_ICON_CANDIDATES if path.is_file()), _APP_ICON_CANDIDATES[0]))
 DEFAULT_WORLD = str(Path(RESOURCE_ROOT) / "config" / "default_world")
 WORLD_ICON = str(Path(DEFAULT_WORLD) / "icon.png")  # save-list icon of the bundled world and every exported city

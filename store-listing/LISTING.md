@@ -171,7 +171,7 @@ Leave empty.
 - **Restricted capabilities → runFullTrust:**
 
   ```
-  MC CityGen is a desktop app built with Python and Qt (PyInstaller), packaged with the Desktop Bridge. runFullTrust is required for any packaged Win32 desktop app to launch its executable (EntryPoint="Windows.FullTrustApplication"). It is used only to run the app itself. The app does not access the network; it reads the MC world folder the user chooses and writes its outputs to its own app data folder.
+  MC CityGen is a desktop app built with Python and a WebView2 window (PyInstaller), packaged with the Desktop Bridge. runFullTrust is required for any packaged Win32 desktop app to launch its executable (EntryPoint="Windows.FullTrustApplication"). It is used only to run the app itself. The app does not access the internet: its window shows a page served by the app itself on 127.0.0.1. It reads the MC world folder the user chooses and writes its outputs to its own app data folder.
   ```
 
 - **Notes for certification:**

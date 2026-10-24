@@ -1,8 +1,9 @@
-# gui — PySide6 desktop app
+# gui — the desktop app
 
-A PySide6 (Qt) front end over the pipeline. It collects settings, runs stages on
-background threads, shows previews and renders, and remembers the user's
-settings. It has no generation logic of its own.
+An HTML page in a native window (WebView2, through
+[pywebview](https://pywebview.flowrl.com/)), over the pipeline. The page draws the
+three tabs; Python collects settings, runs stages on background threads, and
+remembers the user's settings. It has no generation logic of its own.
 
 ← Back to the [source architecture overview](../README.md).
 
@@ -13,11 +14,8 @@ settings. It has no generation logic of its own.
 ```bash
 pythonw application.pyw          # from a checkout
 citygen                          # installed
-pythonw application.pyw --no-custom-theme --qt-style Windows
+pythonw application.pyw --debug  # with the page's developer tools (F12)
 ```
-
-Arguments the app doesn't recognise are forwarded to `QApplication`, so Qt
-platform flags work too.
 
 ### Expose an `Algo` knob in the form
 
@@ -28,33 +26,46 @@ Once the field exists on `Algo`
 1. Add `("<FIELD_UPPER>", "<Label>", "<tooltip>")` to `PREVIEW_CONFIGS`. The
    default comes from `config.algo.ALGO`.
 2. Add the name to one of the `PREVIEW_CONFIG_GROUPS` — the advanced panel only
-   builds widgets for grouped names.
+   builds fields for grouped names.
 3. For an integer, add a `(min, max)` slider range to `PREVIEW_SLIDER_RANGES`.
    A `frozenset` field needs its own branch in `build_algo_from_values` and in
-   `_build_widget` ([widgets/widgets.py](widgets/widgets.py)), as
-   `BANNED_BUILDINGS` has.
+   `form_spec` ([web/algo.py](web/algo.py)), as `BANNED_BUILDINGS` has.
 
-The Preview and Build tabs share one form state, so the knob shows up in both.
+The page builds the form from `form_spec`, so there's no HTML to change. The
+Preview and Build tabs share one form state, so the knob shows up in both.
 
 ### Run a pipeline stage from a tab
 
-Build the stage parameters from the widgets, then call
-`pipeline.services.run_stage` inside a job passed to
-`start_background_job` ([core/workers.py](core/workers.py)). See
-`PreviewTab._run_preview` in [tabs/preview.py](tabs/preview.py) for the full
-pattern. Only `pipeline.services` and `pipeline.stages` may be imported from
-`gui/`; `tests/test_dependencies.py` rejects anything deeper.
+Add a method to [web/bridge.py](web/bridge.py)'s `Api`, which the page calls as
+`window.pywebview.api.<name>(...)`. Build the stage parameters, then call
+`pipeline.services.run_stage` inside a job passed to `Runner.start`
+([web/session.py](web/session.py)), which reports progress and the result to
+the page as events. See `AlgoTabs.run_preview` in [web/algo.py](web/algo.py) for
+the full pattern. Only `pipeline.services` and `pipeline.stages` may be imported
+from `gui/`; `tests/test_dependencies.py` rejects anything deeper.
 
 ### Re-tune a progress bar
 
 Progress bars are weighted per step by hand in
 [core/progress.py](core/progress.py). Extract and Build runs write measured
 timings to `appdata/progress_timings.json`; set the weights from those. Keep one weight
-per step: `tests/test_gui.py` checks that the preview and construct weight lists
+per step: `tests/test_gui_web.py` checks that the preview and construct weight lists
 match the pipeline's steps, so adding a step fails the test until you add a
 weight.
 
 ## Explanation
+
+**Python owns the state; the page draws it.** The saved settings, the
+prerequisite gates, and every run live in Python. The page calls the bridge and
+redraws from what it answers, or from the events a run sends: `progress`,
+`done`, `failed`, and `finished`, each naming its tab, through
+`citygen.receive(event, payload)`. [web/bridge.py](web/bridge.py) imports
+nothing from pywebview, so `tests/test_gui_web.py` exercises it without a window.
+
+**The page is served, not loaded from disk.** [web/server.py](web/server.py) is
+a small WSGI app that pywebview runs on 127.0.0.1: the page from `web/static/`,
+the button icons from `icons/`, and previews and renders from `appdata/` by URL,
+each with its modification time in the URL so a new run never shows a stale image.
 
 **The GUI never touches `os.environ` for a run.** Each tab passes its settings
 (an `Algo`, the source save, the regions, the DataVersion) as stage
@@ -71,42 +82,44 @@ switches source worlds, `app_files.clear_pipeline_artifacts` wipes
 `appdata/` except `05_world/saves/` and the saved settings. Extracted assets from a different world
 can't leak into a new city, and exported worlds are never deleted.
 
-**Preview and Build are peers.** Both edit the same seed and `Algo` form;
-saving one pushes the state into the other (`AlgoTabMixin.set_peer` in
-[tabs/_algo.py](tabs/_algo.py)), so the city you preview is the one you build.
+**Preview and Build are peers.** Both edit the same seed and `Algo` form; a
+change in one is copied into the other and saved, so the city you preview is
+the one you build.
 
 **Version display only.** The Extract tab shows the source world's detected
 MC version and a Target Version selector. The selector doesn't change
 what's written — see the
 [config guide](../config/README.md#version-compatibility).
 
+**WebView2 or nothing.** Without the WebView2 Runtime, pywebview falls back to
+Internet Explorer's engine, which can't run the page, so the app checks first
+and offers the download page instead. WebView2 comes with Windows 11 and most of
+Windows 10.
+
 ## Reference
 
 ```text
-application.pyw  ->  gui.launcher:main  ->  gui.app  (QApplication + main window)
+application.pyw  ->  gui.launcher:main  ->  gui.web.app  (window + server + bridge)  ->  web/static/ (the page)
 ```
 
 | Module | Responsibility |
 |---|---|
-| [launcher.py](launcher.py) | Installed `citygen` entry point (`gui-scripts`); routes to the Qt app |
-| [app.py](app.py) | Main window, argument parsing, theme wiring, top-level error handling |
-| **`core/`** | Non-widget support |
-| [core/workers.py](core/workers.py) | `start_background_job` and progress mixins, so stage runs don't block the UI thread |
+| [launcher.py](launcher.py) | Installed `citygen` entry point (`gui-scripts`) |
+| **`core/`** | Support with no window or page in it |
 | [core/algo_config.py](core/algo_config.py) | The algorithm form: which knobs show, labels, ranges, form values → `Algo` |
 | [core/extraction_config.py](core/extraction_config.py) | Extraction settings: default world and regions, version stamp and selector |
 | [core/app_files.py](core/app_files.py) | Files the GUI owns (below), artifact cleanup, opening folders |
-| [core/progress.py](core/progress.py) | Per-step progress weights and message formatting |
-| [core/theme.py](core/theme.py) | Stylesheet, palette, widget decoration |
-| **`widgets/`** | Custom widgets |
-| [widgets/widgets.py](widgets/widgets.py) | Sliders, selectors, region editors, the algorithm form panels |
-| [widgets/qt_viewer.py](widgets/qt_viewer.py) | Image viewers for previews and renders |
-| [widgets/region_dialog.py](widgets/region_dialog.py) | World top-down preview for snapping a region to chunk boundaries |
-| **`tabs/`** | The three tabs |
-| [tabs/extraction.py](tabs/extraction.py) | **Extract**: source world, regions, road and building extraction |
-| [tabs/preview.py](tabs/preview.py) | **Preview**: Stage 3 road-layout and city-layout previews |
-| [tabs/generation.py](tabs/generation.py) | **Build**: Stage 4 schematic and render, Stage 5 world export |
-| [tabs/control.py](tabs/control.py) | Action/control panels shared by the tabs |
-| [tabs/_algo.py](tabs/_algo.py) | Saved state, peer sync, and prerequisite gating for Preview and Build |
+| [core/progress.py](core/progress.py) | Per-step progress weights, milestones, and timing records |
+| [core/world_preview.py](core/world_preview.py) | The region map's cached top-down world preview |
+| [core/title_bar.py](core/title_bar.py) | The native title bar's colours (Windows 11) |
+| **`web/`** | The app |
+| [web/app.py](web/app.py) | Process entry: arguments, the WebView2 check, the window, top-level error handling |
+| [web/server.py](web/server.py) | What the page can load: itself, the icons, files under `appdata/` |
+| [web/bridge.py](web/bridge.py) | `Api`: every call the page makes |
+| [web/session.py](web/session.py) | Saved settings, and background runs that report to the page |
+| [web/extract.py](web/extract.py) | **Extract**: source world, sample areas, region map, Stages 1–2 |
+| [web/algo.py](web/algo.py) | **Preview** (Stage 3) and **Build** (Stages 4–5) |
+| [web/static/](web/static/) | The page: `index.html`, `app.css` (the colours), `components.js`, `region.js`, `app.js` |
 
 Files the GUI writes (`ROOT` is the app root, see the
 [config guide](../config/README.md#where-outputs-go)):
@@ -115,7 +128,7 @@ Files the GUI writes (`ROOT` is the app root, see the
 |---|---|
 | `ROOT/appdata/citygen.json` | Saved settings. Git-ignored |
 | `ROOT/appdata/progress_timings.json` | Measured Extract/Build step timings for weight tuning |
-| `ROOT/appdata/world_preview/` | Cached top-down world previews for the region dialog |
+| `ROOT/appdata/world_preview/` | Cached top-down world previews for the region map |
 | `ROOT/application_startup_error.log` | Written if the app fails to start |
 
 Opening an output folder uses `os.startfile` on Windows, `open` on macOS, and

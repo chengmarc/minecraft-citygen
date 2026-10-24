@@ -35,7 +35,7 @@ PART_LAYERS = {
         "stages": 3,
         "services": 4,
     },
-    "gui": {"core": 0, "widgets": 1, "tabs": 2, "app": 3, "launcher": 4},
+    "gui": {"core": 0, "web": 1, "launcher": 2},
 }
 
 # This process's per-run defaults, read from MC_CITY_* overrides. The engine takes

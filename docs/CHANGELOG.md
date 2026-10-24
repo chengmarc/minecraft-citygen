@@ -8,6 +8,12 @@ The format is based on Keep a Changelog, and versions should match the release v
 
 ### Changed
 
+- the window is an HTML page in WebView2 (through pywebview), was Qt (PySide6).
+  Same three tabs, settings and outputs; saved settings carry over. The release
+  build no longer bundles Qt. Without the WebView2 Runtime, which comes with
+  Windows 11 and most of Windows 10, the app opens its download page instead.
+  `--qt-style` and `--no-custom-theme` are gone; `--debug` allows the page's
+  developer tools
 - everything the app writes, settings included, is in one `appdata/` folder, was
   `artifacts/` and `src/config/citygen.json`. The first launch moves an existing
   `artifacts/` folder and saved settings there; the uninstaller's "delete generated
