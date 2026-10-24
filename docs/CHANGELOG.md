@@ -20,8 +20,10 @@ The format is based on Keep a Changelog, and versions should match the release v
   Settings is More settings; the Build tab's Copy is Worlds
 - contact sheets are transparent, was near-black, with dark labels outlined in
   white, so the road and building pieces sit on the window's sky
-- the progress bar is grass green, was dirt brown, and shows the run's steps;
-  the window stands on a strip of dirt with a line of grass along its bottom
+- the progress bar is the strip of ground along the window's bottom: the run's
+  steps joined across it, grass growing over the dirt, each step's name inside
+  it and the one under way saying what's happening and how far; Extract has a
+  Reset beside it, back to the sample world and its areas
 - everything the app writes, settings included, is in one `appdata/` folder, was
   `artifacts/` and `src/config/citygen.json`. The first launch moves an existing
   `artifacts/` folder and saved settings there; the uninstaller's "delete generated

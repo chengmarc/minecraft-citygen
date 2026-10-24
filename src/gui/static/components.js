@@ -256,14 +256,22 @@ class ImageViewer {
 }
 
 // --- Progress bar: jumps to each milestone, then creeps toward the soft target until the next one.
-// Given a run's ``segments`` ({label, start, end} in percent of the run), it's one labelled track per segment,
-// each filling over its own part of the run: the steps the run goes through, ticking off as they finish.
+// Given a run's ``segments`` ({label, start, end} in percent of the run), it's one step per segment, joined, with its
+// name inside: the steps the run goes through, ticking off as they finish. One fill grows under them all, so it moves
+// on in one place only; the steps are equal on screen, so it reaches the end of each as the run reaches the end of
+// that step's share. The fill glides after the run, and the text follows the fill, not the run: a step ticks off as
+// the fill crosses its end, the next takes over then, and the step under way says what's happening instead of its
+// name (setDetail) and how far the run is at the fill's edge.
 class ProgressBar {
   constructor(root, { percent = null, segments = null } = {}) {
     this.root = root;
     this.percent = percent;
     this.chunk = $(".progress-chunk", root);
     this.segments = [];
+    this.detail = null;
+    this.shown = 0;    // how far the fill is across the steps, in steps, as it glides after the run
+    this.target = 0;   // how far the run is, in steps
+    this.gliding = false;
     if (segments) this.setSegments(segments);
     this.value = 0;
     this.timer = null;
@@ -271,15 +279,28 @@ class ProgressBar {
 
   setSegments(segments) {
     this.root.classList.add("segmented");
-    this.root.replaceChildren();
+    this.fill = document.createElement("div");
+    this.fill.className = "run-fill";
+    this.root.replaceChildren(this.fill);
     this.segments = segments.map(({ label, start, end }) => {
       const element = document.createElement("div");
       element.className = "segment";
-      element.innerHTML = '<div class="segment-bar"><div class="segment-fill"></div></div><span class="segment-label"></span>';
-      $(".segment-label", element).textContent = label;
+      element.innerHTML =
+        '<span class="segment-label"><span class="segment-text"></span><span class="segment-percent"></span></span>';
+      $(".segment-text", element).textContent = label;
       this.root.append(element);
-      return { element, fill: $(".segment-fill", element), start, end };
+      return {
+        element, label, start, end,
+        text: $(".segment-text", element),
+        percent: $(".segment-percent", element),
+      };
     });
+  }
+
+  /** What the step under way says instead of its name (the run's live status), or null for its name. */
+  setDetail(detail) {
+    this.detail = detail;
+    if (this.segments.length) this.render();
   }
 
   set(value) {
@@ -291,14 +312,43 @@ class ProgressBar {
       this.chunk.style.width = `${value}%`;
       return;
     }
-    this.activeIndex = -1;   // the segment under way, which the status line names
+    this.target = this.segments.reduce(
+      (steps, { start, end }) => steps + Math.min(Math.max((value - start) / (end - start), 0), 1), 0,
+    );
+    if (this.target < this.shown) this.shown = this.target;   // a new run: back to the start at once
+    this.render();
+    if (!this.gliding && this.shown !== this.target) {
+      this.gliding = true;
+      this.lastFrame = null;
+      requestAnimationFrame((now) => this.glide(now));
+    }
+  }
+
+  /** One frame of the fill gliding after the run: most of the way in ~120ms, and there in the end. */
+  glide(now) {
+    const dt = now - (this.lastFrame ?? now);
+    this.lastFrame = now;
+    const gap = this.target - this.shown;
+    this.shown = Math.abs(gap) < 0.002 ? this.target : this.shown + gap * Math.min(1, dt / 120);
+    this.render();
+    if (this.shown !== this.target) requestAnimationFrame((t) => this.glide(t));
+    else this.gliding = false;
+  }
+
+  /** The fill where it's got to, and the steps' text from it: done behind it, the one it's in under way. */
+  render() {
+    const shown = this.shown;
+    const runStep = Math.min(Math.floor(this.target), this.segments.length - 1);   // the step the run is in
+    this.fill.style.width = `${(shown / this.segments.length) * 100}%`;
     this.segments.forEach((segment, index) => {
-      const part = Math.min(Math.max((value - segment.start) / (segment.end - segment.start), 0), 1);
-      const active = part < 1 && value >= segment.start;
-      segment.fill.style.width = `${part * 100}%`;
+      const part = Math.min(Math.max(shown - index, 0), 1);
+      const active = part < 1 && shown >= index;
       segment.element.classList.toggle("done", part >= 1);
       segment.element.classList.toggle("active", active);
-      if (active) this.activeIndex = index;
+      // The status is the run's step's: shown once the fill has got there, not on the step it's still finishing.
+      segment.text.textContent = active && this.detail && index === runStep ? this.detail : segment.label;
+      const atFill = segment.start + part * (segment.end - segment.start);   // the run's progress at the fill's edge
+      segment.percent.textContent = active ? `${Math.floor(atFill)}%` : "";
     });
   }
 
