@@ -26,7 +26,7 @@ committing. To reset, delete `appdata/` (everything the app writes) and `build/`
 | [city_layout.py](citygen/city_layout.py) | Lots and building placement (`plan_city`), shared by preview and build |
 | [schem.py](citygen/schem.py) | Sponge v3 `.schem` read/write, tile rotation, voxel grids, the building catalog and its pieces |
 | [world_reader.py](citygen/world_reader.py), [world_writer.py](citygen/world_writer.py) | Read Anvil worlds; write the exported world |
-| [isometric.py](citygen/isometric.py), [topdown.py](citygen/topdown.py), [contact_sheet.py](citygen/contact_sheet.py) | Isometric renders; the region map's top-down picture and its cache; labelled thumbnail grids |
+| [render_isometric.py](citygen/render_isometric.py), [render_topdown.py](citygen/render_topdown.py), [contact_sheet.py](citygen/contact_sheet.py) | Isometric renders; the region map's top-down picture and its cache; labelled thumbnail grids |
 | [blocks.py](citygen/blocks.py) | Block-state strings (`name[prop=val]`), air, and each block's render colour |
 | [settings.py](citygen/settings.py) | The algorithm's knobs (`Algo`), the bundled world's sample areas, version stamping |
 | [paths.py](citygen/paths.py) | Where the app keeps its data, and every output's path |

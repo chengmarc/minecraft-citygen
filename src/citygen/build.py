@@ -11,7 +11,7 @@ import numpy as np
 
 from citygen.blocks import is_air
 from citygen.city_layout import FACE_K, FILLER_STREAM, placement_origin, plan_city, seeded_rng, STACK_HEIGHT_STREAM
-from citygen.isometric import render_schem_visible_iso, trim_to_content
+from citygen.render_isometric import render_schem_visible_iso, trim_to_content
 from citygen.paths import (
     BUILD_CATALOG, BUILDS_SCHEM, city_render_path, city_schem_path, exported_world_name, exported_world_path,
     ROADS_SCHEM, WORLD_ICON,

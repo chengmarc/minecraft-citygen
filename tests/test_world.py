@@ -11,8 +11,8 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from citygen import topdown
-from citygen.topdown import region_world_bounds
+from citygen import render_topdown
+from citygen.render_topdown import region_world_bounds
 from citygen.world_reader import World
 from citygen.extract import (
     extract_cuboid,
@@ -261,9 +261,9 @@ if __name__ == "__main__":
 def test_topdown_preview_shows_the_picture_so_far_while_it_draws(monkeypatch):
     from citygen.settings import SAVE
 
-    monkeypatch.setattr(topdown, "PARTIAL_EVERY_SECONDS", 0)   # a snapshot after every row but the last
+    monkeypatch.setattr(render_topdown, "PARTIAL_EVERY_SECONDS", 0)   # a snapshot after every row but the last
     snapshots = []
-    image, meta = topdown.render_topdown_preview(SAVE, on_partial=lambda im, m: snapshots.append((im.size, m)))
+    image, meta = render_topdown.render_topdown_preview(SAVE, on_partial=lambda im, m: snapshots.append((im.size, m)))
 
     assert snapshots
     assert all(size == image.size and m == meta for size, m in snapshots)

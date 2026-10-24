@@ -7,7 +7,7 @@ import numpy as np
 from citygen.settings import Algo
 from citygen import city_layout as C
 from citygen import road_network as R
-from citygen.isometric import render_grid_visible_iso
+from citygen.render_isometric import render_grid_visible_iso
 
 
 def _network_snapshot(net):
@@ -177,7 +177,7 @@ def test_contact_sheet_is_transparent_between_thumbnails(tmp_path):
 def test_city_render_is_trimmed_to_what_is_drawn_with_its_margin():
     from PIL import Image
 
-    from citygen.isometric import trim_to_content
+    from citygen.render_isometric import trim_to_content
 
     image = Image.new("RGBA", (200, 300), (0, 0, 0, 0))
     image.paste((90, 120, 60, 255), (40, 150, 160, 280))   # the city, low on a tall canvas
