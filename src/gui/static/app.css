@@ -50,6 +50,9 @@
   --shadow-panel: 0 1px 2px rgba(74, 52, 30, 0.16), 0 3px 8px -2px rgba(74, 52, 30, 0.24);
   --shadow-sunken: inset 0 1px 2px rgba(74, 52, 30, 0.10);
   --lift: inset 0 1px 0 rgba(255, 255, 255, 0.7);
+  /* What a picture casts on the sky behind it: traced around its own outline, so every piece on a transparent sheet,
+     and the city itself, sits up off the canvas. */
+  --picture-shadow: drop-shadow(0 2px 3px rgba(47, 82, 116, 0.25));
   --glow-green: 0 1px 2px rgba(38, 98, 15, 0.3), 0 6px 16px -4px rgba(61, 146, 29, 0.4);
   --radius-sm: 6px;
   --radius-md: 10px;
@@ -241,6 +244,8 @@ body::after {
 .viewer.has-image { cursor: grab; }
 .viewer.dragging { cursor: grabbing; }
 
+/* The picture's shadow is on this unscaled wrapper, not the zoomed layer inside it, so it's the same at any zoom. */
+.viewer-canvas { position: absolute; inset: 0; filter: var(--picture-shadow); }
 .viewer-layer { position: absolute; top: 0; left: 0; transform-origin: 0 0; transition: opacity 260ms var(--ease); }
 .viewer-layer.loading { opacity: 0; }
 .viewer-layer img { display: block; }
@@ -285,7 +290,7 @@ body::after {
   width: 100%;
   height: 100%;
   object-fit: contain;
-  filter: drop-shadow(0 2px 3px rgba(47, 82, 116, 0.25));
+  filter: var(--picture-shadow);
   animation: piece-in 360ms var(--ease) both;
 }
 @keyframes piece-in { from { opacity: 0; transform: translateY(8px) scale(0.85); } }
