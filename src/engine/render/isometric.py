@@ -181,3 +181,19 @@ def warm_up():
     it compiles the same specialization.
     """
     render_grid_visible_iso(np.ones((1, 1, 1), dtype=np.int32), {0: "minecraft:air", 1: "minecraft:stone"})
+
+
+def trim_to_content(image, margin=ISO_MARGIN):
+    """``image`` cut to what's drawn on it, with ``margin`` transparent pixels all round.
+
+    The canvas is sized for the schematic's full height, so a city that doesn't
+    reach the top of it leaves empty rows above.
+    """
+    box = image.getchannel("A").getbbox()
+    if box is None:
+        return image
+    left, top, right, bottom = box
+    return image.crop((
+        max(0, left - margin), max(0, top - margin),
+        min(image.width, right + margin), min(image.height, bottom + margin),
+    ))
