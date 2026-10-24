@@ -19,7 +19,8 @@ class ImageViewer {
   constructor(root) {
     this.root = root;
     this.root.innerHTML =
-      '<div class="viewer-layer" hidden><img alt="" draggable="false"><div class="viewer-overlay" hidden></div></div>' +
+      '<div class="viewer-canvas"><div class="viewer-layer" hidden>' +
+      '<img alt="" draggable="false"><div class="viewer-overlay" hidden></div></div></div>' +
       '<div class="viewer-placeholder"><i class="icon"></i><p></p></div>' +
       '<span class="viewer-caption"></span>' +
       '<div class="viewer-tools"><button type="button" data-zoom="-1" title="Zoom out">\u2212</button><output></output>' +
