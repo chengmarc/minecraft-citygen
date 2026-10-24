@@ -57,11 +57,13 @@ const TEXT = {
     house: "Choose the house area",
     landmark: "Choose the landmark area",
   },
-  area: (chunks) => (chunks ? `${chunks[0]} x ${chunks[1]} chunks selected` : "No area selected"),
+  area: (chunks) => (chunks ? `${chunks[0]} x ${chunks[1]} chunks` : "No area selected"),
   areaChip: (selected) => (selected ? "Selected" : "Not selected"),
   imageMissing: (path) => `Image not found:\n${path}`,
   mapMissing: (path) => `World preview not found:\n${path}`,
   mapFailed: "Failed to load world preview.",
+  mapLoading: "Loading world preview...",
+  mapDrawing: "Drawing your world from above. You can already pan, zoom, and choose your area.",
 };
 
 // An error's code from Python, as the dialog's title and message, given its tab's text and its detail.

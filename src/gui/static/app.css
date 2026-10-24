@@ -100,6 +100,7 @@ h2, h3, p { margin: 0; }
 .icon-render { --icon: url(/icons/render.svg); }
 .icon-reset { --icon: url(/icons/reset.svg); }
 .icon-map { --icon: url(/icons/map.svg); }
+.icon-home { --icon: url(/icons/home.svg); }
 
 /* --- The sky: brand, steps, and eight pixel clouds drifting behind them. */
 .sky {
@@ -146,14 +147,15 @@ h2, h3, p { margin: 0; }
   animation: drift 30s linear infinite;
 }
 /* Each at its own height, size and speed, and part-way through its crossing, so they never move in step. */
-.cloud-a { top: 14px; animation-delay: -10s; }
-.cloud-b { top: 32px; transform: scale(0.7); animation-duration: 52s; animation-delay: -37s; }
+/* Every cloud's bottom stays above 49px, clear of the page below the sky. */
+.cloud-a { top: 12px; animation-delay: -10s; }
+.cloud-b { top: 27px; transform: scale(0.7); animation-duration: 52s; animation-delay: -37s; }
 .cloud-c { top: 6px; transform: scale(0.55); animation-duration: 42s; animation-delay: -25s; }
-.cloud-d { top: 24px; transform: scale(0.85); animation-duration: 36s; animation-delay: -4s; }
-.cloud-e { top: 40px; transform: scale(0.5); animation-duration: 47s; animation-delay: -31s; }
+.cloud-d { top: 20px; transform: scale(0.85); animation-duration: 36s; animation-delay: -4s; }
+.cloud-e { top: 30px; transform: scale(0.5); animation-duration: 47s; animation-delay: -31s; }
 .cloud-f { top: 2px; transform: scale(0.75); animation-duration: 39s; animation-delay: -18s; }
-.cloud-g { top: 18px; transform: scale(0.6); animation-duration: 57s; animation-delay: -46s; }
-.cloud-h { top: 36px; transform: scale(0.9); animation-duration: 33s; animation-delay: -22s; }
+.cloud-g { top: 16px; transform: scale(0.6); animation-duration: 57s; animation-delay: -46s; }
+.cloud-h { top: 24px; transform: scale(0.9); animation-duration: 33s; animation-delay: -22s; }
 @keyframes drift { from { left: 105%; } to { left: -20%; } }
 
 /* Equal columns in a bar sized to its content: every step as wide as the widest. */
@@ -249,6 +251,8 @@ body::after {
 .viewer-layer { position: absolute; top: 0; left: 0; transform-origin: 0 0; transition: opacity 260ms var(--ease); }
 .viewer-layer.loading { opacity: 0; }
 .viewer-layer img { display: block; }
+/* Over the map while it's drawn, its newest chunks popping in (region.js ChunkReveal). */
+.viewer-reveal { position: absolute; top: 0; left: 0; }
 .viewer-overlay {
   position: absolute;
   border: 2px solid var(--selection);
@@ -408,6 +412,8 @@ input[readonly]:hover, input[readonly]:focus { border-color: var(--border); box-
 .input-group { display: flex; }
 .input-group input { border-radius: var(--radius-sm) 0 0 var(--radius-sm); }
 .input-group .btn { margin-left: -1px; border-radius: 0 var(--radius-sm) var(--radius-sm) 0; }
+/* Default, then the world's field with its Browse. */
+.world-row { display: flex; gap: 8px; min-width: 0; }
 
 /* --- Buttons: the big ones all grass, one style; the smaller ones secondary, in the window's own colours. */
 .btn {
@@ -515,22 +521,14 @@ fieldset {
   flex: 1;
   min-width: 0;
   margin: 0;
-  padding: 14px 18px 18px;
+  padding: 18px;
   border: 0;
   border-radius: var(--radius-md);
   background: var(--surface-panel);
   box-shadow: var(--lift), 0 0 0 1px rgba(74, 52, 30, 0.06), var(--shadow-sm);
 }
-legend {
-  float: left;
-  width: 100%;
-  margin-bottom: 4px;
-  padding: 0;
-  color: var(--text-soft);
-  font: 650 13px var(--font-display);
-}
-
-.form-row { display: grid; grid-template-columns: 9.5em 1fr; align-items: center; gap: 12px; margin-top: 14px; clear: both; }
+.form-row { display: grid; grid-template-columns: 9.5em 1fr; align-items: center; gap: 12px; margin-top: 14px; }
+.form-row:first-child { margin-top: 0; }
 .form-row label { color: var(--text-soft); }
 .form-row input[type="text"] { width: 100%; }
 
@@ -628,6 +626,13 @@ input[type="range"]:focus-visible::-webkit-slider-thumb { box-shadow: 0 0 0 4px 
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.3);
   transition: width 200ms linear;
 }
+/* Under way, a single bar shimmers like the step under way in a run's steps. */
+.progress.running .progress-chunk {
+  background:
+    linear-gradient(100deg, transparent 40%, rgba(255, 255, 255, 0.35) 50%, transparent 60%) 0 0 / 200% 100%,
+    linear-gradient(var(--accent-top), var(--accent));
+  animation: shimmer 1.4s linear infinite;
+}
 /* A run's steps: a track each, the one under way lit and shimmering, the finished ones checked off. */
 .progress.segmented {
   display: grid;
@@ -674,9 +679,6 @@ input[type="range"]:focus-visible::-webkit-slider-thumb { box-shadow: 0 0 0 4px 
 .segment.done .segment-label { color: var(--accent-text); }
 .segment.done .segment-label::before { content: "\2713  "; font-weight: 700; }
 
-/* Busy, with no way to tell how far: a short stretch sliding across. */
-.progress.indeterminate .progress-chunk { width: 30%; transition: none; animation: slide 1.2s ease-in-out infinite alternate; }
-@keyframes slide { from { transform: translateX(-10%); } to { transform: translateX(243%); } }
 
 /* --- Dialogs */
 dialog {
@@ -709,8 +711,11 @@ kbd {
   font: 600 11px var(--font);
 }
 .map-frame { position: relative; flex: 1; min-height: 0; display: flex; margin: 0 20px; }
-.map-frame .progress { position: absolute; top: 0; left: 0; right: 0; z-index: 1; height: 4px; border-radius: 0; }
-.dialog-foot .status { flex: 1; color: var(--text-soft); font-variant-numeric: tabular-nums; }
+.foot-info { flex: 1; min-width: 0; }
+.foot-info > .status { color: var(--text-soft); font-variant-numeric: tabular-nums; }
+.foot-info:has(.runbar.active) > .status { display: none; }   /* drawing: the run bar in its place */
+.map-run { margin-right: 12px; }
+.map-run .status { font-size: 12px; }
 .region-dialog .dialog-foot { padding: 14px 20px 18px; }
 
 .error-dialog { display: none; max-width: 460px; }

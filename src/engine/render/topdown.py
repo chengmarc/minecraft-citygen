@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import math
 import re
+import time
 from pathlib import Path
 
 import numpy as np
@@ -14,6 +15,7 @@ from engine.render.palette import block_color
 
 BACKGROUND = (36, 40, 48)
 MAX_PREVIEW_SIZE = 2048
+PARTIAL_EVERY_SECONDS = 0.4
 REGION_FILE_PATTERN = re.compile(r"^r\.(-?\d+)\.(-?\d+)\.mca$")
 
 
@@ -40,7 +42,13 @@ def region_world_bounds(region_dir):
     )
 
 
-def render_topdown_preview(save_path, *, on_progress=None):
+def render_topdown_preview(save_path, *, on_progress=None, on_partial=None):
+    """The world from above as ``(image, meta)``; ``meta`` maps its pixels to blocks (x0..x1, z0..z1, ``step`` blocks
+    a pixel).
+
+    It's drawn row by row, from the top: ``on_progress(done, total)`` after each row, and ``on_partial(image, meta)``
+    with the picture so far, at most every ``PARTIAL_EVERY_SECONDS``, for showing it as it's drawn.
+    """
     from PIL import Image
 
     region_dir = resolve_region_dir(save_path)
@@ -53,6 +61,16 @@ def render_topdown_preview(save_path, *, on_progress=None):
     width = math.ceil(span_x / step)
     height = math.ceil(span_z / step)
     image = np.full((height, width, 3), BACKGROUND, dtype=np.uint8)
+    meta = {"x0": x0, "x1": x1, "z0": z0, "z1": z1, "step": step}
+    last_partial = time.monotonic()
+
+    def row_done(done, total):
+        nonlocal last_partial
+        if on_progress is not None:
+            on_progress(done, total)
+        if on_partial is not None and done < total and time.monotonic() - last_partial >= PARTIAL_EVERY_SECONDS:
+            last_partial = time.monotonic()
+            on_partial(Image.fromarray(image, "RGB"), meta)
 
     if step == 1:
         cz_range = range(z0 >> 4, (z1 >> 4) + 1)
@@ -69,8 +87,7 @@ def render_topdown_preview(save_path, *, on_progress=None):
                 ).reshape(16, 16, 3)
                 image[(cz << 4) - z0:(cz << 4) - z0 + 16,
                       (cx << 4) - x0:(cx << 4) - x0 + 16] = tile
-            if on_progress is not None:
-                on_progress(i + 1, total)
+            row_done(i + 1, total)
     else:
         empty_chunks = set()
         for iz in range(height):
@@ -86,7 +103,6 @@ def render_topdown_preview(save_path, *, on_progress=None):
                 result = world.heightmap_surface_block(wx, wz)
                 if result is not None:
                     image[iz, ix] = block_color(result[0])
-            if on_progress is not None:
-                on_progress(iz + 1, height)
+            row_done(iz + 1, height)
 
-    return Image.fromarray(image, "RGB"), {"x0": x0, "x1": x1, "z0": z0, "z1": z1, "step": step}
+    return Image.fromarray(image, "RGB"), meta
