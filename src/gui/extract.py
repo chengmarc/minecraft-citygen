@@ -181,8 +181,12 @@ class ExtractTab:
     def _save(self, state):
         self._settings.set("extraction", state)
 
+    def world_path(self):
+        """The source world's folder, as saved: the bundled sample world until the user picks another."""
+        return str(self._saved().get("world_path", "")).strip()
+
     def world_ready(self):
-        path = str(self._saved().get("world_path", "")).strip()
+        path = self.world_path()
         return bool(path) and has_region_files(path)
 
     def ready(self):
@@ -192,7 +196,7 @@ class ExtractTab:
     def view(self):
         """The tab as the page draws it: the saved state plus what's derived from the world."""
         saved = self._saved()
-        path = str(saved.get("world_path", "")).strip()
+        path = self.world_path()
         version = detect_world_data_version(path) if path else None
         versions = version_selector_items(version)
         target = saved.get("target_version", AUTO_VERSION)
@@ -222,7 +226,7 @@ class ExtractTab:
 
         Returns ``{"changed": True}``, ``{"warning": {"code": "not_a_world", ...}}``, or ``{}`` when cancelled.
         """
-        folder = self._pick_folder(str(self._saved().get("world_path", "")).strip())
+        folder = self._pick_folder(self.world_path())
         if not folder:
             return {}
         if not has_region_files(folder):
@@ -255,7 +259,7 @@ class ExtractTab:
     def load_world_map(self):
         """Render (or load the cached) top-down world preview; answers with ``worldMap`` events: progress, the map so
         far (``partial``) while it's drawn, then the map."""
-        save_path = str(self._saved().get("world_path", "")).strip()
+        save_path = self.world_path()
         if not save_path or not has_region_files(save_path):
             return {"error": {"code": "no_world"}}
 
@@ -288,7 +292,7 @@ class ExtractTab:
         pairs = {key: _area_pair(saved.get(key)) for key in AREAS}
         if not self.world_ready() or not all(pairs.values()):
             return {"error": {"code": "areas_missing"}}
-        save = str(saved["world_path"]).strip()
+        save = self.world_path()
         road_box = BlockRegion.from_xyz_pair(*pairs["road"])
         build_types = (
             BuildRegion(1, BlockRegion.from_xyz_pair(*pairs["house"])),

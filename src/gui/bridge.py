@@ -21,10 +21,10 @@ class Api:
     def __init__(self, emit, *, pick_folder, thread_factory=threading.Thread):
         self._settings = Settings()
         self._runner = Runner(emit, self._gates, thread_factory=thread_factory)
-        self._algo = AlgoTabs(self._settings, self._runner)
         self._extract = ExtractTab(
             self._settings, self._runner, emit, pick_folder=pick_folder, thread_factory=thread_factory,
         )
+        self._algo = AlgoTabs(self._settings, self._runner, world_path=self._extract.world_path)
 
     def _gates(self):
         """Whether each tab's run can start: Extract needs a world and its areas, the others the extracted assets."""

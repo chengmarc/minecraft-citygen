@@ -13,7 +13,7 @@ from dataclasses import replace
 from config.algo import ALGO, DEFAULT_SEED
 from config.env import parse_set
 from config.path import SAVES, city_preview_path, city_render_path, grid_preview_path
-from config.world import SAVE, source_data_version
+from config.world import source_data_version
 from pipeline import services, stages
 
 from gui import files, progress
@@ -245,11 +245,15 @@ def _build_timing_key(event):
 
 
 class AlgoTabs:
-    """The Preview and Build tabs' calls. An error is ``{"error": {"code", "detail"}}``, which the page words."""
+    """The Preview and Build tabs' calls. An error is ``{"error": {"code", "detail"}}``, which the page words.
 
-    def __init__(self, settings, runner):
+    ``world_path()`` is the source world chosen on Extract, which the build writes the city into.
+    """
+
+    def __init__(self, settings, runner, *, world_path):
         self._settings = settings
         self._runner = runner
+        self._world_path = world_path
 
     def state(self):
         saved = self._settings.get("algo") or default_algo_tab_config()
@@ -307,7 +311,7 @@ class AlgoTabs:
         algo, error = self._algo(state)
         if error:
             return {"error": error}
-        save = str((self._settings.get("extraction") or {}).get("world_path", SAVE))
+        save = self._world_path()
         data_version = source_data_version(save)
         timing = progress.ProgressTimingRecorder()
         timing.start()
