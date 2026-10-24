@@ -1,6 +1,7 @@
 /* The window is layered like the app icon: sky blue along the top (the brand and the steps), grass green for
-   everything you act on (the one primary action per tab, focus, what's done), and dirt brown at the bottom (the
-   progress bar, on the faint brown ground of the window). New colours should follow the same layers.
+   everything you act on and everything that grows (the big buttons, focus, progress, what's done), and dirt brown
+   at the bottom (the strip of ground the window stands on, under the faint brown of its panels). New colours
+   should follow the same layers.
    gui/app.py repeats --sky, --sky-text and --app-bg for the native title bar and the window behind the page. */
 :root {
   /* Sky */
@@ -202,11 +203,22 @@ h2, h3, p { margin: 0; }
   display: flex;
   flex-direction: column;
   gap: 12px;
-  padding: 12px;
+  padding: 12px 12px 20px;
   background: var(--app-bg);
 }
 /* A tab's contents fade in, not the page itself, whose ground would flash the sky behind it. */
 .page > * { animation: page-in 220ms var(--ease); }
+
+/* The ground the window stands on: a strip of dirt along its bottom, a line of grass on top, like the icon's
+   grass block. Below every page, so it's the same on every tab. */
+body::after {
+  content: "";
+  flex: none;
+  height: 14px;
+  background:
+    linear-gradient(var(--accent-top) 0 3px, transparent 3px),
+    linear-gradient(var(--dirt-top), var(--dirt));
+}
 @keyframes page-in { from { opacity: 0; transform: translateY(4px); } }
 
 .stage { flex: 1; min-height: 0; display: flex; gap: 12px; }
@@ -537,7 +549,7 @@ input[type="range"]:focus-visible::-webkit-slider-thumb { box-shadow: 0 0 0 4px 
 .chip::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
 .chip.selected { background: var(--accent-soft); color: var(--accent-text); }
 
-/* --- Progress: a grass block filling up, dirt with a strip of grass on top. */
+/* --- Progress: grass, lit along its top like the big buttons, growing across. */
 .progress {
   height: 10px;
   border-radius: 5px;
@@ -549,9 +561,8 @@ input[type="range"]:focus-visible::-webkit-slider-thumb { box-shadow: 0 0 0 4px 
   width: 0;
   height: 100%;
   border-radius: 5px;
-  background:
-    linear-gradient(var(--accent-top) 0 3px, transparent 3px),
-    linear-gradient(to right, var(--dirt-top), var(--dirt));
+  background: linear-gradient(var(--accent-top), var(--accent));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.3);
   transition: width 200ms linear;
 }
 /* A run's steps: a track each, the one under way lit and shimmering, the finished ones checked off. */
@@ -575,19 +586,17 @@ input[type="range"]:focus-visible::-webkit-slider-thumb { box-shadow: 0 0 0 4px 
 .segment-fill {
   width: 0;
   height: 100%;
-  background:
-    linear-gradient(var(--accent-top) 0 3px, transparent 3px),
-    linear-gradient(to right, var(--dirt-top), var(--dirt));
+  background: linear-gradient(var(--accent-top), var(--accent));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.3);
   transition: width 200ms linear;
 }
 .segment.active .segment-fill {
   background:
-    linear-gradient(var(--accent-top) 0 3px, transparent 3px),
-    linear-gradient(100deg, transparent 40%, rgba(255, 255, 255, 0.28) 50%, transparent 60%) 0 0 / 200% 100%,
-    linear-gradient(to right, var(--dirt-top), var(--dirt));
+    linear-gradient(100deg, transparent 40%, rgba(255, 255, 255, 0.35) 50%, transparent 60%) 0 0 / 200% 100%,
+    linear-gradient(var(--accent-top), var(--accent));
   animation: shimmer 1.4s linear infinite;
 }
-@keyframes shimmer { from { background-position: 0 0, 100% 0, 0 0; } to { background-position: 0 0, -100% 0, 0 0; } }
+@keyframes shimmer { from { background-position: 100% 0, 0 0; } to { background-position: -100% 0, 0 0; } }
 .segment-label {
   display: block;
   margin-top: 5px;
