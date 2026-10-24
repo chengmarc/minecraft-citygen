@@ -13,7 +13,7 @@ import nbtlib
 from nbtlib import Byte, Compound, String
 from PIL import Image
 
-from citygen.paths import WORLD_ICON
+from citygen.paths import DEFAULT_WORLD, WORLD_ICON
 from citygen.tools.blocks import AIR_BLOCKS, parse_state
 from citygen.tools.schem import BlockEntity
 from citygen.tools.schem import write_sponge_schem_grid
@@ -24,6 +24,7 @@ STONE = "minecraft:stone"
 STAIRS = "minecraft:oak_stairs[facing=east,half=bottom,shape=straight,waterlogged=false]"
 SIGN = "minecraft:oak_sign[rotation=0,waterlogged=false]"
 DATA_VERSION = 4790  # 26.1.2
+WORLD_NAME = "MC CityGen World"
 # write_world anchors the grid's centre column (9, 9) at world x=0, z=0.
 ANCHOR = 9
 
@@ -60,7 +61,9 @@ class WorldWriterRoundTripTests(unittest.TestCase):
         base_y = 64
         positions = list(np.ndindex(grid.shape))  # (y, z, x)
         with tempfile.TemporaryDirectory() as out:
-            world_writer.write_world(grid, inv, block_entities, out, DATA_VERSION, base_y)
+            world_writer.write_world(
+                grid, inv, block_entities, out, DATA_VERSION, base_y, source_world=DEFAULT_WORLD, world_name=WORLD_NAME,
+            )
             world = World(out)
             read = {(y, z, x): world.block(x - ANCHOR, y + base_y, z - ANCHOR) for y, z, x in positions}
 
@@ -72,7 +75,9 @@ class WorldWriterRoundTripTests(unittest.TestCase):
         grid, inv, block_entities = _sample_grid()
         base_y = 64
         with tempfile.TemporaryDirectory() as out:
-            world_writer.write_world(grid, inv, block_entities, out, DATA_VERSION, base_y)
+            world_writer.write_world(
+                grid, inv, block_entities, out, DATA_VERSION, base_y, source_world=DEFAULT_WORLD, world_name=WORLD_NAME,
+            )
             world = World(out)
             chunk = world.load_chunk(-1, -1)  # sign at world (-1, 65, -1) -> chunk (-1, -1)
             entries = [be for be in chunk["block_entities"]
@@ -93,7 +98,8 @@ class SchemToWorldTests(unittest.TestCase):
         )
 
     def _export(self, tmp, **kwargs):
-        """Write the sample schem and export it; return the output world dir."""
+        """Write the sample schem and export it, from the bundled world by default; return the output world dir."""
+        kwargs = {"source_world": DEFAULT_WORLD, "world_name": WORLD_NAME, **kwargs}
         schem = os.path.join(tmp, "city.schem")
         out = os.path.join(tmp, "world")
         self._write_schem(schem)
@@ -234,7 +240,7 @@ class SchemToWorldTests(unittest.TestCase):
             out = os.path.join(tmp, "world")
             self._write_schem(schem)
 
-            world_writer.schem_to_world(schem, out, source_world=source)
+            world_writer.schem_to_world(schem, out, source_world=source, world_name=WORLD_NAME)
 
             region_dir = resolve_region_dir(out)
             self.assertEqual(region_dir, os.path.join(out, "dimensions", "minecraft", "overworld", "region"))
@@ -254,7 +260,7 @@ class SchemToWorldTests(unittest.TestCase):
             with open(os.path.join(out, "stale.txt"), "w", encoding="utf-8") as fh:
                 fh.write("junk")
 
-            world_writer.schem_to_world(schem, out, source_world=source)
+            world_writer.schem_to_world(schem, out, source_world=source, world_name=WORLD_NAME)
             self.assertFalse(os.path.exists(os.path.join(out, "stale.txt")))
             self.assertTrue(os.path.exists(os.path.join(out, "data", "marker.txt")))
 
@@ -266,7 +272,7 @@ class SchemToWorldTests(unittest.TestCase):
 
             missing = os.path.join(tmp, "missing")
             with self.assertRaisesRegex(FileNotFoundError, "Source world not found"):
-                world_writer.schem_to_world(schem, out, source_world=missing)
+                world_writer.schem_to_world(schem, out, source_world=missing, world_name=WORLD_NAME)
 
     def test_source_data_version_is_clamped_to_sponge_v3_floor(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -275,7 +281,7 @@ class SchemToWorldTests(unittest.TestCase):
             out = os.path.join(tmp, "world")
             self._write_schem(schem)
 
-            world_writer.schem_to_world(schem, out, source_world=source)
+            world_writer.schem_to_world(schem, out, source_world=source, world_name=WORLD_NAME)
 
             data = nbtlib.load(os.path.join(out, "level.dat"))["Data"]
             self.assertEqual(int(data["DataVersion"]), HARD_FLOOR_DATA_VERSION)
@@ -298,4 +304,4 @@ class SchemToWorldTests(unittest.TestCase):
             for source_world, out, message in cases:
                 with self.subTest(source_world=source_world, out=out):
                     with self.assertRaisesRegex(ValueError, message):
-                        world_writer.schem_to_world(schem, out, source_world=source_world)
+                        world_writer.schem_to_world(schem, out, source_world=source_world, world_name=WORLD_NAME)

@@ -174,7 +174,7 @@ class ExtractTests(_ApiTestCase):
     def test_the_map_so_far_says_how_far_down_it_is_drawn(self):
         meta = {"x0": 0, "x1": 63, "z0": 0, "z1": 63, "step": 1}
 
-        def fake_cached(save_path, *, on_progress, on_partial):
+        def fake_cached(save_path, cache_dir, *, on_progress, on_partial):
             on_progress(1, 4)
             on_partial(Path("partial.png"), meta)
             return Path("map.png"), meta
@@ -362,11 +362,12 @@ class WorldPreviewTests(unittest.TestCase):
 
             reported = []
             with (
-                mock.patch.object(render_topdown, "WORLD_PREVIEW_CACHE", cache),
                 mock.patch.object(render_topdown, "render_topdown_preview", side_effect=fake_render),
                 mock.patch.object(render_topdown, "_preview_region_mtime", return_value=mtime),
             ):
-                png, _meta = render_topdown.cached_topdown_preview("C:/mc/world", on_partial=lambda p, m: reported.append(p))
+                png, _meta = render_topdown.cached_topdown_preview(
+                    "C:/mc/world", cache, on_partial=lambda p, m: reported.append(p),
+                )
             return png, reported
 
         with tempfile.TemporaryDirectory() as cache:

@@ -6,12 +6,8 @@ from __future__ import annotations
 
 import os
 
-from citygen.core.assemble import (
-    assemble_instances, BUILD_SNAP_DROP, build_road_grid, city_ground_y, compose_grid, finalize_block_entities,
-    load_fillers, load_ground_fill_tile, load_tiles, max_grid_height, place_lot_fill, PLAYER_ANCHOR_MARGIN, seat_y,
-    stamp_anchor_column,
-)
-from citygen.core.city_layout import FILLER_STREAM, plan_city, seeded_rng
+from citygen.core.assemble import assemble_city, build_road_grid
+from citygen.core.city_layout import plan_city
 from citygen.core.road_network import gen_networks, make_size
 from citygen.paths import (
     BUILD_CATALOG, BUILDS_SCHEM, city_render_path, city_schem_path, exported_world_name, exported_world_path,
@@ -60,55 +56,28 @@ def run(seed, algo, save, progress):
 
 def construct(seed, algo, data_version, step):
     """Compose the city's voxel grid and write it as ``city_schem_path(seed)``; ``step(n)`` as step ``n`` starts."""
-    size = make_size(algo.fine)
-
     step(0)
-    network = gen_networks(seed, size, algo)
+    network = gen_networks(seed, make_size(algo.fine), algo)
 
     step(1)
-    road_grid, road_palette, (road_span, road_height, _), _count, road_ground_offset, road_block_entities = (
-        build_road_grid(network, load_tiles(ROADS_SCHEM))
-    )
+    roads = build_road_grid(network, ROADS_SCHEM)
 
     step(2)
     catalog_meta = read_catalog(BUILD_CATALOG)
 
     step(3)
     _lots, placements = plan_city(seed, network, catalog_meta, algo)
-    ground = city_ground_y(placements, catalog_meta)
-    # `ground_y` is the shared plane roads, buildings, the dedicated lot
-    # ground-fill asset, and tree props resolve against.
-    ground_y = ground - BUILD_SNAP_DROP
-    road_y0 = seat_y(ground_y, road_ground_offset)
-    out_span = road_span + PLAYER_ANCHOR_MARGIN
 
-    step(4)
-    instances, building_top = assemble_instances(seed, placements, catalog_meta, ground_y, BUILDS_SCHEM)
-
-    step(5)
-    fillers = load_fillers(ROADS_SCHEM)
-    ground_fill_tile = load_ground_fill_tile(ROADS_SCHEM)
-    if ground_fill_tile is None:
-        raise FileNotFoundError("missing road ground-fill asset 18 among the extracted road pieces; extract again")
-    max_height = max_grid_height(road_y0, road_height, building_top, ground_y, fillers, ground_fill_tile)
-    grid, palette, build_mask, block_entities = compose_grid(
-        road_grid, road_palette, road_span, road_height, road_y0, out_span, max_height, instances, road_block_entities
+    grid, palette, ground, block_entities = assemble_city(
+        seed, roads, placements, catalog_meta, ROADS_SCHEM, BUILDS_SCHEM, lambda n: step(4 + n),
     )
-
-    step(6)
-    _filler_count, filler_block_entities = place_lot_fill(
-        grid, palette, build_mask, network["road_cells"], size, ground_y, fillers, ground_fill_tile,
-        seeded_rng(seed, FILLER_STREAM),
-    )
-    block_entities += filler_block_entities
 
     step(7)
-    stamp_anchor_column(grid, palette, ground)
     write_sponge_schem_grid(
         grid, palette, city_schem_path(seed), data_version,
         # world_writer recovers the city's ground from this offset to seat the
         # exported world's ground; change both together.
         offset=(0, -(ground + 1), 0),
-        block_entities=finalize_block_entities(block_entities, grid.shape),
+        block_entities=block_entities,
     )
     step(len(STEPS))

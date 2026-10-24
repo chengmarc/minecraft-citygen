@@ -11,7 +11,7 @@ from citygen.tools import render_topdown
 from citygen.gui import files
 from citygen.gui.server import image
 from citygen.paths import (
-    BUILDS_CONTACT_SHEET, BUILDS_RENDERS, DEFAULT_WORLD, ROADS_CONTACT_SHEET, ROADS_RENDERS,
+    BUILDS_CONTACT_SHEET, BUILDS_RENDERS, DEFAULT_WORLD, ROADS_CONTACT_SHEET, ROADS_RENDERS, WORLD_PREVIEW_CACHE,
 )
 from citygen.settings import BlockRegion, BuildRegion, SAMPLE_AREAS
 from citygen.tools.world_reader import detect_world_data_version, has_region_files, release_name_for, RELEASE_NAMES
@@ -207,7 +207,9 @@ class ExtractTab:
 
         def worker():
             try:
-                png_path, meta = render_topdown.cached_topdown_preview(save_path, on_progress=on_progress, on_partial=on_partial)
+                png_path, meta = render_topdown.cached_topdown_preview(
+                    save_path, WORLD_PREVIEW_CACHE, on_progress=on_progress, on_partial=on_partial,
+                )
             except Exception as exc:  # boundary: surface any preview-load failure in the map
                 self._emit("worldMap", {"error": str(exc).strip() or None})
                 return

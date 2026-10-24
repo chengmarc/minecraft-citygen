@@ -15,7 +15,6 @@ from pathlib import Path
 import numpy as np
 
 from citygen.tools.blocks import block_color
-from citygen.paths import WORLD_PREVIEW_CACHE
 from citygen.tools.world_reader import resolve_region_dir, World
 
 # Where there's no world (no chunk, or no surface block), the map is transparent: it shows whatever it's drawn on.
@@ -116,9 +115,9 @@ def render_topdown_preview(save_path, *, on_progress=None, on_partial=None):
 # --- The cache
 
 
-def _preview_cache_paths(save_path):
+def _preview_cache_paths(save_path, cache_dir):
     key = hashlib.md5(str(save_path).encode()).hexdigest()[:16]
-    cache_dir = Path(WORLD_PREVIEW_CACHE)
+    cache_dir = Path(cache_dir)
     return cache_dir / f"{key}.png", cache_dir / f"{key}.json"
 
 
@@ -131,17 +130,17 @@ def _preview_region_mtime(save_path):
         return 0.0
 
 
-def cached_topdown_preview(save_path, on_progress=None, on_partial=None):
+def cached_topdown_preview(save_path, cache_dir, on_progress=None, on_partial=None):
     """The world's top-down preview as ``(png_path, meta)``, rendered only when the cache is stale.
 
-    The cache in ``WORLD_PREVIEW_CACHE`` is keyed on save_path and invalidated when
+    The cache in ``cache_dir`` is keyed on save_path and invalidated when
     any .mca file changes, so reopening the region map is instant. ``on_progress``
     and ``on_partial(png_path, meta)`` are only called on a cache miss (an actual
     render): each picture so far is saved beside the cache as its own
     ``<key>.partial-<n>.png``, so a page still fetching one gets that picture and not
     a later one. A render clears the last render's; every launch clears them all.
     """
-    png_path, json_path = _preview_cache_paths(save_path)
+    png_path, json_path = _preview_cache_paths(save_path, cache_dir)
     mtime = _preview_region_mtime(save_path)
 
     if png_path.exists() and json_path.exists():
