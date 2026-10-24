@@ -18,7 +18,8 @@ from citygen.paths import (
     ROADS_SCHEM, WORLD_ICON,
 )
 from citygen.tools.render_isometric import render_schem_visible_iso, trim_to_content
-from citygen.tools.schem import read_catalog, write_sponge_schem_grid
+from citygen.tools.catalog import read_catalog
+from citygen.tools.schem import write_sponge_schem_grid
 from citygen.tools.world_reader import source_data_version
 from citygen.tools.world_writer import schem_to_world
 

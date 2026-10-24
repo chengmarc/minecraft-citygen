@@ -15,9 +15,8 @@ from citygen.paths import (
 from citygen.settings import BUILD_MARKER_Y_RANGE
 from citygen.tools.contact_sheet import render_contact_sheet
 from citygen.tools.render_isometric import render_cells_visible_iso
-from citygen.tools.schem import (
-    assemble, decode_schem_cells, piece_path, read_catalog, STACK_PARTS, WHOLE, write_catalog, write_sponge_schem_cells,
-)
+from citygen.tools.catalog import assemble, new_entry, piece_path, read_catalog, STACK_PARTS, WHOLE, write_catalog
+from citygen.tools.schem import decode_schem_cells, write_sponge_schem_cells
 from citygen.tools.world_reader import source_data_version, World
 
 
@@ -109,20 +108,17 @@ def extract_builds(world, build_types, data_version, progress):
     for index, (build_type, comp) in enumerate(builds):
         key = f"{index + 1:03d}"
         progress("build_pieces", index, total)   # before its (slow) extraction
-        entry = {
-            "type": build_type, "size": comp.size, "origin": comp.origin, "ground_offset": comp.ground_offset,
-            "pieces": {},
-        }
+        stack = None
         if len(comp.cuboids) == 1:
             parts = (WHOLE,)
         else:
             parts = STACK_PARTS
             stack = parse_range(sign_text_above(world, comp.emerald), (r"stack\s*:\s*",))
-            entry["stack"] = stack if stack is not None else [1, 1]
+        pieces = {}
         for part, cuboid in zip(parts, comp.cuboids):
             cells, block_entities = extract_cuboid(world, cuboid)
             write_sponge_schem_cells(cells, piece_path(BUILDS_SCHEM, key, part), data_version, block_entities=block_entities)
-            entry["pieces"][part] = cuboid[3] - cuboid[2] + 1
-        catalog[key] = entry
+            pieces[part] = cuboid[3] - cuboid[2] + 1
+        catalog[key] = new_entry(build_type, comp.size, comp.origin, comp.ground_offset, pieces, stack)
         progress("build_pieces", index + 1, total)
     write_catalog(catalog, BUILD_CATALOG)

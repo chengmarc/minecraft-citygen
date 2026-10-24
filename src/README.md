@@ -33,7 +33,8 @@ file formats and renderers they use in `tools/`.
 | [markers.py](citygen/core/markers.py)                                                                                                                              | Finding assets in a world by their marker blocks, and copying them out                                                               |     |
 | [assemble.py](citygen/core/assemble.py)                                                                                                                            | The city as one voxel grid: the road grid, seated buildings, lot fill                                                                |     |
 | **tools/**                                                                                                                                                         |                                                                                                                                      |     |
-| [schem.py](citygen/tools/schem.py)                                                                                                                                 | Sponge v3 `.schem` read/write, tile rotation, voxel grids, the building catalog and its pieces                                       |     |
+| [schem.py](citygen/tools/schem.py)                                                                                                                                 | Sponge v3 `.schem` read/write, tile rotation, the voxel grids tiles are stamped into                                                 |     |
+| [catalog.py](citygen/tools/catalog.py)                                                                                                                             | The building catalog (`buildings.json`), its pieces, and a building assembled from them                                              |     |
 | [world_reader.py](citygen/tools/world_reader.py), [world_writer.py](citygen/tools/world_writer.py)                                                                 | A save's region folder and version (the stamp every output gets), and reading its blocks; write the exported world                   |     |
 | [render_isometric.py](citygen/tools/render_isometric.py), [render_topdown.py](citygen/tools/render_topdown.py), [contact_sheet.py](citygen/tools/contact_sheet.py) | Isometric renders; the region map's top-down picture and its cache; labelled thumbnail grids                                         |     |
 | [blocks.py](citygen/tools/blocks.py)                                                                                                                               | Block-state strings (`name[prop=val]`), air, and each block's render colour                                                          |     |
@@ -111,9 +112,10 @@ vary height. A sign above the emerald may say `stack: n` or `stack: min-max` (de
 ![One-layer convention](../docs/pics/type1.png)
 ![Three-layer convention](../docs/pics/type2.png)
 
-`appdata/02_builds/buildings.json` is the catalog everything after extraction places from. Keys are `"001"`,
-`"002"`, …; each entry has `type` (1 or 2), `size` (`[width, depth]`), `origin`, `ground_offset` (the emerald's
-height in the asset), `pieces` (each piece's height) and, stacked buildings only, `stack` (`[min, max]`).
+`appdata/02_builds/buildings.json` is the catalog everything after extraction places from
+([tools/catalog.py](citygen/tools/catalog.py)). Keys are `"001"`, `"002"`, …; each entry has `type` (1 or 2), `size`
+(`[width, depth]`), `origin`, `ground_offset` (the emerald's height in the asset), `pieces` (each piece's height) and,
+stacked buildings only, `stack` (`[min, max]`).
 
 ## Versions and data
 
