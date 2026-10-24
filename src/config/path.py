@@ -121,8 +121,6 @@ def _app_root() -> str:
 RESOURCE_ROOT = _resource_root()
 ROOT = _app_root()
 CONFIG = str(Path(RESOURCE_ROOT) / "config")
-GUI = str(Path(RESOURCE_ROOT) / "gui")
-GUI_ICONS = str(Path(GUI) / "icons")
 # The window icon: an .ico the release build renders from src/app-icon.svg and bundles beside the app; from a
 # checkout, that build's copy, or none until `python packaging/build_windows_release.py --icon-only` has made it.
 _APP_ICON_CANDIDATES = (Path(RESOURCE_ROOT) / "app-icon.ico", Path(ROOT) / "build" / "packaging" / "app-icon.ico")

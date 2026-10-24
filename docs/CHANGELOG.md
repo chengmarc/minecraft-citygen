@@ -15,9 +15,11 @@ The format is based on Keep a Changelog, and versions should match the release v
   `--qt-style` and `--no-custom-theme` are gone; `--debug` allows the page's
   developer tools
 - a new look: the three tabs are numbered steps that check off as they're done;
-  each tab has one primary action, with its settings and progress in one panel
+  the big buttons share one green style, with each tab's settings and progress in one panel
   below the pictures; the pictures are labelled, with zoom buttons; Basic/Advanced
   Settings is More settings; the Build tab's Copy is Worlds
+- contact sheets are transparent, was near-black, with dark labels outlined in
+  white, so the road and building pieces sit on the window's sky
 - everything the app writes, settings included, is in one `appdata/` folder, was
   `artifacts/` and `src/config/citygen.json`. The first launch moves an existing
   `artifacts/` folder and saved settings there; the uninstaller's "delete generated

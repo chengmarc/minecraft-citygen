@@ -30,7 +30,7 @@ citygen-doctor = "config.doctor:main"
 
 [tool.setuptools.package-data]
 config = ["default_world/*", "default_world/**/*", "color_render.csv"]
-gui = ["icons/*.png", "web/static/*"]
+gui = ["web/static/*", "web/static/icons/*"]
 
 [tool.setuptools.package-dir]
 "" = "src"

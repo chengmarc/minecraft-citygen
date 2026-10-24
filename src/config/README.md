@@ -109,7 +109,7 @@ lets two settings coexist in one process.
   `MC_CITY_APP_ROOT` replaces this per-user dir.
 
 `path.RESOURCE_ROOT` is separate: where the read-only bundled files are
-(`default_world/`, `color_render.csv`, `gui/icons`) — the source tree, or
+(`default_world/`, `color_render.csv`, the app's page) — the source tree, or
 PyInstaller's unpack dir.
 
 ### Version compatibility
