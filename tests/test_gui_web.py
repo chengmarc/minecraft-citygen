@@ -12,7 +12,7 @@ import unittest
 from pathlib import Path
 from unittest import mock
 
-from citygen import build, extract, preview, topdown
+from citygen import build, extract, preview, render_topdown
 from citygen.gui import app as app_module
 from citygen.gui import city_tabs as algo_module
 from citygen.gui import extract_tab as extract_module
@@ -195,7 +195,7 @@ class ExtractTests(_ApiTestCase):
         meta = {"x0": 0, "x1": 255, "z0": 0, "z1": 255, "step": 2}
         png = Path(files.APP_DATA) / "world_preview" / "x.png"
         with (
-            mock.patch.object(topdown, "cached_topdown_preview", return_value=(png, meta)),
+            mock.patch.object(render_topdown, "cached_topdown_preview", return_value=(png, meta)),
             mock.patch.object(extract_module, "image", return_value={"src": "/files/world_preview/x.png?v=1"}),
         ):
             self.assertEqual(self.api.load_world_map(), {})
@@ -211,7 +211,7 @@ class ExtractTests(_ApiTestCase):
             return Path("map.png"), meta
 
         with (
-            mock.patch.object(topdown, "cached_topdown_preview", side_effect=fake_cached),
+            mock.patch.object(render_topdown, "cached_topdown_preview", side_effect=fake_cached),
             mock.patch.object(extract_module, "image", return_value={"src": "/files/x.png?v=1"}),
         ):
             self.api.load_world_map()
@@ -326,6 +326,15 @@ class BuildBlueprintTests(_ApiTestCase):
         self.assertNotIn("partial", self.event_names())
 
 
+class WarmUpTests(unittest.TestCase):
+    def test_launch_warms_up_the_isometric_renderer(self):
+        # The warm-up swallows every error, so a stale import would only show as a slow first extraction.
+        with mock.patch("citygen.render_isometric.warm_up") as warm_up:
+            app_module._warm_up_renderer()
+
+        warm_up.assert_called_once()
+
+
 class ProgressTests(unittest.TestCase):
     """Progress weights are hand-tuned, one per step a run reports."""
 
@@ -426,11 +435,11 @@ class WorldPreviewTests(unittest.TestCase):
 
             reported = []
             with (
-                mock.patch.object(topdown, "WORLD_PREVIEW_CACHE", cache),
-                mock.patch.object(topdown, "render_topdown_preview", side_effect=fake_render),
-                mock.patch.object(topdown, "_preview_region_mtime", return_value=mtime),
+                mock.patch.object(render_topdown, "WORLD_PREVIEW_CACHE", cache),
+                mock.patch.object(render_topdown, "render_topdown_preview", side_effect=fake_render),
+                mock.patch.object(render_topdown, "_preview_region_mtime", return_value=mtime),
             ):
-                png, _meta = topdown.cached_topdown_preview("C:/mc/world", on_partial=lambda p, m: reported.append(p))
+                png, _meta = render_topdown.cached_topdown_preview("C:/mc/world", on_partial=lambda p, m: reported.append(p))
             return png, reported
 
         with tempfile.TemporaryDirectory() as cache:

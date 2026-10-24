@@ -1,12 +1,12 @@
 """Extract: the source world, its three sample areas, the region map over the world's top-down preview
-(:func:`citygen.topdown.cached_topdown_preview`), and the extraction run.
+(:func:`citygen.render_topdown.cached_topdown_preview`), and the extraction run.
 """
 
 from __future__ import annotations
 
 from pathlib import Path
 
-from citygen import extract, topdown
+from citygen import extract, render_topdown
 from citygen.gui import files, progress
 from citygen.gui.server import image
 from citygen.paths import BUILDS_CONTACT_SHEET, BUILDS_RENDERS, has_region_files, ROADS_CONTACT_SHEET, ROADS_RENDERS
@@ -217,7 +217,7 @@ class ExtractTab:
 
         def worker():
             try:
-                png_path, meta = topdown.cached_topdown_preview(save_path, on_progress=on_progress, on_partial=on_partial)
+                png_path, meta = render_topdown.cached_topdown_preview(save_path, on_progress=on_progress, on_partial=on_partial)
             except Exception as exc:  # boundary: surface any preview-load failure in the map
                 self._emit("worldMap", {"error": str(exc).strip() or None})
                 return

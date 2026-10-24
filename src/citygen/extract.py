@@ -19,7 +19,7 @@ from nbtlib import Compound
 
 from citygen.blocks import format_state
 from citygen.contact_sheet import render_contact_sheet
-from citygen.isometric import render_cells_visible_iso
+from citygen.render_isometric import render_cells_visible_iso
 from citygen.paths import (
     BUILD_CATALOG,
     BUILDS_CONTACT_SHEET,
