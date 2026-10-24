@@ -137,7 +137,7 @@ No script makes `docs/pics/`; each picture was chosen and copied in by hand.
 
 The current renders can't be remade: their seeds, the medieval set's
 extraction regions, and the asset sheets' 1440 px layout were never recorded.
-When you next replace them, write `scripts/update_readme_pics.py` to run those
+When you next replace them, write `docs/pics/update_readme_pics.py` to run those
 steps with fixed settings and copy the results here, then list the copied files in
 `.gitattributes` under it. The GIF was each building's render in turn; the app made it
 on every extraction through 1.3.0 (`write_image_sequence_gif` in `src/pipeline/rendering.py`,
