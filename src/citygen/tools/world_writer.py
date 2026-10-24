@@ -26,7 +26,6 @@ import numpy as np
 from nbtlib import Byte, Compound, Double, Float, Int, List, Long, LongArray, String
 
 from citygen.tools.blocks import is_air, parse_state
-from citygen.paths import DEFAULT_WORLD, EXPORTED_WORLD_NAME
 from citygen.tools.schem import decode_schem_array, decode_schem_block_entities, decode_schem_offset
 from citygen.tools.world_reader import release_name_for, resolve_region_dir, source_data_version
 
@@ -172,14 +171,6 @@ def _write_region(path, chunks):
         fh.write(body)
 
 
-def _source_world_root(source_world):
-    """Source world dir to copy, falling back only when no source is provided."""
-    candidate = DEFAULT_WORLD if source_world is None else source_world
-    if not os.path.isdir(candidate):
-        raise FileNotFoundError(f"Source world not found: {candidate}")
-    return candidate
-
-
 def _assert_distinct_world_paths(source_world, out_dir):
     """Reject overlapping source/output paths before any destructive copy step."""
     source = os.path.normcase(os.path.abspath(source_world))
@@ -219,9 +210,10 @@ def write_world(
     out_dir,
     data_version,
     base_y,
-    source_world=None,
+    *,
+    source_world,
+    world_name,
     region_dir=None,
-    world_name=EXPORTED_WORLD_NAME,
     icon_path=None,
     progress=None,
 ):
@@ -229,7 +221,7 @@ def write_world(
 
     ``inv`` maps palette index -> block state string; ``block_entities`` are
     :class:`BlockEntity` records in schem-local coords. ``source_world`` is the
-    world whose copied save is edited in place (see :func:`_write_level_dat`).
+    world whose ``level.dat`` the save starts from (see :func:`_write_level_dat`).
     ``icon_path``, when given, becomes the world's save-list icon.
     Returns a small summary.
     """
@@ -361,12 +353,7 @@ def _write_level_dat(out_dir, data_version, spawn, source_world, world_name):
     the save, and recenter the player/spawn onto the city.
     """
     target = os.path.join(out_dir, "level.dat")
-    src = target if os.path.isfile(target) else ""
-    if not src:
-        src = os.path.join(source_world, "level.dat") if source_world else ""
-    if not (src and os.path.isfile(src)):
-        src = os.path.join(DEFAULT_WORLD, "level.dat")
-    level = nbtlib.load(src)
+    level = nbtlib.load(target if os.path.isfile(target) else os.path.join(source_world, "level.dat"))
     data = level["Data"]
 
     data["LevelName"] = String(world_name)
@@ -394,12 +381,10 @@ def _write_level_dat(out_dir, data_version, spawn, source_world, world_name):
     level.save(target)
 
 
-def schem_to_world(schem_path, out_dir, source_world=None, world_name=EXPORTED_WORLD_NAME,
-                   icon_path=None, progress=None):
-    """Read a city ``.schem`` and write it into a copied world save at ``out_dir``.
+def schem_to_world(schem_path, out_dir, source_world, world_name, icon_path=None, progress=None):
+    """Read a city ``.schem`` and write it into a copy of ``source_world`` at ``out_dir``, saved as ``world_name``.
 
-    ``source_world`` defaults to the bundled world. The source save is copied
-    byte-for-byte, its overworld region files are purged, the generated regions
+    The source save is copied byte-for-byte, its overworld region files are purged, the generated regions
     are written back into that same layout, and ``level.dat`` is edited so the
     copied world opens at the city.
     """
@@ -409,7 +394,7 @@ def schem_to_world(schem_path, out_dir, source_world=None, world_name=EXPORTED_W
     block_entities = decode_schem_block_entities(schem_path)
     offset = decode_schem_offset(schem_path)
 
-    # Seat the city ground plane near TARGET_GROUND_Y. construct.py authors the
+    # Seat the city ground plane near TARGET_GROUND_Y. step3_build authors the
     # schem offset as -(city_ground_y + 1); recover it to place the ground nicely.
     city_ground_y = -offset[1] - 1
     base_y = TARGET_GROUND_Y - city_ground_y if offset[1] != 0 else TARGET_GROUND_Y
@@ -417,9 +402,10 @@ def schem_to_world(schem_path, out_dir, source_world=None, world_name=EXPORTED_W
     # Match chunks + level.dat to the source world's own version (native load).
     data_version = source_data_version(source_world)
 
-    template_world = _source_world_root(source_world)
-    _copy_source_world(template_world, out_dir)
-    region_dir = _prepare_output_region_dir(out_dir, template_world)
+    if not os.path.isdir(source_world):
+        raise FileNotFoundError(f"Source world not found: {source_world}")
+    _copy_source_world(source_world, out_dir)
+    region_dir = _prepare_output_region_dir(out_dir, source_world)
     return write_world(grid, inv, block_entities, out_dir, data_version, base_y,
-                       source_world=template_world, region_dir=region_dir, world_name=world_name,
+                       source_world=source_world, region_dir=region_dir, world_name=world_name,
                        icon_path=icon_path, progress=progress)

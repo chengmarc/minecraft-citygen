@@ -83,7 +83,7 @@ tile art relies on them: a small road never lies inside a big road except as a c
 **Placement.** Road cells are forbidden; the rest flood-fills into lots. Landmarks (type 2) go first, on big-road
 frontage, each at most once per city and `landmark_spacing` apart; then ordinary buildings (type 1) on all frontage,
 each picked at random among the `type1_top_fit_choices` best fits. Everything is deterministic for a seed: placement, stack
-heights and fill props each draw from their own `seeded_rng` stream, so new randomness needs a new stream, or every
+heights and fill props each draw from their own stream (`core/city_layout.py`), so new randomness needs a new stream, or every
 existing seed changes.
 
 **One ground plane.** Every road, building and fill tile is seated so its emerald marker lines up with the shared

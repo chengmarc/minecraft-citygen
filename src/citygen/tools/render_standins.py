@@ -1,5 +1,7 @@
 """The Preview tab's pictures: flat top-down stand-ins for the road pieces, fill props and buildings, and the road
-and city layouts drawn with them."""
+and city layouts drawn with them.
+
+It draws what it's handed (tile ports, placements, origins) and knows nothing of how the layout is made."""
 
 from __future__ import annotations
 
@@ -7,8 +9,6 @@ import random
 
 from PIL import Image, ImageDraw
 
-from citygen.core.city_layout import FACE_K, placement_origin
-from citygen.core.road_network import iter_placements, iter_tile_catalogue, tile_footprint
 from citygen.settings import CELL
 from citygen.tools.contact_sheet import label_font
 
@@ -191,14 +191,6 @@ def make_tile(w, h, conns):
 
 EDGE_DRAW_ORDER = "NSEW"  # make_tile overdraws, so edge order changes mixed-tile pixels
 
-# One top-down tile per road-network catalogue entry, drawn in its base
-# orientation: (width_px, height_px, {edge: size}).
-TILES = {
-    name: (cols * CELL, rows * CELL, dict(sorted(base, key=lambda port: EDGE_DRAW_ORDER.index(port[0]))))
-    for layer, base, name in sorted(iter_tile_catalogue(), key=lambda entry: entry[2])
-    for cols, rows in [tile_footprint(layer, base)]
-}
-
 
 # Top-down fill props: a smooth-stone cell (matching the ground fill) with a
 # tree drawn inside. The bundled world's props get their species' canopy
@@ -226,12 +218,14 @@ def make_fill_tile(canopy):
     return img
 
 
-def draw_road_tiles(fill_props, progress):
-    """Every road piece, and each of the ``fill_props`` named, by name."""
+def draw_road_tiles(road_pieces, fill_props, progress):
+    """Each of the ``road_pieces``, ``(name, (cols, rows), ports)`` in its base orientation, and each of the
+    ``fill_props`` named, by name."""
     tiles = {}
-    total = len(TILES) + len(fill_props)
-    for name, (w, h, conns) in TILES.items():
-        tiles[name] = make_tile(w, h, conns)
+    total = len(road_pieces) + len(fill_props)
+    for name, (cols, rows), ports in sorted(road_pieces, key=lambda piece: piece[0]):
+        conns = dict(sorted(ports, key=lambda port: EDGE_DRAW_ORDER.index(port[0])))
+        tiles[name] = make_tile(cols * CELL, rows * CELL, conns)
         progress(len(tiles), total)
     for name in fill_props:
         tiles[name] = make_fill_tile(FILL_CANOPIES.get(name, DEFAULT_CANOPY))
@@ -336,18 +330,19 @@ def draw_building_tiles(catalog, progress):
 # --- The layouts
 
 
-def compose(net, assets):
-    size = net["size"]
-    canvas = Image.new("RGBA", (size.span, size.span))
-    for placement in iter_placements(net):
+def compose(span, placements, assets):
+    """The road layout: each road tile placement (``tile_name``, ``rotation``, fine cell ``fx``, ``fy``) drawn from
+    ``assets`` on a ``span`` pixels square canvas."""
+    canvas = Image.new("RGBA", (span, span))
+    for placement in placements:
         img = rot_img(assets[placement.tile_name], placement.rotation)
         canvas.alpha_composite(img, (placement.fx * CELL, placement.fy * CELL))
     return canvas
 
 
-def paste_building(canvas, asset, key, facing, rect):
-    t = rot_img(asset, FACE_K[facing])
-    px, py = placement_origin(rect, facing, t.width, t.height)
+def paste_building(canvas, asset, key, quarter_turns, origin):
+    t = rot_img(asset, quarter_turns)
+    px, py = origin
     canvas.alpha_composite(t, (px, py))
     draw_label(canvas, key, px, py, t.width, t.height)
 
@@ -369,11 +364,11 @@ def draw_label(canvas, key, x, y, w, h):
     draw.text((cx, cy), key, fill=(245, 240, 220, 255), font=font, anchor="mm")
 
 
-def fill_lots(road_cells, size):
-    canvas = Image.new("RGBA", (size.span, size.span))
+def fill_lots(road_cells, fine):
+    canvas = Image.new("RGBA", (fine * CELL, fine * CELL))
     draw = ImageDraw.Draw(canvas)
-    for fy in range(size.fine):
-        for fx in range(size.fine):
+    for fy in range(fine):
+        for fx in range(fine):
             if (fx, fy) in road_cells:
                 continue
             x0, y0 = fx * CELL, fy * CELL
@@ -382,7 +377,7 @@ def fill_lots(road_cells, size):
     return canvas
 
 
-def place_fill_props(canvas, road_cells, occupied, size, fillers, rng):
+def place_fill_props(canvas, road_cells, occupied, fine, fillers, rng):
     """Paste a random fill prop into every empty non-road, non-building cell.
 
     Mirrors production: building cells are skipped (a building sits there), the
@@ -391,21 +386,25 @@ def place_fill_props(canvas, road_cells, occupied, size, fillers, rng):
     """
     if not fillers:
         return
-    for fy in range(size.fine):
-        for fx in range(size.fine):
+    for fy in range(fine):
+        for fx in range(fine):
             if (fx, fy) in road_cells or (fx, fy) in occupied:
                 continue
             tile = rot_img(rng.choice(fillers), rng.randint(0, 3))
             canvas.alpha_composite(tile, (fx * CELL, fy * CELL))
 
 
-def render_city(net, roads, placements, building_tiles, fillers, rng):
-    """Lot ground and fill props, the ``roads`` over them, then each placed building with its key."""
-    canvas = fill_lots(net["road_cells"], net["size"])
-    occupied = {cell for placement in placements for cell in placement.rect.cells()}
-    place_fill_props(canvas, net["road_cells"], occupied, net["size"], fillers, rng)
+def render_city(road_cells, fine, roads, buildings, building_tiles, fillers, rng):
+    """Lot ground and fill props on a ``fine`` cells square city, the ``roads`` over them, then each of the
+    ``buildings`` with its key.
+
+    A building is ``(key, quarter_turns, origin, cells)``: its clockwise turns, its corner in pixels, and the fine
+    cells it covers, which get no fill prop.
+    """
+    canvas = fill_lots(road_cells, fine)
+    occupied = {cell for _key, _turns, _origin, cells in buildings for cell in cells}
+    place_fill_props(canvas, road_cells, occupied, fine, fillers, rng)
     canvas.alpha_composite(roads)
-    for placement in placements:
-        key = placement.building.num
-        paste_building(canvas, building_tiles[key], key, placement.facing, placement.rect)
+    for key, quarter_turns, origin, _cells in buildings:
+        paste_building(canvas, building_tiles[key], key, quarter_turns, origin)
     return canvas

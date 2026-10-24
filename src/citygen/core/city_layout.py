@@ -23,17 +23,27 @@ from citygen.settings import Algo, CELL
 DEFAULT_ALGO = Algo()
 
 DIRS = {"N": (0, -1), "E": (1, 0), "S": (0, 1), "W": (-1, 0)}
-FACE_K = {"S": 0, "W": 1, "N": 2, "E": 3}
+_FACE_K = {"S": 0, "W": 1, "N": 2, "E": 3}
 
 # Independent random streams derived from one city seed. Preview and production
 # must draw from the same stream for the same decision, or they diverge.
-PLACEMENT_STREAM = 1
-STACK_HEIGHT_STREAM = 2
-FILLER_STREAM = 3
+_PLACEMENT_STREAM = 1
+_STACK_HEIGHT_STREAM = 2
+_FILLER_STREAM = 3
 
 
-def seeded_rng(seed, stream):
+def _seeded_rng(seed, stream):
     return random.Random(seed * 7 + stream)
+
+
+def stack_height_rng(seed):
+    """The stream each stacked building's height is drawn from."""
+    return _seeded_rng(seed, _STACK_HEIGHT_STREAM)
+
+
+def filler_rng(seed):
+    """The stream each empty lot cell's fill prop is drawn from."""
+    return _seeded_rng(seed, _FILLER_STREAM)
 
 
 @dataclass(slots=True)
@@ -126,7 +136,16 @@ def landmark_spacing_allows(rect, placements, spacing):
     return all(rect_distance(rect, placement.rect) >= spacing for placement in placements)
 
 
-def placement_origin(rect, facing, width, depth):
+def seat(placement, width, depth):
+    """How a ``width`` x ``depth`` building is drawn or stamped at ``placement``: ``(quarter_turns, (x, z))``, the
+    clockwise turns that face it, and the block offset of its turned footprint's corner."""
+    k = _FACE_K[placement.facing]
+    if k % 2:
+        width, depth = depth, width
+    return k, _placement_origin(placement.rect, placement.facing, width, depth)
+
+
+def _placement_origin(rect, facing, width, depth):
     x0, z0, cols, rows = rect.x0, rect.y0, rect.cols, rect.rows
     bx0, bz0 = x0 * CELL, z0 * CELL
 
@@ -327,7 +346,7 @@ def plan_city(seed, net, catalog_meta, algo):
         lots,
         load_catalog(catalog_meta, algo.banned_buildings),
         fine,
-        seeded_rng(seed, PLACEMENT_STREAM),
+        _seeded_rng(seed, _PLACEMENT_STREAM),
         type2_frontage_cells=net["big_fine_cells"],
         algo=algo,
     )

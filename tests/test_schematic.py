@@ -169,9 +169,9 @@ def test_road_asset_loaders_keep_network_tiles_fill_props_and_ground_fill_separa
         V2612,
         offset=(0, -3, 0),
     )
-    tiles = assemble.load_tiles(str(tmp_path))
-    fillers = assemble.load_fillers(str(tmp_path))
-    ground_fill = assemble.load_ground_fill_tile(str(tmp_path))
+    tiles = assemble._load_tiles(str(tmp_path))
+    fillers = assemble._load_fillers(str(tmp_path))
+    ground_fill = assemble._load_ground_fill_tile(str(tmp_path))
 
     assert set(tiles) == {"02"}
     assert tiles["02"].ground_offset == 1
@@ -219,7 +219,7 @@ def test_building_pieces_are_reread_after_a_new_extraction(tmp_path):
 def _fill_first_cell(tile, **kwargs):
     """Ground-fill a 12x12 grid with ``ground_y=3``; return its first cell's columns."""
     grid = np.zeros((6, 12, 12), dtype=np.int16)
-    assemble.place_ground_fill(
+    assemble._place_ground_fill(
         grid,
         {"minecraft:air": 0},
         np.zeros((12, 12), dtype=bool),
@@ -229,7 +229,7 @@ def _fill_first_cell(tile, **kwargs):
         ground_fill_tile=tile,
         **kwargs,
     )
-    z0 = x0 = assemble.PLAYER_ANCHOR_MARGIN
+    z0 = x0 = assemble._PLAYER_ANCHOR_MARGIN
     return grid[:, z0:z0 + CELL, x0:x0 + CELL]
 
 
