@@ -1,8 +1,9 @@
-"""Minimal reader for modern Anvil worlds (the section block_states palette
-format, MC 1.18+; the bundled default_world is 26.1.2).
+"""MC world saves: where a save keeps its region files, which version it is (and so what every output is stamped
+with), and a minimal reader for its blocks.
 
-Uses only the region container + the section block_states palette/data, so it
-does not depend on anvil-parser's (outdated) block decoder.
+The reader handles modern Anvil worlds (the section block_states palette format, MC 1.18+; the bundled default_world
+is 26.1.2). It uses only the region container and the section block_states palette/data, so it does not depend on
+anvil-parser's (outdated) block decoder.
 """
 
 from __future__ import annotations
@@ -12,22 +13,54 @@ import io
 import os
 import struct
 import zlib
+from pathlib import Path
 
 import nbtlib
 import numpy as np
 
 from citygen.tools.blocks import AIR_BLOCKS
-from citygen.paths import region_dir_candidates
 
 
-def _checked_region_paths(region_dir, save_path):
-    checked = []
-    if region_dir:
-        checked.append(region_dir)
-    for candidate in region_dir_candidates(save_path):
-        if candidate not in checked:
-            checked.append(candidate)
-    return tuple(checked)
+# --- Where a save keeps its region files
+
+
+def _normalized(path: os.PathLike[str] | str | None) -> str:
+    if not path:
+        return ""
+    return os.path.normpath(str(Path(path).expanduser()))
+
+
+def _region_dir_candidates(save_path: os.PathLike[str] | str | None) -> list[str]:
+    save_root = _normalized(save_path)
+    if not save_root:
+        return []
+    base = Path(save_root)
+    if base.name.lower() == "region":
+        return [str(base)]
+    return [
+        os.path.normpath(str(base / "region")),
+        os.path.normpath(str(base / "dimensions" / "minecraft" / "overworld" / "region")),
+    ]
+
+
+def _contains_region_files(region_dir: str) -> bool:
+    return bool(region_dir) and os.path.isdir(region_dir) and any(Path(region_dir).glob("r.*.*.mca"))
+
+
+def has_region_files(save_path: os.PathLike[str] | str | None) -> bool:
+    """Return True when save_path contains at least one .mca region file."""
+    return _contains_region_files(resolve_region_dir(save_path))
+
+
+def resolve_region_dir(save_path: os.PathLike[str] | str | None) -> str:
+    candidates = _region_dir_candidates(save_path)
+    for candidate in candidates:
+        if _contains_region_files(candidate):
+            return candidate
+    for candidate in candidates:
+        if os.path.isdir(candidate):
+            return candidate
+    return candidates[0] if candidates else ""
 
 
 def _missing_region_dir_message(save_path, checked_paths):
@@ -41,17 +74,69 @@ def _missing_region_dir_message(save_path, checked_paths):
     )
 
 
+# --- The save's version
+
+# Forward-only compatibility floor. Older schematics can be upgraded forward into
+# newer MC versions, but backward is impossible, so every stamp is clamped
+# up to this floor.
+HARD_FLOOR_DATA_VERSION = 4790  # MC 26.1.2
+
+# DataVersion -> MC release name, used only to label the detected source
+# world in the GUI. Hand-maintained (display only): add newer releases as they
+# ship; an unknown DataVersion just falls back to its raw number, so a missing
+# entry is purely cosmetic.
+RELEASE_NAMES = {
+    4790: "26.1.2",
+    4903: "26.2",
+}
+
+
+def release_name_for(data_version: int) -> str:
+    """Human release label for a DataVersion, for display only."""
+    return RELEASE_NAMES.get(data_version) or f"DataVersion {data_version}"
+
+
+def detect_world_data_version(save_path: str) -> int | None:
+    """Read ``Data.DataVersion`` from a world's ``level.dat``, or None."""
+    if not save_path:
+        return None
+    level_dat = os.path.join(save_path, "level.dat")
+    if not os.path.isfile(level_dat):
+        return None
+    try:
+        data = nbtlib.load(level_dat).get("Data")
+        if data is None:
+            return None
+        version = data.get("DataVersion")
+        return int(version) if version is not None else None
+    except (OSError, KeyError, ValueError):
+        return None
+
+
+def source_data_version(save_path: str | None) -> int:
+    """DataVersion every output is stamped with: the source world's own, clamped up to the floor.
+
+    Stamping any newer version would skip rename/upgrade steps for blocks that
+    changed after the source version (forward-only compatibility).
+    """
+    detected = detect_world_data_version(save_path)
+    resolved = detected if detected is not None else HARD_FLOOR_DATA_VERSION
+    return max(resolved, HARD_FLOOR_DATA_VERSION)
+
+
+# --- Its blocks
+
+
 class World:
-    def __init__(self, region_dir, save_path):
-        self.region_dir = region_dir
+    def __init__(self, save_path):
         self.save_path = save_path
+        self.region_dir = resolve_region_dir(save_path)
         self._chunks = {}          # (cx,cz) -> chunk nbt (or None)
         self._sections = {}        # (cx,cz,sy) -> (palette, decoded index array or None)
         self._heightmaps = {}      # (cx,cz,key) -> decoded 256-entry height array
         self._regions = {}         # (rx,rz) -> region file bytes (or None if absent)
         if not os.path.isdir(self.region_dir):
-            checked = _checked_region_paths(self.region_dir, self.save_path)
-            raise FileNotFoundError(_missing_region_dir_message(self.save_path, checked))
+            raise FileNotFoundError(_missing_region_dir_message(save_path, _region_dir_candidates(save_path)))
 
     def _region_bytes(self, rx, rz):
         """Return the whole .mca file bytes for a region (cached), or None."""

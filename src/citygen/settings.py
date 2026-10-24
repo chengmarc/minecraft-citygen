@@ -1,4 +1,4 @@
-"""What a run is set up with: the algorithm's knobs, the source world and its sample areas, and the version stamp.
+"""What a run is set up with: the algorithm's knobs, and the bundled world's sample areas.
 
 :class:`Algo` holds the per-run knobs; the generator takes one as an argument and never reads :data:`ALGO`, which is
 only the defaults the form starts from.
@@ -6,11 +6,8 @@ only the defaults the form starts from.
 
 from __future__ import annotations
 
-import os
 from dataclasses import dataclass
 from typing import Iterable
-
-import nbtlib
 
 CELL = 9  # simulation pixels and production blocks per fine cell; fixed by the asset geometry
 DEFAULT_SEED = 5
@@ -43,7 +40,7 @@ class Algo:
 ALGO = Algo()
 
 
-# --- The source world: its sample areas, and the version the outputs are stamped with
+# --- The sample areas
 
 
 def _coerce_xyz_point(values: Iterable[int]) -> tuple[int, int, int]:
@@ -88,54 +85,6 @@ class BlockRegion:
 class BuildRegion:
     build_type: int
     bounds: BlockRegion
-
-
-# Forward-only compatibility floor. Older schematics can be upgraded forward into
-# newer MC versions, but backward is impossible, so every stamp is clamped
-# up to this floor.
-HARD_FLOOR_DATA_VERSION = 4790  # MC 26.1.2
-
-# DataVersion -> MC release name, used only to label the detected source
-# world in the GUI. Hand-maintained (display only): add newer releases as they
-# ship; an unknown DataVersion just falls back to its raw number, so a missing
-# entry is purely cosmetic.
-RELEASE_NAMES = {
-    4790: "26.1.2",
-    4903: "26.2",
-}
-
-
-def release_name_for(data_version: int) -> str:
-    """Human release label for a DataVersion, for display only."""
-    return RELEASE_NAMES.get(data_version) or f"DataVersion {data_version}"
-
-
-def detect_world_data_version(save_path: str) -> int | None:
-    """Read ``Data.DataVersion`` from a world's ``level.dat``, or None."""
-    if not save_path:
-        return None
-    level_dat = os.path.join(save_path, "level.dat")
-    if not os.path.isfile(level_dat):
-        return None
-    try:
-        data = nbtlib.load(level_dat).get("Data")
-        if data is None:
-            return None
-        version = data.get("DataVersion")
-        return int(version) if version is not None else None
-    except (OSError, KeyError, ValueError):
-        return None
-
-
-def source_data_version(save_path: str | None) -> int:
-    """DataVersion every output is stamped with: the source world's own, clamped up to the floor.
-
-    Stamping any newer version would skip rename/upgrade steps for blocks that
-    changed after the source version (forward-only compatibility).
-    """
-    detected = detect_world_data_version(save_path)
-    resolved = detected if detected is not None else HARD_FLOOR_DATA_VERSION
-    return max(resolved, HARD_FLOOR_DATA_VERSION)
 
 
 # The bundled world's three sample areas, as the (start, end) block corners the Extract tab saves. Only x and z

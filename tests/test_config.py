@@ -1,4 +1,4 @@
-"""Settings and paths: version compatibility, and where the app keeps its data."""
+"""Paths: where the app keeps its data."""
 import os
 import tempfile
 import unittest
@@ -6,25 +6,6 @@ from pathlib import Path
 from unittest import mock
 
 from citygen import paths as config_path
-from citygen import settings as config_world
-
-
-# --- version detection ----------------------------------------------------
-
-class VersionTests(unittest.TestCase):
-    def test_supported_data_version_floor_is_sponge_v3_floor(self):
-        self.assertEqual(config_world.HARD_FLOOR_DATA_VERSION, 4790)  # MC 26.1.2
-
-    def test_detect_world_data_version_reads_bundled_world(self):
-        world = Path(__file__).resolve().parents[1] / "src" / "citygen" / "data" / "default_world"
-        self.assertEqual(config_world.detect_world_data_version(str(world)), 4790)  # bundled world is 26.1.2
-
-    def test_detect_world_data_version_is_none_without_a_readable_level_dat(self):
-        with tempfile.TemporaryDirectory() as tempdir:
-            self.assertIsNone(config_world.detect_world_data_version(""))
-            self.assertIsNone(config_world.detect_world_data_version(tempdir))  # no level.dat
-            (Path(tempdir) / "level.dat").write_bytes(b"not a real nbt file")
-            self.assertIsNone(config_world.detect_world_data_version(tempdir))  # corrupt
 
 
 # --- frozen app data root -------------------------------------------------

@@ -1,6 +1,6 @@
 """Export a city ``.schem`` into a copied MC world save.
 
-The inverse of :mod:`engine.world.anvil_world_reader`. It slices the city voxel
+The inverse of :mod:`citygen.tools.world_reader`. It slices the city voxel
 grid into 16x16x16 sections, bit-packs each section's ``block_states`` the same
 way the reader unpacks them, assembles chunk NBT + region files, and writes them
 into a byte-for-byte copy of the source world. Only the copied world's
@@ -26,9 +26,9 @@ import numpy as np
 from nbtlib import Byte, Compound, Double, Float, Int, List, Long, LongArray, String
 
 from citygen.tools.blocks import is_air, parse_state
-from citygen.paths import DEFAULT_WORLD, EXPORTED_WORLD_NAME, region_dir_candidates, resolve_region_dir
+from citygen.paths import DEFAULT_WORLD, EXPORTED_WORLD_NAME
 from citygen.tools.schem import decode_schem_array, decode_schem_block_entities, decode_schem_offset
-from citygen.settings import release_name_for, source_data_version
+from citygen.tools.world_reader import release_name_for, resolve_region_dir, source_data_version
 
 # Standard overworld build range; heightmap values are stored relative to the
 # world floor and MC uses 9 bits per column for a 384-tall world.
@@ -180,17 +180,6 @@ def _source_world_root(source_world):
     return candidate
 
 
-def _world_region_dir(world_root):
-    """Return a world's overworld region dir, creating the best fallback path later."""
-    resolved = resolve_region_dir(world_root)
-    if resolved and os.path.isdir(resolved):
-        return resolved
-    candidates = region_dir_candidates(world_root)
-    if candidates:
-        return candidates[0]
-    return os.path.join(world_root, "region")
-
-
 def _assert_distinct_world_paths(source_world, out_dir):
     """Reject overlapping source/output paths before any destructive copy step."""
     source = os.path.normcase(os.path.abspath(source_world))
@@ -214,7 +203,7 @@ def _copy_source_world(source_world, out_dir):
 
 def _prepare_output_region_dir(out_dir, source_world):
     """Return the copied world's overworld region dir after purging old regions."""
-    source_region_dir = _world_region_dir(source_world)
+    source_region_dir = resolve_region_dir(source_world)
     rel_region_dir = os.path.relpath(source_region_dir, source_world)
     out_region_dir = os.path.join(out_dir, rel_region_dir)
     os.makedirs(out_region_dir, exist_ok=True)

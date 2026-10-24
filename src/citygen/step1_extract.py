@@ -10,16 +10,15 @@ from pathlib import Path
 
 from citygen.core.markers import detect_marker_assets, extract_cuboid, parse_range, sign_text_above
 from citygen.paths import (
-    BUILD_CATALOG, BUILDS_CONTACT_SHEET, BUILDS_RENDERS, BUILDS_SCHEM, resolve_region_dir, ROADS_CONTACT_SHEET,
-    ROADS_RENDERS, ROADS_SCHEM,
+    BUILD_CATALOG, BUILDS_CONTACT_SHEET, BUILDS_RENDERS, BUILDS_SCHEM, ROADS_CONTACT_SHEET, ROADS_RENDERS, ROADS_SCHEM,
 )
-from citygen.settings import BUILD_MARKER_Y_RANGE, source_data_version
+from citygen.settings import BUILD_MARKER_Y_RANGE
 from citygen.tools.contact_sheet import render_contact_sheet
 from citygen.tools.render_isometric import render_cells_visible_iso
 from citygen.tools.schem import (
     assemble, decode_schem_cells, piece_path, read_catalog, STACK_PARTS, WHOLE, write_catalog, write_sponge_schem_cells,
 )
-from citygen.tools.world_reader import World
+from citygen.tools.world_reader import source_data_version, World
 
 
 def run(save, road_box, build_types, progress):
@@ -31,14 +30,14 @@ def run(save, road_box, build_types, progress):
     ``build_pieces``, ``build_sheet`` -- and a sheet step names each piece once its PNG is saved.
     """
     data_version = source_data_version(save)
-    extract_roads(open_world(save), road_box, data_version, progress)
+    extract_roads(World(save), road_box, data_version, progress)
     render_contact_sheet(
         sorted(glob.glob(os.path.join(ROADS_SCHEM, "*.schem"))),
         lambda path: (Path(path).stem, render_cells_visible_iso(decode_schem_cells(path))),
         ROADS_RENDERS, ROADS_CONTACT_SHEET,
         lambda completed, total, detail: progress("road_sheet", completed, total, detail),
     )
-    extract_builds(open_world(save), build_types, data_version, progress)
+    extract_builds(World(save), build_types, data_version, progress)
     catalog = read_catalog(BUILD_CATALOG)
     render_contact_sheet(
         sorted(catalog),
@@ -46,10 +45,6 @@ def run(save, road_box, build_types, progress):
         BUILDS_RENDERS, BUILDS_CONTACT_SHEET,
         lambda completed, total, detail: progress("build_sheet", completed, total, detail),
     )
-
-
-def open_world(save):
-    return World(resolve_region_dir(save), save)
 
 
 def chunk_scan_count(x0, x1, z0, z1):

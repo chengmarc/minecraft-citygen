@@ -13,12 +13,11 @@ import nbtlib
 from nbtlib import Byte, Compound, String
 from PIL import Image
 
-from citygen.paths import WORLD_ICON, resolve_region_dir
-from citygen.settings import HARD_FLOOR_DATA_VERSION
+from citygen.paths import WORLD_ICON
 from citygen.tools.blocks import AIR_BLOCKS, parse_state
 from citygen.tools.schem import BlockEntity
 from citygen.tools.schem import write_sponge_schem_grid
-from citygen.tools.world_reader import World
+from citygen.tools.world_reader import HARD_FLOOR_DATA_VERSION, resolve_region_dir, World
 from citygen.tools import world_writer
 
 STONE = "minecraft:stone"
@@ -62,7 +61,7 @@ class WorldWriterRoundTripTests(unittest.TestCase):
         positions = list(np.ndindex(grid.shape))  # (y, z, x)
         with tempfile.TemporaryDirectory() as out:
             world_writer.write_world(grid, inv, block_entities, out, DATA_VERSION, base_y)
-            world = World(region_dir=resolve_region_dir(out), save_path=out)
+            world = World(out)
             read = {(y, z, x): world.block(x - ANCHOR, y + base_y, z - ANCHOR) for y, z, x in positions}
 
         expected = {pos: _comparable(parse_state(inv[int(grid[pos])])) for pos in positions}
@@ -74,7 +73,7 @@ class WorldWriterRoundTripTests(unittest.TestCase):
         base_y = 64
         with tempfile.TemporaryDirectory() as out:
             world_writer.write_world(grid, inv, block_entities, out, DATA_VERSION, base_y)
-            world = World(region_dir=resolve_region_dir(out), save_path=out)
+            world = World(out)
             chunk = world.load_chunk(-1, -1)  # sign at world (-1, 65, -1) -> chunk (-1, -1)
             entries = [be for be in chunk["block_entities"]
                        if (int(be["x"]), int(be["y"]), int(be["z"])) == (-1, 65, -1)]
@@ -114,7 +113,7 @@ class SchemToWorldTests(unittest.TestCase):
             out = self._export(tmp)
             data = nbtlib.load(os.path.join(out, "level.dat"))["Data"]
             px, py, pz = (float(v) for v in data["Player"]["Pos"])
-            world = World(region_dir=resolve_region_dir(out), save_path=out)
+            world = World(out)
             below_feet = world.block(int(px), int(py) - 1, int(pz))[0]
 
         self.assertNotIn(below_feet, AIR_BLOCKS)  # no void drop

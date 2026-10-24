@@ -1,4 +1,4 @@
-"""Source-world reading: the Anvil reader, ground detection, and marker parsing.
+"""Source-world reading: its version, the Anvil reader, ground detection, and marker parsing.
 
 Assets are authored on a flat terrain surface; detection recovers that surface Y
 (via a column scan, not the paste-stale heightmap) so extraction follows the
@@ -13,6 +13,7 @@ from pathlib import Path
 
 from citygen.tools import render_topdown
 from citygen.tools.render_topdown import region_world_bounds
+from citygen.tools import world_reader
 from citygen.tools.world_reader import World
 from citygen.core.markers import (
     extract_cuboid,
@@ -22,12 +23,30 @@ from citygen.core.markers import (
 )
 
 
+# --- version detection ----------------------------------------------------
+
+class VersionTests(unittest.TestCase):
+    def test_supported_data_version_floor_is_sponge_v3_floor(self):
+        self.assertEqual(world_reader.HARD_FLOOR_DATA_VERSION, 4790)  # MC 26.1.2
+
+    def test_detect_world_data_version_reads_bundled_world(self):
+        world = Path(__file__).resolve().parents[1] / "src" / "citygen" / "data" / "default_world"
+        self.assertEqual(world_reader.detect_world_data_version(str(world)), 4790)  # bundled world is 26.1.2
+
+    def test_detect_world_data_version_is_none_without_a_readable_level_dat(self):
+        with tempfile.TemporaryDirectory() as tempdir:
+            self.assertIsNone(world_reader.detect_world_data_version(""))
+            self.assertIsNone(world_reader.detect_world_data_version(tempdir))  # no level.dat
+            (Path(tempdir) / "level.dat").write_bytes(b"not a real nbt file")
+            self.assertIsNone(world_reader.detect_world_data_version(tempdir))  # corrupt
+
+
 # --- Anvil reader ---------------------------------------------------------
 
 class AnvilWorldReaderTests(unittest.TestCase):
     def test_world_reports_checked_region_paths_when_region_dir_is_missing(self):
         with self.assertRaises(FileNotFoundError) as exc_info:
-            World(region_dir="C:/missing/world/region", save_path="C:/missing/world")
+            World("C:/missing/world")
 
         message = str(exc_info.exception)
         self.assertIn("Configured save: C:/missing/world", message)
