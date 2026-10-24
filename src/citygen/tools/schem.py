@@ -13,7 +13,7 @@ import nbtlib
 import numpy as np
 from nbtlib import ByteArray, Compound, Int, IntArray, List, Short, String
 
-from citygen.blocks import format_state, is_air, parse_state
+from citygen.tools.blocks import format_state, is_air, parse_state
 
 
 # --- Tiles, and turning them

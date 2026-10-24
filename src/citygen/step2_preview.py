@@ -1,4 +1,4 @@
-"""The Preview tab's run: flat top-down stand-ins for the road pieces and buildings, laid out as the seed's road
+"""Step 2, the Preview tab's run: flat top-down stand-ins for the road pieces and buildings, laid out as the seed's road
 layout and city layout.
 
 Nothing is built in blocks, so it's fast; but the layout comes from the same ``plan_city`` as the build, so what you
@@ -12,11 +12,11 @@ import random
 
 from PIL import Image, ImageDraw
 
-from citygen.city_layout import FACE_K, FILLER_STREAM, placement_origin, plan_city, seeded_rng
-from citygen.contact_sheet import label_font
+from citygen.core.city_layout import FACE_K, FILLER_STREAM, placement_origin, plan_city, seeded_rng
+from citygen.tools.contact_sheet import label_font
 from citygen.paths import BUILD_CATALOG, city_preview_path, grid_preview_path
-from citygen.road_network import gen_networks, iter_placements, iter_tile_catalogue, make_size, tile_footprint
-from citygen.schem import read_catalog
+from citygen.core.road_network import gen_networks, iter_placements, iter_tile_catalogue, make_size, tile_footprint
+from citygen.tools.schem import read_catalog
 from citygen.settings import CELL
 
 CITY_GROUND_FILL_RGBA = (159, 159, 159, 255)

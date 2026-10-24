@@ -11,10 +11,10 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from citygen import render_topdown
-from citygen.render_topdown import region_world_bounds
-from citygen.world_reader import World
-from citygen.step1_extract import (
+from citygen.tools import render_topdown
+from citygen.tools.render_topdown import region_world_bounds
+from citygen.tools.world_reader import World
+from citygen.core.markers import (
     extract_cuboid,
     group_marker_cuboids,
     marker_blocks_in_region,

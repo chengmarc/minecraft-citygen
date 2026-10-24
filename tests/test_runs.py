@@ -9,7 +9,9 @@ from unittest import mock
 import pytest
 from PIL import Image
 
-from citygen import contact_sheet, step1_extract, step2_preview, step3_build
+from citygen import step1_extract, step2_preview, step3_build
+from citygen.core import markers
+from citygen.tools import contact_sheet
 from citygen.settings import ALGO, BlockRegion, BuildRegion
 
 
@@ -49,11 +51,11 @@ def test_road_extraction_clears_the_last_runs_pieces_even_when_it_finds_none(tmp
 
 
 def test_a_sign_is_read_one_block_above_its_emerald(monkeypatch):
-    monkeypatch.setattr(step1_extract, "iter_signs", lambda _world, _xa, _xb, _za, _zb: [
+    monkeypatch.setattr(markers, "iter_signs", lambda _world, _xa, _xb, _za, _zb: [
         (4, 70, 8, "stack: 9"),
         (4, 71, 8, "stack: 2-5"),
     ])
-    assert step1_extract.parse_range(step1_extract.sign_text_above(object(), (4, 70, 8)), (r"stack\s*:\s*",)) == [2, 5]
+    assert markers.parse_range(markers.sign_text_above(object(), (4, 70, 8)), (r"stack\s*:\s*",)) == [2, 5]
 
 
 def test_extraction_reports_its_steps_in_order(monkeypatch, tmp_path):

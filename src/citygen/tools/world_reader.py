@@ -16,7 +16,7 @@ import zlib
 import nbtlib
 import numpy as np
 
-from citygen.blocks import AIR_BLOCKS
+from citygen.tools.blocks import AIR_BLOCKS
 from citygen.paths import region_dir_candidates
 
 

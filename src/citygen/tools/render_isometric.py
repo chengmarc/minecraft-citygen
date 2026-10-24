@@ -6,8 +6,8 @@ import numpy as np
 from PIL import Image
 from numba import njit
 
-from citygen.blocks import block_color, is_air
-from citygen.schem import decode_schem_array
+from citygen.tools.blocks import block_color, is_air
+from citygen.tools.schem import decode_schem_array
 
 ROAD_ASSET_ISO_TILE_W = 12
 ROAD_ASSET_ISO_TILE_H = 6

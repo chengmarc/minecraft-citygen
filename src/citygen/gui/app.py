@@ -146,7 +146,7 @@ def _warm_up_renderer():
     A failure here is ignored: the real render reports it.
     """
     try:
-        from citygen.render_isometric import warm_up
+        from citygen.tools.render_isometric import warm_up
 
         warm_up()
     except Exception:  # boundary: warm-up is best-effort
