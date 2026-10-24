@@ -93,8 +93,8 @@ Every knob follows this path. The package guides cover each step on its own.
 | [`pipeline/`](pipeline/README.md) | The five numbered stages that drive the engine and produce artifacts |
 | [`gui/`](gui/README.md) | The desktop app (an HTML page in a WebView2 window) that configures and runs the stages |
 
-Imports only point downward: `gui` → `pipeline` → `engine` → `config`. `gui`
-may use only `pipeline.stages` and `pipeline.services`. Each package is layered
+Imports only point downward: `gui` → `pipeline` → `engine` → `config`. From
+`pipeline`, `gui` may use only `pipeline.stages` and `pipeline.services`. Each package is layered
 internally too. [tests/test_dependencies.py](../tests/test_dependencies.py)
 enforces all of it, along with no import cycles and no imports of another
 module's `_`-prefixed names.

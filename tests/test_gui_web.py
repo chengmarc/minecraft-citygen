@@ -18,7 +18,7 @@ from config.world import BlockRegion
 from gui import algo as algo_module
 from gui import app as app_module
 from gui import extract as extract_module
-from gui import files, progress, server
+from gui import files, progress, server, world_map
 from gui.bridge import Api
 from pipeline import stages
 
@@ -198,7 +198,7 @@ class ExtractTests(_ApiTestCase):
         meta = {"x0": 0, "x1": 255, "z0": 0, "z1": 255, "step": 2}
         png = Path(files.APP_DATA) / "world_preview" / "x.png"
         with (
-            mock.patch.object(extract_module, "cached_topdown_preview", return_value=(png, meta)),
+            mock.patch.object(world_map, "cached_topdown_preview", return_value=(png, meta)),
             mock.patch.object(extract_module, "image", return_value={"src": "/files/world_preview/x.png?v=1"}),
         ):
             self.assertEqual(self.api.load_world_map(), {})
@@ -214,7 +214,7 @@ class ExtractTests(_ApiTestCase):
             return Path("map.png"), meta
 
         with (
-            mock.patch.object(extract_module, "cached_topdown_preview", side_effect=fake_cached),
+            mock.patch.object(world_map, "cached_topdown_preview", side_effect=fake_cached),
             mock.patch.object(extract_module, "image", return_value={"src": "/files/x.png?v=1"}),
         ):
             self.api.load_world_map()
@@ -448,11 +448,11 @@ class WorldPreviewTests(unittest.TestCase):
 
             reported = []
             with (
-                mock.patch.object(extract_module, "WORLD_PREVIEW_CACHE", cache),
-                mock.patch.object(extract_module, "render_topdown_preview", side_effect=fake_render),
-                mock.patch.object(extract_module, "_preview_region_mtime", return_value=mtime),
+                mock.patch.object(world_map, "WORLD_PREVIEW_CACHE", cache),
+                mock.patch.object(world_map, "render_topdown_preview", side_effect=fake_render),
+                mock.patch.object(world_map, "_preview_region_mtime", return_value=mtime),
             ):
-                png, _meta = extract_module.cached_topdown_preview("C:/mc/world", on_partial=lambda p, m: reported.append(p))
+                png, _meta = world_map.cached_topdown_preview("C:/mc/world", on_partial=lambda p, m: reported.append(p))
             return png, reported
 
         with tempfile.TemporaryDirectory() as cache:
