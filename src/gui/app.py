@@ -116,8 +116,8 @@ def set_title_bar_colors(hwnd: int, caption: str, text: str) -> None:
 
 
 def page_colors(*tokens):
-    """The page's colour tokens (``--app-bg`` and the like, in static/app.css), so the window matches the page."""
-    css = (server.STATIC / "app.css").read_text(encoding="utf-8")
+    """The page's colour tokens (``--app-bg`` and the like, in static/tokens.css), so the window matches the page."""
+    css = (server.STATIC / "tokens.css").read_text(encoding="utf-8")
     return [re.search(rf"--{token}:\s*(#[0-9a-fA-F]{{6}})\s*;", css).group(1) for token in tokens]
 
 

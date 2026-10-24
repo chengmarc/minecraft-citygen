@@ -75,7 +75,7 @@ def version_selector_items(min_data_version=None):
 
 # --- The tab
 
-CHUNK_SIZE = 16   # region.js snaps to the same chunks
+CHUNK_SIZE = 16   # static/region/region.js snaps to the same chunks
 
 
 def chunk_span(start, end):

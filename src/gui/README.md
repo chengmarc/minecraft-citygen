@@ -123,7 +123,23 @@ src/application.pyw  ->  gui.app:main  (window + server + bridge)  ->  static/ (
 | [form.py](form.py) | The algorithm form both share: its knobs, groups and ranges, form values → `Algo` |
 | [progress.py](progress.py) | Each tab's run bar: per-step weights, pipeline progress → bar position, creep, segments, and timing records |
 | [files.py](files.py) | Files the GUI owns (below), artifact cleanup, opening folders |
-| [static/](static/) | The page: `index.html`, `app.css` (the colours), `text.js` (the words), `components.js`, `region.js`, `app.js`, and the button icons, SVGs in `icons/` |
+| [static/](static/) | The page (below), and the button icons, SVGs in `icons/` |
+
+The page, in [static/](static/). The page itself and what every part shares sit at the top; each part has a
+folder holding its script and, where it has its own look, a stylesheet of the same name. `index.html` loads them in
+the order below, each after what it uses.
+
+| Part | Files |
+|---|---|
+| Colours, shadows, radii, fonts | `tokens.css` (the window's title bar reads three of them, see `app.py`) |
+| The words | `text.js` |
+| `$`, `$$`, the error dialog | `dom.js` |
+| The window: sky, steps, page, dock, fields, buttons, area cards, dialogs | `app.css` |
+| The image viewer | `viewer/` |
+| Run bars and the ground strip | `progress/` |
+| The algorithm form | `form/` |
+| The region map, and its chunks popping in as it's drawn (`reveal.js`) | `region/` |
+| The app: the tabs, wired to the bridge | `app.js` |
 
 Files the GUI writes (`ROOT` is the app root, see the
 [config guide](../config/README.md#where-outputs-go)):

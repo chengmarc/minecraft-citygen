@@ -1,0 +1,98 @@
+/* Run bars (progress.js): the single bar, the region map's small run bar, and the ground strip along the window's
+   bottom, which is the showing tab's run bar. */
+
+/* --- Progress: grass, lit along its top like the big buttons, growing across. */
+.progress {
+  height: 10px;
+  border-radius: 5px;
+  background: var(--surface-muted);
+  box-shadow: inset 0 1px 2px rgba(74, 52, 30, 0.12);
+  overflow: hidden;
+}
+.progress-chunk {
+  width: 0;
+  height: 100%;
+  border-radius: 5px;
+  background: linear-gradient(var(--accent-top), var(--accent));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.3);
+  transition: width 200ms linear;
+}
+/* Under way, a single bar shimmers like the step under way in a run's steps. */
+.progress.running .progress-chunk {
+  background:
+    linear-gradient(100deg, transparent 40%, rgba(255, 255, 255, 0.35) 50%, transparent 60%) 0 0 / 200% 100%,
+    linear-gradient(var(--accent-top), var(--accent));
+  animation: shimmer 1.4s linear infinite;
+}
+/* --- The ground the window stands on: a strip of dirt along its bottom, a line of grass on top, like the icon's grass
+   block. It's the run bar too, for the tab that's showing: the run's steps joined across it, grass growing over the
+   dirt as they go. Each step's name is inside it in cream, which reads on the dirt and on the grass alike. */
+.ground {
+  flex: none;
+  height: 30px;
+  border-top: 6px solid var(--accent-top);
+  background: linear-gradient(var(--dirt-top), var(--dirt));
+}
+.ground-run { height: 100%; }
+.ground-run:not(.current) { display: none; }
+.ground-run:not(.active) .segment-label { visibility: hidden; }   /* before its first run: just ground */
+
+.progress.segmented {
+  position: relative;
+  display: grid;
+  grid-auto-columns: minmax(0, 1fr);
+  grid-auto-flow: column;
+  height: 100%;
+  border-radius: 0;
+  background: none;
+  box-shadow: none;
+}
+/* The one fill, under every step: grass growing over the dirt. */
+.run-fill {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 0;
+  background: linear-gradient(var(--accent-top), var(--accent));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.25);   /* glides in JS, its steps' text following it */
+}
+.progress.segmented.running .run-fill {
+  background:
+    linear-gradient(100deg, transparent 40%, rgba(255, 255, 255, 0.35) 50%, transparent 60%) 0 0 / 200% 100%,
+    linear-gradient(var(--accent-top), var(--accent));
+  animation: shimmer 1.4s linear infinite;
+}
+.segment { position: relative; min-width: 0; }   /* over the fill */
+.segment + .segment { box-shadow: inset 1px 0 0 rgba(42, 24, 8, 0.35); }   /* the seam between two steps */
+@keyframes shimmer { from { background-position: 100% 0, 0 0; } to { background-position: -100% 0, 0 0; } }
+.segment-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 100%;
+  padding: 0 12px;
+  color: var(--on-ground-muted);
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+  text-shadow: 0 1px 1px rgba(30, 18, 6, 0.45);
+}
+.segment-text { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.segment-percent { flex: none; font-variant-numeric: tabular-nums; }
+.segment-percent:not(:empty)::before { content: "\00b7"; margin-right: 6px; }
+.segment.active .segment-label { color: var(--on-ground); font-weight: 700; }
+.segment.done .segment-label { color: var(--on-ground); }
+.segment.done .segment-label::before { content: "\2713  "; font-weight: 700; }
+
+/* A small run bar, status and percent over a single bar: the area map's, while it's drawn. */
+.runbar {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 6px 12px;
+  align-items: baseline;
+}
+.runbar:not(.active) { display: none; }
+.runbar .status { color: var(--text-soft); font-weight: 500; }
+.runbar .percent { color: var(--muted); font-size: 12px; font-variant-numeric: tabular-nums; }
+.runbar .progress { grid-column: 1 / -1; }

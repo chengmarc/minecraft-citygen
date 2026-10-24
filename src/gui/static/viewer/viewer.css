@@ -1,0 +1,133 @@
+/* The image viewer (viewer.js): a sky that stays put under a zoomed, dragged picture, with its placeholder, caption,
+   zoom tools, the gallery of a run's pieces, the blueprint stand-in, and the region map's chunks popping in. */
+
+/* --- Viewers: a sky that stays put while the image is zoomed or dragged across it. */
+.viewer {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+  border-radius: var(--radius-lg);
+  background: linear-gradient(var(--canvas-top), var(--canvas-bottom));
+  box-shadow: inset 0 0 0 1px rgba(47, 82, 116, 0.12), var(--shadow-panel);
+}
+.viewer.has-image { cursor: grab; }
+.viewer.dragging { cursor: grabbing; }
+
+/* The picture's shadow is on this unscaled wrapper, not the zoomed layer inside it, so it's the same at any zoom. */
+.viewer-canvas { position: absolute; inset: 0; filter: var(--picture-shadow); }
+.viewer-layer { position: absolute; top: 0; left: 0; transform-origin: 0 0; transition: opacity 260ms var(--ease); }
+.viewer-layer.loading { opacity: 0; }
+.viewer-layer img { display: block; }
+/* Over the map while it's drawn, its newest chunks popping in (reveal.js). */
+.viewer-reveal { position: absolute; top: 0; left: 0; }
+.viewer-overlay {
+  position: absolute;
+  border: 2px solid var(--selection);
+  background: var(--selection-fill);
+  pointer-events: none;
+}
+
+.viewer-caption {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.72);
+  backdrop-filter: blur(8px);
+  box-shadow: var(--shadow-sm);
+  color: var(--sky-text);
+  font-size: 12px;
+  font-weight: 600;
+  pointer-events: none;
+  /* Like the zoom tools: shown over a picture while the pointer's on it, sliding down into place. */
+  opacity: 0;
+  translate: 0 -4px;
+  transition: opacity 160ms var(--ease), translate 160ms var(--ease);
+}
+.viewer.has-image:hover .viewer-caption { opacity: 1; translate: 0; }
+.viewer-caption:empty { display: none; }
+
+/* A run's pieces as it renders them, each landing in the grid; the newest kept in view. */
+.viewer-gallery {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(84px, 1fr));
+  grid-auto-rows: 84px;
+  gap: 10px;
+  align-content: start;
+  padding: 46px 16px 16px;
+  overflow-y: auto;
+  scrollbar-width: none;
+}
+.viewer-gallery::-webkit-scrollbar { display: none; }
+.viewer-gallery img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  filter: var(--picture-shadow);
+  animation: piece-in 360ms var(--ease) both;
+}
+@keyframes piece-in { from { opacity: 0; transform: translateY(8px) scale(0.85); } }
+
+/* A blueprint: the city as previewed, faded, with a scan sweeping down it, while the real one is built. */
+.viewer.blueprint .viewer-layer img { filter: saturate(0.3) opacity(0.55); }
+.viewer.blueprint::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(transparent, rgba(255, 255, 255, 0.55) 50%, transparent) no-repeat 0 -40% / 100% 40%;
+  pointer-events: none;
+  animation: scan 2.6s ease-in-out infinite;
+}
+@keyframes scan { to { background-position: 0 140%; } }
+
+/* Empty: what this viewer will show, and what makes it. */
+.viewer-placeholder {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 24px;
+  color: var(--sky-text);
+  text-align: center;
+}
+.viewer-placeholder .icon { width: 40px; height: 40px; opacity: 0.35; }
+.viewer-placeholder p { max-width: 38ch; color: rgba(47, 82, 116, 0.8); white-space: pre-line; text-wrap: balance; }
+
+/* Zoom: shown over an image while the pointer is on it. */
+.viewer-tools {
+  position: absolute;
+  right: 10px;
+  bottom: 10px;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 3px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(8px);
+  box-shadow: var(--shadow-sm);
+  opacity: 0;
+  translate: 0 4px;
+  transition: opacity 160ms var(--ease), translate 160ms var(--ease);
+}
+.viewer.has-image:hover .viewer-tools { opacity: 1; translate: 0; }
+.viewer-tools button {
+  min-width: 28px;
+  height: 26px;
+  padding: 0 8px;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--sky-text);
+  font-weight: 600;
+}
+.viewer-tools button:hover { background: rgba(47, 82, 116, 0.1); }
+.viewer-tools output { min-width: 46px; color: var(--sky-text); font-size: 12px; text-align: center; font-variant-numeric: tabular-nums; }

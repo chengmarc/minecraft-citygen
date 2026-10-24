@@ -1,0 +1,109 @@
+/* The algorithm form (form.js): the advanced settings' disclosure, the panel it opens, and the sliders. */
+
+/* The disclosure. */
+.disclosure {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 38px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--accent-text);
+  font-weight: 600;
+  transition: background-color 140ms var(--ease);
+}
+.disclosure:hover { background: var(--accent-soft); }
+.chevron {
+  width: 8px;
+  height: 8px;
+  border-right: 2px solid currentColor;
+  border-bottom: 2px solid currentColor;
+  rotate: 45deg;
+  translate: 0 -2px;
+  transition: rotate 200ms var(--ease), translate 200ms var(--ease);
+}
+.disclosure[aria-expanded="true"] .chevron { rotate: -135deg; translate: 0 2px; }
+
+/* Opens by animating its row from 0fr to 1fr. */
+.advanced {
+  display: grid;
+  grid-template-rows: 0fr;
+  margin-top: -14px;
+  transition: grid-template-rows 240ms var(--ease), margin-top 240ms var(--ease);
+}
+.advanced.open { grid-template-rows: 1fr; margin-top: 0; }
+/* Clipped for the slide, with room around the groups for their shadows (the margins give it back). That room is
+   all that's left of it closed, so closed it's hidden too: once the slide ends, and at once when it opens. */
+.advanced-inner {
+  display: flex;
+  gap: 12px;
+  min-height: 0;
+  margin: -4px -8px -10px;
+  padding: 4px 8px 10px;
+  overflow: hidden;
+  visibility: hidden;
+  transition: visibility 0s linear 240ms;
+}
+.advanced.open .advanced-inner { visibility: visible; transition-delay: 0s; }
+
+fieldset {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  padding: 18px;
+  border: 0;
+  border-radius: var(--radius-md);
+  background: var(--surface-panel);
+  box-shadow: var(--lift), 0 0 0 1px rgba(74, 52, 30, 0.06), var(--shadow-sm);
+}
+.form-row { display: grid; grid-template-columns: 9.5em 1fr; align-items: center; gap: 12px; margin-top: 14px; }
+.form-row:first-child { margin-top: 0; }
+.form-row label { color: var(--text-soft); }
+.form-row input[type="text"] { width: 100%; }
+
+/* Slider: a sunken groove filled with grass up to the value, a white handle ringed in green, a tick per value. */
+.slider { display: flex; align-items: center; gap: 10px; }
+.slider-track { position: relative; flex: 1; }
+.slider-track::after {
+  content: "";
+  position: absolute;
+  left: 9px;
+  right: 9px;
+  bottom: -6px;
+  height: 3px;
+  border-right: 1px solid var(--surface-sunken);
+  background: repeating-linear-gradient(to right, var(--surface-sunken) 0 1px, transparent 1px calc(100% / var(--ticks)));
+}
+.slider output {
+  min-width: 30px;
+  padding: 2px 0;
+  border-radius: 6px;
+  background: var(--surface);
+  color: var(--text);
+  font-weight: 600;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+input[type="range"] { --fill: 50%; width: 100%; height: 18px; margin: 0; appearance: none; background: transparent; cursor: pointer; }
+input[type="range"]::-webkit-slider-runnable-track {
+  height: 6px;
+  border-radius: 3px;
+  background: linear-gradient(to right, var(--accent) var(--fill), var(--surface-sunken) var(--fill));
+}
+input[type="range"]::-webkit-slider-thumb {
+  width: 18px;
+  height: 18px;
+  margin-top: -6px;
+  appearance: none;
+  border: 3px solid var(--accent);
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 3px rgba(38, 98, 15, 0.3);
+  transition: transform 120ms var(--ease);
+}
+input[type="range"]:hover::-webkit-slider-thumb { transform: scale(1.12); }
+input[type="range"]:focus { outline: 0; }
+input[type="range"]:focus-visible::-webkit-slider-thumb { box-shadow: 0 0 0 4px rgba(61, 146, 29, 0.25); }
