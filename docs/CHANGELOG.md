@@ -38,6 +38,9 @@ The format is based on Keep a Changelog, and versions should match the release v
   client JAR into `build/`
 - release notes are in `docs/release-notes/`, was `docs/release/`
 - a checkout runs with `pythonw src/application.pyw`, was at the repo root
+- the source is one package, `src/citygen/`, was `config/`, `engine/`, `pipeline/`
+  and `gui/`; its guide is `src/README.md`, was one per package. Same cities from
+  the same seeds
 
 ## [1.3.0] - 2026-10-14
 
@@ -66,6 +69,11 @@ The format is based on Keep a Changelog, and versions should match the release v
 
 ### Removed
 
+- the command line: `python src/pipeline/stages.py`, the per-step scripts, the
+  `MC_CITY_*` environment overrides and `citygen-doctor`. The app is the way in
+- files nothing showed: `appdata/02_builds/buildings.gif`, the preview's stand-in
+  tiles in `appdata/03_preview/roads/` and `builds/` and their contact sheets, and
+  `appdata/progress_timings.json`
 - the portable Windows zip: GitHub Releases has the installer only, and the
   Microsoft Store has the MSIX
 - migration of 0.1.0 saved settings; settings saved by 1.x load as before

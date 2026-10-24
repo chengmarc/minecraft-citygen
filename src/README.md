@@ -1,161 +1,142 @@
-# MC CityGen — source architecture
+# MC CityGen — source
 
-The technical entry point. MC CityGen turns a small hand-built asset set —
-roads and buildings marked up inside an MC world — into a complete city,
-exported as a schematic and as a playable world. This page covers the whole
-tree; each package guide covers one boundary.
+MC CityGen turns a small hand-built asset set (roads and buildings marked up inside an MC world) into a complete
+city, exported as a schematic and as a playable world. Everything is in one package, `citygen`, laid out by what the
+app does.
 
-## How-to guides
-
-### Set up and check a development checkout
+## Set up
 
 ```bash
 python -m pip install -e .
 python -m pytest -q
-pythonw src/application.pyw
+pythonw src/application.pyw            # the app; add --debug for the page's developer tools (F12)
 ```
 
-Use pytest, not `unittest`: [tests/conftest.py](../tests/conftest.py) puts
-`src/` on `sys.path`, and only pytest loads it. There is no CI; run the suite
-before committing.
+Use pytest: [tests/conftest.py](../tests/conftest.py) puts `src/` on `sys.path`. There is no CI; run the suite before
+committing. To reset, delete `appdata/` (everything the app writes) and `build/`, `dist/` (packaging).
 
-### Find where a change belongs
+## Where things are
 
-| To change… | Go to |
+| File | What it is |
 |---|---|
-| a default, a tuning knob, where files go, version handling | [config guide](config/README.md#how-to-guides) |
-| road layout, building placement, schematic/world I/O, rendering | [engine guide](engine/README.md#how-to-guides) |
-| stage order, a new step, in-world marker conventions, `buildings.json` | [pipeline guide](pipeline/README.md#how-to-guides) |
-| a tab, the settings form, progress bars | [gui guide](gui/README.md#how-to-guides) |
-| the installer, the Store package, or a release | [release guide](../docs/RELEASING.md) |
+| [extract.py](citygen/extract.py) | **The Extract tab's run**: find the marker blocks in the world, export each road piece and building as `.schem`, write `buildings.json`, render the contact sheets |
+| [preview.py](citygen/preview.py) | **The Preview tab's run**: flat top-down stand-ins, laid out as the seed's road layout and city layout |
+| [build.py](citygen/build.py) | **The Build tab's run**: the road grid, seated buildings and lot fill as one `.schem`, its render, and the exported world |
+| [road_network.py](citygen/road_network.py) | The road grid for a seed, and the road tile catalogue |
+| [city_layout.py](citygen/city_layout.py) | Lots and building placement (`plan_city`), shared by preview and build |
+| [schem.py](citygen/schem.py) | Sponge v3 `.schem` read/write, tile rotation, voxel grids, the building catalog and its pieces |
+| [world_reader.py](citygen/world_reader.py), [world_writer.py](citygen/world_writer.py) | Read Anvil worlds; write the exported world |
+| [isometric.py](citygen/isometric.py), [topdown.py](citygen/topdown.py), [contact_sheet.py](citygen/contact_sheet.py) | Isometric renders; the region map's top-down picture and its cache; labelled thumbnail grids |
+| [blocks.py](citygen/blocks.py) | Block-state strings (`name[prop=val]`), air, and each block's render colour |
+| [settings.py](citygen/settings.py) | The algorithm's knobs (`Algo`), the bundled world's sample areas, version stamping |
+| [paths.py](citygen/paths.py) | Where the app keeps its data, and every output's path |
+| [data/](citygen/data) | What ships: the sample world (`default_world/`) and the block colours (`color_render.csv`) |
+| [gui/](citygen/gui) | The app: a native window (WebView2, through pywebview) showing the page in `gui/static/` |
 
-### Reset local state
+In `gui/`: `app.py` opens the window; `bridge.py` is every call the page makes; `extract_tab.py` and `city_tabs.py`
+are the tabs, each starting its run on a background thread through `session.py`'s `Runner`; `form.py` is the algorithm
+form; `progress.py` places each run's progress on its bar; `server.py` serves the page and the images; `files.py` is
+saved settings and cleanup. The page itself: `index.html`, `app.js` (the tabs, wired to the bridge), `text.js` (every
+word it shows), `tokens.css` (colours; the title bar reads three of them), `app.css`, and one folder per part:
+`viewer/`, `progress/`, `form/`, `region/`.
 
-Delete `appdata/` (everything the app writes: pipeline outputs, exported worlds,
-saved GUI settings) and `build/` and `dist/` (packaging output). All are
-git-ignored and regenerate on the next run.
+## How a run works
 
-## Tutorial: add a tuning knob end to end
+Each tab calls one function, `run`, in its module. A run takes the tab's settings as arguments and reports
+`progress(step, completed, total[, detail])` by step code; [gui/progress.py](citygen/gui/progress.py) gives each step
+a hand-tuned weight on the bar, and the page names the bar's segments by the same codes (`TEXT.segments`).
 
-This walks through the change that touches the most layers: a new setting that
-the engine uses, the CLI can override, and the app shows. The example makes
-avenue jitter configurable. Avenues are currently nudged by a random `-1/0/+1`
-coarse cells.
+| Tab | Runs | Steps |
+|---|---|---|
+| Extract | `extract.run(save, road_box, build_types, progress)` | `scan_roads`, `road_pieces`, `road_sheet`, `scan_builds`, `build_pieces`, `build_sheet` |
+| Preview | `preview.run(seed, algo, progress)` | `road_pieces`, `build_pieces`, `road_layout`, `city_layout` |
+| Build | `build.run(seed, algo, save, progress)` | `construct` (eight steps, `build.STEPS`), `render`, `world` |
 
-1. **Declare it in config.** In [config/algo.py](config/algo.py), add to `Algo`:
+Every run reads and writes `appdata/`, so runs go one at a time. Preview and Build stay disabled until extraction's two
+contact sheets exist. Each launch, and each change of source world, clears `appdata/` except the exported worlds and
+the saved settings, so assets from one world never leak into another's city.
 
-   ```python
-   big_jitter: int = 1  # max coarse-cell nudge applied to each avenue position
-   ```
+Python owns the state; the page draws it and words it. Python answers with facts and short codes
+(`{"code": "running"}`), and every word on screen is in `text.js`. A run tells the page `progress`, `done`, `failed`
+and `finished`, plus `partial` and `piece` for what's ready early, through `citygen.receive(event, payload)`.
+`bridge.py` imports nothing from pywebview, so `tests/test_gui_web.py` drives it without a window.
 
-   `MC_CITY_BIG_JITTER` now works automatically, because `Algo.from_env` reads
-   every field.
+## How the city is made
 
-2. **Use it in the engine.** In
-   [engine/core/road_network.py](engine/core/road_network.py), pass
-   `algo.big_jitter` down to `_generate_avenues` and replace
-   `rng.randint(-1, 1)` with `rng.randint(-jitter, jitter)`. Read it from the
-   `algo` argument — the engine never imports `config.algo.ALGO`. With the
-   default of `1`, the random draws are identical, so existing seeds still
-   produce the same cities.
+**One unit.** `1 fine cell = 9 preview pixels = 9 blocks` (`CELL`). Buildings snap to fine cells; small roads are 1
+cell wide, big roads 2.
 
-3. **Try it from the CLI.**
+**Roads.** Two Manhattan networks overlaid: big roads on a coarse grid (one coarse cell is 2x2 fine cells), small
+roads on the fine grid; where a small road crosses a big one, a mixed 1x2 tile. Two rules hold by construction and the
+tile art relies on them: a small road never lies inside a big road except as a crossing, and never runs alongside one.
 
-   ```bash
-   python src/pipeline/stages.py roads
-   python src/pipeline/stages.py builds
-   MC_CITY_BIG_JITTER=3 python src/pipeline/stages.py preview --seed 5
-   ```
+**Placement.** Road cells are forbidden; the rest flood-fills into lots. Landmarks (type 2) go first, on big-road
+frontage, each at most once per city and `landmark_spacing` apart; then ordinary buildings (type 1) on all frontage,
+each picked at random among the `type1_top_fit_choices` best fits. Everything is deterministic for a seed: placement, stack
+heights and fill props each draw from their own `seeded_rng` stream, so new randomness needs a new stream, or every
+existing seed changes.
 
-   Compare `appdata/03_preview/grid/seed_5.png` against a run without the
-   variable.
+**One ground plane.** Every road, building and fill tile is seated so its emerald marker lines up with the shared
+ground; that's why an asset without an emerald is skipped. Block-entity NBT (signs, chests, banners) travels verbatim
+from extraction to export, its position turning with its tile.
 
-4. **Show it in the app.** In [gui/form.py](gui/form.py),
-   add `"BIG_JITTER"` to `KNOBS`, put it in the `"shape"` group, and give it a
-   slider range such as `(0, 3)`. Then name it in
-   [gui/static/text.js](gui/static/text.js): `BIG_JITTER: ["Avenue wobble", "…"]`
-   in `TEXT.form.knobs`.
+## In-world asset conventions
 
-5. **Test it.** Add a case next to `test_generation_follows_the_algo_argument` in
-   `tests/test_engine_core.py`, then run `python -m pytest -q`.
-   `tests/test_dependencies.py` will fail if step 2 read the process default
-   instead of the argument.
+Each asset is a cuboid between a **gold** and a **diamond** block at opposite corners, with an **emerald** beside the
+gold at ground level. An asset with malformed markers is skipped, not repaired.
 
-Every knob follows this path. The package guides cover each step on its own.
+**Roads and fill props**, inside the road area: one cuboid each, named by the sign one block above the emerald (e.g.
+`02_big_2x2_I`). The first two characters decide what it is:
 
-## Explanation
-
-### Four packages, one direction
-
-| Package | Responsibility |
+| Prefix | Meaning |
 |---|---|
-| [`config/`](config/README.md) | Defaults, paths, the source world, version compatibility |
-| [`engine/`](engine/README.md) | Pure generation and transforms: roads, placement, schematic and world I/O, rendering |
-| [`pipeline/`](pipeline/README.md) | The five numbered stages that drive the engine and produce artifacts |
-| [`gui/`](gui/README.md) | The desktop app (an HTML page in a WebView2 window) that configures and runs the stages |
+| `01`–`05` | big 2x2 tiles (`BIG_TILES` in road_network.py) |
+| `06`–`10` | small 1x1 tiles (`SMALL_TILES`) |
+| `11`–`14` | mixed 1x2 crossings (`MIXED_TILES`) |
+| `18` | the empty-lot ground fill, required |
+| any other, name contains `fill` | a 9x9 fill prop with its own ground, one per empty lot cell |
 
-Imports only point downward: `gui` → `pipeline` → `engine` → `config`. From
-`pipeline`, `gui` may use only `pipeline.stages` and `pipeline.services`. Each package is layered
-internally too. [tests/test_dependencies.py](../tests/test_dependencies.py)
-enforces all of it, along with no import cycles and no imports of another
-module's `_`-prefixed names.
+**Buildings**, inside the house area (type 1, repeatable) and the landmark area (type 2, once per city): one cuboid is
+a `whole` building; three stacked cuboids with the same footprint are `bottom`/`middle`/`top`, the middle repeating to
+vary height. A sign above the emerald may say `stack: n` or `stack: min-max` (default `1`).
 
-The layering keeps settings explicit. Per-run settings (an `Algo`, the source
-save, the regions, the DataVersion) are passed down as arguments. Only the
-pipeline falls back to process-wide defaults, so the engine can be called
-twice with different settings in one process — which is how the GUI works.
+![One-layer convention](../docs/pics/type1.png)
+![Three-layer convention](../docs/pics/type2.png)
 
-### One pipeline, five stages
+`appdata/02_builds/buildings.json` is the catalog everything after extraction places from. Keys are `"001"`,
+`"002"`, …; each entry has `type` (1 or 2), `size` (`[width, depth]`), `origin`, `ground_offset` (the emerald's
+height in the asset), `pieces` (each piece's height) and, stacked buildings only, `stack` (`[min, max]`).
 
-```text
-01 roads   -> road pieces + contact sheet
-02 builds  -> building pieces + buildings.json + contact sheet
-03 preview -> road-layout and city-layout PNGs for a seed
-04 city    -> the city .schem + isometric render
-05 world   -> a copy of the source save with the city written in
-```
+## Versions and data
 
-Preview isn't a separate pipeline. It's a fast iteration step that shares
-Stage 4's layout code, so what you preview is what gets built.
-`buildings.json` connects extraction to placement. Details are in the
-[pipeline guide](pipeline/README.md#the-stages).
+**Forward-only.** Block strings are copied straight from the source world, so every output is stamped with the source
+world's own `DataVersion`, clamped up to MC 26.1.2 (`HARD_FLOOR_DATA_VERSION`): a schematic can be upgraded into a
+newer world, never down. Every stamp is inside Sponge v3, so `schem.py` is v3-only. The Extract tab's target version
+only shows where the output can go; it changes nothing.
 
-### The unit that ties it together
+**Where the data goes.** `appdata/` sits at the repo root in a checkout; beside the exe in a portable build when that's
+writable; else in the per-user data folder (`%LOCALAPPDATA%\MC CityGen` on Windows), or the package's real folder for
+the Store build. The bundled files are read from `src/` or PyInstaller's unpack folder (`paths.RESOURCE_ROOT`).
 
-```text
-1 fine cell = 9 preview pixels = 9 blocks
-```
+## How to…
 
-`CELL = 9` in [config/algo.py](config/algo.py). Buildings snap to fine cells;
-small roads are 1 cell wide, big roads 2.
+**Add a knob.** Add a field to `Algo` in [settings.py](citygen/settings.py) (an `int`, or a `frozenset[str]`), and read
+it from the `algo` argument, never from `ALGO`. To show it, add its name to `KNOBS` and one of the `GROUPS` in
+[gui/form.py](citygen/gui/form.py), with a range in `SLIDER_RANGES` (or in `SET_KNOBS` for a set), and give it a label
+and tip in `TEXT.form.knobs` in `text.js`. The form is built from `form_spec`, so there's no HTML to change.
 
-### What it is not
+**Add a road tile.** Add `(ports, "NN_<name>")` to `BIG_TILES`, `SMALL_TILES` or `MIXED_TILES` in
+[road_network.py](citygen/road_network.py) with a new prefix, ports in the unrotated orientation, and author the
+matching asset in the world. Pieces are matched to tiles by prefix alone.
 
-A structured city *assembler*, not a general urban simulator. It is strongest
-when the assets follow the conventions exactly:
+**Add a step to a run.** Report it with a new code from the run, give the code a weight in `WEIGHTS` and a segment in
+`SEGMENTS` in [gui/progress.py](citygen/gui/progress.py), and name the segment in `TEXT.segments` in `text.js`.
 
-- Roads are orthogonal (Manhattan) only — no diagonals or curves.
-- Assets are found through strict in-world markers; malformed markers mean the
-  asset is skipped.
-- Footprints snap to the fine-cell grid; no freeform placement.
-- Stage 3 previews are layout-accurate stand-ins, not faithful visuals.
+**Re-tune a progress bar.** Time a run's steps and set the weights in `WEIGHTS` in proportion; each tab's weights only
+matter relative to each other.
 
-## Reference
+**Refresh the block colours.** When MC gains blocks, run `python scripts/update_render_colors.py [--version 26.1.2]`:
+it downloads the client JAR into `build/` and rewrites `data/color_render.csv`. `--vivid-only` re-derives the
+saturated colours without downloading.
 
-- **Python** `>= 3.10`. Runtime dependencies (`numpy`, `nbtlib`, `numba`,
-  `pywebview`, `Pillow`) and entry points (`citygen`, `citygen-doctor`) are
-  declared in [pyproject.toml](../pyproject.toml).
-- **Input:** an MC **Java Edition** world, 1.18+ Anvil format. Bedrock
-  and older formats are not supported.
-- **Output:** Sponge `.schem` v3, and standalone worlds. Minimum MC
-  version 26.1.2, forward-only — see the
-  [config guide](config/README.md#version-compatibility).
-- **Generated directories** (all git-ignored): `appdata/` (what the app writes:
-  [pipeline outputs](pipeline/README.md#outputs), exported worlds, saved settings), `build/` and `dist/`
-  (packaging), `.pytest_cache/`.
-- **Repo maintenance scripts** in [scripts/](../scripts): `update_render_colors.py`
-  (see the [config guide](config/README.md#refresh-the-render-palette)) and
-  `remove_init_and_pycache.py`, which deletes every `__pycache__` and
-  `__init__.py`.
-- **No `__init__.py`.** Every package under `src/` is a namespace package;
-  don't add one.
+Releases, the installer and the Store package are in the [release guide](../docs/RELEASING.md).
