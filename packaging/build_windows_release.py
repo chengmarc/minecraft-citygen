@@ -184,6 +184,8 @@ def base_pyinstaller_command(*, onefile: bool, icon_path: Path | None) -> list[s
         "--add-data",
         data_arg(ICON_ICO, "."),
         "--add-data",
+        data_arg(ICON_SVG, "."),
+        "--add-data",
         data_arg(SRC_ROOT / "config" / "color_render.csv", "config"),
         "--add-data",
         data_arg(DEFAULT_WORLD_DIR, "config/default_world"),

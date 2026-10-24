@@ -20,11 +20,26 @@ class ImageViewer {
     this.root = root;
     this.root.innerHTML =
       '<div class="viewer-layer" hidden><img alt="" draggable="false"><div class="viewer-overlay" hidden></div></div>' +
-      '<p class="viewer-placeholder"></p>';
+      '<div class="viewer-placeholder"><i class="icon"></i><p></p></div>' +
+      '<span class="viewer-caption"></span>' +
+      '<div class="viewer-tools"><button type="button" data-zoom="-1" title="Zoom out">\u2212</button><output></output>' +
+      '<button type="button" data-zoom="1" title="Zoom in">+</button>' +
+      '<button type="button" data-zoom="fit" title="Fit (or double-click)">Fit</button></div>';
     this.layer = $(".viewer-layer", root);
     this.img = $("img", root);
     this.overlay = $(".viewer-overlay", root);
     this.placeholder = $(".viewer-placeholder", root);
+    this.zoomReadout = $(".viewer-tools output", root);
+    $(".viewer-caption", root).textContent = root.dataset.caption || "";
+    if (root.dataset.icon) $(".viewer-placeholder .icon", root).classList.add(`icon-${root.dataset.icon}`);
+    for (const button of $$(".viewer-tools button", root)) {
+      button.addEventListener("pointerdown", (event) => event.stopPropagation());   // not a pan
+      button.addEventListener("dblclick", (event) => event.stopPropagation());
+      button.addEventListener("click", () => {
+        if (button.dataset.zoom === "fit") this.fit();
+        else this.zoomBy(Number(button.dataset.zoom) * 2);
+      });
+    }
     this.interceptPointer = null;   // (event) => true to take a press away from panning
     this.zoomLevel = 0;
     this.scale = 1;
@@ -43,7 +58,7 @@ class ImageViewer {
     this.layer.hidden = true;
     this.img.removeAttribute("src");
     this.root.classList.remove("has-image");
-    this.placeholder.textContent = message;
+    $("p", this.placeholder).textContent = message;
     this.placeholder.hidden = false;
   }
 
@@ -58,11 +73,13 @@ class ImageViewer {
       return Promise.resolve(false);
     }
     return new Promise((resolve) => {
+      this.layer.classList.add("loading");
       this.img.onload = () => {
         this.placeholder.hidden = true;
         this.layer.hidden = false;
         this.root.classList.add("has-image");
         this.fit();
+        requestAnimationFrame(() => this.layer.classList.remove("loading"));   // fade the new image in
         resolve(true);
       };
       this.img.onerror = () => {
@@ -95,6 +112,7 @@ class ImageViewer {
   apply() {
     this.layer.style.transform = `translate(${this.x}px, ${this.y}px) scale(${this.scale})`;
     this.overlay.style.borderWidth = `${2 / this.scale}px`;   // a 2px outline at any zoom
+    this.zoomReadout.value = `${Math.round(this.scale * 100)}%`;
   }
 
   /** The image pixel under a pointer, clamped to the image. */
@@ -115,16 +133,20 @@ class ImageViewer {
     });
   }
 
-  // Same steps as before: 1.12x per wheel notch, from -12 to +40 notches.
+  // 1.12x per wheel notch, from -12 to +40 notches from the fit, about the cursor.
   onWheel(event) {
     event.preventDefault();
     if (!this.hasImage() || event.deltaY === 0) return;
-    const next = Math.min(Math.max(this.zoomLevel - event.deltaY / 100, -12), 40);
+    const rect = this.root.getBoundingClientRect();
+    this.zoomBy(-event.deltaY / 100, event.clientX - rect.left, event.clientY - rect.top);
+  }
+
+  /** Zoom by ``notches`` about a point of the viewer (its centre by default). */
+  zoomBy(notches, mx = this.root.clientWidth / 2, my = this.root.clientHeight / 2) {
+    if (!this.hasImage()) return;
+    const next = Math.min(Math.max(this.zoomLevel + notches, -12), 40);
     if (next === this.zoomLevel) return;
     const factor = 1.12 ** (next - this.zoomLevel);
-    const rect = this.root.getBoundingClientRect();
-    const mx = event.clientX - rect.left;
-    const my = event.clientY - rect.top;
     this.zoomLevel = next;
     this.scale *= factor;
     this.x = mx - (mx - this.x) * factor;
@@ -156,8 +178,9 @@ class ImageViewer {
 
 // --- Progress bar: jumps to each milestone, then creeps toward the soft target until the next one.
 class ProgressBar {
-  constructor(root) {
+  constructor(root, percent = null) {
     this.root = root;
+    this.percent = percent;
     this.chunk = $(".progress-chunk", root);
     this.value = 0;
     this.timer = null;
@@ -168,6 +191,7 @@ class ProgressBar {
     this.value = value;
     this.chunk.style.width = `${value}%`;
     this.root.setAttribute("aria-valuenow", String(Math.round(value)));
+    if (this.percent) this.percent.textContent = `${Math.floor(value)}%`;
   }
 
   indeterminate() {
@@ -203,10 +227,10 @@ class AlgoControls {
   constructor(root, form, onChange) {
     this.fields = {};
     this.seed = "";
-    this.toggle = $(".toggle", root);
+    this.toggle = $(".disclosure", root);
     this.panel = $(".advanced", root);
     this.toggle.addEventListener("click", () => {
-      this.setAdvanced(this.toggle.getAttribute("aria-pressed") !== "true");
+      this.setAdvanced(this.toggle.getAttribute("aria-expanded") !== "true");
       onChange();
     });
 
@@ -220,7 +244,10 @@ class AlgoControls {
       select.title = spec.description;
       for (const option of spec.options) select.add(new Option(option, option));
       select.addEventListener("change", onChange);
-      $(".selectors", root).append(label, select);
+      const field = document.createElement("div");
+      field.className = "select-field";
+      field.append(label, select);
+      $(".selectors", root).append(field);
       this.fields[spec.name] = { get: () => select.value, set: (v) => { select.value = v; } };
     }
 
@@ -230,7 +257,7 @@ class AlgoControls {
       legend.textContent = group.title;
       fieldset.append(legend);
       for (const spec of group.fields) fieldset.append(this.buildRow(prefix, spec, onChange));
-      this.panel.append(fieldset);
+      $(".advanced-inner", this.panel).append(fieldset);
     }
   }
 
@@ -264,25 +291,30 @@ class AlgoControls {
     input.id = label.htmlFor;
     input.min = spec.min;
     input.max = spec.max;
-    input.addEventListener("input", () => { output.value = input.value; onChange(); });
+    const show = () => {
+      output.value = input.value;
+      input.style.setProperty("--fill", `${((input.value - spec.min) / (spec.max - spec.min)) * 100}%`);
+    };
+    input.addEventListener("input", () => { show(); onChange(); });
     row.append(slider);
     this.fields[spec.name] = {
       get: () => input.value,
-      set: (v) => { input.value = v; output.value = input.value; },
+      set: (v) => { input.value = v; show(); },
     };
     return row;
   }
 
   setAdvanced(visible) {
-    this.toggle.setAttribute("aria-pressed", String(visible));
-    this.toggle.textContent = visible ? "Advanced Settings" : "Basic Settings";
-    this.panel.hidden = !visible;
+    this.toggle.setAttribute("aria-expanded", String(visible));
+    $("span", this.toggle).textContent = visible ? "Fewer settings" : "More settings";
+    this.panel.classList.toggle("open", visible);
+    this.panel.inert = !visible;   // closed, its fields can't take focus
   }
 
   state() {
     const algo = {};
     for (const [name, field] of Object.entries(this.fields)) algo[name] = field.get();
-    return { advanced: this.toggle.getAttribute("aria-pressed") === "true", seed: this.seed, algo };
+    return { advanced: this.toggle.getAttribute("aria-expanded") === "true", seed: this.seed, algo };
   }
 
   setState(state) {

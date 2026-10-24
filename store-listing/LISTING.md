@@ -177,5 +177,5 @@ Leave empty.
 - **Notes for certification:**
 
   ```
-  No account, sign-in, internet connection or MC install is needed. The app opens with a sample world already selected, with its road, house and landmark areas chosen. On the Extract tab, click Extract and wait for it to finish. On the Preview tab, click Preview to see the road network and building layout. On the Build tab, click Build: it shows a rendered picture of the finished city. Copy then opens the folder with the exported world.
+  No account, sign-in, internet connection or MC install is needed. The app opens with a sample world already selected, with its road, house and landmark areas chosen. On the Extract tab, click Extract and wait for it to finish. On the Preview tab, click Preview to see the road network and building layout. On the Build tab, click Build: it shows a rendered picture of the finished city. Worlds then opens the folder with the exported world.
   ```

@@ -1,4 +1,4 @@
-"""What the window's local server serves: the page, the button icons, and the images the app writes.
+"""What the window's local server serves: the page, its icons, and the images the app writes.
 
 A plain WSGI app, which pywebview runs on 127.0.0.1. Each route serves one folder
 and nothing outside it.
@@ -11,7 +11,7 @@ import os
 from pathlib import Path
 from urllib.parse import quote, unquote
 
-from config.path import APP_DATA, GUI_ICONS
+from config.path import APP_DATA, GUI_ICONS, RESOURCE_ROOT
 
 STATIC = Path(__file__).resolve().parent / "static"
 ROUTES = {
@@ -19,8 +19,12 @@ ROUTES = {
     "/icons/": Path(GUI_ICONS),
     "/": STATIC,
 }
+# Single files, ahead of the routes: the app icon, which the page shows as the brand.
+FILES = {"/app-icon.svg": Path(RESOURCE_ROOT) / "app-icon.svg"}
 # Not left to the Windows registry, which can map .js to text/plain.
-CONTENT_TYPES = {".html": "text/html", ".css": "text/css", ".js": "text/javascript", ".png": "image/png"}
+CONTENT_TYPES = {
+    ".html": "text/html", ".css": "text/css", ".js": "text/javascript", ".png": "image/png", ".svg": "image/svg+xml",
+}
 
 
 def file_url(path):
@@ -35,6 +39,8 @@ def file_url(path):
 
 
 def _resolve(url_path):
+    if url_path in FILES:
+        return FILES[url_path] if FILES[url_path].is_file() else None
     for prefix, root in ROUTES.items():
         if url_path.startswith(prefix):
             relative = unquote(url_path[len(prefix):]) or "index.html"
