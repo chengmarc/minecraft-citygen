@@ -83,7 +83,7 @@ def version_selector_items(min_data_version=None):
 
 # --- The region map's world preview, rendered once per world and cached on disk
 
-CHUNK_SIZE = 16
+CHUNK_SIZE = 16   # region.js snaps to the same chunks
 
 
 def _preview_cache_paths(save_path):
@@ -173,7 +173,7 @@ TIMING_PREFIXES = {
 
 def _extract_phase(stage, label):
     if stage in (stages.ROADS_EXTRACT, stages.BUILDS_EXTRACT):
-        return "scan" if (label or "").startswith("Scanning") else "export"
+        return "scan" if (label or "").startswith(stages.SCANNING) else "export"
     return "render"
 
 

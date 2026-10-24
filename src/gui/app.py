@@ -9,6 +9,7 @@ import argparse
 import ctypes
 import json
 import os
+import re
 import sys
 import threading
 import traceback
@@ -25,10 +26,6 @@ from gui.bridge import Api  # noqa: E402
 # The window opens at its smallest size, and can only grow from there.
 APP_WIDTH = 1280
 APP_HEIGHT = 800
-# The page's tokens (static/app.css): the window background, and the sky the title bar runs into.
-APP_BG = "#f2f0ed"
-SKY = "#cfe4f8"
-SKY_TEXT = "#2f5274"
 WEBVIEW2_DOWNLOAD = "https://developer.microsoft.com/microsoft-edge/webview2/"
 
 
@@ -118,6 +115,12 @@ def set_title_bar_colors(hwnd: int, caption: str, text: str) -> None:
         pass
 
 
+def page_colors(*tokens):
+    """The page's colour tokens (``--app-bg`` and the like, in static/app.css), so the window matches the page."""
+    css = (server.STATIC / "app.css").read_text(encoding="utf-8")
+    return [re.search(rf"--{token}:\s*(#[0-9a-fA-F]{{6}})\s*;", css).group(1) for token in tokens]
+
+
 def _parse_args(argv: list[str]) -> argparse.Namespace:
     parser = argparse.ArgumentParser(prog="citygen", description="MC CityGen application.")
     parser.add_argument("--debug", action="store_true", help="Allow the page's developer tools (F12).")
@@ -168,6 +171,8 @@ def main(argv: list[str] | None = None) -> int:
             return 1
 
         files.clear_pipeline_artifacts()  # clean slate each launch; keeps exported worlds
+        # The window behind the page, and the sky the title bar runs into.
+        app_bg, sky, sky_text = page_colors("app-bg", "sky", "sky-text")
         window = None
 
         def emit(event, payload):
@@ -184,13 +189,13 @@ def main(argv: list[str] | None = None) -> int:
             width=APP_WIDTH,
             height=APP_HEIGHT,
             min_size=(APP_WIDTH, APP_HEIGHT),
-            background_color=APP_BG,
+            background_color=app_bg,
         )
         if sys.platform == "win32":
             # ``native`` is the WinForms form that holds the page.
             def style_title_bar():
                 hwnd = window.native.Handle.ToInt64()
-                set_title_bar_colors(hwnd, SKY, SKY_TEXT)
+                set_title_bar_colors(hwnd, sky, sky_text)
                 hide_title_and_icon(hwnd)   # the page's header shows both
 
             window.events.shown += style_title_bar

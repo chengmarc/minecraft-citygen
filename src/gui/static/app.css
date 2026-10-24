@@ -2,7 +2,8 @@
    everything you act on and everything that grows (the big buttons, focus, progress, what's done), and dirt brown
    at the bottom (the strip of ground the window stands on, under the faint brown of its panels). New colours
    should follow the same layers.
-   gui/app.py repeats --sky, --sky-text and --app-bg for the native title bar and the window behind the page. */
+   gui/app.py reads --sky, --sky-text and --app-bg from here for the native title bar and the window behind the page:
+   keep them plain #rrggbb. */
 :root {
   /* Sky */
   --sky: #cfe4f8;
