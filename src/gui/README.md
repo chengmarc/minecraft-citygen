@@ -55,8 +55,10 @@ weight.
 
 ## Explanation
 
-**Python owns the state; the page draws it.** The saved settings, the
-prerequisite gates, and every run live in Python. The page calls the bridge and
+**Python owns the state; the page draws it and words it.** The saved settings,
+the prerequisite gates, and every run live in Python, which answers with facts
+and short codes (`{"code": "running"}`, a chunk count, the pipeline's own step
+names); every other word the page shows is in [static/text.js](static/text.js). The page calls the bridge and
 redraws from what it answers, or from the events a run sends: `progress`,
 `done`, `failed`, and `finished`, each naming its tab, through
 `citygen.receive(event, payload)`. [bridge.py](bridge.py) imports
@@ -112,7 +114,7 @@ application.pyw  ->  gui.app:main  (window + server + bridge)  ->  static/ (the 
 | [algo.py](algo.py) | **Preview** (Stage 3) and **Build** (Stages 4–5): the algorithm form, form values → `Algo` |
 | [progress.py](progress.py) | Per-step progress weights, milestones, run-bar segments, and timing records |
 | [files.py](files.py) | Files the GUI owns (below), artifact cleanup, opening folders |
-| [static/](static/) | The page: `index.html`, `app.css` (the colours), `components.js`, `region.js`, `app.js`, and the button icons in `icons/` |
+| [static/](static/) | The page: `index.html`, `app.css` (the colours), `text.js` (the words), `components.js`, `region.js`, `app.js`, and the button icons in `icons/` |
 
 Files the GUI writes (`ROOT` is the app root, see the
 [config guide](../config/README.md#where-outputs-go)):

@@ -44,17 +44,18 @@ class RegionMap {
     const answer = await this.api.load_world_map();
     if (answer.error) {
       this.dialog.close();
-      showError(answer.error);
+      showError(describeError(answer.error, "extract"));
     }
   }
 
-  /** A ``worldMap`` event: render progress, then the map or why it failed. */
+  /** A ``worldMap`` event: render progress, then the map, or why there isn't one. */
   receive(payload) {
     if (!this.dialog.open) return;
-    if (payload.error) {
+    if ("error" in payload || "missing" in payload) {
+      const message = "missing" in payload ? TEXT.mapMissing(payload.missing) : payload.error || TEXT.mapFailed;
       this.progress.root.hidden = true;
-      this.viewer.setMessage(payload.error);
-      this.status.textContent = payload.error;
+      this.viewer.setMessage(message);
+      this.status.textContent = message;
     } else if (payload.src) {
       this.progress.root.hidden = true;
       this.meta = payload.meta;

@@ -66,10 +66,10 @@ class ImageViewer {
     this.setMessage(this.root.dataset.message || "");
   }
 
-  /** Show ``{src}``, or ``{message}`` in its place; resolves once it's on screen. */
+  /** Show ``{src}``, or say it's ``{missing}``; resolves once it's on screen. */
   load(payload) {
     if (!payload.src) {
-      this.setMessage(payload.message);
+      this.setMessage(TEXT.imageMissing(payload.missing));
       return Promise.resolve(false);
     }
     return new Promise((resolve) => {
@@ -212,12 +212,15 @@ class ProgressBar {
       this.chunk.style.width = `${value}%`;
       return;
     }
-    for (const segment of this.segments) {
+    this.activeIndex = -1;   // the segment under way, which the status line names
+    this.segments.forEach((segment, index) => {
       const part = Math.min(Math.max((value - segment.start) / (segment.end - segment.start), 0), 1);
+      const active = part < 1 && value >= segment.start;
       segment.fill.style.width = `${part * 100}%`;
       segment.element.classList.toggle("done", part >= 1);
-      segment.element.classList.toggle("active", part < 1 && value >= segment.start);
-    }
+      segment.element.classList.toggle("active", active);
+      if (active) this.activeIndex = index;
+    });
   }
 
   indeterminate() {

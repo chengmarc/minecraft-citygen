@@ -18,7 +18,7 @@ from engine.render.topdown import render_topdown_preview
 from pipeline import services, stages
 
 from gui import files, progress
-from gui.server import file_url
+from gui.server import image
 
 
 # --- Settings: source world, sample areas, and the version stamp
@@ -127,13 +127,11 @@ def cached_topdown_preview(save_path, on_progress=None):
     return png_path, meta
 
 
-def chunk_span_text(start, end):
-    """How many chunks a block region covers, as "x x z chunks"."""
+def chunk_span(start, end):
+    """How many chunks a block region covers, as ``[x, z]``."""
     min_x, max_x = sorted((int(start[0]), int(end[0])))
     min_z, max_z = sorted((int(start[2]), int(end[2])))
-    x_chunks = max_x // CHUNK_SIZE - min_x // CHUNK_SIZE + 1
-    z_chunks = max_z // CHUNK_SIZE - min_z // CHUNK_SIZE + 1
-    return f"{x_chunks} x {z_chunks} chunks"
+    return [max_x // CHUNK_SIZE - min_x // CHUNK_SIZE + 1, max_z // CHUNK_SIZE - min_z // CHUNK_SIZE + 1]
 
 
 # --- The tab
@@ -147,15 +145,6 @@ EXTRACT_PHASE_INDEX = {
     for index, (stage, phase, _weight) in enumerate(progress.EXTRACTION_PHASE_WEIGHTS)
 }
 EXTRACT_PHASE_WEIGHT_VALUES = [weight for _stage, _phase, weight in progress.EXTRACTION_PHASE_WEIGHTS]
-
-EXTRACT_STATUS_LABELS = {
-    (stages.ROADS_EXTRACT, "scan"): "Scanning road region",
-    (stages.ROADS_EXTRACT, "export"): "Extracting road pieces",
-    (stages.ROADS_RENDER, "render"): "Building road contact sheet",
-    (stages.BUILDS_EXTRACT, "scan"): "Scanning build regions",
-    (stages.BUILDS_EXTRACT, "export"): "Extracting building pieces",
-    (stages.BUILDS_RENDER, "render"): "Building asset sheet",
-}
 
 TIMING_PREFIXES = {
     stages.ROADS_EXTRACT: "roads",
@@ -190,19 +179,21 @@ def coalesce_pipeline_progress(emit):
 
 
 def extract_progress(stage, phase, completed, total):
-    """``(value, soft_target, status)`` for an extraction phase, in PROGRESS_BAR_SCALE units."""
+    """``(value, soft_target)`` for an extraction phase, in PROGRESS_BAR_SCALE units.
+
+    No detail: each phase is one of the run bar's segments, which the page names.
+    """
     scale = progress.PROGRESS_BAR_SCALE
     phase_index = EXTRACT_PHASE_INDEX[(stage, phase)]
-    status = EXTRACT_STATUS_LABELS.get((stage, phase), "Extracting assets")
     total_f = float(total) if total > 0 else 1.0
     completed_f = max(0.0, min(float(completed), total_f))
     if completed_f >= total_f:
-        return progress.weighted_segment(EXTRACT_PHASE_WEIGHT_VALUES, phase_index, scale)[1], None, status
+        return progress.weighted_segment(EXTRACT_PHASE_WEIGHT_VALUES, phase_index, scale)[1], None
     value = progress.weighted_item_milestone(EXTRACT_PHASE_WEIGHT_VALUES, phase_index, completed_f, total_f, scale)
     next_value = progress.weighted_item_milestone(
         EXTRACT_PHASE_WEIGHT_VALUES, phase_index, completed_f + 1.0, total_f, scale,
     )
-    return value, progress.soft_target(value, next_value, "extraction"), status
+    return value, progress.soft_target(value, next_value, "extraction")
 
 
 def _area_pair(area_state):
@@ -220,13 +211,11 @@ def _timing_key(event):
     return None if prefix is None else f"{prefix}_{event['phase']}"
 
 
-def _image(path):
-    url = file_url(path)
-    return {"src": url} if url else {"message": f"Image not found:\n{path}"}
-
-
 class ExtractTab:
-    """The Extract tab's calls. The saved ``extraction`` section is the tab's state."""
+    """The Extract tab's calls. The saved ``extraction`` section is the tab's state.
+
+    An error is ``{"error": {"code", "detail"}}``, which the page words.
+    """
 
     def __init__(self, settings, runner, emit, *, pick_folder, thread_factory):
         self._settings = settings
@@ -261,10 +250,7 @@ class ExtractTab:
         areas = {}
         for key in AREAS:
             pair = _area_pair(saved.get(key))
-            areas[key] = {
-                "selected": pair is not None,
-                "detail": f"{chunk_span_text(*pair)} selected" if pair else "No area selected",
-            }
+            areas[key] = {"chunks": chunk_span(*pair) if pair else None}
         return {
             "worldPath": path,
             "worldReady": self.world_ready(),
@@ -283,16 +269,13 @@ class ExtractTab:
     def browse_world(self):
         """Ask for a world folder; a new world clears the areas and the pipeline's artifacts.
 
-        Returns ``{"changed": True}``, ``{"warning": ...}``, or ``{}`` when cancelled.
+        Returns ``{"changed": True}``, ``{"warning": {"code": "not_a_world", ...}}``, or ``{}`` when cancelled.
         """
         folder = self._pick_folder(str(self._saved().get("world_path", "")).strip())
         if not folder:
             return {}
         if not has_region_files(folder):
-            return {"warning": {
-                "title": "Not an MC world",
-                "message": f"No region files (.mca) were found in:\n{folder}\n\nPlease select a valid MC world folder.",
-            }}
+            return {"warning": {"code": "not_a_world", "detail": folder}}
         state = {**self._saved(), "world_path": folder}
         for key in AREAS:
             state[key] = {"start": None, "end": None}
@@ -315,10 +298,7 @@ class ExtractTab:
         """Render (or load the cached) top-down world preview; answers with ``worldMap`` events."""
         save_path = str(self._saved().get("world_path", "")).strip()
         if not save_path or not has_region_files(save_path):
-            return {"error": {
-                "title": "Missing world path",
-                "message": "Choose a valid MC world before selecting an area on the map.",
-            }}
+            return {"error": {"code": "no_world"}}
 
         def worker():
             try:
@@ -326,13 +306,10 @@ class ExtractTab:
                     save_path,
                     on_progress=lambda done, total: self._emit("worldMap", {"completed": done, "total": total}),
                 )
-                url = file_url(png_path)
-                if url is None:
-                    raise OSError(f"World preview not found:\n{png_path}")
             except Exception as exc:  # boundary: surface any preview-load failure in the map
-                self._emit("worldMap", {"error": str(exc).strip() or "Failed to load world preview."})
+                self._emit("worldMap", {"error": str(exc).strip() or None})
                 return
-            self._emit("worldMap", {"src": url, "meta": meta})
+            self._emit("worldMap", {**image(png_path), "meta": meta})
 
         self._thread_factory(target=worker, daemon=True).start()
         return {}
@@ -340,14 +317,11 @@ class ExtractTab:
     def run(self):
         """Start Stages 1 then 2 on the saved world and areas."""
         if self._runner.is_running("extract"):
-            return {"error": {"title": "Extract running", "message": "An extraction is already running."}}
+            return {"error": {"code": "running"}}
         saved = self._saved()
         pairs = {key: _area_pair(saved.get(key)) for key in AREAS}
         if not self.world_ready() or not all(pairs.values()):
-            return {"error": {
-                "title": "Invalid extraction region",
-                "message": "Choose an MC world and all three areas first.",
-            }}
+            return {"error": {"code": "areas_missing"}}
         save = str(saved["world_path"]).strip()
         road_box = BlockRegion.from_xyz_pair(*pairs["road"])
         build_types = (
@@ -373,11 +347,7 @@ class ExtractTab:
                 phase_key=_timing_key,
                 weights={f"{stage}:{phase}": weight for stage, phase, weight in progress.EXTRACTION_PHASE_WEIGHTS},
             ))
-            return {
-                "images": {"roads": _image(ROADS_CONTACT_SHEET), "builds": _image(BUILDS_CONTACT_SHEET)},
-                "status": "Extraction complete",
-            }
+            return {"images": {"roads": image(ROADS_CONTACT_SHEET), "builds": image(BUILDS_CONTACT_SHEET)}}
 
-        self._runner.start("extract", job, failure_title="Extract failed", status="Preparing extraction",
-                           on_success=on_success)
+        self._runner.start("extract", job, on_success=on_success)
         return {}
