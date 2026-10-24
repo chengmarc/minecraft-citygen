@@ -70,7 +70,7 @@ def test_extraction_reports_its_steps_in_order(monkeypatch, tmp_path):
     def fake_sheet(_items, _render_item, _out, _sheet, progress):
         progress(1, 1, "piece")
 
-    monkeypatch.setattr(step1_extract, "open_world", lambda save: save)
+    monkeypatch.setattr(step1_extract, "World", lambda save: save)
     monkeypatch.setattr(step1_extract, "extract_roads", fake_extract_roads)
     monkeypatch.setattr(step1_extract, "extract_builds", fake_extract_builds)
     monkeypatch.setattr(step1_extract, "read_catalog", lambda _path: {})

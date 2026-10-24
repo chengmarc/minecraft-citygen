@@ -17,9 +17,9 @@ from citygen.paths import (
     BUILD_CATALOG, BUILDS_SCHEM, city_render_path, city_schem_path, exported_world_name, exported_world_path,
     ROADS_SCHEM, WORLD_ICON,
 )
-from citygen.settings import source_data_version
 from citygen.tools.render_isometric import render_schem_visible_iso, trim_to_content
 from citygen.tools.schem import read_catalog, write_sponge_schem_grid
+from citygen.tools.world_reader import source_data_version
 from citygen.tools.world_writer import schem_to_world
 
 # What construction reports as it starts each of its steps, in order; gui/static/progress/steps.js weights each one.

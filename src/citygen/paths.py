@@ -1,4 +1,4 @@
-"""Runtime paths: app/resource roots, the app's data folder, and world-save region lookup."""
+"""Runtime paths: app/resource roots, the app's data folder, and where each output goes."""
 
 from __future__ import annotations
 
@@ -201,42 +201,3 @@ def exported_world_name(seed) -> str:
 
 def exported_world_path(seed) -> str:
     return str(Path(SAVES) / exported_world_name(seed))
-
-
-def _normalized(path: os.PathLike[str] | str | None) -> str:
-    if not path:
-        return ""
-    return os.path.normpath(str(Path(path).expanduser()))
-
-
-def region_dir_candidates(save_path: os.PathLike[str] | str | None) -> list[str]:
-    save_root = _normalized(save_path)
-    if not save_root:
-        return []
-    base = Path(save_root)
-    if base.name.lower() == "region":
-        return [str(base)]
-    return [
-        os.path.normpath(str(base / "region")),
-        os.path.normpath(str(base / "dimensions" / "minecraft" / "overworld" / "region")),
-    ]
-
-
-def _contains_region_files(region_dir: str) -> bool:
-    return bool(region_dir) and os.path.isdir(region_dir) and any(Path(region_dir).glob("r.*.*.mca"))
-
-
-def has_region_files(save_path: os.PathLike[str] | str | None) -> bool:
-    """Return True when save_path contains at least one .mca region file."""
-    return _contains_region_files(resolve_region_dir(save_path))
-
-
-def resolve_region_dir(save_path: os.PathLike[str] | str | None) -> str:
-    candidates = region_dir_candidates(save_path)
-    for candidate in candidates:
-        if _contains_region_files(candidate):
-            return candidate
-    for candidate in candidates:
-        if os.path.isdir(candidate):
-            return candidate
-    return candidates[0] if candidates else ""

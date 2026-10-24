@@ -11,11 +11,10 @@ from citygen.tools import render_topdown
 from citygen.gui import files
 from citygen.gui.server import image
 from citygen.paths import (
-    BUILDS_CONTACT_SHEET, BUILDS_RENDERS, DEFAULT_WORLD, has_region_files, ROADS_CONTACT_SHEET, ROADS_RENDERS,
+    BUILDS_CONTACT_SHEET, BUILDS_RENDERS, DEFAULT_WORLD, ROADS_CONTACT_SHEET, ROADS_RENDERS,
 )
-from citygen.settings import (
-    BlockRegion, BuildRegion, detect_world_data_version, release_name_for, RELEASE_NAMES, SAMPLE_AREAS,
-)
+from citygen.settings import BlockRegion, BuildRegion, SAMPLE_AREAS
+from citygen.tools.world_reader import detect_world_data_version, has_region_files, release_name_for, RELEASE_NAMES
 
 
 # --- Settings: source world, sample areas, and the version stamp
@@ -38,7 +37,7 @@ def version_selector_items(min_data_version):
     Indicator only: it lists the MC versions the output can be pasted into
     -- the source version and newer -- so the user can confirm the target. It
     does not affect the stamp, which is always the source version (see
-    config.world.source_data_version). When min_data_version is given, only versions at
+    world_reader.source_data_version). When min_data_version is given, only versions at
     or above it are listed.
     """
     return [AUTO_VERSION] + [

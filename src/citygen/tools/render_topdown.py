@@ -15,8 +15,8 @@ from pathlib import Path
 import numpy as np
 
 from citygen.tools.blocks import block_color
-from citygen.paths import resolve_region_dir, WORLD_PREVIEW_CACHE
-from citygen.tools.world_reader import World
+from citygen.paths import WORLD_PREVIEW_CACHE
+from citygen.tools.world_reader import resolve_region_dir, World
 
 # Where there's no world (no chunk, or no surface block), the map is transparent: it shows whatever it's drawn on.
 EMPTY = (0, 0, 0, 0)
@@ -57,9 +57,8 @@ def render_topdown_preview(save_path, *, on_progress=None, on_partial=None):
     """
     from PIL import Image
 
-    region_dir = resolve_region_dir(save_path)
-    world = World(region_dir=region_dir, save_path=save_path)
-    x0, x1, z0, z1 = region_world_bounds(region_dir)
+    world = World(save_path)
+    x0, x1, z0, z1 = region_world_bounds(world.region_dir)
     span_x = x1 - x0 + 1
     span_z = z1 - z0 + 1
     step = max(1, math.ceil(max(span_x, span_z) / MAX_PREVIEW_SIZE))
