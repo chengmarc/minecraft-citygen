@@ -133,20 +133,13 @@ h2, h3, p { margin: 0; }
   -webkit-mask: linear-gradient(to right, transparent, #000 30%);
   mask: linear-gradient(to right, transparent, #000 30%);
 }
-/* One 8px "pixel" drawn, the rest of the cloud as copies of it. */
+/* A pixel cloud, 8px pixels, drawn as one shape (cloud.svg): built from separate squares, the seams between them
+   showed whenever a cloud sat between whole pixels or was scaled. */
 .cloud {
   position: absolute;
-  width: 8px;
-  height: 8px;
-  background: rgba(255, 255, 255, 0.75);
-  box-shadow:
-    8px 0 rgba(255, 255, 255, 0.75), 16px 0 rgba(255, 255, 255, 0.75), 24px 0 rgba(255, 255, 255, 0.75),
-    -8px 8px rgba(255, 255, 255, 0.75), 0 8px rgba(255, 255, 255, 0.75), 8px 8px rgba(255, 255, 255, 0.75),
-    16px 8px rgba(255, 255, 255, 0.75), 24px 8px rgba(255, 255, 255, 0.75), 32px 8px rgba(255, 255, 255, 0.75),
-    40px 8px rgba(255, 255, 255, 0.75), -16px 16px rgba(255, 255, 255, 0.75), -8px 16px rgba(255, 255, 255, 0.75),
-    0 16px rgba(255, 255, 255, 0.75), 8px 16px rgba(255, 255, 255, 0.75), 16px 16px rgba(255, 255, 255, 0.75),
-    24px 16px rgba(255, 255, 255, 0.75), 32px 16px rgba(255, 255, 255, 0.75), 40px 16px rgba(255, 255, 255, 0.75),
-    48px 16px rgba(255, 255, 255, 0.75);
+  width: 72px;
+  height: 24px;
+  background: url(/cloud.svg) center / 100% 100% no-repeat;
   animation: drift 30s linear infinite;
 }
 /* Each at its own height, size and speed, and part-way through its crossing, so they never move in step. */
