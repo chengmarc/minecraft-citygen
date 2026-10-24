@@ -34,7 +34,21 @@ for GitHub Releases and an MSIX package for the Microsoft Store — built by
    ```
 
 6. Confirm `dist/` holds only the installer
-   (see [release artifacts](#release-artifacts)).
+   (see [release artifacts](#release-artifacts)), and that the tracked derived
+   files are current. The build has already rewritten the bundled world's
+   `icon.png`; rerun the other generators listed in
+   [.gitattributes](../.gitattributes), then expect `git status` to show no
+   changes:
+
+   ```bash
+   python scripts/update_render_colors.py --version 26.1.2
+   python store-listing/generator/render.py
+   git status --short
+   ```
+
+   A change means a source moved without its generator being rerun: commit the
+   regenerated file. A re-rendered image that differs but looks identical is
+   anti-aliasing; restore the committed one.
 7. Install the installer on a non-dev machine or a clean VM and smoke-test the
    real user flow:
    - first launch succeeds, with no unexpected dependency prompts
@@ -157,13 +171,15 @@ hidden stage imports above, and five data sets: the page in `gui/static`
 `app-icon.ico`, and `app-icon.svg`, which the page shows as its brand. The root `README.md` is copied next to the app. A file the app loads at runtime that is not
 in that list is missing from the release even though it works from a checkout.
 
-**One icon source.** `src/app-icon.svg` is the only icon in the repo. The build
+**One icon source.** `src/app-icon.svg` is the only icon anyone edits. The build
 renders it to `build/packaging/app-icon.png` with headless Microsoft Edge, then
-makes the Store package logos and `app-icon.ico` from that PNG; the `.ico` is
-both the installer's icon and the bundled window icon. It uses Edge because most
+makes the Store package logos, `app-icon.ico` and the bundled world's 64 px
+`icon.png` from that PNG; the `.ico` is both the installer's icon and the bundled
+window icon. The world icon is the one rendered icon that is tracked, because the
+app reads it from the source tree. It uses Edge because most
 SVG renderers ignore the clip path that rounds the tile and the blur filters.
 From a checkout, `python packaging/build_windows_release.py --icon-only` makes
-just the PNG and the `.ico`, which the app then uses as its window icon.
+just the PNG, the `.ico` and the world icon; the app then uses the `.ico` as its window icon.
 
 **CPU only.** The build includes CPU `numba` acceleration for rendering; CUDA is
 not required.

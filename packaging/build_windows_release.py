@@ -49,6 +49,8 @@ ICON_PNG = BUILD_ROOT / "app-icon.png"
 ICON_ICO = BUILD_ROOT / "app-icon.ico"  # also bundled as the window icon (config.path.APP_ICON)
 ICON_PNG_SIZE = 1024
 DEFAULT_WORLD_DIR = SRC_ROOT / "config" / "default_world"
+WORLD_ICON = DEFAULT_WORLD_DIR / "icon.png"  # tracked: the save-list icon of the bundled world and every exported city
+WORLD_ICON_SIZE = 64
 README_FILES = (
     (ROOT / "README.md", "README.md"),
 )
@@ -148,6 +150,7 @@ def build_icon() -> Path | None:
             format="ICO",
             sizes=[(256, 256), (128, 128), (64, 64), (48, 48), (32, 32), (16, 16)],
         )
+        image.convert("RGBA").resize((WORLD_ICON_SIZE, WORLD_ICON_SIZE), Image.LANCZOS).save(WORLD_ICON)
     return ICON_ICO
 
 
@@ -353,7 +356,8 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--icon-only",
         action="store_true",
-        help="only render app-icon.svg to build/packaging/app-icon.ico, the window icon when running from source",
+        help="only render app-icon.svg to build/packaging/app-icon.ico, the window icon when running from source, "
+        "and to the bundled world's icon.png",
     )
     return parser.parse_args()
 

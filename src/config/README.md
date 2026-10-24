@@ -156,7 +156,8 @@ How [world.py](world.py) applies it:
 Shipped data: `default_world/` (the bundled MC 26.1.2 source world) and
 `color_render.csv` (the renderer palette). The world's `icon.png` is also the
 save-list icon of every exported city (`WORLD_ICON`); it is the app icon
-render (`build_windows_release.py --icon-only`) downscaled to 64 px. Both are listed in
+render downscaled to 64 px, rewritten by every `build_windows_release.py` run
+(`--icon-only` for just the icons). Both are listed in
 `[tool.setuptools.package-data]` in [pyproject.toml](../../pyproject.toml) and in
 the [PyInstaller data set](../../docs/RELEASING.md#explanation).
 

@@ -8,6 +8,7 @@ __pycache__/
 build/
 dist/
 appdata/
+# the app's data folder in 1.3.0 and earlier; moved into appdata/ on first launch
 artifacts/
 
 application_startup_error.log
