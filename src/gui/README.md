@@ -49,11 +49,13 @@ the engine directly, because it's a view of the source world, not a pipeline sta
 ### Re-tune a progress bar
 
 Progress bars are weighted per step by hand in
-[progress.py](progress.py). Extract and Build runs write measured
-timings to `appdata/progress_timings.json`; set the weights from those. Keep one weight
-per step: `tests/test_gui_web.py` checks that the preview and construct weight lists
-match the pipeline's steps, so adding a step fails the test until you add a
-weight.
+[progress.py](progress.py), which also holds everything else about them:
+how each tab's pipeline progress lands on its bar, how fast it creeps, and its
+segments. Extract and Build runs write measured timings to
+`appdata/progress_timings.json`, one section per tab; set the weights from those. Keep
+one weight per step: `tests/test_gui_web.py` checks that the preview and construct
+weight lists match the pipeline's steps, so adding a step fails the test until you
+add a weight.
 
 ## Explanation
 
@@ -116,7 +118,7 @@ src/application.pyw  ->  gui.app:main  (window + server + bridge)  ->  static/ (
 | [extract.py](extract.py) | **Extract**: source world, sample areas and their defaults, the version selector, Stages 1–2 |
 | [world_map.py](world_map.py) | The region map's picture: the world's top-down preview, rendered once per world and cached |
 | [algo.py](algo.py) | **Preview** (Stage 3) and **Build** (Stages 4–5): the algorithm form, form values → `Algo` |
-| [progress.py](progress.py) | Per-step progress weights, milestones, run-bar segments, and timing records |
+| [progress.py](progress.py) | Each tab's run bar: per-step weights, pipeline progress → bar position, creep, segments, and timing records |
 | [files.py](files.py) | Files the GUI owns (below), artifact cleanup, opening folders |
 | [static/](static/) | The page: `index.html`, `app.css` (the colours), `text.js` (the words), `components.js`, `region.js`, `app.js`, and the button icons, SVGs in `icons/` |
 

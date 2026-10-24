@@ -58,21 +58,21 @@ class Runner:
         self._emit("piece", {"tab": tab, "viewer": viewer, "index": index, **image})
 
     def start(self, tab, job, *, on_success):
-        """Run ``job(report)``; ``report(value, soft_target, detail=None, creep=...)`` takes PROGRESS_BAR_SCALE units.
+        """Run ``job(report)``; ``report(value, soft_target, detail=None)`` takes PROGRESS_BAR_SCALE units.
 
         ``on_success(result)`` returns the ``done`` event's payload.
         """
         self._running.add(tab)
         self._emit("progress", {"tab": tab, "value": 0, "softTarget": None})
 
-        def report(value, soft_target, detail=None, creep="default"):
+        def report(value, soft_target, detail=None):
             scale = progress.PROGRESS_BAR_SCALE
             self._emit("progress", {
                 "tab": tab,
                 "value": value * 100 / scale,
                 "softTarget": None if soft_target is None else soft_target * 100 / scale,
-                "tickMs": progress.creep_tick_ms(creep),
-                "creepRate": progress.PROGRESS_CREEP_RATE,
+                "tickMs": progress.tick_ms(tab),
+                "creepRate": progress.CREEP_RATE,
                 "detail": detail,
             })
 

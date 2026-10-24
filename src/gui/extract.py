@@ -89,63 +89,6 @@ def chunk_span(start, end):
 
 AREAS = ("road", "house", "landmark")
 
-PROGRESS_BUCKETS = 100
-
-EXTRACT_PHASE_INDEX = {
-    (stage, phase): index
-    for index, (stage, phase, _weight) in enumerate(progress.EXTRACTION_PHASE_WEIGHTS)
-}
-EXTRACT_PHASE_WEIGHT_VALUES = [weight for _stage, _phase, weight in progress.EXTRACTION_PHASE_WEIGHTS]
-
-TIMING_PREFIXES = {
-    stages.ROADS_EXTRACT: "roads",
-    stages.ROADS_RENDER: "roads",
-    stages.BUILDS_EXTRACT: "builds",
-    stages.BUILDS_RENDER: "builds",
-}
-
-
-def _extract_phase(stage, label):
-    if stage in (stages.ROADS_EXTRACT, stages.BUILDS_EXTRACT):
-        return "scan" if (label or "").startswith(stages.SCANNING) else "export"
-    return "render"
-
-
-def coalesce_pipeline_progress(emit):
-    """Drop progress events that wouldn't move the bar, keeping each phase's completion."""
-    last_key = None
-
-    def on_progress(stage, completed, total, label):
-        nonlocal last_key
-        total_i = max(int(total), 1)
-        completed_i = max(0, min(int(completed), total_i))
-        bucket = PROGRESS_BUCKETS if completed_i >= total_i else int((completed_i * PROGRESS_BUCKETS) / total_i)
-        key = (stage, _extract_phase(stage, label), total_i, bucket)
-        if key == last_key:
-            return
-        last_key = key
-        emit(stage, float(completed_i), float(total_i), label)
-
-    return on_progress
-
-
-def extract_progress(stage, phase, completed, total):
-    """``(value, soft_target)`` for an extraction phase, in PROGRESS_BAR_SCALE units.
-
-    No detail: each phase is one of the run bar's segments, which the page names.
-    """
-    scale = progress.PROGRESS_BAR_SCALE
-    phase_index = EXTRACT_PHASE_INDEX[(stage, phase)]
-    total_f = float(total) if total > 0 else 1.0
-    completed_f = max(0.0, min(float(completed), total_f))
-    if completed_f >= total_f:
-        return progress.weighted_segment(EXTRACT_PHASE_WEIGHT_VALUES, phase_index, scale)[1], None
-    value = progress.weighted_item_milestone(EXTRACT_PHASE_WEIGHT_VALUES, phase_index, completed_f, total_f, scale)
-    next_value = progress.weighted_item_milestone(
-        EXTRACT_PHASE_WEIGHT_VALUES, phase_index, completed_f + 1.0, total_f, scale,
-    )
-    return value, progress.soft_target(value, next_value, "extraction")
-
 
 def _area_pair(area_state):
     """A saved area's ``(start, end)`` block corners, or None if it isn't selected."""
@@ -155,11 +98,6 @@ def _area_pair(area_state):
     if not (isinstance(start, list) and isinstance(end, list) and len(start) == 3 and len(end) == 3):
         return None
     return tuple(int(v) for v in start), tuple(int(v) for v in end)
-
-
-def _timing_key(event):
-    prefix = TIMING_PREFIXES.get(event["stage"])
-    return None if prefix is None else f"{prefix}_{event['phase']}"
 
 
 class ExtractTab:
@@ -298,19 +236,18 @@ class ExtractTab:
             BuildRegion(1, BlockRegion.from_xyz_pair(*pairs["house"])),
             BuildRegion(2, BlockRegion.from_xyz_pair(*pairs["landmark"])),
         )
-        timing = progress.ProgressTimingRecorder()
-        timing.start()
+        timing = progress.ProgressTimingRecorder("extract")
 
         # Each piece's render is saved as <its name>.png before its progress names it: shown as it lands.
         renders = {stages.ROADS_RENDER: ("roads", ROADS_RENDERS), stages.BUILDS_RENDER: ("builds", BUILDS_RENDERS)}
 
         def job(report):
             def on_stage_progress(stage, completed, total, label):
-                phase = _extract_phase(stage, label)
+                phase = progress.extract_phase(stage, label)
                 timing.record(stage, completed, total, label, phase=phase)
-                report(*extract_progress(stage, phase, completed, total), creep="extraction")
+                report(*progress.extract_progress(stage, phase, completed, total))
 
-            coalesced = coalesce_pipeline_progress(on_stage_progress)
+            coalesced = progress.coalesce_extract_progress(on_stage_progress)
 
             def on_progress(stage, completed, total, label):
                 if stage in renders and label:   # before the coalescing, which would drop some pieces
@@ -325,10 +262,7 @@ class ExtractTab:
             services.run_stage("builds", save=save, build_types=build_types, progress=on_progress)
 
         def on_success(_result):
-            files.save_progress_timing("extraction", timing.finish(
-                phase_key=_timing_key,
-                weights={f"{stage}:{phase}": weight for stage, phase, weight in progress.EXTRACTION_PHASE_WEIGHTS},
-            ))
+            files.save_progress_timing("extract", timing.finish())
             return {"images": {"roads": image(ROADS_CONTACT_SHEET), "builds": image(BUILDS_CONTACT_SHEET)}}
 
         self._runner.start("extract", job, on_success=on_success)

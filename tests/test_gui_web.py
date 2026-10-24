@@ -223,13 +223,16 @@ class ExtractTests(_ApiTestCase):
         self.assertEqual(partial[0]["drawn"], 0.25)
 
     def test_extract_progress_reaches_each_phase_end(self):
-        value, soft_target = extract_module.extract_progress(stages.ROADS_RENDER, "render", 4, 4)
+        value, soft_target, _detail = progress.extract_progress(stages.ROADS_RENDER, "render", 4, 4)
 
-        end = progress.weighted_milestone(
-            extract_module.EXTRACT_PHASE_WEIGHT_VALUES, 3, progress.PROGRESS_BAR_SCALE,
-        )
+        end = progress.weighted_milestone(progress.WEIGHTS["extract"], 3, progress.PROGRESS_BAR_SCALE)
         self.assertEqual(value, end)
         self.assertIsNone(soft_target)
+
+    def test_an_extraction_step_scans_while_its_detail_says_so(self):
+        self.assertEqual(progress.extract_phase(stages.ROADS_EXTRACT, f"{stages.SCANNING} road region..."), "scan")
+        self.assertEqual(progress.extract_phase(stages.ROADS_EXTRACT, "07_small_1x1_I"), "export")
+        self.assertEqual(progress.extract_phase(stages.ROADS_EXTRACT, None), "export")
 
 
 class PreviewTests(_ApiTestCase):
@@ -347,15 +350,11 @@ class ProgressWeightMirrorTests(unittest.TestCase):
 
     def test_construct_weights_match_construct_steps(self):
         construct = importlib.import_module(stages.CITY_CONSTRUCT)
-        self.assertEqual(len(progress.GENERATION_CONSTRUCT_WEIGHTS), len(construct.STEPS))
+        self.assertEqual(len(progress.BUILD_CONSTRUCT_WEIGHTS), len(construct.STEPS))
 
     def test_run_bar_segments_span_every_weight_once(self):
-        for segments, weights in (
-            (progress.EXTRACTION_SEGMENTS, progress.EXTRACTION_PHASE_WEIGHTS),
-            (progress.PREVIEW_SEGMENTS, progress.PREVIEW_STEP_WEIGHTS),
-            (progress.GENERATION_SEGMENTS, progress.GENERATION_WEIGHTS),
-        ):
-            self.assertEqual(sum(count for _label, count in segments), len(weights))
+        for tab, segments in progress.SEGMENTS.items():
+            self.assertEqual(sum(count for _label, count in segments), len(progress.WEIGHTS[tab]))
 
     def test_run_bar_segments_tile_the_whole_bar(self):
         for spans in progress.run_segments().values():
@@ -365,16 +364,16 @@ class ProgressWeightMirrorTests(unittest.TestCase):
                 self.assertEqual(before["end"], after["start"])
 
     def test_build_progress_names_only_the_construction_steps(self):
-        _value, _soft, detail = algo_module.build_progress(stages.CITY_CONSTRUCT, 5, 8, "Composing voxel grid")
-        _value, _soft, render_detail = algo_module.build_progress(stages.CITY_RENDER, 0, 1, "done")
+        _value, _soft, detail = progress.build_progress(stages.CITY_CONSTRUCT, 5, 8, "Composing voxel grid")
+        _value, _soft, render_detail = progress.build_progress(stages.CITY_RENDER, 0, 1, "done")
 
         self.assertEqual(detail, "Composing voxel grid")
         self.assertIsNone(render_detail)
 
     def test_preview_progress_creeps_toward_the_next_item(self):
-        value, soft_target, _status = algo_module.preview_progress(stages.PREVIEW_CITY, 1, 2)
+        value, soft_target, _status = progress.preview_progress(stages.PREVIEW_CITY, 1, 2)
 
-        step = algo_module.PREVIEW_STEPS[stages.PREVIEW_CITY][0]
+        step = [step.module for step in stages.STAGES["preview"]].index(stages.PREVIEW_CITY)
         expected = progress.weighted_item_milestone(
             progress.PREVIEW_STEP_WEIGHTS, step, 1, 2, progress.PROGRESS_BAR_SCALE,
         )
