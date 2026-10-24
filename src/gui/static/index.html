@@ -31,9 +31,9 @@
   <!-- Extract: Stages 1 and 2 -->
   <main class="page" id="extract" role="tabpanel">
     <section class="stage">
-      <div class="viewer" id="viewer-roads" data-caption="Road pieces" data-icon="extract"
+      <div class="viewer" id="viewer-roads" data-caption="Road pieces" data-icon="extract" data-bounded="width"
            data-message="Extract assets to scan the selected road sample area and build a road contact sheet."></div>
-      <div class="viewer" id="viewer-builds" data-caption="Building pieces" data-icon="extract"
+      <div class="viewer" id="viewer-builds" data-caption="Building pieces" data-icon="extract" data-bounded="width"
            data-message="Extract assets to scan the selected house and landmark areas and build a building contact sheet."></div>
     </section>
 
@@ -89,9 +89,9 @@
   <!-- Preview: Stage 3 -->
   <main class="page" id="preview" role="tabpanel" hidden>
     <section class="stage">
-      <div class="viewer" id="viewer-grid" data-caption="Road layout" data-icon="refresh"
+      <div class="viewer" id="viewer-grid" data-caption="Road layout" data-icon="refresh" data-bounded="height"
            data-message="Preview layout to see the road network before building the final city."></div>
-      <div class="viewer" id="viewer-city-preview" data-caption="City layout" data-icon="refresh"
+      <div class="viewer" id="viewer-city-preview" data-caption="City layout" data-icon="refresh" data-bounded="height"
            data-message="Preview layout to see how buildings fit into the generated road network."></div>
     </section>
 
@@ -113,7 +113,7 @@
   <!-- Build: Stages 4 and 5 -->
   <main class="page" id="build" role="tabpanel" hidden>
     <section class="stage">
-      <div class="viewer" id="viewer-city-render" data-caption="Final city" data-icon="render"
+      <div class="viewer" id="viewer-city-render" data-caption="Final city" data-icon="render" data-bounded="height"
            data-message="Build city to create the schematic, the render, and the exported MC world."></div>
     </section>
 
