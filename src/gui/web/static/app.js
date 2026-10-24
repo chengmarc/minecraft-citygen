@@ -13,10 +13,10 @@ window.citygen = citygen;
 
 /** One tab's run bar (status, percent, progress), its action button, and whether it's running. */
 class TabRun {
-  constructor(page, button, step) {
+  constructor(page, button, step, segments) {
     this.runbar = $(".runbar", page);
     this.status = $(".status", this.runbar);
-    this.progress = new ProgressBar($(".progress", this.runbar), $(".percent", this.runbar));
+    this.progress = new ProgressBar($(".progress", this.runbar), { percent: $(".percent", this.runbar), segments });
     this.button = button;
     this.step = step;
     this.running = false;
@@ -94,9 +94,9 @@ async function start() {
   );
   const steps = Object.fromEntries($$(".step").map((step) => [step.dataset.tab, step]));
   const runs = {
-    extract: new TabRun($("#extract"), $("#extract-button"), steps.extract),
-    preview: new TabRun($("#preview"), $('#preview [data-action="run"]'), steps.preview),
-    build: new TabRun($("#build"), $('#build [data-action="run"]'), steps.build),
+    extract: new TabRun($("#extract"), $("#extract-button"), steps.extract, boot.segments.extract),
+    preview: new TabRun($("#preview"), $('#preview [data-action="run"]'), steps.preview, boot.segments.preview),
+    build: new TabRun($("#build"), $('#build [data-action="run"]'), steps.build, boot.segments.build),
   };
   const setGates = (gates) => {
     for (const [tab, gate] of Object.entries(gates)) runs[tab].setGate(gate);

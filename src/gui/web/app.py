@@ -13,7 +13,7 @@ import webbrowser
 
 from config.path import APP_NAME
 from gui.core import app_files
-from gui.core.title_bar import set_title_bar_colors
+from gui.core.title_bar import hide_title_and_icon, set_title_bar_colors
 from gui.web import server
 from gui.web.bridge import Api
 
@@ -96,7 +96,12 @@ def main(argv: list[str] | None = None) -> int:
         )
         if sys.platform == "win32":
             # ``native`` is the WinForms form that holds the page.
-            window.events.shown += lambda: set_title_bar_colors(window.native.Handle.ToInt64(), SKY, SKY_TEXT)
+            def style_title_bar():
+                hwnd = window.native.Handle.ToInt64()
+                set_title_bar_colors(hwnd, SKY, SKY_TEXT)
+                hide_title_and_icon(hwnd)   # the page's header shows both
+
+            window.events.shown += style_title_bar
         threading.Thread(target=_warm_up_renderer, daemon=True).start()
         icon = app_files.APP_ICON_PATH if os.path.isfile(app_files.APP_ICON_PATH) else None
         # Private mode (the default) keeps WebView2's data in a temp folder: writable even from the Store's install.

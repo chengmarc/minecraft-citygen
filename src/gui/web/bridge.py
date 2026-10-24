@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import threading
 
-from gui.core import app_files
+from gui.core import app_files, progress
 from gui.web.algo import AlgoTabs, form_spec
 from gui.web.extract import ExtractTab
 from gui.web.session import Runner, Settings
@@ -49,6 +49,7 @@ class Api:
         return {
             "algo": self._algo.state(),
             "form": form_spec(),
+            "segments": progress.run_segments(),
             **self._extraction(),
         }
 

@@ -71,13 +71,18 @@ def preview_progress(stage, completed, total):
     return value, soft_target, step_label
 
 
-def build_progress(stage, completed, total):
-    """``(value, soft_target, status)`` for a Stage 4 or 5 step, in PROGRESS_BAR_SCALE units."""
+def build_progress(stage, completed, total, label=""):
+    """``(value, soft_target, status)`` for a Stage 4 or 5 step, in PROGRESS_BAR_SCALE units.
+
+    Construction names the step it's starting in ``label``; the status shows it.
+    """
     scale = progress.PROGRESS_BAR_SCALE
     construct_weights = progress.GENERATION_CONSTRUCT_WEIGHTS
-    weights = construct_weights + [progress.GENERATION_RENDER_WEIGHT, progress.GENERATION_WORLD_WEIGHT]
+    weights = progress.GENERATION_WEIGHTS
     n = int(completed)
     status = BUILD_STATUS_LABELS.get(stage, "Building city")
+    if stage == stages.CITY_CONSTRUCT and label and n < len(construct_weights):
+        status = label
 
     if stage == stages.CITY_CONSTRUCT:
         value = progress.weighted_milestone(weights, n, scale)
@@ -192,7 +197,7 @@ class AlgoTabs:
         def job(report):
             def on_progress(stage, completed, total, label):
                 timing.record(stage, completed, total, label)
-                report(*build_progress(stage, completed, total))
+                report(*build_progress(stage, completed, total, label))
 
             services.run_stage("city", seed=seed, algo=algo, data_version=data_version, progress=on_progress)
             services.run_stage("world", seed=seed, save=save, progress=on_progress)
