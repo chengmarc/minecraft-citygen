@@ -183,9 +183,9 @@ class RegionMap {
       height: (worldZ1 + 1 - worldZ0) / step,
     });
     this.applyButton.disabled = false;
-    this.status.textContent =
-      `Selection: x ${worldX0} to ${worldX1}, z ${worldZ0} to ${worldZ1} ` +
-      `(${chunkX1 - chunkX0 + 1} x ${chunkZ1 - chunkZ0 + 1} chunks)`;
+    this.status.textContent = TEXT.selection(
+      [worldX0, worldX1], [worldZ0, worldZ1], [chunkX1 - chunkX0 + 1, chunkZ1 - chunkZ0 + 1],
+    );
   }
 
   /** Select the chunks a block area covers. */

@@ -37,10 +37,16 @@ const TEXT = {
   area: (chunks) => (chunks ? `${chunks[0]} x ${chunks[1]} chunks` : "No area selected"),
   areaChip: (selected) => (selected ? "Selected" : "Not selected"),
   imageMissing: (path) => `Image not found:\n${path}`,
+  imageFailed: (src) => `Failed to load image:\n${src}`,
+  zoomIn: "Zoom in",
+  zoomOut: "Zoom out",
   mapMissing: (path) => `World preview not found:\n${path}`,
   mapFailed: "Failed to load world preview.",
   mapLoading: "Loading world preview...",
   mapDrawing: "Drawing your world from above. You can already pan, zoom, and choose your area.",
+  // The region map's selection: its block corners, and how many chunks it covers.
+  selection: ([x0, x1], [z0, z1], [chunksX, chunksZ]) =>
+    `Selection: x ${x0} to ${x1}, z ${z0} to ${z1} (${chunksX} x ${chunksZ} chunks)`,
   autoVersion: "Auto",
   // Each run bar's segments, by the codes gui/progress.py gives them.
   segments: {
