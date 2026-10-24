@@ -18,6 +18,7 @@ from pathlib import Path
 if __package__ in (None, ""):
     sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
+from pipeline.extraction import SCANNING  # noqa: F401  (re-exported: the GUI may import only this registry)
 from pipeline.step import CLI_OPTIONS, add_options, noop
 
 

@@ -14,7 +14,7 @@ from config.world import BUILD_MARKER_Y_RANGE, ROAD_BOX, SAVE, source_data_versi
 from engine.world.anvil_world_reader import World
 from engine.world.marker_extract import detect_marker_assets, extract_cuboid, sign_text_above
 from engine.schematic.writer import write_sponge_schem_cells
-from pipeline.extraction import chunk_scan_count, remove_existing_schems
+from pipeline.extraction import SCANNING, chunk_scan_count, remove_existing_schems
 from pipeline.step import noop, run_stage_cli
 
 def open_world(save):
@@ -37,12 +37,12 @@ def run(*, save=SAVE, road_box=ROAD_BOX, data_version=None, logger=None, progres
     os.makedirs(ROADS_SCHEM, exist_ok=True)
     remove_existing_schems(ROADS_SCHEM)
     total_scan_chunks = chunk_scan_count(road_box.x0, road_box.x1, road_box.z0, road_box.z1)
-    progress(0, total_scan_chunks, "Scanning road region...")
+    progress(0, total_scan_chunks, f"{SCANNING} road region...")
 
     m_lo, m_hi = BUILD_MARKER_Y_RANGE.as_tuple()
 
     def on_scan(done, total):
-        progress(done, total, "Scanning road region...")
+        progress(done, total, f"{SCANNING} road region...")
 
     components, skipped = detect_marker_assets(
         world, road_box.x0, road_box.x1, road_box.z0, road_box.z1, (m_lo, m_hi),

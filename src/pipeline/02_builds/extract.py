@@ -15,7 +15,7 @@ from engine.world.anvil_world_reader import World
 from engine.world.marker_extract import detect_marker_assets, extract_cuboid, parse_range, sign_text_above
 from engine.schematic.building import STACK_PARTS, WHOLE, piece_path, write_catalog
 from engine.schematic.writer import write_sponge_schem_cells
-from pipeline.extraction import chunk_scan_count, remove_existing_schems
+from pipeline.extraction import SCANNING, chunk_scan_count, remove_existing_schems
 from pipeline.step import noop, run_stage_cli
 
 
@@ -62,7 +62,7 @@ def run(*, save=SAVE, build_types=BUILD_TYPES, data_version=None, logger=None, p
     total_scan_chunks = sum(chunk_counts)
     scan_offsets = [sum(chunk_counts[:i]) for i in range(len(chunk_counts))]
 
-    progress(0, total_scan_chunks, "Scanning build regions...")
+    progress(0, total_scan_chunks, f"{SCANNING} build regions...")
     builds = []
     for i, (build_type, start_xyz, end_xyz) in enumerate(region_data):
         xa, _y0, za = start_xyz
@@ -70,7 +70,7 @@ def run(*, save=SAVE, build_types=BUILD_TYPES, data_version=None, logger=None, p
         offset = scan_offsets[i]
 
         def on_scan(done, _total, _offset=offset):
-            progress(_offset + done, total_scan_chunks, "Scanning build regions...")
+            progress(_offset + done, total_scan_chunks, f"{SCANNING} build regions...")
 
         detected, skipped = detect_builds(world, build_type, xa, xb, za, zb, on_scan_progress=on_scan)
         builds.extend(detected)

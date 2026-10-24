@@ -16,6 +16,7 @@ from unittest import mock
 from config.algo import ALGO
 from config.world import BlockRegion
 from gui import algo as algo_module
+from gui import app as app_module
 from gui import extract as extract_module
 from gui import files, progress, server
 from gui.bridge import Api
@@ -466,6 +467,20 @@ class WorldPreviewTests(unittest.TestCase):
 
     def test_chunk_span_counts_partial_chunks_and_negative_coordinates(self):
         self.assertEqual(extract_module.chunk_span((-1, 0, 0), (16, 0, 15)), [3, 1])
+
+
+class PageMirrorTests(unittest.TestCase):
+    """What Python and the page each hold a copy of, kept in step."""
+
+    def read(self, name):
+        return (server.STATIC / name).read_text(encoding="utf-8")
+
+    def test_the_region_map_snaps_to_the_same_chunks(self):
+        self.assertIn(f"const CHUNK_SIZE = {extract_module.CHUNK_SIZE};", self.read("region.js"))
+
+    def test_the_window_reads_its_colours_from_the_page(self):
+        for color in app_module.page_colors("app-bg", "sky", "sky-text"):
+            self.assertRegex(color, r"^#[0-9a-fA-F]{6}$")
 
 
 if __name__ == "__main__":
