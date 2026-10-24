@@ -300,7 +300,3 @@ class SchemToWorldTests(unittest.TestCase):
                 with self.subTest(source_world=source_world, out=out):
                     with self.assertRaisesRegex(ValueError, message):
                         world_writer.schem_to_world(schem, out, source_world=source_world)
-
-
-if __name__ == "__main__":
-    unittest.main()

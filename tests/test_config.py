@@ -66,10 +66,6 @@ class FrozenAppRootTests(unittest.TestCase):
             self.assertFalse(config_path._is_writable_dir(Path(tempdir) / "missing"))
 
 
-if __name__ == "__main__":
-    unittest.main()
-
-
 # --- config.path legacy data migration -------------------------------------
 
 class LegacyDataMigrationTests(unittest.TestCase):

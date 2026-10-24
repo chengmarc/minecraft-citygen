@@ -57,7 +57,3 @@ class ExtractedAssetsReadyTests(unittest.TestCase):
 
                 open(build_sheet, "wb").close()
                 self.assertTrue(files.extracted_assets_ready())
-
-
-if __name__ == "__main__":
-    unittest.main()
