@@ -23,7 +23,7 @@ class RegionMap {
     // The same run bar as the tabs', in the footer in the selection's place while the map is being drawn (a cached
     // one opens at once): the footer is the buttons' height either way, so the map never changes size under it.
     this.runbar = $(".runbar", dialog);
-    this.progress = new ProgressBar($(".progress", this.runbar), { percent: $(".percent", this.runbar) });
+    this.progress = new ProgressBar($(".progress", this.runbar));
     $(".status", this.runbar).textContent = TEXT.mapDrawing;
     this.applyButton = $('[data-action="apply"]', dialog);
     this.meta = null;

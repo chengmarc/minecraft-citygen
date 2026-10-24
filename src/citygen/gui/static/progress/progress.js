@@ -4,14 +4,13 @@
 // on in one place only; the steps are equal on screen, so it reaches the end of each as the run reaches the end of
 // that step's share. The fill glides after the run, and the text follows the fill, not the run: a step ticks off as
 // the fill crosses its end, the next takes over then, and the step under way says what's happening instead of its
-// name (setDetail) and how far the run is at the fill's edge.
+// name (setDetail), with a spinner beside it.
 
 "use strict";
 
 class ProgressBar {
-  constructor(root, { percent = null, segments = null } = {}) {
+  constructor(root, { segments = null } = {}) {
     this.root = root;
-    this.percent = percent;
     this.chunk = $(".progress-chunk", root);
     this.segments = [];
     this.detail = null;
@@ -32,13 +31,12 @@ class ProgressBar {
       const element = document.createElement("div");
       element.className = "segment";
       element.innerHTML =
-        '<span class="segment-label"><span class="segment-text"></span><span class="segment-percent"></span></span>';
+        '<span class="segment-label"><span class="segment-text"></span><span class="spinner"></span></span>';
       $(".segment-text", element).textContent = label;
       this.root.append(element);
       return {
         element, label, start, end,
         text: $(".segment-text", element),
-        percent: $(".segment-percent", element),
       };
     });
   }
@@ -53,7 +51,6 @@ class ProgressBar {
     this.root.classList.toggle("running", value < 100);
     this.value = value;
     this.root.setAttribute("aria-valuenow", String(Math.round(value)));
-    if (this.percent) this.percent.textContent = `${Math.floor(value)}%`;
     if (!this.segments.length) {
       this.chunk.style.width = `${value}%`;
       return;
@@ -93,8 +90,6 @@ class ProgressBar {
       segment.element.classList.toggle("active", active);
       // The status is the run's step's: shown once the fill has got there, not on the step it's still finishing.
       segment.text.textContent = active && this.detail && index === runStep ? this.detail : segment.label;
-      const atFill = segment.start + part * (segment.end - segment.start);   // the run's progress at the fill's edge
-      segment.percent.textContent = active ? `${Math.floor(atFill)}%` : "";
     });
   }
 
