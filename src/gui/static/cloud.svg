@@ -1,0 +1,4 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 9 3" shape-rendering="crispEdges">
+  <!-- A pixel cloud on a grid of 9 x 3 pixels: rows of 4, 7 and 9, as one outline, so no seams show between them. -->
+  <path fill="#fff" d="M2 0h4v1h2v1h1v1H0V2h1V1h1z"/>
+</svg>
