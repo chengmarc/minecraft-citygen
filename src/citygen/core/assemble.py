@@ -11,9 +11,8 @@ from citygen.core.city_layout import FACE_K, placement_origin, seeded_rng, STACK
 from citygen.core.road_network import iter_placements, iter_tile_catalogue, rot_ports
 from citygen.settings import CELL
 from citygen.tools.blocks import is_air
-from citygen.tools.schem import (
-    assemble, intern_state, is_stacked, new_palette, read_tile, rot_tile, stamp_tile, translate_block_entities,
-)
+from citygen.tools.catalog import assemble, middle_count
+from citygen.tools.schem import intern_state, new_palette, read_tile, rot_tile, stamp_tile, translate_block_entities
 
 # --- The road grid
 
@@ -162,8 +161,9 @@ def assemble_instances(seed, placements, catalog_meta, ground_y, builds_dir):
     for placement in placements:
         building = placement.building
         entry = catalog_meta[building.num]
-        mid_sections = height_rng.randint(*entry.get("stack", [1, 1])) if is_stacked(entry) else 0
-        tile = rot_tile(assemble(builds_dir, building.num, mid_sections, catalog_meta), FACE_K[placement.facing])
+        tile = rot_tile(
+            assemble(builds_dir, building.num, middle_count(entry, height_rng), catalog_meta), FACE_K[placement.facing],
+        )
         px, pz = placement_origin(placement.rect, placement.facing, tile.width, tile.length)
         px += PLAYER_ANCHOR_MARGIN
         pz += PLAYER_ANCHOR_MARGIN

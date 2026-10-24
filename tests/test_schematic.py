@@ -1,4 +1,4 @@
-"""Schematic transforms, block-entity handling, the Sponge v3 container, and city ground fill."""
+"""Schematic transforms, block-entity handling, the Sponge v3 container, building assembly, and city ground fill."""
 from types import SimpleNamespace
 
 import numpy as np
@@ -6,7 +6,7 @@ import nbtlib
 from nbtlib import Byte, Compound, String
 
 from citygen.settings import CELL
-from citygen.tools import schem
+from citygen.tools import catalog
 from citygen.core import assemble
 from citygen.tools.schem import (
     decode_schem_block_entities,
@@ -187,10 +187,10 @@ def test_building_assembly_uses_piece_shape_not_placement_type(tmp_path):
     write_sponge_schem_cells([[["minecraft:top"]]], str(tmp_path / "001_top.schem"), V2612)
     write_sponge_schem_cells([[["minecraft:whole"]]], str(tmp_path / "002.schem"), V2612)
 
-    stacked = schem.assemble(str(tmp_path), "001", 2, {
+    stacked = catalog.assemble(str(tmp_path), "001", 2, {
         "001": {"type": 1, "pieces": {"bottom": 1, "middle": 1, "top": 1}},
     })
-    whole = schem.assemble(str(tmp_path), "002", 0, {
+    whole = catalog.assemble(str(tmp_path), "002", 0, {
         "002": {"type": 2, "pieces": {"whole": 1}},
     })
 
@@ -206,12 +206,12 @@ def test_building_assembly_uses_piece_shape_not_placement_type(tmp_path):
 def test_building_pieces_are_reread_after_a_new_extraction(tmp_path):
     # The app is one process: a second extraction rewrites the same 001.schem,
     # and every later read must see the new building, not the cached old one.
-    catalog = {"001": {"type": 1, "pieces": {"whole": 1}}}
+    entries = {"001": {"type": 1, "pieces": {"whole": 1}}}
     write_sponge_schem_cells([[["minecraft:quartz_block"]]], str(tmp_path / "001.schem"), V2612)
-    assert schem.assemble(str(tmp_path), "001", 0, catalog).cells == [[["minecraft:quartz_block"]]]
+    assert catalog.assemble(str(tmp_path), "001", 0, entries).cells == [[["minecraft:quartz_block"]]]
 
     write_sponge_schem_cells([[["minecraft:mossy_cobblestone"]]], str(tmp_path / "001.schem"), V2612)
-    assert schem.assemble(str(tmp_path), "001", 0, catalog).cells == [[["minecraft:mossy_cobblestone"]]]
+    assert catalog.assemble(str(tmp_path), "001", 0, entries).cells == [[["minecraft:mossy_cobblestone"]]]
 
 
 # --- city ground fill ----------------------------------------------------

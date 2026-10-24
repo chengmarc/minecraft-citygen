@@ -16,7 +16,7 @@ from citygen.core.city_layout import FACE_K, FILLER_STREAM, placement_origin, pl
 from citygen.tools.contact_sheet import label_font
 from citygen.paths import BUILD_CATALOG, city_preview_path, grid_preview_path
 from citygen.core.road_network import gen_networks, iter_placements, iter_tile_catalogue, make_size, tile_footprint
-from citygen.tools.schem import read_catalog
+from citygen.tools.catalog import read_catalog
 from citygen.settings import CELL
 
 CITY_GROUND_FILL_RGBA = (159, 159, 159, 255)
