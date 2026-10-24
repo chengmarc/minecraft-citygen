@@ -67,17 +67,14 @@ class LaunchGatingTests(_ApiTestCase):
         with mock.patch.object(files, "extracted_assets_ready", return_value=False):
             gates = self.api.bootstrap()["gates"]
 
-        self.assertFalse(gates["preview"]["ready"])
-        self.assertFalse(gates["build"]["ready"])
-        self.assertEqual(gates["preview"]["tooltip"], "Complete Extract Assets first.")
-        self.assertTrue(gates["extract"]["ready"])  # the bundled world and default areas
+        self.assertEqual(gates, {"extract": True, "preview": False, "build": False})  # the bundled world and areas
 
     def test_first_launch_starts_from_the_default_settings(self):
         boot = self.api.bootstrap()
 
         self.assertEqual(boot["algo"], algo_module.default_algo_tab_config())
         self.assertTrue(boot["extraction"]["worldReady"])
-        self.assertTrue(all(area["selected"] for area in boot["extraction"]["areas"].values()))
+        self.assertTrue(all(area["chunks"] for area in boot["extraction"]["areas"].values()))
 
     def test_form_covers_every_grouped_knob_and_both_selectors(self):
         form = self.api.bootstrap()["form"]
@@ -119,15 +116,15 @@ class ExtractTests(_ApiTestCase):
         with mock.patch.object(files, "load_saved_gui_config", return_value={"extraction": state}):
             api = Api(lambda *_: None, pick_folder=lambda _: None, thread_factory=_ImmediateThread)
 
-        self.assertFalse(api.bootstrap()["gates"]["extract"]["ready"])
-        self.assertEqual(api.run_extract()["error"]["title"], "Invalid extraction region")
+        self.assertFalse(api.bootstrap()["gates"]["extract"])
+        self.assertEqual(api.run_extract()["error"]["code"], "areas_missing")
 
     def test_picking_a_folder_without_region_files_warns_and_changes_nothing(self):
         with tempfile.TemporaryDirectory() as folder:
             self.picked = folder
             answer = self.api.browse_world()
 
-        self.assertEqual(answer["warning"]["title"], "Not an MC world")
+        self.assertEqual(answer["warning"], {"code": "not_a_world", "detail": folder})
         self.assertEqual(self.saved, [])
 
     def test_picking_a_new_world_clears_the_areas_and_the_pipeline_artifacts(self):
@@ -141,8 +138,8 @@ class ExtractTests(_ApiTestCase):
         clear.assert_called_once()
         self.assertTrue(answer["changed"])
         self.assertEqual(answer["extraction"]["worldPath"], "C:/mc/new-world")
-        self.assertFalse(any(area["selected"] for area in answer["extraction"]["areas"].values()))
-        self.assertFalse(answer["gates"]["extract"]["ready"])
+        self.assertFalse(any(area["chunks"] for area in answer["extraction"]["areas"].values()))
+        self.assertFalse(answer["gates"]["extract"])
 
     def test_cancelling_the_folder_picker_changes_nothing(self):
         answer = self.api.browse_world()
@@ -153,7 +150,7 @@ class ExtractTests(_ApiTestCase):
     def test_area_reports_its_chunk_span(self):
         answer = self.api.set_area("road", [0, 60, 0], [47, 80, 31])
 
-        self.assertEqual(answer["extraction"]["areas"]["road"]["detail"], "3 x 2 chunks selected")
+        self.assertEqual(answer["extraction"]["areas"]["road"]["chunks"], [3, 2])
 
     def test_region_map_opens_on_the_default_area_when_none_is_saved(self):
         state = extract_module.default_extraction_tab_config()
@@ -169,21 +166,20 @@ class ExtractTests(_ApiTestCase):
         png = Path(files.APP_DATA) / "world_preview" / "x.png"
         with (
             mock.patch.object(extract_module, "cached_topdown_preview", return_value=(png, meta)),
-            mock.patch.object(extract_module, "file_url", return_value="/files/world_preview/x.png?v=1"),
+            mock.patch.object(extract_module, "image", return_value={"src": "/files/world_preview/x.png?v=1"}),
         ):
             self.assertEqual(self.api.load_world_map(), {})
 
         self.assertEqual(self.last("worldMap"), {"src": "/files/world_preview/x.png?v=1", "meta": meta})
 
     def test_extract_progress_reaches_each_phase_end(self):
-        value, soft_target, status = extract_module.extract_progress(stages.ROADS_RENDER, "render", 4, 4)
+        value, soft_target = extract_module.extract_progress(stages.ROADS_RENDER, "render", 4, 4)
 
         end = progress.weighted_milestone(
             extract_module.EXTRACT_PHASE_WEIGHT_VALUES, 3, progress.PROGRESS_BAR_SCALE,
         )
         self.assertEqual(value, end)
         self.assertIsNone(soft_target)
-        self.assertEqual(status, "Building road contact sheet")
 
 
 class PreviewTests(_ApiTestCase):
@@ -213,7 +209,7 @@ class PreviewTests(_ApiTestCase):
             answer = self.api.run_preview(state)
 
         run_stage.assert_not_called()
-        self.assertEqual(answer["error"]["title"], "Invalid preview config")
+        self.assertEqual(answer["error"]["code"], "invalid_config")
         self.assertEqual(self.events, [])
 
     def test_stage_failure_reports_and_still_finishes(self):
@@ -221,7 +217,7 @@ class PreviewTests(_ApiTestCase):
             self.api.run_preview(algo_module.default_algo_tab_config())
 
         self.assertEqual(self.event_names(), ["progress", "failed", "finished"])
-        self.assertEqual(self.last("failed")["message"], "no roads")
+        self.assertEqual(self.last("failed")["detail"], "no roads")
 
     def test_reset_saves_and_returns_the_defaults(self):
         state = self.api.reset_algo()
@@ -281,10 +277,12 @@ class ProgressWeightMirrorTests(unittest.TestCase):
             for before, after in zip(spans, spans[1:]):
                 self.assertEqual(before["end"], after["start"])
 
-    def test_build_status_names_the_construction_step(self):
-        _value, _soft, status = algo_module.build_progress(stages.CITY_CONSTRUCT, 5, 8, "Composing voxel grid")
+    def test_build_progress_names_only_the_construction_steps(self):
+        _value, _soft, detail = algo_module.build_progress(stages.CITY_CONSTRUCT, 5, 8, "Composing voxel grid")
+        _value, _soft, render_detail = algo_module.build_progress(stages.CITY_RENDER, 0, 1, "done")
 
-        self.assertEqual(status, "Composing voxel grid")
+        self.assertEqual(detail, "Composing voxel grid")
+        self.assertIsNone(render_detail)
 
     def test_preview_progress_creeps_toward_the_next_item(self):
         value, soft_target, _status = algo_module.preview_progress(stages.PREVIEW_CITY, 1, 2)
@@ -351,7 +349,7 @@ class ServerTests(unittest.TestCase):
 
 class WorldPreviewTests(unittest.TestCase):
     def test_chunk_span_counts_partial_chunks_and_negative_coordinates(self):
-        self.assertEqual(extract_module.chunk_span_text((-1, 0, 0), (16, 0, 15)), "3 x 1 chunks")
+        self.assertEqual(extract_module.chunk_span((-1, 0, 0), (16, 0, 15)), [3, 1])
 
 
 if __name__ == "__main__":

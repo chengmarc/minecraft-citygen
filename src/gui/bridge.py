@@ -1,5 +1,6 @@
 """The calls the page makes, and the events it receives.
 
+Python answers with facts and short codes; every word the page shows is in its text.js.
 Nothing here imports pywebview. The page calls the public methods of :class:`Api`
 (``window.pywebview.api.<name>``); the app answers through ``emit(event, payload)``,
 which the host turns into a call to ``citygen.receive`` in the page.
@@ -14,13 +15,6 @@ from gui.algo import AlgoTabs, form_spec
 from gui.extract import ExtractTab
 from gui.session import Runner, Settings
 
-TOOLTIPS = {
-    "preview": "Generate a fast road and city layout preview.",
-    "build": "Build the final schematic, render, and export world.",
-    "blocked": "Complete Extract Assets first.",
-}
-
-
 class Api:
     """Every call the page can make. Methods return plain JSON-able values."""
 
@@ -33,12 +27,9 @@ class Api:
         )
 
     def _gates(self):
+        """Whether each tab's run can start: Extract needs a world and its areas, the others the extracted assets."""
         assets = files.extracted_assets_ready()
-        return {
-            "extract": {"ready": self._extract.ready(), "tooltip": ""},
-            "preview": {"ready": assets, "tooltip": TOOLTIPS["preview"] if assets else TOOLTIPS["blocked"]},
-            "build": {"ready": assets, "tooltip": TOOLTIPS["build"] if assets else TOOLTIPS["blocked"]},
-        }
+        return {"extract": self._extract.ready(), "preview": assets, "build": assets}
 
     def _extraction(self):
         return {"extraction": self._extract.view(), "gates": self._gates()}

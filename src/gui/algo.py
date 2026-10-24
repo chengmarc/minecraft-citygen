@@ -17,7 +17,7 @@ from config.world import SAVE, source_data_version
 from pipeline import services, stages
 
 from gui import files, progress
-from gui.server import file_url
+from gui.server import image
 
 
 # --- The form: which knobs show, and how their values become an ``Algo``
@@ -176,12 +176,6 @@ def validate_seed(seed):
 
 PREVIEW_STEPS = {step.module: (index, step.label) for index, step in enumerate(stages.STAGES["preview"])}
 
-BUILD_STATUS_LABELS = {
-    stages.CITY_CONSTRUCT: "Building city layout",
-    stages.CITY_RENDER: "Rendering final city",
-    stages.WORLD_EXPORT: "Exporting MC world",
-}
-
 SEED_MAX = 2_147_483_647
 
 
@@ -213,7 +207,7 @@ def form_spec():
 
 
 def preview_progress(stage, completed, total):
-    """``(value, soft_target, status)`` for a Stage 3 step, in PROGRESS_BAR_SCALE units."""
+    """``(value, soft_target, detail)`` for a Stage 3 step, in PROGRESS_BAR_SCALE units; the detail is the step's name."""
     step_index, step_label = PREVIEW_STEPS[stage]
     total_f = float(total) if total > 0 else 1.0
     completed_f = max(0.0, min(float(completed), total_f))
@@ -231,17 +225,15 @@ def preview_progress(stage, completed, total):
 
 
 def build_progress(stage, completed, total, label=""):
-    """``(value, soft_target, status)`` for a Stage 4 or 5 step, in PROGRESS_BAR_SCALE units.
+    """``(value, soft_target, detail)`` for a Stage 4 or 5 step, in PROGRESS_BAR_SCALE units.
 
-    Construction names the step it's starting in ``label``; the status shows it.
+    Construction names the step it's starting in ``label``, which is the detail; the other steps have none.
     """
     scale = progress.PROGRESS_BAR_SCALE
     construct_weights = progress.GENERATION_CONSTRUCT_WEIGHTS
     weights = progress.GENERATION_WEIGHTS
     n = int(completed)
-    status = BUILD_STATUS_LABELS.get(stage, "Building city")
-    if stage == stages.CITY_CONSTRUCT and label and n < len(construct_weights):
-        status = label
+    detail = label if stage == stages.CITY_CONSTRUCT and label and n < len(construct_weights) else None
 
     if stage == stages.CITY_CONSTRUCT:
         value = progress.weighted_milestone(weights, n, scale)
@@ -249,7 +241,7 @@ def build_progress(stage, completed, total, label=""):
         if n < len(construct_weights):
             next_value = progress.weighted_milestone(weights, n + 1, scale)
             soft_target = progress.soft_target(value, next_value, "generation")
-        return value, soft_target, status
+        return value, soft_target, detail
 
     segment = len(construct_weights) if stage == stages.CITY_RENDER else len(construct_weights) + 1
     t = float(total) if total > 0 else 1.0
@@ -258,7 +250,7 @@ def build_progress(stage, completed, total, label=""):
     if n < total:
         next_value = progress.weighted_item_milestone(weights, segment, n + 1, t, scale)
         soft_target = progress.soft_target(value, next_value, "generation")
-    return value, soft_target, status
+    return value, soft_target, detail
 
 
 def _new_seed(current_seed):
@@ -266,11 +258,6 @@ def _new_seed(current_seed):
     while seed == current_seed:
         seed = str(random.randint(0, SEED_MAX))
     return seed
-
-
-def _image(path):
-    url = file_url(path)
-    return {"src": url} if url else {"message": f"Image not found:\n{path}"}
 
 
 def _build_timing_key(event):
@@ -282,7 +269,7 @@ def _build_timing_key(event):
 
 
 class AlgoTabs:
-    """The Preview and Build tabs' calls."""
+    """The Preview and Build tabs' calls. An error is ``{"error": {"code", "detail"}}``, which the page words."""
 
     def __init__(self, settings, runner):
         self._settings = settings
@@ -300,19 +287,19 @@ class AlgoTabs:
         self.save(state)
         return state
 
-    def _algo(self, state, title):
+    def _algo(self, state):
         try:
             return build_algo_from_values(create_config_values(state.get("algo"))), None
         except ConfigError as exc:
-            return None, {"title": title, "message": str(exc)}
+            return None, {"code": "invalid_config", "detail": str(exc)}
 
     def run_preview(self, state):
         """Pick a fresh seed and start Stage 3; returns the saved state, or the error to show."""
         if self._runner.is_running("preview"):
-            return {"error": {"title": "Preview running", "message": "A preview is already running."}}
+            return {"error": {"code": "running"}}
         state = {**state, "seed": _new_seed(str(state.get("seed", "")).strip())}
         self.save(state)
-        algo, error = self._algo(state, "Invalid preview config")
+        algo, error = self._algo(state)
         if error:
             return {"error": error}
         seed = state["seed"]
@@ -324,28 +311,22 @@ class AlgoTabs:
             services.run_stage("preview", seed=seed, algo=algo, progress=on_progress)
             return seed
 
-        self._runner.start(
-            "preview", job,
-            failure_title="Preview failed",
-            status="Preparing preview",
-            on_success=lambda seed: {
-                "images": {"grid": _image(grid_preview_path(seed)), "city": _image(city_preview_path(seed))},
-                "status": "Preview ready",
-            },
-        )
+        self._runner.start("preview", job, on_success=lambda seed: {
+            "images": {"grid": image(grid_preview_path(seed)), "city": image(city_preview_path(seed))},
+        })
         return {"state": state}
 
     def run_build(self, state):
         """Start Stage 4 then Stage 5 with the previewed seed, from the source world chosen on Extract."""
         if self._runner.is_running("build"):
-            return {"error": {"title": "Build running", "message": "A build is already running."}}
+            return {"error": {"code": "running"}}
         self.save(state)
         seed = str(state.get("seed", "")).strip()
         try:
             validate_seed(seed)
         except SeedError as exc:
-            return {"error": {"title": "Invalid seed", "message": str(exc)}}
-        algo, error = self._algo(state, "Invalid city config")
+            return {"error": {"code": "invalid_seed", "detail": str(exc)}}
+        algo, error = self._algo(state)
         if error:
             return {"error": error}
         save = str((self._settings.get("extraction") or {}).get("world_path", SAVE))
@@ -371,10 +352,9 @@ class AlgoTabs:
                     "export": progress.GENERATION_WORLD_WEIGHT,
                 },
             ))
-            return {"images": {"city": _image(city_render_path(seed))}, "status": "Build complete"}
+            return {"images": {"city": image(city_render_path(seed))}}
 
-        self._runner.start("build", job, failure_title="Generation failed", status="Building city layout",
-                           on_success=on_success)
+        self._runner.start("build", job, on_success=on_success)
         return {}
 
     def open_worlds_folder(self):
@@ -383,5 +363,5 @@ class AlgoTabs:
         try:
             files.open_in_file_manager(SAVES)
         except OSError as exc:
-            return {"error": {"title": "Could not open worlds folder", "message": str(exc)}}
+            return {"error": {"code": "worlds_folder", "detail": str(exc)}}
         return {}

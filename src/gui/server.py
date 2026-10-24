@@ -37,6 +37,12 @@ def file_url(path):
     return f"/files/{quote(relative.as_posix())}?v={version}"
 
 
+def image(path):
+    """An image for the page to show: ``{"src": url}``, or ``{"missing": path}`` when it isn't there."""
+    url = file_url(path)
+    return {"src": url} if url else {"missing": str(path)}
+
+
 def _resolve(url_path):
     if url_path in FILES:
         return FILES[url_path] if FILES[url_path].is_file() else None
