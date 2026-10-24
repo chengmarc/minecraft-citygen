@@ -9,10 +9,10 @@ from __future__ import annotations
 
 import threading
 
-from gui.core import app_files, progress
-from gui.web.algo import AlgoTabs, form_spec
-from gui.web.extract import ExtractTab
-from gui.web.session import Runner, Settings
+from gui import files, progress
+from gui.algo import AlgoTabs, form_spec
+from gui.extract import ExtractTab
+from gui.session import Runner, Settings
 
 TOOLTIPS = {
     "preview": "Generate a fast road and city layout preview.",
@@ -33,7 +33,7 @@ class Api:
         )
 
     def _gates(self):
-        assets = app_files.extracted_assets_ready()
+        assets = files.extracted_assets_ready()
         return {
             "extract": {"ready": self._extract.ready(), "tooltip": ""},
             "preview": {"ready": assets, "tooltip": TOOLTIPS["preview"] if assets else TOOLTIPS["blocked"]},

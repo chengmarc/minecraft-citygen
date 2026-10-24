@@ -1,4 +1,4 @@
-// The app: three tabs over the numbered pipeline. Python (gui/web/bridge.py) owns the settings and the runs; the page
+// The app: three tabs over the numbered pipeline. Python (gui/bridge.py) owns the settings and the runs; the page
 // draws them, calls ``window.pywebview.api``, and hears back through ``citygen.receive(event, payload)``.
 
 "use strict";

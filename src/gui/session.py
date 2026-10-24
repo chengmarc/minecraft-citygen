@@ -13,14 +13,14 @@ from __future__ import annotations
 
 import threading
 
-from gui.core import app_files, progress
+from gui import files, progress
 
 
 class Settings:
     """``citygen.json``, one section per tab, written through on every change."""
 
     def __init__(self):
-        self._config = app_files.load_saved_gui_config()
+        self._config = files.load_saved_gui_config()
 
     def get(self, section):
         value = self._config.get(section)
@@ -28,7 +28,7 @@ class Settings:
 
     def set(self, section, value):
         self._config[section] = value
-        app_files.save_saved_gui_config(self._config)
+        files.save_saved_gui_config(self._config)
 
 
 class Runner:

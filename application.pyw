@@ -7,7 +7,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent / "src"))
 
-from gui.launcher import main
+from gui.app import main
 
 
 if __name__ == "__main__":

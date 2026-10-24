@@ -30,7 +30,7 @@ def test_pyinstaller_command_bundles_the_page():
     command = build.base_pyinstaller_command(onefile=False, icon_path=None)
 
     data = {value for flag, value in zip(command, command[1:]) if flag == "--add-data"}
-    assert build.data_arg(build.SRC_ROOT / "gui" / "web" / "static", "gui/web/static") in data
+    assert build.data_arg(build.SRC_ROOT / "gui" / "static", "gui/static") in data
 
 
 def test_pyinstaller_hidden_imports_mirror_the_stage_registry():

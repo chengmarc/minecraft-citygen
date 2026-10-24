@@ -70,9 +70,9 @@ coarse cells.
    Compare `appdata/03_preview/grid/seed_5.png` against a run without the
    variable.
 
-4. **Show it in the app.** In [gui/core/algo_config.py](gui/core/algo_config.py),
-   add `("BIG_JITTER", "Avenue Wobble", "…")` to `PREVIEW_CONFIGS`, put
-   `"BIG_JITTER"` in the "Avenue and Street Shape" group, and give it a slider
+4. **Show it in the app.** In [gui/algo.py](gui/algo.py),
+   add `("BIG_JITTER", "Avenue wobble", "…")` to `PREVIEW_CONFIGS`, put
+   `"BIG_JITTER"` in the "Avenue and Street shape" group, and give it a slider
    range such as `(0, 3)`.
 
 5. **Test it.** Add a case next to `test_generation_follows_the_algo_argument` in
