@@ -6,7 +6,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from citygen import extract, render_topdown
+from citygen import render_topdown, step1_extract
 from citygen.gui import files, progress
 from citygen.gui.server import image
 from citygen.paths import BUILDS_CONTACT_SHEET, BUILDS_RENDERS, has_region_files, ROADS_CONTACT_SHEET, ROADS_RENDERS
@@ -257,7 +257,7 @@ class ExtractTab:
                         self._runner.piece("extract", viewer, int(completed), image(piece))
                 coalesced(step, completed, total, detail)
 
-            extract.run(save, road_box, build_types, on_progress)
+            step1_extract.run(save, road_box, build_types, on_progress)
 
         self._runner.start("extract", job, on_success=lambda _result: {
             "images": {"roads": image(ROADS_CONTACT_SHEET), "builds": image(BUILDS_CONTACT_SHEET)},

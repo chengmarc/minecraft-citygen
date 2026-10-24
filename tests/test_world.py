@@ -14,7 +14,7 @@ from pathlib import Path
 from citygen import render_topdown
 from citygen.render_topdown import region_world_bounds
 from citygen.world_reader import World
-from citygen.extract import (
+from citygen.step1_extract import (
     extract_cuboid,
     group_marker_cuboids,
     marker_blocks_in_region,
