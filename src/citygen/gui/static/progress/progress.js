@@ -101,6 +101,17 @@ class ProgressBar {
   start() { this.stop(); this.set(0); }
   finish() { this.stop(); this.set(100); }
 
+  /** Back to bare ground, as before the first run: no fill, no ticks, nothing under way. */
+  reset() {
+    this.stop();
+    this.value = this.target = this.shown = 0;
+    this.detail = null;
+    this.root.classList.remove("running");
+    this.root.setAttribute("aria-valuenow", "0");
+    if (this.segments.length) this.render();
+    else this.chunk.style.width = "0%";
+  }
+
   stop() {
     clearInterval(this.timer);
     this.timer = null;
