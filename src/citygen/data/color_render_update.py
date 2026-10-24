@@ -1,8 +1,8 @@
 #!/usr/bin/env python
 """Regenerate the renderer block-color lookup CSV from a downloaded MC client JAR.
 
-This is a maintenance script. The app still ships only ``src/citygen/data/color_render.csv``;
-the generator itself is not part of the packaged runtime.
+A maintenance script, run from a checkout; it sits beside the CSV it writes and ships with it, but the app never
+runs it.
 """
 
 from __future__ import annotations
@@ -22,9 +22,9 @@ from pathlib import Path
 from PIL import Image
 
 
-ROOT = Path(__file__).resolve().parents[1]
+ROOT = Path(__file__).resolve().parents[3]  # the repo: data/ -> citygen/ -> src/ -> root
 JAR_DIR = ROOT / "build"  # the downloaded client JAR, kept so a re-run skips the download
-DEFAULT_OUTPUT = ROOT / "src" / "citygen" / "data" / "color_render.csv"
+DEFAULT_OUTPUT = Path(__file__).resolve().parent / "color_render.csv"
 VERSION_MANIFEST_URL = "https://piston-meta.mojang.com/mc/game/version_manifest_v2.json"
 HTTP_TIMEOUT_SECONDS = 120
 
