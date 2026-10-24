@@ -22,6 +22,28 @@ PREVIEW_STEP_WEIGHTS = [8, 8, 15, 69]
 GENERATION_CONSTRUCT_WEIGHTS = [1, 1, 1, 1, 22, 4, 4, 16]
 GENERATION_RENDER_WEIGHT = 5
 GENERATION_WORLD_WEIGHT = 45
+GENERATION_WEIGHTS = GENERATION_CONSTRUCT_WEIGHTS + [GENERATION_RENDER_WEIGHT, GENERATION_WORLD_WEIGHT]
+
+# The run bar's segments, in step order: each one's label, and how many of the tab's weights it spans.
+EXTRACTION_SEGMENTS = [
+    ("Scan roads", 1),
+    ("Road pieces", 1),
+    ("Road sheet", 1),
+    ("Scan buildings", 1),
+    ("Building pieces", 1),
+    ("Building sheet", 1),
+]
+PREVIEW_SEGMENTS = [("Road pieces", 1), ("Building pieces", 1), ("Road layout", 1), ("City layout", 1)]
+# Construction's eight steps, grouped: road network and grid; catalog and placements; assembly, voxels and
+# trees; the schematic. Then the render and the world export.
+GENERATION_SEGMENTS = [
+    ("Roads", 2),
+    ("Placement", 2),
+    ("Buildings", 3),
+    ("Schematic", 1),
+    ("Render", 1),
+    ("World", 1),
+]
 
 PROGRESS_CREEP = {
     "default": {"headroom": 0.90, "tick_ms": 120},
@@ -61,6 +83,29 @@ def weighted_item_milestone(weights, index, completed, total, maximum):
 
 def soft_target(milestone, next_milestone, tab_name):
     return milestone + (next_milestone - milestone) * creep_headroom(tab_name)
+
+
+def segment_spans(weights, segments):
+    """Each ``(label, count)`` segment as ``{"label", "start", "end"}``, in percent of the whole run."""
+    total = sum(weights) or 1
+    spans = []
+    index = 0
+    done = 0
+    for label, count in segments:
+        size = sum(weights[index:index + count])
+        spans.append({"label": label, "start": done * 100 / total, "end": (done + size) * 100 / total})
+        index += count
+        done += size
+    return spans
+
+
+def run_segments():
+    """Every tab's run-bar segments, for the page."""
+    return {
+        "extract": segment_spans([weight for _stage, _phase, weight in EXTRACTION_PHASE_WEIGHTS], EXTRACTION_SEGMENTS),
+        "preview": segment_spans(PREVIEW_STEP_WEIGHTS, PREVIEW_SEGMENTS),
+        "build": segment_spans(GENERATION_WEIGHTS, GENERATION_SEGMENTS),
+    }
 
 
 class ProgressTimingRecorder:

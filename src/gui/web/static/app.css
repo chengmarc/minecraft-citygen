@@ -54,7 +54,8 @@
 }
 
 * { box-sizing: border-box; }
-html, body { height: 100%; margin: 0; }
+/* A window, not a document: nothing scrolls it, so a moment's overflow (an animation) never shows a scrollbar. */
+html, body { height: 100%; margin: 0; overflow: hidden; }
 
 body {
   display: flex;
@@ -202,8 +203,9 @@ h2, h3, p { margin: 0; }
   gap: 12px;
   padding: 12px;
   background: var(--app-bg);
-  animation: page-in 220ms var(--ease);
 }
+/* A tab's contents fade in, not the page itself, whose ground would flash the sky behind it. */
+.page > * { animation: page-in 220ms var(--ease); }
 @keyframes page-in { from { opacity: 0; transform: translateY(4px); } }
 
 .stage { flex: 1; min-height: 0; display: flex; gap: 12px; }
@@ -551,6 +553,54 @@ input[type="range"]:focus-visible::-webkit-slider-thumb { box-shadow: 0 0 0 4px 
     linear-gradient(to right, var(--dirt-top), var(--dirt));
   transition: width 200ms linear;
 }
+/* A run's steps: a track each, the one under way lit and shimmering, the finished ones checked off. */
+.progress.segmented {
+  display: grid;
+  grid-auto-columns: minmax(0, 1fr);
+  grid-auto-flow: column;
+  gap: 4px;
+  height: auto;
+  background: none;
+  box-shadow: none;
+  overflow: visible;
+}
+.segment-bar {
+  height: 10px;
+  border-radius: 5px;
+  background: var(--surface-muted);
+  box-shadow: inset 0 1px 2px rgba(74, 52, 30, 0.12);
+  overflow: hidden;
+}
+.segment-fill {
+  width: 0;
+  height: 100%;
+  background:
+    linear-gradient(var(--accent-top) 0 3px, transparent 3px),
+    linear-gradient(to right, var(--dirt-top), var(--dirt));
+  transition: width 200ms linear;
+}
+.segment.active .segment-fill {
+  background:
+    linear-gradient(var(--accent-top) 0 3px, transparent 3px),
+    linear-gradient(100deg, transparent 40%, rgba(255, 255, 255, 0.28) 50%, transparent 60%) 0 0 / 200% 100%,
+    linear-gradient(to right, var(--dirt-top), var(--dirt));
+  animation: shimmer 1.4s linear infinite;
+}
+@keyframes shimmer { from { background-position: 0 0, 100% 0, 0 0; } to { background-position: 0 0, -100% 0, 0 0; } }
+.segment-label {
+  display: block;
+  margin-top: 5px;
+  overflow: hidden;
+  color: var(--muted);
+  font-size: 11px;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  transition: color 160ms var(--ease);
+}
+.segment.active .segment-label { color: var(--text); font-weight: 650; }
+.segment.done .segment-label { color: var(--accent-text); }
+.segment.done .segment-label::before { content: "\2713  "; font-weight: 700; }
+
 /* Busy, with no way to tell how far: a short stretch sliding across. */
 .progress.indeterminate .progress-chunk { width: 30%; transition: none; animation: slide 1.2s ease-in-out infinite alternate; }
 @keyframes slide { from { transform: translateX(-10%); } to { transform: translateX(243%); } }

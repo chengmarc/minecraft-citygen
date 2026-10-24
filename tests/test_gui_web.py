@@ -267,6 +267,26 @@ class ProgressWeightMirrorTests(unittest.TestCase):
         construct = importlib.import_module(stages.CITY_CONSTRUCT)
         self.assertEqual(len(progress.GENERATION_CONSTRUCT_WEIGHTS), len(construct.STEPS))
 
+    def test_run_bar_segments_span_every_weight_once(self):
+        for segments, weights in (
+            (progress.EXTRACTION_SEGMENTS, progress.EXTRACTION_PHASE_WEIGHTS),
+            (progress.PREVIEW_SEGMENTS, progress.PREVIEW_STEP_WEIGHTS),
+            (progress.GENERATION_SEGMENTS, progress.GENERATION_WEIGHTS),
+        ):
+            self.assertEqual(sum(count for _label, count in segments), len(weights))
+
+    def test_run_bar_segments_tile_the_whole_bar(self):
+        for spans in progress.run_segments().values():
+            self.assertEqual(spans[0]["start"], 0)
+            self.assertAlmostEqual(spans[-1]["end"], 100)
+            for before, after in zip(spans, spans[1:]):
+                self.assertEqual(before["end"], after["start"])
+
+    def test_build_status_names_the_construction_step(self):
+        _value, _soft, status = algo_module.build_progress(stages.CITY_CONSTRUCT, 5, 8, "Composing voxel grid")
+
+        self.assertEqual(status, "Composing voxel grid")
+
     def test_preview_progress_creeps_toward_the_next_item(self):
         value, soft_target, _status = algo_module.preview_progress(stages.PREVIEW_CITY, 1, 2)
 

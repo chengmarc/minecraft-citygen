@@ -177,26 +177,52 @@ class ImageViewer {
 }
 
 // --- Progress bar: jumps to each milestone, then creeps toward the soft target until the next one.
+// Given a run's ``segments`` ({label, start, end} in percent of the run), it's one labelled track per segment,
+// each filling over its own part of the run: the steps the run goes through, ticking off as they finish.
 class ProgressBar {
-  constructor(root, percent = null) {
+  constructor(root, { percent = null, segments = null } = {}) {
     this.root = root;
     this.percent = percent;
     this.chunk = $(".progress-chunk", root);
+    this.segments = [];
+    if (segments) this.setSegments(segments);
     this.value = 0;
     this.timer = null;
+  }
+
+  setSegments(segments) {
+    this.root.classList.add("segmented");
+    this.root.replaceChildren();
+    this.segments = segments.map(({ label, start, end }) => {
+      const element = document.createElement("div");
+      element.className = "segment";
+      element.innerHTML = '<div class="segment-bar"><div class="segment-fill"></div></div><span class="segment-label"></span>';
+      $(".segment-label", element).textContent = label;
+      this.root.append(element);
+      return { element, fill: $(".segment-fill", element), start, end };
+    });
   }
 
   set(value) {
     this.root.classList.remove("indeterminate");
     this.value = value;
-    this.chunk.style.width = `${value}%`;
     this.root.setAttribute("aria-valuenow", String(Math.round(value)));
     if (this.percent) this.percent.textContent = `${Math.floor(value)}%`;
+    if (!this.segments.length) {
+      this.chunk.style.width = `${value}%`;
+      return;
+    }
+    for (const segment of this.segments) {
+      const part = Math.min(Math.max((value - segment.start) / (segment.end - segment.start), 0), 1);
+      segment.fill.style.width = `${part * 100}%`;
+      segment.element.classList.toggle("done", part >= 1);
+      segment.element.classList.toggle("active", part < 1 && value >= segment.start);
+    }
   }
 
   indeterminate() {
     this.stop();
-    this.chunk.style.width = "";
+    if (this.chunk) this.chunk.style.width = "";
     this.root.classList.add("indeterminate");
     this.root.removeAttribute("aria-valuenow");
   }
