@@ -41,7 +41,7 @@ for GitHub Releases and an MSIX package for the Microsoft Store — built by
    changes:
 
    ```bash
-   python scripts/update_render_colors.py --version 26.1.2
+   python src/citygen/data/color_render_update.py --version 26.1.2
    python store-listing/generator/render.py
    git status --short
    ```

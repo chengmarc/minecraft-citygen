@@ -39,7 +39,7 @@ file formats and renderers they use in `tools/`.
 | [render_isometric.py](citygen/tools/render_isometric.py), [render_topdown.py](citygen/tools/render_topdown.py), [contact_sheet.py](citygen/tools/contact_sheet.py) | Isometric renders; the region map's top-down picture and its cache; labelled thumbnail grids                                         |     |
 | [render_standins.py](citygen/tools/render_standins.py)                                                                                                             | The Preview tab's pictures: flat stand-ins for roads, fill props and buildings, and the layouts                                      |     |
 | [blocks.py](citygen/tools/blocks.py)                                                                                                                               | Block-state strings (`name[prop=val]`), air, and each block's render colour                                                          |     |
-| [data/](citygen/data)                                                                                                                                              | What ships: the sample world (`default_world/`) and the block colours (`color_render.csv`)                                           |     |
+| [data/](citygen/data)                                                                                                                                              | What ships: the sample world (`default_world/`), the block colours (`color_render.csv`) and their generator                          |     |
 | [gui/](citygen/gui)                                                                                                                                                | The app: a native window (WebView2, through pywebview) showing the page in `gui/static/`                                             |     |
 
 In `gui/`: `app.py` opens the window; `bridge.py` is every call the page makes; `extract_tab.py` and `city_tabs.py`
@@ -146,8 +146,8 @@ matching asset in the world. Pieces are matched to tiles by prefix alone.
 **Re-tune a progress bar.** Time a run's steps and set the weights in `RUN_STEPS` in proportion; each tab's weights only
 matter relative to each other.
 
-**Refresh the block colours.** When MC gains blocks, run `python scripts/update_render_colors.py [--version 26.1.2]`:
-it downloads the client JAR into `build/` and rewrites `data/color_render.csv`. `--vivid-only` re-derives the
-saturated colours without downloading.
+**Refresh the block colours.** When MC gains blocks, run
+`python src/citygen/data/color_render_update.py [--version 26.1.2]`: it downloads the client JAR into `build/` and
+rewrites `color_render.csv` beside it. `--vivid-only` re-derives the saturated colours without downloading.
 
 Releases, the installer and the Store package are in the [release guide](../docs/RELEASING.md).
