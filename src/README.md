@@ -17,21 +17,28 @@ committing. To reset, delete `appdata/` (everything the app writes) and `build/`
 
 ## Where things are
 
-| File | What it is |
-|---|---|
-| [step1_extract.py](citygen/step1_extract.py) | **The Extract tab's run**: find the marker blocks in the world, export each road piece and building as `.schem`, write `buildings.json`, render the contact sheets |
-| [step2_preview.py](citygen/step2_preview.py) | **The Preview tab's run**: flat top-down stand-ins, laid out as the seed's road layout and city layout |
-| [step3_build.py](citygen/step3_build.py) | **The Build tab's run**: the road grid, seated buildings and lot fill as one `.schem`, its render, and the exported world |
-| [road_network.py](citygen/road_network.py) | The road grid for a seed, and the road tile catalogue |
-| [city_layout.py](citygen/city_layout.py) | Lots and building placement (`plan_city`), shared by preview and build |
-| [schem.py](citygen/schem.py) | Sponge v3 `.schem` read/write, tile rotation, voxel grids, the building catalog and its pieces |
-| [world_reader.py](citygen/world_reader.py), [world_writer.py](citygen/world_writer.py) | Read Anvil worlds; write the exported world |
-| [render_isometric.py](citygen/render_isometric.py), [render_topdown.py](citygen/render_topdown.py), [contact_sheet.py](citygen/contact_sheet.py) | Isometric renders; the region map's top-down picture and its cache; labelled thumbnail grids |
-| [blocks.py](citygen/blocks.py) | Block-state strings (`name[prop=val]`), air, and each block's render colour |
-| [settings.py](citygen/settings.py) | The algorithm's knobs (`Algo`), the bundled world's sample areas, version stamping |
-| [paths.py](citygen/paths.py) | Where the app keeps its data, and every output's path |
-| [data/](citygen/data) | What ships: the sample world (`default_world/`) and the block colours (`color_render.csv`) |
-| [gui/](citygen/gui) | The app: a native window (WebView2, through pywebview) showing the page in `gui/static/` |
+The three `step*_` files are the pipeline, one per tab; they only orchestrate. The algorithms are in `core/`, the
+file formats and renderers they use in `tools/`.
+
+| File                                                                                                                                                               | What it is                                                                                                                           |     |
+| ------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------ | --- |
+| [step1_extract.py](citygen/step1_extract.py)                                                                                                                       | **The Extract tab's run**: export each marked road piece and building as `.schem`, write `buildings.json`, render the contact sheets |     |
+| [step2_preview.py](citygen/step2_preview.py)                                                                                                                       | **The Preview tab's run**: flat top-down stand-ins, laid out as the seed's road layout and city layout                               |     |
+| [step3_build.py](citygen/step3_build.py)                                                                                                                           | **The Build tab's run**: the city as one `.schem`, its render, and the exported world                                                |     |
+| [settings.py](citygen/settings.py)                                                                                                                                 | The algorithm's knobs (`Algo`), the bundled world's sample areas, version stamping                                                   |     |
+| [paths.py](citygen/paths.py)                                                                                                                                       | Where the app keeps its data, and every output's path                                                                                |     |
+| **core/**                                                                                                                                                          |                                                                                                                                      |     |
+| [road_network.py](citygen/core/road_network.py)                                                                                                                    | The road grid for a seed, and the road tile catalogue                                                                                |     |
+| [city_layout.py](citygen/core/city_layout.py)                                                                                                                      | Lots and building placement (`plan_city`), shared by preview and build                                                               |     |
+| [markers.py](citygen/core/markers.py)                                                                                                                              | Finding assets in a world by their marker blocks, and copying them out                                                               |     |
+| [assemble.py](citygen/core/assemble.py)                                                                                                                            | The city as one voxel grid: the road grid, seated buildings, lot fill                                                                |     |
+| **tools/**                                                                                                                                                         |                                                                                                                                      |     |
+| [schem.py](citygen/tools/schem.py)                                                                                                                                 | Sponge v3 `.schem` read/write, tile rotation, voxel grids, the building catalog and its pieces                                       |     |
+| [world_reader.py](citygen/tools/world_reader.py), [world_writer.py](citygen/tools/world_writer.py)                                                                 | Read Anvil worlds; write the exported world                                                                                          |     |
+| [render_isometric.py](citygen/tools/render_isometric.py), [render_topdown.py](citygen/tools/render_topdown.py), [contact_sheet.py](citygen/tools/contact_sheet.py) | Isometric renders; the region map's top-down picture and its cache; labelled thumbnail grids                                         |     |
+| [blocks.py](citygen/tools/blocks.py)                                                                                                                               | Block-state strings (`name[prop=val]`), air, and each block's render colour                                                          |     |
+| [data/](citygen/data)                                                                                                                                              | What ships: the sample world (`default_world/`) and the block colours (`color_render.csv`)                                           |     |
+| [gui/](citygen/gui)                                                                                                                                                | The app: a native window (WebView2, through pywebview) showing the page in `gui/static/`                                             |     |
 
 In `gui/`: `app.py` opens the window; `bridge.py` is every call the page makes; `extract_tab.py` and `city_tabs.py`
 are the tabs, each starting its run on a background thread through `session.py`'s `Runner`; `form.py` is the algorithm
@@ -90,7 +97,7 @@ gold at ground level. An asset with malformed markers is skipped, not repaired.
 
 | Prefix | Meaning |
 |---|---|
-| `01`–`05` | big 2x2 tiles (`BIG_TILES` in road_network.py) |
+| `01`–`05` | big 2x2 tiles (`BIG_TILES` in core/road_network.py) |
 | `06`–`10` | small 1x1 tiles (`SMALL_TILES`) |
 | `11`–`14` | mixed 1x2 crossings (`MIXED_TILES`) |
 | `18` | the empty-lot ground fill, required |
@@ -111,7 +118,7 @@ height in the asset), `pieces` (each piece's height) and, stacked buildings only
 
 **Forward-only.** Block strings are copied straight from the source world, so every output is stamped with the source
 world's own `DataVersion`, clamped up to MC 26.1.2 (`HARD_FLOOR_DATA_VERSION`): a schematic can be upgraded into a
-newer world, never down. Every stamp is inside Sponge v3, so `schem.py` is v3-only. The Extract tab's target version
+newer world, never down. Every stamp is inside Sponge v3, so `tools/schem.py` is v3-only. The Extract tab's target version
 only shows where the output can go; it changes nothing.
 
 **Where the data goes.** `appdata/` sits at the repo root in a checkout; beside the exe in a portable build when that's
@@ -126,7 +133,7 @@ it from the `algo` argument, never from `ALGO`. To show it, add its name to `KNO
 and tip in `TEXT.form.knobs` in `text.js`. The form is built from `form_spec`, so there's no HTML to change.
 
 **Add a road tile.** Add `(ports, "NN_<name>")` to `BIG_TILES`, `SMALL_TILES` or `MIXED_TILES` in
-[road_network.py](citygen/road_network.py) with a new prefix, ports in the unrotated orientation, and author the
+[core/road_network.py](citygen/core/road_network.py) with a new prefix, ports in the unrotated orientation, and author the
 matching asset in the world. Pieces are matched to tiles by prefix alone.
 
 **Add a step to a run.** Report it with a new code from the run, give the code a weight in `WEIGHTS` and a segment in

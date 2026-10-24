@@ -25,9 +25,9 @@ import nbtlib
 import numpy as np
 from nbtlib import Byte, Compound, Double, Float, Int, List, Long, LongArray, String
 
-from citygen.blocks import is_air, parse_state
+from citygen.tools.blocks import is_air, parse_state
 from citygen.paths import DEFAULT_WORLD, EXPORTED_WORLD_NAME, region_dir_candidates, resolve_region_dir
-from citygen.schem import decode_schem_array, decode_schem_block_entities, decode_schem_offset
+from citygen.tools.schem import decode_schem_array, decode_schem_block_entities, decode_schem_offset
 from citygen.settings import release_name_for, source_data_version
 
 # Standard overworld build range; heightmap values are stored relative to the

@@ -1,12 +1,13 @@
 """Extract: the source world, its three sample areas, the region map over the world's top-down preview
-(:func:`citygen.render_topdown.cached_topdown_preview`), and the extraction run.
+(:func:`citygen.tools.render_topdown.cached_topdown_preview`), and the extraction run.
 """
 
 from __future__ import annotations
 
 from pathlib import Path
 
-from citygen import render_topdown, step1_extract
+from citygen import step1_extract
+from citygen.tools import render_topdown
 from citygen.gui import files, progress
 from citygen.gui.server import image
 from citygen.paths import BUILDS_CONTACT_SHEET, BUILDS_RENDERS, has_region_files, ROADS_CONTACT_SHEET, ROADS_RENDERS

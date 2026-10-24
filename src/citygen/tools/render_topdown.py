@@ -14,9 +14,9 @@ from pathlib import Path
 
 import numpy as np
 
-from citygen.blocks import block_color
+from citygen.tools.blocks import block_color
 from citygen.paths import resolve_region_dir, WORLD_PREVIEW_CACHE
-from citygen.world_reader import World
+from citygen.tools.world_reader import World
 
 # Where there's no world (no chunk, or no surface block), the map is transparent: it shows whatever it's drawn on.
 EMPTY = (0, 0, 0, 0)

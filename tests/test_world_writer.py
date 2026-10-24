@@ -15,11 +15,11 @@ from PIL import Image
 
 from citygen.paths import WORLD_ICON, resolve_region_dir
 from citygen.settings import HARD_FLOOR_DATA_VERSION
-from citygen.blocks import AIR_BLOCKS, parse_state
-from citygen.schem import BlockEntity
-from citygen.schem import write_sponge_schem_grid
-from citygen.world_reader import World
-from citygen import world_writer
+from citygen.tools.blocks import AIR_BLOCKS, parse_state
+from citygen.tools.schem import BlockEntity
+from citygen.tools.schem import write_sponge_schem_grid
+from citygen.tools.world_reader import World
+from citygen.tools import world_writer
 
 STONE = "minecraft:stone"
 STAIRS = "minecraft:oak_stairs[facing=east,half=bottom,shape=straight,waterlogged=false]"

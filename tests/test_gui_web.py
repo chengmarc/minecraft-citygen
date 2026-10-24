@@ -12,7 +12,8 @@ import unittest
 from pathlib import Path
 from unittest import mock
 
-from citygen import render_topdown, step1_extract, step2_preview, step3_build
+from citygen import step1_extract, step2_preview, step3_build
+from citygen.tools import render_topdown
 from citygen.gui import app as app_module
 from citygen.gui import city_tabs as algo_module
 from citygen.gui import extract_tab as extract_module
@@ -329,7 +330,7 @@ class BuildBlueprintTests(_ApiTestCase):
 class WarmUpTests(unittest.TestCase):
     def test_launch_warms_up_the_isometric_renderer(self):
         # The warm-up swallows every error, so a stale import would only show as a slow first extraction.
-        with mock.patch("citygen.render_isometric.warm_up") as warm_up:
+        with mock.patch("citygen.tools.render_isometric.warm_up") as warm_up:
             app_module._warm_up_renderer()
 
         warm_up.assert_called_once()

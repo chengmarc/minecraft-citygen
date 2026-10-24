@@ -6,15 +6,15 @@ import nbtlib
 from nbtlib import Byte, Compound, String
 
 from citygen.settings import CELL
-from citygen import schem
-from citygen import step3_build
-from citygen.schem import (
+from citygen.tools import schem
+from citygen.core import assemble
+from citygen.tools.schem import (
     decode_schem_block_entities,
     decode_schem_cells,
     decode_schem_offset,
 )
-from citygen.schem import Tile, BlockEntity, rot_state, rot_tile
-from citygen.schem import (
+from citygen.tools.schem import Tile, BlockEntity, rot_state, rot_tile
+from citygen.tools.schem import (
     sponge_schem_from_cells,
     sponge_schem_from_grid,
     write_sponge_schem_cells,
@@ -169,9 +169,9 @@ def test_road_asset_loaders_keep_network_tiles_fill_props_and_ground_fill_separa
         V2612,
         offset=(0, -3, 0),
     )
-    tiles = step3_build.load_tiles(str(tmp_path))
-    fillers = step3_build.load_fillers(str(tmp_path))
-    ground_fill = step3_build.load_ground_fill_tile(str(tmp_path))
+    tiles = assemble.load_tiles(str(tmp_path))
+    fillers = assemble.load_fillers(str(tmp_path))
+    ground_fill = assemble.load_ground_fill_tile(str(tmp_path))
 
     assert set(tiles) == {"02"}
     assert tiles["02"].ground_offset == 1
@@ -219,7 +219,7 @@ def test_building_pieces_are_reread_after_a_new_extraction(tmp_path):
 def _fill_first_cell(tile, **kwargs):
     """Ground-fill a 12x12 grid with ``ground_y=3``; return its first cell's columns."""
     grid = np.zeros((6, 12, 12), dtype=np.int16)
-    step3_build.place_ground_fill(
+    assemble.place_ground_fill(
         grid,
         {"minecraft:air": 0},
         np.zeros((12, 12), dtype=bool),
@@ -229,7 +229,7 @@ def _fill_first_cell(tile, **kwargs):
         ground_fill_tile=tile,
         **kwargs,
     )
-    z0 = x0 = step3_build.PLAYER_ANCHOR_MARGIN
+    z0 = x0 = assemble.PLAYER_ANCHOR_MARGIN
     return grid[:, z0:z0 + CELL, x0:x0 + CELL]
 
 
