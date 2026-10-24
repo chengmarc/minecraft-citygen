@@ -3,9 +3,9 @@
 A run sends the page four kinds of event, each naming its tab, with facts, not wording (the page's text.js
 words them):
 
-- ``progress``: ``value`` and ``softTarget`` in percent; the bar jumps to the value,
-  then creeps toward the soft target every ``tickMs`` until the next event. ``detail``
-  is the pipeline's own name for the step under way, when it has one;
+- ``progress``: first with no step, as the run starts; then each of the run's reports as it comes, its ``step``
+  code, ``completed`` of ``total``, and ``detail``, the pipeline's own name for what's under way when it has one.
+  The page (progress/steps.js) puts each on the bar;
 - ``done``: the images the run made;
 - ``failed``: the error's text, if it had any;
 - ``finished``: after either, with every tab's gate.
@@ -19,7 +19,7 @@ from __future__ import annotations
 
 import threading
 
-from citygen.gui import files, progress
+from citygen.gui import files
 
 JOB_LOCK = threading.Lock()
 
@@ -61,23 +61,15 @@ class Runner:
         self._emit("piece", {"tab": tab, "viewer": viewer, "index": index, **image})
 
     def start(self, tab, job, *, on_success):
-        """Run ``job(report)``; ``report(value, soft_target, detail=None)`` takes PROGRESS_BAR_SCALE units.
+        """Run ``job(report)``; ``report(step, completed, total, detail=None)`` is the run's progress, by step code.
 
         ``on_success(result)`` returns the ``done`` event's payload.
         """
         self._running.add(tab)
-        self._emit("progress", {"tab": tab, "value": 0, "softTarget": None})
+        self._emit("progress", {"tab": tab})
 
-        def report(value, soft_target, detail=None):
-            scale = progress.PROGRESS_BAR_SCALE
-            self._emit("progress", {
-                "tab": tab,
-                "value": value * 100 / scale,
-                "softTarget": None if soft_target is None else soft_target * 100 / scale,
-                "tickMs": progress.tick_ms(tab),
-                "creepRate": progress.CREEP_RATE,
-                "detail": detail,
-            })
+        def report(step, completed, total, detail=None):
+            self._emit("progress", {"tab": tab, "step": step, "completed": completed, "total": total, "detail": detail})
 
         def worker():
             try:

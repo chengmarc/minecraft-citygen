@@ -42,16 +42,17 @@ file formats and renderers they use in `tools/`.
 
 In `gui/`: `app.py` opens the window; `bridge.py` is every call the page makes; `extract_tab.py` and `city_tabs.py`
 are the tabs, each starting its run on a background thread through `session.py`'s `Runner`; `form.py` is the algorithm
-form; `progress.py` places each run's progress on its bar; `server.py` serves the page and the images; `files.py` is
+form; `server.py` serves the page and the images; `files.py` is
 saved settings and cleanup. The page itself: `index.html`, `app.js` (the tabs, wired to the bridge), `text.js` (every
-word it shows), `tokens.css` (colours; the title bar reads three of them), `app.css`, and one folder per part:
+word it shows), `progress/steps.js` (where each run's progress puts its bar), `tokens.css` (colours; the title bar reads three of them), `app.css`, and one folder per part:
 `viewer/`, `progress/`, `form/`, `region/`.
 
 ## How a run works
 
 The three `step*_` modules are the pipeline: each tab calls its module's `run`, which takes the tab's settings and reports
-`progress(step, completed, total[, detail])` by step code; [gui/progress.py](citygen/gui/progress.py) gives each step
-a hand-tuned weight on the bar, and the page names the bar's segments by the same codes (`TEXT.segments`).
+`progress(step, completed, total[, detail])` by step code; the bridge passes each report to the page as it comes,
+[progress/steps.js](citygen/gui/static/progress/steps.js) gives each step a hand-tuned weight on the bar, and `text.js`
+names the bar's segments by the same codes (`TEXT.segments`).
 
 | Tab | Runs | Steps |
 |---|---|---|
@@ -136,10 +137,10 @@ and tip in `TEXT.form.knobs` in `text.js`. The form is built from `form_spec`, s
 [core/road_network.py](citygen/core/road_network.py) with a new prefix, ports in the unrotated orientation, and author the
 matching asset in the world. Pieces are matched to tiles by prefix alone.
 
-**Add a step to a run.** Report it with a new code from the run, give the code a weight in `WEIGHTS` and a segment in
-`SEGMENTS` in [gui/progress.py](citygen/gui/progress.py), and name the segment in `TEXT.segments` in `text.js`.
+**Add a step to a run.** Report it with a new code from the run, give the code a weight in `weights` and, where steps are grouped, a segment in
+`segments` in [progress/steps.js](citygen/gui/static/progress/steps.js), and name the segment in `TEXT.segments` in `text.js`.
 
-**Re-tune a progress bar.** Time a run's steps and set the weights in `WEIGHTS` in proportion; each tab's weights only
+**Re-tune a progress bar.** Time a run's steps and set the weights in `RUN_STEPS` in proportion; each tab's weights only
 matter relative to each other.
 
 **Refresh the block colours.** When MC gains blocks, run `python scripts/update_render_colors.py [--version 26.1.2]`:

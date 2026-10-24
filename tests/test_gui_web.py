@@ -17,7 +17,7 @@ from citygen.tools import render_topdown
 from citygen.gui import app as app_module
 from citygen.gui import city_tabs as algo_module
 from citygen.gui import extract_tab as extract_module
-from citygen.gui import files, progress, server
+from citygen.gui import files, server
 from citygen.gui import form as form_module
 from citygen.gui.bridge import Api
 from citygen.settings import ALGO, BlockRegion
@@ -220,12 +220,14 @@ class ExtractTests(_ApiTestCase):
         partial = [payload for event, payload in self.events if event == "worldMap" and payload.get("partial")]
         self.assertEqual(partial[0]["drawn"], 0.25)
 
-    def test_extract_progress_reaches_each_step_end_without_creeping_past_it(self):
-        value, soft_target, _detail = progress.bar("extract", "road_sheet", 4, 4)
-        next_value, _soft, _detail = progress.bar("extract", "scan_builds", 0, 1)
+    def test_extract_progress_drops_reports_that_would_not_move_the_bar_but_keeps_each_end(self):
+        reports = []
+        report = extract_module.coalesce(lambda *args: reports.append(args))
+        for done in range(1001):
+            report("scan_builds", done, 1000)
 
-        self.assertEqual(value, next_value)
-        self.assertIsNone(soft_target)
+        self.assertEqual(len(reports), extract_module.PROGRESS_BUCKETS + 1)
+        self.assertEqual(reports[-1], ("scan_builds", 1000, 1000))
 
 
 class PreviewTests(_ApiTestCase):
@@ -298,8 +300,11 @@ class BuildTests(_ApiTestCase):
             self.assertEqual(self.api.run_build(state), {})
 
         self.assertEqual(calls, [(9, ALGO, "C:/mc/source-world")])
-        details = [payload.get("detail") for event, payload in self.events if event == "progress"]
-        self.assertIn("Composing voxel grid", details)
+        reports = [payload for event, payload in self.events if event == "progress"]
+        self.assertEqual(reports[0], {"tab": "build"})
+        self.assertEqual(
+            reports[1], {"tab": "build", "step": "construct", "completed": 5, "total": 8, "detail": "Composing voxel grid"},
+        )
         self.assertEqual(self.event_names()[-2:], ["done", "finished"])
 
 
@@ -334,40 +339,6 @@ class WarmUpTests(unittest.TestCase):
             app_module._warm_up_renderer()
 
         warm_up.assert_called_once()
-
-
-class ProgressTests(unittest.TestCase):
-    """Progress weights are hand-tuned, one per step a run reports."""
-
-    def test_construct_has_a_weight_per_step(self):
-        self.assertEqual(len(progress.CONSTRUCT_WEIGHTS), len(step3_build.STEPS))
-
-    def test_run_bar_segments_span_every_weight_once(self):
-        for tab, segments in progress.SEGMENTS.items():
-            self.assertEqual(sum(count for _code, count in segments), len(progress.WEIGHTS[tab]))
-
-    def test_run_bar_segments_tile_the_whole_bar(self):
-        for spans in progress.run_segments().values():
-            self.assertEqual(spans[0]["start"], 0)
-            self.assertAlmostEqual(spans[-1]["end"], 100)
-            for before, after in zip(spans, spans[1:]):
-                self.assertEqual(before["end"], after["start"])
-
-    def test_build_progress_names_only_the_construction_steps(self):
-        _value, _soft, detail = progress.bar("build", "construct", 5, 8, "Composing voxel grid")
-        _value, _soft, render_detail = progress.bar("build", "render", 0, 1, "done")
-
-        self.assertEqual(detail, "Composing voxel grid")
-        self.assertIsNone(render_detail)
-
-    def test_preview_progress_creeps_toward_the_next_item(self):
-        start, _soft, _detail = progress.bar("preview", "city_layout", 0, 2)
-        value, soft_target, detail = progress.bar("preview", "city_layout", 1, 2)
-        end, _soft, _detail = progress.bar("preview", "city_layout", 2, 2)
-
-        self.assertAlmostEqual(value, (start + end) / 2)
-        self.assertGreater(soft_target, value)
-        self.assertEqual(detail, progress.PREVIEW_DETAILS["city_layout"])
 
 
 class ServerTests(unittest.TestCase):
@@ -468,7 +439,6 @@ class PageMirrorTests(unittest.TestCase):
         codes = (
             form_module.KNOBS
             + [code for code, _names in form_module.GROUPS]
-            + [code for segments in progress.SEGMENTS.values() for code, _count in segments]
         )
         for code in codes:
             self.assertRegex(text, rf"\b{code}:", code)
@@ -483,6 +453,10 @@ class PageMirrorTests(unittest.TestCase):
             path.relative_to(server.STATIC).as_posix() for path in server.STATIC.rglob("*") if path.suffix in (".js", ".css")
         )
         self.assertEqual(sorted(linked), present)
+
+    def test_construction_has_a_weight_per_step(self):
+        weights = re.search(r"const CONSTRUCT_WEIGHTS = \[([^\]]*)\];", self.read("progress/steps.js")).group(1)
+        self.assertEqual(len(weights.split(",")), len(step3_build.STEPS))
 
     def test_the_region_map_snaps_to_the_same_chunks(self):
         self.assertIn(f"const CHUNK_SIZE = {extract_module.CHUNK_SIZE};", self.read("region/region.js"))
