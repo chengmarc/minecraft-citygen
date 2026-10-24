@@ -15,11 +15,10 @@ from unittest import mock
 
 from config.algo import ALGO
 from config.world import BlockRegion
-from gui.core import algo_config, app_files, extraction_config, progress, world_preview
-from gui.web import algo as algo_module
-from gui.web import extract as extract_module
-from gui.web import server
-from gui.web.bridge import Api
+from gui import algo as algo_module
+from gui import extract as extract_module
+from gui import files, progress, server
+from gui.bridge import Api
 from pipeline import stages
 
 
@@ -42,10 +41,10 @@ class _ApiTestCase(unittest.TestCase):
         self.events = []
         self.picked = None
         patches = [
-            mock.patch.object(app_files, "load_saved_gui_config", return_value=dict(self.saved_config)),
-            mock.patch.object(app_files, "save_saved_gui_config", side_effect=lambda c: self.saved.append(dict(c))),
-            mock.patch.object(app_files, "save_progress_timing"),
-            mock.patch.object(app_files, "extracted_assets_ready", return_value=True),
+            mock.patch.object(files, "load_saved_gui_config", return_value=dict(self.saved_config)),
+            mock.patch.object(files, "save_saved_gui_config", side_effect=lambda c: self.saved.append(dict(c))),
+            mock.patch.object(files, "save_progress_timing"),
+            mock.patch.object(files, "extracted_assets_ready", return_value=True),
         ]
         for patch in patches:
             patch.start()
@@ -65,7 +64,7 @@ class _ApiTestCase(unittest.TestCase):
 
 class LaunchGatingTests(_ApiTestCase):
     def test_first_launch_requires_extracted_assets_before_preview_or_build(self):
-        with mock.patch.object(app_files, "extracted_assets_ready", return_value=False):
+        with mock.patch.object(files, "extracted_assets_ready", return_value=False):
             gates = self.api.bootstrap()["gates"]
 
         self.assertFalse(gates["preview"]["ready"])
@@ -76,16 +75,16 @@ class LaunchGatingTests(_ApiTestCase):
     def test_first_launch_starts_from_the_default_settings(self):
         boot = self.api.bootstrap()
 
-        self.assertEqual(boot["algo"], algo_config.default_algo_tab_config())
+        self.assertEqual(boot["algo"], algo_module.default_algo_tab_config())
         self.assertTrue(boot["extraction"]["worldReady"])
         self.assertTrue(all(area["selected"] for area in boot["extraction"]["areas"].values()))
 
     def test_form_covers_every_grouped_knob_and_both_selectors(self):
         form = self.api.bootstrap()["form"]
 
-        self.assertEqual([s["name"] for s in form["selectors"]], list(algo_config.SELECTOR_OPTIONS))
+        self.assertEqual([s["name"] for s in form["selectors"]], list(algo_module.SELECTOR_OPTIONS))
         grouped = [field["name"] for group in form["groups"] for field in group["fields"]]
-        self.assertEqual(grouped, [name for _title, names in algo_config.PREVIEW_CONFIG_GROUPS for name in names])
+        self.assertEqual(grouped, [name for _title, names in algo_module.PREVIEW_CONFIG_GROUPS for name in names])
 
 
 class ExtractTests(_ApiTestCase):
@@ -102,7 +101,7 @@ class ExtractTests(_ApiTestCase):
 
         self.assertEqual([name for name, _params in calls], ["roads", "builds"])
         roads, builds = calls[0][1], calls[1][1]
-        world_path = extraction_config.default_extraction_tab_config()["world_path"]
+        world_path = extract_module.default_extraction_tab_config()["world_path"]
         self.assertEqual(set(roads), {"save", "road_box"})
         self.assertEqual(set(builds), {"save", "build_types"})
         self.assertEqual(roads["save"], world_path)
@@ -111,13 +110,13 @@ class ExtractTests(_ApiTestCase):
         self.assertEqual([region.build_type for region in builds["build_types"]], [1, 2])
         self.assertEqual(self.event_names()[0], "progress")
         self.assertEqual(self.event_names()[-2:], ["done", "finished"])
-        app_files.save_progress_timing.assert_called_once()
+        files.save_progress_timing.assert_called_once()
 
     def test_extract_needs_all_three_areas(self):
         self.api.set_area("road", [0, 0, 0], [15, 64, 15])
         state = self.saved[-1]["extraction"]
         state["house"] = {"start": None, "end": None}
-        with mock.patch.object(app_files, "load_saved_gui_config", return_value={"extraction": state}):
+        with mock.patch.object(files, "load_saved_gui_config", return_value={"extraction": state}):
             api = Api(lambda *_: None, pick_folder=lambda _: None, thread_factory=_ImmediateThread)
 
         self.assertFalse(api.bootstrap()["gates"]["extract"]["ready"])
@@ -135,7 +134,7 @@ class ExtractTests(_ApiTestCase):
         self.picked = "C:/mc/new-world"
         with (
             mock.patch.object(extract_module, "has_region_files", return_value=True),
-            mock.patch.object(app_files, "clear_pipeline_artifacts") as clear,
+            mock.patch.object(files, "clear_pipeline_artifacts") as clear,
         ):
             answer = self.api.browse_world()
 
@@ -157,19 +156,19 @@ class ExtractTests(_ApiTestCase):
         self.assertEqual(answer["extraction"]["areas"]["road"]["detail"], "3 x 2 chunks selected")
 
     def test_region_map_opens_on_the_default_area_when_none_is_saved(self):
-        state = extraction_config.default_extraction_tab_config()
+        state = extract_module.default_extraction_tab_config()
         state["landmark"] = {"start": None, "end": None}
-        with mock.patch.object(app_files, "load_saved_gui_config", return_value={"extraction": state}):
+        with mock.patch.object(files, "load_saved_gui_config", return_value={"extraction": state}):
             api = Api(lambda *_: None, pick_folder=lambda _: None, thread_factory=_ImmediateThread)
 
-        default = extraction_config.default_extraction_tab_config()["landmark"]
+        default = extract_module.default_extraction_tab_config()["landmark"]
         self.assertEqual(api.area_bounds("landmark"), {"start": default["start"], "end": default["end"]})
 
     def test_world_map_reports_its_url_and_meta(self):
         meta = {"x0": 0, "x1": 255, "z0": 0, "z1": 255, "step": 2}
-        png = Path(app_files.APP_DATA) / "world_preview" / "x.png"
+        png = Path(files.APP_DATA) / "world_preview" / "x.png"
         with (
-            mock.patch.object(extract_module.world_preview, "cached_topdown_preview", return_value=(png, meta)),
+            mock.patch.object(extract_module, "cached_topdown_preview", return_value=(png, meta)),
             mock.patch.object(extract_module, "file_url", return_value="/files/world_preview/x.png?v=1"),
         ):
             self.assertEqual(self.api.load_world_map(), {})
@@ -195,7 +194,7 @@ class PreviewTests(_ApiTestCase):
             calls.update(stage=stage_key, seed=seed, algo=algo)
             progress(stages.PREVIEW_CITY, 2, 2, "Rendered city layout preview")
 
-        state = algo_config.default_algo_tab_config()
+        state = algo_module.default_algo_tab_config()
         with mock.patch.object(algo_module.services, "run_stage", side_effect=fake_preview):
             answer = self.api.run_preview(state)
 
@@ -208,7 +207,7 @@ class PreviewTests(_ApiTestCase):
         self.assertEqual(set(self.last("done")["images"]), {"grid", "city"})
 
     def test_invalid_config_returns_the_error_without_running(self):
-        state = algo_config.default_algo_tab_config()
+        state = algo_module.default_algo_tab_config()
         state["algo"]["GAP_BIG"] = "lots"
         with mock.patch.object(algo_module.services, "run_stage") as run_stage:
             answer = self.api.run_preview(state)
@@ -219,7 +218,7 @@ class PreviewTests(_ApiTestCase):
 
     def test_stage_failure_reports_and_still_finishes(self):
         with mock.patch.object(algo_module.services, "run_stage", side_effect=RuntimeError("no roads")):
-            self.api.run_preview(algo_config.default_algo_tab_config())
+            self.api.run_preview(algo_module.default_algo_tab_config())
 
         self.assertEqual(self.event_names(), ["progress", "failed", "finished"])
         self.assertEqual(self.last("failed")["message"], "no roads")
@@ -227,12 +226,12 @@ class PreviewTests(_ApiTestCase):
     def test_reset_saves_and_returns_the_defaults(self):
         state = self.api.reset_algo()
 
-        self.assertEqual(state, algo_config.default_algo_tab_config())
+        self.assertEqual(state, algo_module.default_algo_tab_config())
         self.assertEqual(self.saved[-1]["algo"], state)
 
 
 class BuildTests(_ApiTestCase):
-    saved_config = {"extraction": {**extraction_config.default_extraction_tab_config(), "world_path": "C:/mc/source-world"}}
+    saved_config = {"extraction": {**extract_module.default_extraction_tab_config(), "world_path": "C:/mc/source-world"}}
 
     def test_build_run_exports_city_using_the_selected_source_world(self):
         calls = []
@@ -242,7 +241,7 @@ class BuildTests(_ApiTestCase):
             calls.append((name, seed, params))
             progress(progress_stage[name], 1, 1, "done")
 
-        state = {**algo_config.default_algo_tab_config(), "seed": "9"}
+        state = {**algo_module.default_algo_tab_config(), "seed": "9"}
         with (
             mock.patch.object(algo_module, "source_data_version", return_value=4790),
             mock.patch.object(algo_module.services, "run_stage", side_effect=record),
@@ -254,7 +253,7 @@ class BuildTests(_ApiTestCase):
         self.assertEqual(calls[1][2], {"save": "C:/mc/source-world"})
         self.assertEqual([seed for _name, seed, _params in calls], ["9", "9"])
         self.assertEqual(self.event_names()[-2:], ["done", "finished"])
-        app_files.save_progress_timing.assert_called_once()
+        files.save_progress_timing.assert_called_once()
 
 
 class ProgressWeightMirrorTests(unittest.TestCase):
@@ -352,7 +351,7 @@ class ServerTests(unittest.TestCase):
 
 class WorldPreviewTests(unittest.TestCase):
     def test_chunk_span_counts_partial_chunks_and_negative_coordinates(self):
-        self.assertEqual(world_preview.chunk_span_text((-1, 0, 0), (16, 0, 15)), "3 x 1 chunks")
+        self.assertEqual(extract_module.chunk_span_text((-1, 0, 0), (16, 0, 15)), "3 x 1 chunks")
 
 
 if __name__ == "__main__":

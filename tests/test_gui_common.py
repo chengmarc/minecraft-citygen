@@ -8,7 +8,7 @@ import tempfile
 import unittest
 from unittest import mock
 
-from gui.core import app_files
+from gui import files
 
 
 class ClearPipelineArtifactsTests(unittest.TestCase):
@@ -26,11 +26,11 @@ class ClearPipelineArtifactsTests(unittest.TestCase):
             open(settings, "w").close()
 
             with (
-                mock.patch.object(app_files, "APP_DATA", root),
-                mock.patch.object(app_files, "SAVES", saves),
-                mock.patch.object(app_files, "SAVED_GUI_CONFIG_PATH", settings),
+                mock.patch.object(files, "APP_DATA", root),
+                mock.patch.object(files, "SAVES", saves),
+                mock.patch.object(files, "SAVED_GUI_CONFIG_PATH", settings),
             ):
-                app_files.clear_pipeline_artifacts()
+                files.clear_pipeline_artifacts()
 
             self.assertTrue(os.path.exists(os.path.join(world, "level.dat")))  # saves kept
             self.assertFalse(os.path.exists(os.path.join(root, "01_roads")))   # pipeline wiped
@@ -47,16 +47,16 @@ class ExtractedAssetsReadyTests(unittest.TestCase):
             os.makedirs(os.path.dirname(build_sheet))
 
             with (
-                mock.patch.object(app_files, "ROADS_CONTACT_SHEET", road_sheet),
-                mock.patch.object(app_files, "BUILDS_CONTACT_SHEET", build_sheet),
+                mock.patch.object(files, "ROADS_CONTACT_SHEET", road_sheet),
+                mock.patch.object(files, "BUILDS_CONTACT_SHEET", build_sheet),
             ):
-                self.assertFalse(app_files.extracted_assets_ready())
+                self.assertFalse(files.extracted_assets_ready())
 
                 open(road_sheet, "wb").close()
-                self.assertFalse(app_files.extracted_assets_ready())
+                self.assertFalse(files.extracted_assets_ready())
 
                 open(build_sheet, "wb").close()
-                self.assertTrue(app_files.extracted_assets_ready())
+                self.assertTrue(files.extracted_assets_ready())
 
 
 if __name__ == "__main__":

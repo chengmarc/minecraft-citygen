@@ -178,7 +178,7 @@ def base_pyinstaller_command(*, onefile: bool, icon_path: Path | None) -> list[s
         "--collect-submodules",
         "gui",
         "--add-data",
-        data_arg(SRC_ROOT / "gui" / "web" / "static", "gui/web/static"),
+        data_arg(SRC_ROOT / "gui" / "static", "gui/static"),
         "--add-data",
         data_arg(ICON_ICO, "."),
         "--add-data",
@@ -194,7 +194,7 @@ def base_pyinstaller_command(*, onefile: bool, icon_path: Path | None) -> list[s
         command.append("--onefile")
     if icon_path is not None and icon_path.exists():
         command.extend(["--icon", str(icon_path)])
-    command.append(str(SRC_ROOT / "gui" / "launcher.py"))
+    command.append(str(SRC_ROOT / "gui" / "app.py"))
     return command
 
 

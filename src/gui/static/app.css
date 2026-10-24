@@ -1,7 +1,7 @@
 /* The window is layered like the app icon: sky blue along the top (the brand and the steps), grass green for
    everything you act on (the one primary action per tab, focus, what's done), and dirt brown at the bottom (the
    progress bar, on the faint brown ground of the window). New colours should follow the same layers.
-   gui/web/app.py repeats --sky, --sky-text and --app-bg for the native title bar and the window behind the page. */
+   gui/app.py repeats --sky, --sky-text and --app-bg for the native title bar and the window behind the page. */
 :root {
   /* Sky */
   --sky: #cfe4f8;
