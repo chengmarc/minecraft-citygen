@@ -38,19 +38,12 @@
     </section>
 
     <section class="dock">
-      <div class="runbar"><span class="status"></span><span class="percent"></span>
-        <div class="progress" role="progressbar" aria-valuemin="0" aria-valuemax="100"><div class="progress-chunk"></div></div>
-      </div>
       <div class="dock-row">
         <div class="field">
           <label for="world-path">MC world</label>
-          <div class="world-row">
-            <button type="button" class="btn secondary" id="default-world-button"
-                    title="Go back to the sample world that comes with MC CityGen, with its three areas."><i class="icon icon-home"></i>Default</button>
-            <div class="input-group">
-              <input type="text" id="world-path" class="world-path" placeholder="Select an MC world folder" spellcheck="false">
-              <button type="button" class="btn secondary" id="browse-button"><i class="icon icon-folder"></i>Browse</button>
-            </div>
+          <div class="input-group">
+            <input type="text" id="world-path" class="world-path" placeholder="Select an MC world folder" spellcheck="false">
+            <button type="button" class="btn secondary" id="browse-button"><i class="icon icon-folder"></i>Browse</button>
           </div>
         </div>
         <div class="field">
@@ -64,6 +57,8 @@
                   title="Lets you confirm which MC version you plan to paste into. MC CityGen still stamps the exported files to the source world's version."></select>
         </div>
         <span class="spacer"></span>
+        <button type="button" class="btn primary big" id="reset-world-button"
+                title="Go back to the sample world that comes with MC CityGen, with its three areas."><i class="icon icon-reset"></i>Reset</button>
         <button type="button" class="btn primary big" id="extract-button" disabled><i class="icon icon-extract"></i>Extract</button>
       </div>
       <div class="areas">
@@ -96,9 +91,6 @@
     </section>
 
     <section class="dock algo-controls">
-      <div class="runbar"><span class="status"></span><span class="percent"></span>
-        <div class="progress" role="progressbar" aria-valuemin="0" aria-valuemax="100"><div class="progress-chunk"></div></div>
-      </div>
       <div class="dock-row">
         <span class="selectors"></span>
         <button type="button" class="disclosure" aria-expanded="false"><span>More settings</span><i class="chevron"></i></button>
@@ -118,9 +110,6 @@
     </section>
 
     <section class="dock algo-controls">
-      <div class="runbar"><span class="status"></span><span class="percent"></span>
-        <div class="progress" role="progressbar" aria-valuemin="0" aria-valuemax="100"><div class="progress-chunk"></div></div>
-      </div>
       <div class="dock-row">
         <span class="selectors"></span>
         <button type="button" class="disclosure" aria-expanded="false"><span>More settings</span><i class="chevron"></i></button>
@@ -132,6 +121,13 @@
       <div class="advanced"><div class="advanced-inner"></div></div>
     </section>
   </main>
+
+  <!-- The ground the window stands on, and the run of the tab that's showing, step by step: grass growing over dirt. -->
+  <footer class="ground">
+    <div class="ground-run current" data-tab="extract"><div class="progress" role="progressbar" aria-valuemin="0" aria-valuemax="100"></div></div>
+    <div class="ground-run" data-tab="preview"><div class="progress" role="progressbar" aria-valuemin="0" aria-valuemax="100"></div></div>
+    <div class="ground-run" data-tab="build"><div class="progress" role="progressbar" aria-valuemin="0" aria-valuemax="100"></div></div>
+  </footer>
 
   <!-- The region map: the world from above, to snap an area to chunks -->
   <dialog id="region-dialog" class="region-dialog">

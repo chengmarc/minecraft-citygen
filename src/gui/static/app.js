@@ -11,15 +11,13 @@ const citygen = {
 };
 window.citygen = citygen;
 
-/** One tab's run bar (status, percent, progress), its action button, and whether it's running. */
+/** One tab's run (its steps in the ground strip), its action button, and whether it's running. */
 class TabRun {
   constructor(tab, button, step, segments) {
     this.tab = tab;
     this.text = TEXT.tabs[tab];
-    const page = $(`#${tab}`);
-    this.runbar = $(".runbar", page);
-    this.status = $(".status", this.runbar);
-    this.progress = new ProgressBar($(".progress", this.runbar), { percent: $(".percent", this.runbar), segments });
+    this.ground = $(`.ground-run[data-tab="${tab}"]`);   // shown while its tab is
+    this.progress = new ProgressBar($(".progress", this.ground), { segments });
     this.button = button;
     this.step = step;
     this.running = false;
@@ -50,27 +48,28 @@ class TabRun {
     return answer || {};
   }
 
-  /** A ``progress`` event: the first starts the run; the status names the step, from the pipeline or the bar. */
+  /** A ``progress`` event: the first starts the run; the step under way says the pipeline's name for what it's
+   *  doing, where it has one, or its own. */
   progressEvent(payload) {
-    this.runbar.classList.add("active");
+    this.ground.classList.add("active");
     if (!("detail" in payload)) {
       this.progress.start();
-      this.status.textContent = this.text.preparing;
+      this.progress.setDetail(this.text.preparing);
       return;
     }
+    this.progress.setDetail(payload.detail || null);
     this.progress.milestone(payload);
-    this.status.textContent = payload.detail || this.text.steps[this.progress.activeIndex] || this.text.preparing;
   }
 
   done() {
+    this.progress.setDetail(null);
     this.progress.finish();
-    this.status.textContent = this.text.done;
     this.step.classList.add("done");
   }
 
   failed(payload) {
     const failure = describeFailure(this.tab, payload.detail);
-    this.status.textContent = failure.title;
+    this.progress.setDetail(failure.title);
     showError(failure);
   }
 
@@ -89,6 +88,7 @@ function setUpTabs() {
         const selected = other === tab;
         other.setAttribute("aria-selected", String(selected));
         $(`#${other.dataset.tab}`).hidden = !selected;
+        $(`.ground-run[data-tab="${other.dataset.tab}"]`).classList.toggle("current", selected);
       }
     });
   }
@@ -147,21 +147,21 @@ async function start() {
   });
   targetVersion.addEventListener("change", async () => showExtraction(await api.set_target_version(targetVersion.value)));
 
-  // Browse to a world, or back to the default one.
+  // Browse to a world, or reset to the default one.
   const worldAnswer = (answer) => {
     if (answer.warning) showError(describeError(answer.warning, "extract"));
     if (answer.changed) {   // a new world: its artifacts were cleared, so nothing is done yet
       worldPath.value = answer.extraction.worldPath;
       viewers.roads.reset();
       viewers.builds.reset();
-      runs.extract.runbar.classList.remove("active");
+      runs.extract.ground.classList.remove("active");
       steps.preview.classList.remove("done");
       steps.build.classList.remove("done");
     }
     showExtraction(answer);
   };
   $("#browse-button").addEventListener("click", async () => worldAnswer(await api.browse_world()));
-  $("#default-world-button").addEventListener("click", async () => worldAnswer(await api.use_default_world()));
+  $("#reset-world-button").addEventListener("click", async () => worldAnswer(await api.use_default_world()));
 
   for (const card of $$(".area-card")) {
     const key = card.dataset.area;

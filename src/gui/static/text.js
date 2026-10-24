@@ -9,47 +9,24 @@ const TEXT = {
       ready: "Extract road, house, and landmark pieces from the selected areas.",
       blocked: "Choose an MC world and all three areas first.",
       preparing: "Preparing extraction",
-      done: "Extraction complete",
       failed: "Extract failed",
       running: ["Extract running", "An extraction is already running."],
-      // One per run-bar segment, in the order of progress.EXTRACTION_SEGMENTS.
-      steps: [
-        "Scanning road region",
-        "Extracting road pieces",
-        "Building road contact sheet",
-        "Scanning build regions",
-        "Extracting building pieces",
-        "Building asset sheet",
-      ],
     },
     preview: {
       ready: "Generate a fast road and city layout preview.",
       blocked: "Complete Extract Assets first.",
       preparing: "Preparing preview",
-      done: "Preview ready",
       failed: "Preview failed",
       running: ["Preview running", "A preview is already running."],
       invalidConfig: "Invalid preview config",
-      steps: [],   // each step's name comes with its progress, from the pipeline
     },
     build: {
       ready: "Build the final schematic, render, and export world.",
       blocked: "Complete Extract Assets first.",
       preparing: "Building city layout",
-      done: "Build complete",
       failed: "Generation failed",
       running: ["Build running", "A build is already running."],
       invalidConfig: "Invalid city config",
-      // One per run-bar segment, in the order of progress.GENERATION_SEGMENTS; construction's own steps name
-      // themselves as they start.
-      steps: [
-        "Building city layout",
-        "Building city layout",
-        "Building city layout",
-        "Building city layout",
-        "Rendering final city",
-        "Exporting MC world",
-      ],
     },
   },
   areaTitles: {
