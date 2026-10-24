@@ -46,8 +46,8 @@ def test_msix_manifest_renders_to_valid_xml_with_the_store_identity(monkeypatch)
     assert identity.get("Name") == "12345Publisher.MCCityGen"
     assert identity.get("Version") == "1.2.0.0"
     assert root.find("m:Applications/m:Application", ns).get("Executable") == f"{build.APP_NAME}.exe"
-    for logo in build.MSIX_LOGOS:
-        assert f"Assets\\{logo}" in ET.tostring(root, encoding="unicode")
+    manifest = ET.tostring(root, encoding="unicode")
+    assert [logo for logo in build.MSIX_LOGOS if f"Assets\\{logo}" not in manifest] == []
 
 
 def test_packaging_mirrors_the_app_name_from_config():

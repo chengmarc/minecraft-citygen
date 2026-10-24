@@ -141,10 +141,6 @@ class IsometricRendererTests(unittest.TestCase):
         self.assertGreater(image.getchannel("A").getextrema()[1], 0)
 
 
-if __name__ == "__main__":
-    unittest.main()
-
-
 def test_render_colors_prefer_vivid_columns_and_fall_back_to_sampled_rgb(tmp_path, monkeypatch):
     # color_render.csv contract: renders use vivid_*; a row whose vivid_* is blank
     # (e.g. hand-added) still renders with its sampled r/g/b instead of vanishing.
@@ -186,5 +182,11 @@ def test_city_render_is_trimmed_to_what_is_drawn_with_its_margin():
 
     assert trimmed.size == (140, 150)
     assert trimmed.getchannel("A").getbbox() == (10, 10, 130, 140)
-    assert trim_to_content(Image.new("RGBA", (5, 5)), margin=10).size == (5, 5)   # nothing drawn: as it was
 
+
+def test_a_render_with_nothing_drawn_is_left_as_it_was():
+    from PIL import Image
+
+    from citygen.tools.render_isometric import trim_to_content
+
+    assert trim_to_content(Image.new("RGBA", (5, 5)), margin=10).size == (5, 5)

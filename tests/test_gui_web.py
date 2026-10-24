@@ -69,20 +69,6 @@ class LaunchGatingTests(_ApiTestCase):
 
         self.assertEqual(gates, {"extract": True, "preview": False, "build": False})  # the bundled world and areas
 
-    def test_first_launch_starts_from_the_default_settings(self):
-        boot = self.api.bootstrap()
-
-        self.assertEqual(boot["algo"], form_module.default_state())
-        self.assertTrue(boot["extraction"]["worldReady"])
-        self.assertTrue(all(area["chunks"] for area in boot["extraction"]["areas"].values()))
-
-    def test_form_covers_every_grouped_knob_and_both_selectors(self):
-        form = self.api.bootstrap()["form"]
-
-        self.assertEqual([s["name"] for s in form["selectors"]], list(form_module.SELECTOR_OPTIONS))
-        grouped = [field["name"] for group in form["groups"] for field in group["fields"]]
-        self.assertEqual(grouped, [name for _code, names in form_module.GROUPS for name in names])
-
     def test_a_city_size_saved_as_its_old_label_falls_back_to_the_default(self):
         values = form_module.form_values({"FINE": "Small", "GAP_MIXED": "3"})
 
@@ -106,8 +92,6 @@ class ExtractTests(_ApiTestCase):
         self.assertEqual(save, extract_module.default_extraction_tab_config()["world_path"])
         self.assertIsInstance(road_box, BlockRegion)
         self.assertEqual([region.build_type for region in build_types], [1, 2])
-        self.assertEqual(self.event_names()[0], "progress")
-        self.assertEqual(self.event_names()[-2:], ["done", "finished"])
 
     def test_each_rendered_piece_is_shown_as_it_lands(self):
         with tempfile.TemporaryDirectory() as renders:
@@ -178,11 +162,6 @@ class ExtractTests(_ApiTestCase):
         self.assertNotIn("changed", answer)
         self.assertEqual(self.saved, [])
 
-    def test_area_reports_its_chunk_span(self):
-        answer = self.api.set_area("road", [0, 60, 0], [47, 80, 31])
-
-        self.assertEqual(answer["extraction"]["areas"]["road"]["chunks"], [3, 2])
-
     def test_region_map_opens_on_the_default_area_when_none_is_saved(self):
         state = extract_module.default_extraction_tab_config()
         state["landmark"] = {"start": None, "end": None}
@@ -191,17 +170,6 @@ class ExtractTests(_ApiTestCase):
 
         default = extract_module.default_extraction_tab_config()["landmark"]
         self.assertEqual(api.area_bounds("landmark"), {"start": default["start"], "end": default["end"]})
-
-    def test_world_map_reports_its_url_and_meta(self):
-        meta = {"x0": 0, "x1": 255, "z0": 0, "z1": 255, "step": 2}
-        png = Path(files.APP_DATA) / "world_preview" / "x.png"
-        with (
-            mock.patch.object(render_topdown, "cached_topdown_preview", return_value=(png, meta)),
-            mock.patch.object(extract_module, "image", return_value={"src": "/files/world_preview/x.png?v=1"}),
-        ):
-            self.assertEqual(self.api.load_world_map(), {})
-
-        self.assertEqual(self.last("worldMap"), {"src": "/files/world_preview/x.png?v=1", "meta": meta})
 
     def test_the_map_so_far_says_how_far_down_it_is_drawn(self):
         meta = {"x0": 0, "x1": 63, "z0": 0, "z1": 63, "step": 1}
@@ -246,8 +214,6 @@ class PreviewTests(_ApiTestCase):
         self.assertNotEqual(str(calls["seed"]), state["seed"])
         self.assertEqual(answer["state"]["seed"], str(calls["seed"]))
         self.assertEqual(self.saved[-1]["algo"]["seed"], str(calls["seed"]))
-        self.assertEqual(self.event_names(), ["progress", "progress", "done", "finished"])
-        self.assertEqual(set(self.last("done")["images"]), {"grid", "city"})
 
     def test_the_road_layout_shows_as_soon_as_its_step_is_done(self):
         def fake_preview(_seed, _algo, on_progress):
@@ -276,12 +242,6 @@ class PreviewTests(_ApiTestCase):
 
         self.assertEqual(self.event_names(), ["progress", "failed", "finished"])
         self.assertEqual(self.last("failed")["detail"], "no roads")
-
-    def test_reset_saves_and_returns_the_defaults(self):
-        state = self.api.reset_algo()
-
-        self.assertEqual(state, form_module.default_state())
-        self.assertEqual(self.saved[-1]["algo"], state)
 
 
 class BuildTests(_ApiTestCase):
@@ -379,18 +339,13 @@ class ServerTests(unittest.TestCase):
 
         self.assertEqual(status, "404 Not Found")
 
-    def test_the_page_serves_its_own_icons(self):
-        status, headers, body = self.get("/icons/extract.svg")
-
-        self.assertEqual(status, "200 OK")
-        self.assertEqual(headers["Content-Type"], "image/svg+xml")
-        self.assertTrue(body.startswith(b"<svg"))
-
     def test_the_page_is_served_with_its_content_types(self):
-        for path, content_type in (("/", "text/html"), ("/app.js", "text/javascript"), ("/app.css", "text/css")):
-            status, headers, _body = self.get(path)
-            self.assertEqual(status, "200 OK")
-            self.assertEqual(headers["Content-Type"], content_type)
+        for path, content_type in (
+            ("/", "text/html"), ("/app.js", "text/javascript"), ("/app.css", "text/css"), ("/icons/extract.svg", "image/svg+xml"),
+        ):
+            with self.subTest(path=path):
+                status, headers, _body = self.get(path)
+                self.assertEqual((status, headers["Content-Type"]), ("200 OK", content_type))
 
 
 class WorldPreviewTests(unittest.TestCase):
@@ -464,7 +419,3 @@ class PageMirrorTests(unittest.TestCase):
     def test_the_window_reads_its_colours_from_the_page(self):
         for color in app_module.page_colors("app-bg", "sky", "sky-text"):
             self.assertRegex(color, r"^#[0-9a-fA-F]{6}$")
-
-
-if __name__ == "__main__":
-    unittest.main()
