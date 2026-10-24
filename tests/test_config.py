@@ -62,6 +62,20 @@ class VersionTests(unittest.TestCase):
 
 # --- frozen app data root -------------------------------------------------
 
+class CheckoutRootTests(unittest.TestCase):
+    def test_a_checkout_keeps_its_data_at_the_repo_root_not_beside_the_entry_script(self):
+        with tempfile.TemporaryDirectory() as repo:
+            src = Path(repo) / "src"
+            for package in ("config", "engine", "gui", "pipeline"):
+                (src / package).mkdir(parents=True)
+            (src / "application.pyw").touch()
+            (Path(repo) / "pyproject.toml").touch()
+
+            root = config_path._repo_checkout_root(str(src))
+
+        self.assertEqual(Path(root), Path(repo).resolve())
+
+
 class FrozenAppRootTests(unittest.TestCase):
     def test_package_family_name_is_empty_when_not_packaged(self):
         self.assertEqual(config_path._package_family_name(), "")  # tests never run inside an MSIX

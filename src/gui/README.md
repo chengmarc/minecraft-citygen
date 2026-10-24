@@ -12,9 +12,9 @@ remembers the user's settings. It has no generation logic of its own.
 ### Run the app
 
 ```bash
-pythonw application.pyw          # from a checkout
+pythonw src/application.pyw      # from a checkout
 citygen                          # installed
-pythonw application.pyw --debug  # with the page's developer tools (F12)
+pythonw src/application.pyw --debug  # with the page's developer tools (F12)
 ```
 
 ### Expose an `Algo` knob in the form
@@ -101,7 +101,7 @@ Windows 10.
 ## Reference
 
 ```text
-application.pyw  ->  gui.app:main  (window + server + bridge)  ->  static/ (the page)
+src/application.pyw  ->  gui.app:main  (window + server + bridge)  ->  static/ (the page)
 ```
 
 | Module | Responsibility |
@@ -114,7 +114,7 @@ application.pyw  ->  gui.app:main  (window + server + bridge)  ->  static/ (the 
 | [algo.py](algo.py) | **Preview** (Stage 3) and **Build** (Stages 4–5): the algorithm form, form values → `Algo` |
 | [progress.py](progress.py) | Per-step progress weights, milestones, run-bar segments, and timing records |
 | [files.py](files.py) | Files the GUI owns (below), artifact cleanup, opening folders |
-| [static/](static/) | The page: `index.html`, `app.css` (the colours), `text.js` (the words), `components.js`, `region.js`, `app.js`, and the button icons in `icons/` |
+| [static/](static/) | The page: `index.html`, `app.css` (the colours), `text.js` (the words), `components.js`, `region.js`, `app.js`, and the button icons, SVGs in `icons/` |
 
 Files the GUI writes (`ROOT` is the app root, see the
 [config guide](../config/README.md#where-outputs-go)):

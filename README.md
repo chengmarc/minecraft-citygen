@@ -66,7 +66,7 @@ The exact rules for roads and buildings are in the
 ```bash
 python -m pip install -e .
 python -m pytest -q
-pythonw application.pyw
+pythonw src/application.pyw
 ```
 
 Start at the [source architecture overview](src/README.md), then follow the
