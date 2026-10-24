@@ -13,11 +13,11 @@ window.citygen = citygen;
 
 /** One tab's run (its steps in the ground strip), its action button, and whether it's running. */
 class TabRun {
-  constructor(tab, button, step, segments) {
+  constructor(tab, button, step) {
     this.tab = tab;
     this.text = TEXT.tabs[tab];
     this.ground = $(`.ground-run[data-tab="${tab}"]`);   // shown while its tab is
-    const named = segments.map(({ code, start, end }) => ({ label: TEXT.segments[tab][code], start, end }));
+    const named = runSegments(tab).map(({ code, start, end }) => ({ label: TEXT.segments[tab][code], start, end }));
     this.progress = new ProgressBar($(".progress", this.ground), { segments: named });
     this.button = button;
     this.step = step;
@@ -49,17 +49,18 @@ class TabRun {
     return answer || {};
   }
 
-  /** A ``progress`` event: the first starts the run; the step under way says the pipeline's name for what it's
-   *  doing, where it has one, or its own. */
+  /** A ``progress`` event: the first, with no step, starts the run; each report after it moves the bar (steps.js),
+   *  and the step under way says what it's doing, where there's a word for it, or its own name. */
   progressEvent(payload) {
     this.ground.classList.add("active");
-    if (!("detail" in payload)) {
+    if (!("step" in payload)) {
       this.progress.start();
       this.progress.setDetail(this.text.preparing);
       return;
     }
-    this.progress.setDetail(payload.detail || null);
-    this.progress.milestone(payload);
+    const report = runReport(this.tab, payload);
+    this.progress.setDetail(report.detail || null);
+    this.progress.milestone(report);
   }
 
   done() {
@@ -105,9 +106,9 @@ async function start() {
   );
   const steps = Object.fromEntries($$(".step").map((step) => [step.dataset.tab, step]));
   const runs = {
-    extract: new TabRun("extract", $("#extract-button"), steps.extract, boot.segments.extract),
-    preview: new TabRun("preview", $('#preview [data-action="run"]'), steps.preview, boot.segments.preview),
-    build: new TabRun("build", $('#build [data-action="run"]'), steps.build, boot.segments.build),
+    extract: new TabRun("extract", $("#extract-button"), steps.extract),
+    preview: new TabRun("preview", $('#preview [data-action="run"]'), steps.preview),
+    build: new TabRun("build", $('#build [data-action="run"]'), steps.build),
   };
   const setGates = (gates) => {
     for (const [tab, ready] of Object.entries(gates)) runs[tab].setGate(ready);

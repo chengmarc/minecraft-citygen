@@ -8,7 +8,7 @@ from pathlib import Path
 
 from citygen import step1_extract
 from citygen.tools import render_topdown
-from citygen.gui import files, progress
+from citygen.gui import files
 from citygen.gui.server import image
 from citygen.paths import BUILDS_CONTACT_SHEET, BUILDS_RENDERS, has_region_files, ROADS_CONTACT_SHEET, ROADS_RENDERS
 from citygen.settings import (
@@ -93,6 +93,28 @@ def chunk_span(start, end):
 
 
 AREAS = ("road", "house", "landmark")
+
+# Extract's reports are coalesced into this many buckets per step, so the page isn't sent events that don't move its bar.
+PROGRESS_BUCKETS = 100
+
+
+def coalesce(report):
+    """Extract's ``report(step, completed, total)``, dropping the reports that wouldn't move the bar but keeping each
+    step's completion."""
+    last_key = None
+
+    def on_progress(step, completed, total):
+        nonlocal last_key
+        total_i = max(int(total), 1)
+        completed_i = max(0, min(int(completed), total_i))
+        bucket = PROGRESS_BUCKETS if completed_i >= total_i else int((completed_i * PROGRESS_BUCKETS) / total_i)
+        key = (step, total_i, bucket)
+        if key == last_key:
+            return
+        last_key = key
+        report(step, completed_i, total_i)
+
+    return on_progress
 
 
 def _area_pair(area_state):
@@ -246,9 +268,7 @@ class ExtractTab:
         renders = {"road_sheet": ("roads", ROADS_RENDERS), "build_sheet": ("builds", BUILDS_RENDERS)}
 
         def job(report):
-            coalesced = progress.coalesce(
-                lambda step, completed, total, _detail: report(*progress.bar("extract", step, completed, total)),
-            )
+            coalesced = coalesce(report)
 
             def on_progress(step, completed, total, detail=None):
                 if step in renders and detail:   # before the coalescing, which would drop some pieces
@@ -256,7 +276,7 @@ class ExtractTab:
                     piece = Path(folder) / f"{detail}.png"
                     if piece.is_file():
                         self._runner.piece("extract", viewer, int(completed), image(piece))
-                coalesced(step, completed, total, detail)
+                coalesced(step, completed, total)
 
             step1_extract.run(save, road_box, build_types, on_progress)
 

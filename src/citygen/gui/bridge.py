@@ -10,7 +10,7 @@ from __future__ import annotations
 
 import threading
 
-from citygen.gui import files, progress
+from citygen.gui import files
 from citygen.gui.city_tabs import CityTabs
 from citygen.gui.extract_tab import ExtractTab
 from citygen.gui.form import form_spec
@@ -42,7 +42,6 @@ class Api:
         return {
             "algo": self._algo.state(),
             "form": form_spec(),
-            "segments": progress.run_segments(),
             **self._extraction(),
         }
 

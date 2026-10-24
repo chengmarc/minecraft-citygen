@@ -10,7 +10,7 @@ import os
 import random
 
 from citygen import step2_preview, step3_build
-from citygen.gui import files, progress
+from citygen.gui import files
 from citygen.gui.form import build_algo, ConfigError, default_state, form_values
 from citygen.gui.server import image
 from citygen.paths import city_preview_path, city_render_path, grid_preview_path, SAVES
@@ -67,7 +67,7 @@ class CityTabs:
 
         def job(report):
             def on_progress(step, completed, total):
-                report(*progress.bar("preview", step, completed, total))
+                report(step, completed, total)
                 if step == "road_layout" and completed >= total:   # ready well before the city
                     self._runner.show("preview", {"grid": image(grid_preview_path(seed))})
 
@@ -95,10 +95,7 @@ class CityTabs:
         save = self._world_path()
 
         def job(report):
-            def on_progress(step, completed, total, detail=None):
-                report(*progress.bar("build", step, completed, total, detail))
-
-            step3_build.run(int(seed), algo, save, on_progress)
+            step3_build.run(int(seed), algo, save, report)
             return seed
 
         self._runner.start("build", job, on_success=lambda seed: {"images": {"city": image(city_render_path(seed))}})

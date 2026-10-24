@@ -48,7 +48,7 @@ const TEXT = {
   selection: ([x0, x1], [z0, z1], [chunksX, chunksZ]) =>
     `Selection: x ${x0} to ${x1}, z ${z0} to ${z1} (${chunksX} x ${chunksZ} chunks)`,
   autoVersion: "Auto",
-  // Each run bar's segments, by the codes gui/progress.py gives them.
+  // Each run bar's segments, by the codes in progress/steps.js.
   segments: {
     extract: {
       scan_roads: "Scan roads",
@@ -71,6 +71,15 @@ const TEXT = {
       schematic: "Schematic",
       render: "Render",
       world: "World",
+    },
+  },
+  // What stands in for a segment's name while it runs, by the step codes the run reports.
+  stepDetails: {
+    preview: {
+      road_pieces: "Generating road preview assets",
+      build_pieces: "Generating building preview assets",
+      road_layout: "Rendering road layout preview",
+      city_layout: "Rendering city layout preview",
     },
   },
   // The algorithm form, by the knob names and codes in gui/form.py.
