@@ -8,9 +8,6 @@
   /* Sky */
   --sky: #cfe4f8;
   --sky-deep: #b9d8f4;
-  --sky-tab: #e6f1fc;
-  --sky-tab-hover: #f4f9fe;
-  --sky-border: #aecbe8;
   --sky-text: #2f5274;
   /* The faintest dirt brown for the window and its panels: nearly gray, just warm, so the green actions stand out. */
   --app-bg: #f2f0ed;
@@ -30,10 +27,8 @@
   /* Grass: the app icon's green, deep enough for white text. */
   --accent-top: #5cbf2a;
   --accent: #3d921d;
-  --accent-hover: #327c16;
   --accent-pressed: #26620f;
   --accent-soft: #e6f4da;
-  --accent-border: #a9d98a;
   --accent-text: #2d6a12;
   /* Dirt, and what's written on it. */
   --dirt-top: #b67a3f;
