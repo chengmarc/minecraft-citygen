@@ -4,7 +4,16 @@
 "use strict";
 
 const CHUNK_SIZE = 16;
-const POP_MS = 300;
+// A strip pops in over as long as the engine took to draw it (the time between its picture and the one before), so
+// the map keeps pace with the drawing at any speed. These are the strip's shape, as shares of that time: each chunk's
+// pop, and the spread of their starts across the strip, down it, and at random. They add up to the whole.
+const POP_SHARE = 0.4;
+const ACROSS_SHARE = 0.35;
+const DOWN_SHARE = 0.15;
+const JITTER_SHARE = 0.1;
+// Never so quick it flashes, never so slow a stalled draw makes it crawl.
+const STRIP_MIN_MS = 200;
+const STRIP_MAX_MS = 2000;
 
 /** The map's chunks popping in as it's drawn, like Extract's pieces. The map is transparent where there's no world,
  *  so the picture showing can't hide the next one: it stays the previous picture while a canvas over it, inside the
@@ -18,7 +27,7 @@ class ChunkReveal {
 
   /** Pop ``after``'s chunks (``tile`` px squares) in, over rows ``fromRow``..``toRow``. Resolves when they're all in,
    *  with the canvas still up: ``finish()`` takes it down, once the picture under it shows ``after``. */
-  play(after, fromRow, toRow, tile) {
+  play(after, fromRow, toRow, tile, duration) {
     this.finish();
     if (toRow <= fromRow || matchMedia("(prefers-reduced-motion: reduce)").matches) return Promise.resolve();
     const done = new Promise((resolve) => { this.resolve = resolve; });
@@ -31,13 +40,16 @@ class ChunkReveal {
     this.canvas = canvas;
     const ctx = canvas.getContext("2d");
 
-    // Roughly top to bottom across the band, each chunk a little early or late, so it ripples in.
+    // A wave across the band, from its top left to its bottom right: down it, and left to right along each row, each
+    // chunk a little early or late, so it ripples in.
     const tiles = [];
     const bandRows = Math.max(1, Math.ceil((toRow - fromRow) / tile));
     for (let y = fromRow; y < toRow; y += tile) {
       for (let x = 0; x < width; x += tile) {
-        const order = (y - fromRow) / tile / bandRows;
-        tiles.push({ x, y, w: Math.min(tile, width - x), h: Math.min(tile, toRow - y), delay: order * 260 + Math.random() * 160 });
+        const down = (y - fromRow) / tile / bandRows;
+        const across = x / width;
+        const delay = (down * DOWN_SHARE + across * ACROSS_SHARE + Math.random() * JITTER_SHARE) * duration;
+        tiles.push({ x, y, w: Math.min(tile, width - x), h: Math.min(tile, toRow - y), delay });
       }
     }
 
@@ -46,7 +58,7 @@ class ChunkReveal {
       let pending = 0;
       for (const t of tiles) {
         if (t.done) continue;
-        const p = Math.min(Math.max((now - start - t.delay) / POP_MS, 0), 1);
+        const p = Math.min(Math.max((now - start - t.delay) / (POP_SHARE * duration), 0), 1);
         if (p === 0) {
           pending += 1;
           continue;
@@ -109,6 +121,8 @@ class RegionMap {
     this.frames = Promise.resolve();   // the map's pictures, shown one after another
     this.drawn = 0;                    // how far down it's drawn, from 0 to 1
     this.opening = 0;                  // which opening of the dialog the pictures belong to
+    this.waiting = 0;                  // pictures queued behind the one popping in
+    this.lastPicture = null;           // when the last picture arrived, or the drawing started: what each strip took
 
     $('[data-action="cancel"]', dialog).addEventListener("click", () => dialog.close());
     this.applyButton.addEventListener("click", () => {
@@ -127,6 +141,7 @@ class RegionMap {
     this.meta = null;
     this.selection = null;
     this.opening += 1;
+    this.lastPicture = null;
     this.reveal.finish();
     this.drawn = 0;
     this.applyButton.disabled = true;
@@ -169,10 +184,18 @@ class RegionMap {
         const picture = new Image();
         picture.src = payload.src;
         const ready = picture.decode().then(() => picture, () => null);
+        const now = performance.now();
+        const drawTime = now - (this.lastPicture ?? now);   // how long the engine took to draw this strip
+        this.lastPicture = now;
         const opening = this.opening;
-        this.frames = this.frames.then(() => this.showFrame(payload, ready, first, opening));
+        this.waiting += 1;
+        this.frames = this.frames.then(() => {
+          this.waiting -= 1;
+          return this.showFrame(payload, ready, first, opening, drawTime);
+        });
       }
     } else {
+      this.lastPicture ??= performance.now();   // the drawing's started: the first strip is timed from here
       this.runbar.classList.add("active");
       this.progress.set((payload.completed / Math.max(payload.total, 1)) * 100);
     }
@@ -180,7 +203,7 @@ class RegionMap {
 
   /** One more picture of the map being drawn: the newly drawn rows' chunks pop in, the next picture waiting until
    *  they're all in. The view and the selection stay. */
-  async showFrame(payload, ready, first, opening) {
+  async showFrame(payload, ready, first, opening, drawTime) {
     const next = await ready;
     if (!next || !this.dialog.open || opening !== this.opening) return;
     const drawn = payload.partial ? payload.drawn : 1;
@@ -191,7 +214,9 @@ class RegionMap {
       await this.viewer.load({ src: blankPicture(next.naturalWidth, height) });
       if (!this.selection) this.selectWorld(this.bounds.start, this.bounds.end);
     }
-    await this.reveal.play(next, row(this.drawn), row(drawn), tile);
+    // As long as the strip took to draw; faster by as many pictures as are waiting, so it never falls behind.
+    const duration = Math.min(Math.max(drawTime, STRIP_MIN_MS), STRIP_MAX_MS) / (1 + this.waiting);
+    await this.reveal.play(next, row(this.drawn), row(drawn), tile, duration);
     if (opening !== this.opening) return;
     this.viewer.img.src = payload.src;              // the whole new picture, the same as the canvas over it shows
     await this.viewer.img.decode().catch(() => {});
