@@ -18,15 +18,20 @@ from citygen.tools.schem import intern_state, new_palette, read_tile, rot_tile, 
 
 # Fill props (e.g. 15_fill_1x1_A) share the road region and marker convention but
 # are not road-network tiles: they fill empty lot cells in the city, so they are
-# kept out of the road-grid tile set and loaded separately.
+# kept out of the road-grid tile set and loaded separately. So is the ground
+# fill, asset 18, laid under every empty lot cell.
 FILL_TOKEN = "fill"
 GROUND_FILL_PREFIX = "18"
 ROAD_TILE_PREFIXES = frozenset(name[:2] for _layer, _base, name in iter_tile_catalogue())
 
 
+def _road_pieces(roads_dir):
+    return sorted(glob.glob(os.path.join(roads_dir, "*.schem")))
+
+
 def load_tiles(roads_dir):
     tiles = {}
-    for path in glob.glob(os.path.join(roads_dir, "*.schem")):
+    for path in _road_pieces(roads_dir):
         name = os.path.basename(path)
         if name[:2] not in ROAD_TILE_PREFIXES:
             continue
@@ -34,18 +39,23 @@ def load_tiles(roads_dir):
     return tiles
 
 
-def load_fillers(roads_dir):
-    """Load the fill-prop tiles (self-contained, ground-seated cell fillers)."""
+def fill_prop_paths(roads_dir):
+    """The fill props among the extracted road pieces: every one named with ``fill`` but the ground fill, in the
+    order build and preview both draw from."""
     return [
-        read_tile(path)
-        for path in sorted(glob.glob(os.path.join(roads_dir, "*.schem")))
+        path for path in _road_pieces(roads_dir)
         if FILL_TOKEN in os.path.basename(path) and os.path.basename(path)[:2] != GROUND_FILL_PREFIX
     ]
 
 
+def load_fillers(roads_dir):
+    """Load the fill-prop tiles (self-contained, ground-seated cell fillers)."""
+    return [read_tile(path) for path in fill_prop_paths(roads_dir)]
+
+
 def load_ground_fill_tile(roads_dir):
     """Load the dedicated empty-lot ground filler authored as road asset 18."""
-    for path in sorted(glob.glob(os.path.join(roads_dir, "*.schem"))):
+    for path in _road_pieces(roads_dir):
         if os.path.basename(path)[:2] == GROUND_FILL_PREFIX:
             return read_tile(path)
     return None
