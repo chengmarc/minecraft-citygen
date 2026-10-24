@@ -4,7 +4,7 @@
 // on in one place only; the steps are equal on screen, so it reaches the end of each as the run reaches the end of
 // that step's share. The fill glides after the run, and the text follows the fill, not the run: a step ticks off as
 // the fill crosses its end, the next takes over then, and the step under way says what's happening instead of its
-// name (setDetail), with a spinner beside it.
+// name (setDetail), with a spinner in front of it.
 
 "use strict";
 
@@ -31,7 +31,7 @@ class ProgressBar {
       const element = document.createElement("div");
       element.className = "segment";
       element.innerHTML =
-        '<span class="segment-label"><span class="segment-text"></span><span class="spinner"></span></span>';
+        '<span class="segment-label"><span class="spinner"></span><span class="segment-text"></span></span>';
       $(".segment-text", element).textContent = label;
       this.root.append(element);
       return {
