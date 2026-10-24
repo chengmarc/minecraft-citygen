@@ -20,6 +20,7 @@ from gui import algo as algo_module
 from gui import app as app_module
 from gui import extract as extract_module
 from gui import files, progress, server, world_map
+from gui import form as form_module
 from gui.bridge import Api
 from pipeline import stages
 
@@ -74,19 +75,19 @@ class LaunchGatingTests(_ApiTestCase):
     def test_first_launch_starts_from_the_default_settings(self):
         boot = self.api.bootstrap()
 
-        self.assertEqual(boot["algo"], algo_module.default_state())
+        self.assertEqual(boot["algo"], form_module.default_state())
         self.assertTrue(boot["extraction"]["worldReady"])
         self.assertTrue(all(area["chunks"] for area in boot["extraction"]["areas"].values()))
 
     def test_form_covers_every_grouped_knob_and_both_selectors(self):
         form = self.api.bootstrap()["form"]
 
-        self.assertEqual([s["name"] for s in form["selectors"]], list(algo_module.SELECTOR_OPTIONS))
+        self.assertEqual([s["name"] for s in form["selectors"]], list(form_module.SELECTOR_OPTIONS))
         grouped = [field["name"] for group in form["groups"] for field in group["fields"]]
-        self.assertEqual(grouped, [name for _code, names in algo_module.GROUPS for name in names])
+        self.assertEqual(grouped, [name for _code, names in form_module.GROUPS for name in names])
 
     def test_a_city_size_saved_as_its_old_label_falls_back_to_the_default(self):
-        values = algo_module.form_values({"FINE": "Small", "GAP_MIXED": "3"})
+        values = form_module.form_values({"FINE": "Small", "GAP_MIXED": "3"})
 
         self.assertEqual(values["FINE"], str(ALGO.fine))
         self.assertEqual(values["GAP_MIXED"], "3")
@@ -250,7 +251,7 @@ class PreviewTests(_ApiTestCase):
             calls.update(stage=stage_key, seed=seed, algo=algo)
             progress(stages.PREVIEW_CITY, 2, 2, "Rendered city layout preview")
 
-        state = algo_module.default_state()
+        state = form_module.default_state()
         with mock.patch.object(algo_module.services, "run_stage", side_effect=fake_preview):
             answer = self.api.run_preview(state)
 
@@ -268,13 +269,13 @@ class PreviewTests(_ApiTestCase):
             progress(stages.PREVIEW_CITY, 2, 2, "Rendered city layout preview")
 
         with mock.patch.object(algo_module.services, "run_stage", side_effect=fake_preview):
-            self.api.run_preview(algo_module.default_state())
+            self.api.run_preview(form_module.default_state())
 
         self.assertEqual(self.event_names(), ["progress", "progress", "partial", "progress", "done", "finished"])
         self.assertEqual(list(self.last("partial")["images"]), ["grid"])
 
     def test_invalid_config_returns_the_error_without_running(self):
-        state = algo_module.default_state()
+        state = form_module.default_state()
         state["algo"]["GAP_BIG"] = "lots"
         with mock.patch.object(algo_module.services, "run_stage") as run_stage:
             answer = self.api.run_preview(state)
@@ -285,7 +286,7 @@ class PreviewTests(_ApiTestCase):
 
     def test_stage_failure_reports_and_still_finishes(self):
         with mock.patch.object(algo_module.services, "run_stage", side_effect=RuntimeError("no roads")):
-            self.api.run_preview(algo_module.default_state())
+            self.api.run_preview(form_module.default_state())
 
         self.assertEqual(self.event_names(), ["progress", "failed", "finished"])
         self.assertEqual(self.last("failed")["detail"], "no roads")
@@ -293,7 +294,7 @@ class PreviewTests(_ApiTestCase):
     def test_reset_saves_and_returns_the_defaults(self):
         state = self.api.reset_algo()
 
-        self.assertEqual(state, algo_module.default_state())
+        self.assertEqual(state, form_module.default_state())
         self.assertEqual(self.saved[-1]["algo"], state)
 
 
@@ -308,7 +309,7 @@ class BuildTests(_ApiTestCase):
             calls.append((name, seed, params))
             progress(progress_stage[name], 1, 1, "done")
 
-        state = {**algo_module.default_state(), "seed": "9"}
+        state = {**form_module.default_state(), "seed": "9"}
         with (
             mock.patch.object(algo_module, "source_data_version", return_value=4790),
             mock.patch.object(algo_module.services, "run_stage", side_effect=record),
@@ -325,7 +326,7 @@ class BuildTests(_ApiTestCase):
 
 class BuildBlueprintTests(_ApiTestCase):
     def test_the_previewed_city_stands_in_until_the_render(self):
-        state = {**algo_module.default_state(), "seed": "9"}
+        state = {**form_module.default_state(), "seed": "9"}
         with (
             mock.patch.object(algo_module, "source_data_version", return_value=4790),
             mock.patch.object(algo_module.services, "run_stage"),
@@ -338,7 +339,7 @@ class BuildBlueprintTests(_ApiTestCase):
         self.assertTrue(partial["images"]["city"]["blueprint"])
 
     def test_no_blueprint_without_a_preview_of_this_seed(self):
-        state = {**algo_module.default_state(), "seed": "9"}
+        state = {**form_module.default_state(), "seed": "9"}
         with (
             mock.patch.object(algo_module, "source_data_version", return_value=4790),
             mock.patch.object(algo_module.services, "run_stage"),
@@ -484,13 +485,13 @@ class PageMirrorTests(unittest.TestCase):
     def test_text_js_words_every_code_python_sends(self):
         text = self.read("text.js")
         codes = (
-            algo_module.KNOBS
-            + [code for code, _names in algo_module.GROUPS]
+            form_module.KNOBS
+            + [code for code, _names in form_module.GROUPS]
             + [code for segments in progress.SEGMENTS.values() for code, _count in segments]
         )
         for code in codes:
             self.assertRegex(text, rf"\b{code}:", code)
-        for name, options in algo_module.SELECTOR_OPTIONS.items():
+        for name, options in form_module.SELECTOR_OPTIONS.items():
             words = re.search(rf"{name}: \{{([^}}]*)\}}", text).group(1)
             self.assertEqual(re.findall(r"(\d+):", words), list(options), name)
 

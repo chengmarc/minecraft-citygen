@@ -70,7 +70,7 @@ coarse cells.
    Compare `appdata/03_preview/grid/seed_5.png` against a run without the
    variable.
 
-4. **Show it in the app.** In [gui/algo.py](gui/algo.py),
+4. **Show it in the app.** In [gui/form.py](gui/form.py),
    add `"BIG_JITTER"` to `KNOBS`, put it in the `"shape"` group, and give it a
    slider range such as `(0, 3)`. Then name it in
    [gui/static/text.js](gui/static/text.js): `BIG_JITTER: ["Avenue wobble", "…"]`
