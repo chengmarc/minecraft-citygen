@@ -25,8 +25,7 @@ class ImageViewer {
       '<div class="viewer-placeholder"><i class="icon"></i><p></p></div>' +
       '<span class="viewer-caption"></span>' +
       '<div class="viewer-tools"><button type="button" data-zoom="-1" title="Zoom out">\u2212</button><output></output>' +
-      '<button type="button" data-zoom="1" title="Zoom in">+</button>' +
-      '<button type="button" data-zoom="fit" title="Fit (or double-click)">Fit</button></div>';
+      '<button type="button" data-zoom="1" title="Zoom in">+</button></div>';
     this.layer = $(".viewer-layer", root);
     this.img = $("img", root);
     this.overlay = $(".viewer-overlay", root);
@@ -37,10 +36,7 @@ class ImageViewer {
     for (const button of $$(".viewer-tools button", root)) {
       button.addEventListener("pointerdown", (event) => event.stopPropagation());   // not a pan
       button.addEventListener("dblclick", (event) => event.stopPropagation());
-      button.addEventListener("click", () => {
-        if (button.dataset.zoom === "fit") this.fit();
-        else this.zoomBy(Number(button.dataset.zoom) * 2);
-      });
+      button.addEventListener("click", () => this.zoomBy(Number(button.dataset.zoom) * 2));
     }
     this.interceptPointer = null;   // (event) => true to take a press away from panning
     // data-bounded="width" or "height": the picture fills the viewer that way at the least, and can't be dragged off
