@@ -2,15 +2,13 @@
 
 from __future__ import annotations
 
-import ast
 import os
 from dataclasses import dataclass
 from typing import Iterable
 
 import nbtlib
 
-from config.env import env_raw, env_str
-from config.path import DEFAULT_WORLD, region_dir_candidates, resolve_region_dir
+from config.path import DEFAULT_WORLD
 
 
 def _coerce_xyz_point(values: Iterable[int]) -> tuple[int, int, int]:
@@ -64,15 +62,6 @@ class BlockRegion:
         x1, y1, z1 = _coerce_xyz_point(end)
         return cls(x0, x1, z0, z1, y0, y1)
 
-    @classmethod
-    def from_values(cls, values) -> "BlockRegion":
-        values = tuple(values)
-        if len(values) == 6:
-            return cls(*(int(value) for value in values))
-        if len(values) == 2:
-            return cls.from_xyz_pair(values[0], values[1])
-        raise ValueError(f"expected 6 flat values or 2 xyz points, got {len(values)}")
-
     def as_tuple(self) -> tuple[tuple[int, int, int], tuple[int, int, int]]:
         return self.as_xyz_pair()
 
@@ -84,20 +73,6 @@ class BlockRegion:
 class BuildRegion:
     build_type: int
     bounds: BlockRegion
-
-    @classmethod
-    def from_values(cls, values) -> "BuildRegion":
-        values = tuple(values)
-        if len(values) == 7:
-            build_type, *bounds = values
-            return cls(int(build_type), BlockRegion.from_values(bounds))
-        if len(values) == 3:
-            build_type, start, end = values
-            return cls(int(build_type), BlockRegion.from_xyz_pair(start, end))
-        if len(values) == 2:
-            build_type, bounds = values
-            return cls(int(build_type), BlockRegion.from_values(bounds))
-        raise ValueError(f"expected build type plus bounds, got {len(values)} values")
 
     def as_tuple(self) -> tuple[int, tuple[int, int, int], tuple[int, int, int]]:
         start, end = self.bounds.as_xyz_pair()
@@ -152,55 +127,14 @@ def source_data_version(save_path: str | None) -> int:
     return max(resolved, HARD_FLOOR_DATA_VERSION)
 
 
-def _parse_tuple_like(value: str):
-    parsed = ast.literal_eval(value)
-    if isinstance(parsed, tuple):
-        return parsed
-    if isinstance(parsed, list):
-        return tuple(parsed)
-    raise ValueError(f"expected a tuple-like region value, got {type(parsed).__name__}")
+SAVE = DEFAULT_WORLD
 
-
-def _parse_build_types(value: str) -> tuple[BuildRegion, ...]:
-    return tuple(BuildRegion.from_values(_parse_tuple_like(item)) for item in value.split(";") if item.strip())
-
-
-def _parse_block_region(value: str) -> BlockRegion:
-    return BlockRegion.from_values(_parse_tuple_like(value))
-
-
-def _env_block_region(name: str, default: BlockRegion) -> BlockRegion:
-    raw = env_raw(name)
-    return default if raw is None else _parse_block_region(raw)
-
-
-def _env_build_regions(name: str, default: tuple[BuildRegion, ...]) -> tuple[BuildRegion, ...]:
-    raw = env_raw(name)
-    return default if raw is None else _parse_build_types(raw)
-
-
-SAVE = env_str("SAVE", DEFAULT_WORLD)
-REGION_DIR_CANDIDATES = tuple(region_dir_candidates(SAVE))
-REGION_DIR = resolve_region_dir(SAVE)
-
-# Default stamp for stages that have no source save (construct): MC_CITY_DATA_VERSION,
-# else SAVE's detected version, else the hard floor; always clamped up to the floor.
-# The GUI passes the source world's version instead.
-def _resolve_data_version() -> int:
-    raw = env_raw("DATA_VERSION")
-    if raw is not None:
-        return max(int(raw.strip()), HARD_FLOOR_DATA_VERSION)
-    return source_data_version(SAVE)
-
-
-DATA_VERSION = _resolve_data_version()
-
-ROAD_REGION = BlockRegion.from_xyz_pair((-80, 65, 16), (-17, 75, 127))
-ROAD_BOX = _env_block_region("ROAD_BOX", ROAD_REGION)
+ROAD_BOX = BlockRegion.from_xyz_pair((-80, 65, 16), (-17, 75, 127))
 
 # Build regions' y0/y1 is retained as catalog metadata; marker blocks define extracted geometry.
-BUILD_TYPE1_REGION = BuildRegion(1, BlockRegion.from_xyz_pair((-384, 64, -192), (-17, 65, -17)))
-BUILD_TYPE2_REGION = BuildRegion(2, BlockRegion.from_xyz_pair((16, 64, -320), (351, 65, 143)))
+BUILD_TYPES = (
+    BuildRegion(1, BlockRegion.from_xyz_pair((-384, 64, -192), (-17, 65, -17))),
+    BuildRegion(2, BlockRegion.from_xyz_pair((16, 64, -320), (351, 65, 143))),
+)
 
 BUILD_MARKER_Y_RANGE = VerticalRange(60, 230)
-BUILD_TYPES = _env_build_regions("BUILD_TYPES", (BUILD_TYPE1_REGION, BUILD_TYPE2_REGION))

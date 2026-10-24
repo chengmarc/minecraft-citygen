@@ -1,18 +1,15 @@
 """Algorithm tuning for grid generation and city placement.
 
 :class:`Algo` holds the per-run knobs; the engine takes one as an argument and
-never reads :data:`ALGO`, which is only this process's default (the dataclass
-defaults under any ``MC_CITY_*`` overrides) for the pipeline to fall back on.
+never reads :data:`ALGO`, which is only the defaults, for the pipeline and the form to fall back on.
 """
 
 from __future__ import annotations
 
-from dataclasses import dataclass, fields
-
-from config.env import env_int, env_set
+from dataclasses import dataclass
 
 CELL = 9  # simulation pixels and production blocks per fine cell; fixed by the asset geometry
-DEFAULT_SEED = env_int("DEFAULT_SEED", 5)
+DEFAULT_SEED = 5
 
 
 @dataclass(frozen=True)
@@ -38,15 +35,5 @@ class Algo:
     landmark_spacing: int = 5  # min fine-cell distance between landmark footprints
     type1_top_fit_choices: int = 5  # each type-1 frontage point picks randomly among this many best fits
 
-    @classmethod
-    def from_env(cls) -> "Algo":
-        """The defaults, each overridden by ``MC_CITY_<FIELD>`` when set."""
-        defaults = cls()
-        values = {}
-        for field in fields(cls):
-            name, default = field.name.upper(), getattr(defaults, field.name)
-            values[field.name] = frozenset(env_set(name, default)) if isinstance(default, frozenset) else env_int(name, default)
-        return cls(**values)
 
-
-ALGO = Algo.from_env()
+ALGO = Algo()

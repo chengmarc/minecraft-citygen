@@ -46,7 +46,6 @@ class _ApiTestCase(unittest.TestCase):
         patches = [
             mock.patch.object(files, "load_saved_gui_config", return_value=dict(self.saved_config)),
             mock.patch.object(files, "save_saved_gui_config", side_effect=lambda c: self.saved.append(dict(c))),
-            mock.patch.object(files, "save_progress_timing"),
             mock.patch.object(files, "extracted_assets_ready", return_value=True),
         ]
         for patch in patches:
@@ -116,7 +115,6 @@ class ExtractTests(_ApiTestCase):
         self.assertEqual([region.build_type for region in builds["build_types"]], [1, 2])
         self.assertEqual(self.event_names()[0], "progress")
         self.assertEqual(self.event_names()[-2:], ["done", "finished"])
-        files.save_progress_timing.assert_called_once()
 
     def test_each_rendered_piece_is_shown_as_it_lands(self):
         with tempfile.TemporaryDirectory() as renders:
@@ -321,7 +319,6 @@ class BuildTests(_ApiTestCase):
         self.assertEqual(calls[1][2], {"save": "C:/mc/source-world"})
         self.assertEqual([seed for _name, seed, _params in calls], ["9", "9"])
         self.assertEqual(self.event_names()[-2:], ["done", "finished"])
-        files.save_progress_timing.assert_called_once()
 
 
 class BuildBlueprintTests(_ApiTestCase):

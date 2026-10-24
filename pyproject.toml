@@ -25,9 +25,6 @@ build = [
 [project.gui-scripts]
 citygen = "gui.app:main"
 
-[project.scripts]
-citygen-doctor = "config.doctor:main"
-
 [tool.setuptools.package-data]
 config = ["default_world/*", "default_world/**/*", "color_render.csv"]
 gui = ["static/*", "static/icons/*"]

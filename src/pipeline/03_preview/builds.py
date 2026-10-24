@@ -12,9 +12,8 @@ from PIL import Image, ImageDraw
 if __package__ in (None, ""):
     sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
-from config.path import BUILD_CATALOG, PREVIEW_BUILDS, PREVIEW_BUILDS_CONTACT_SHEET
+from config.path import BUILD_CATALOG, PREVIEW_BUILDS
 from config.render import BUILD_PREVIEW_COLORS
-from engine.render.contact_sheet import write_contact
 from engine.schematic.building import read_catalog
 from pipeline.step import noop, run_stage_cli
 
@@ -96,7 +95,6 @@ def run(*, key=None, logger=None, progress=None):
     keys = [key] if key else sorted(catalog)
     os.makedirs(PREVIEW_BUILDS, exist_ok=True)
 
-    images = []
     total = len(keys)
     for index, build_key in enumerate(keys, start=1):
         if build_key not in catalog:
@@ -104,17 +102,10 @@ def run(*, key=None, logger=None, progress=None):
         im = render_building(build_key, catalog[build_key])
         out = os.path.join(PREVIEW_BUILDS, f"{build_key}.png")
         im.save(out)
-        images.append((build_key, im))
         logger(f"saved {out} ({im.width}x{im.height})")
         progress(index, total, build_key)
 
-    contact = None
-    if not key:
-        contact = PREVIEW_BUILDS_CONTACT_SHEET
-        write_contact(images, contact, cols=8, cell_w=180, cell_h=150, max_scale=6.0, resample=Image.Resampling.NEAREST)
-        logger(f"rendered {len(images)} pseudo builds -> {contact}")
-    return {"count": len(images), "contact_sheet": contact}
-
+    return {"count": total}
 
 if __name__ == "__main__":
     run_stage_cli(run, "key")
