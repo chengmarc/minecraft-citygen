@@ -133,18 +133,18 @@ branding.
 
 **What gets bundled.** The PyInstaller command
 (`base_pyinstaller_command`) collects the `pipeline` and `gui` packages, the
-hidden stage imports above, and four data sets: `gui/icons`,
-`config/color_render.csv`, `config/default_world`, and the window icon,
-`app-icon.png`. The root `README.md` is copied next to the app. A file the app loads at runtime that is not
+hidden stage imports above, and five data sets: `gui/icons`, the page in
+`gui/web/static`, `config/color_render.csv`, `config/default_world`, and the window icon,
+`app-icon.ico`. The root `README.md` is copied next to the app. A file the app loads at runtime that is not
 in that list is missing from the release even though it works from a checkout.
 
 **One icon source.** `src/app-icon.svg` is the only icon in the repo. The build
 renders it to `build/packaging/app-icon.png` with headless Microsoft Edge, then
-makes the installer's `app-icon.ico`, the Store package logos, and the bundled
-window icon from that PNG. It uses Edge, not Qt's SVG renderer, because Qt
-ignores the clip path that rounds the tile and the blur filters. From a
-checkout, `python packaging/build_windows_release.py --icon-only` makes just the
-PNG, which the app then uses as its window icon.
+makes the Store package logos and `app-icon.ico` from that PNG; the `.ico` is
+both the installer's icon and the bundled window icon. It uses Edge because most
+SVG renderers ignore the clip path that rounds the tile and the blur filters.
+From a checkout, `python packaging/build_windows_release.py --icon-only` makes
+just the PNG and the `.ico`, which the app then uses as its window icon.
 
 **CPU only.** The build includes CPU `numba` acceleration for rendering; CUDA is
 not required.

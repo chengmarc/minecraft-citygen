@@ -45,8 +45,8 @@ MSIX_LOGOS = {  # manifest asset name -> square size in pixels
     "Square150x150Logo.png": 150,
 }
 ICON_SVG = SRC_ROOT / "app-icon.svg"  # the one icon source; everything else is rendered from it at build time
-ICON_PNG = BUILD_ROOT / "app-icon.png"  # also bundled as the window icon (config.path.APP_ICON)
-ICON_ICO = BUILD_ROOT / "app-icon.ico"
+ICON_PNG = BUILD_ROOT / "app-icon.png"
+ICON_ICO = BUILD_ROOT / "app-icon.ico"  # also bundled as the window icon (config.path.APP_ICON)
 ICON_PNG_SIZE = 1024
 DEFAULT_WORLD_DIR = SRC_ROOT / "config" / "default_world"
 README_FILES = (
@@ -107,7 +107,7 @@ def find_edge() -> str | None:
 def render_icon_png() -> Path:
     """Render app-icon.svg to ICON_PNG with headless Edge, which comes with Windows.
 
-    Not Qt's SVG renderer: it ignores the clip path that rounds the tile, and the blur filters.
+    A browser, because most SVG renderers ignore the clip path that rounds the tile, and the blur filters.
     """
     edge = find_edge()
     if edge is None:
@@ -180,7 +180,9 @@ def base_pyinstaller_command(*, onefile: bool, icon_path: Path | None) -> list[s
         "--add-data",
         data_arg(SRC_ROOT / "gui" / "icons", "gui/icons"),
         "--add-data",
-        data_arg(ICON_PNG, "."),
+        data_arg(SRC_ROOT / "gui" / "web" / "static", "gui/web/static"),
+        "--add-data",
+        data_arg(ICON_ICO, "."),
         "--add-data",
         data_arg(SRC_ROOT / "config" / "color_render.csv", "config"),
         "--add-data",
@@ -351,7 +353,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--icon-only",
         action="store_true",
-        help="only render app-icon.svg to build/packaging/app-icon.png, the window icon when running from source",
+        help="only render app-icon.svg to build/packaging/app-icon.ico, the window icon when running from source",
     )
     return parser.parse_args()
 
@@ -363,7 +365,7 @@ def main() -> int:
     if args.clean:
         clean()
     if args.icon_only:
-        print(render_icon_png())
+        print(build_icon())
         return 0
     ensure_pyinstaller()
     version = load_version()

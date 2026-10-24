@@ -12,9 +12,9 @@ if __package__ in (None, ""):
 def main(argv: list[str] | None = None) -> int:
     args = list(sys.argv[1:] if argv is None else argv)
 
-    from gui.app import main as run_qt_app
+    from gui.web.app import main as run_app
 
-    return run_qt_app(args)
+    return run_app(args)
 
 
 if __name__ == "__main__":

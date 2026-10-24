@@ -12,7 +12,7 @@ dependencies = [
     "numpy>=1.26,<3",
     "nbtlib>=2.0.4,<3",
     "numba>=0.59,<1",
-    "PySide6>=6.7,<7",
+    "pywebview>=5.3,<7",
     "Pillow>=10.0,<13",
 ]
 
@@ -30,7 +30,7 @@ citygen-doctor = "config.doctor:main"
 
 [tool.setuptools.package-data]
 config = ["default_world/*", "default_world/**/*", "color_render.csv"]
-gui = ["icons/*.png"]
+gui = ["icons/*.png", "web/static/*"]
 
 [tool.setuptools.package-dir]
 "" = "src"

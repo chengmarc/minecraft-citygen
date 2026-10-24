@@ -24,6 +24,15 @@ def test_pyinstaller_command_includes_numbered_pipeline_stage_modules():
     assert set(build.PIPELINE_STAGE_HIDDEN_IMPORTS) <= hidden
 
 
+def test_pyinstaller_command_bundles_the_page():
+    build = load_build_script()
+
+    command = build.base_pyinstaller_command(onefile=False, icon_path=None)
+
+    data = {value for flag, value in zip(command, command[1:]) if flag == "--add-data"}
+    assert build.data_arg(build.SRC_ROOT / "gui" / "web" / "static", "gui/web/static") in data
+
+
 def test_pyinstaller_hidden_imports_mirror_the_stage_registry():
     from pipeline.stages import STAGES
 

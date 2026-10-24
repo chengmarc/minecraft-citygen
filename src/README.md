@@ -91,7 +91,7 @@ Every knob follows this path. The package guides cover each step on its own.
 | [`config/`](config/README.md) | Defaults, paths, the source world, version compatibility |
 | [`engine/`](engine/README.md) | Pure generation and transforms: roads, placement, schematic and world I/O, rendering |
 | [`pipeline/`](pipeline/README.md) | The five numbered stages that drive the engine and produce artifacts |
-| [`gui/`](gui/README.md) | The PySide6 app that configures and runs the stages |
+| [`gui/`](gui/README.md) | The desktop app (an HTML page in a WebView2 window) that configures and runs the stages |
 
 Imports only point downward: `gui` → `pipeline` → `engine` → `config`. `gui`
 may use only `pipeline.stages` and `pipeline.services`. Each package is layered
@@ -142,7 +142,7 @@ when the assets follow the conventions exactly:
 ## Reference
 
 - **Python** `>= 3.10`. Runtime dependencies (`numpy`, `nbtlib`, `numba`,
-  `PySide6`, `Pillow`) and entry points (`citygen`, `citygen-doctor`) are
+  `pywebview`, `Pillow`) and entry points (`citygen`, `citygen-doctor`) are
   declared in [pyproject.toml](../pyproject.toml).
 - **Input:** an MC **Java Edition** world, 1.18+ Anvil format. Bedrock
   and older formats are not supported.
