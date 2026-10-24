@@ -59,7 +59,7 @@ For buildings, place:
 <img src="docs/pics/type2.png" alt="Three-layer build marker convention" width="100%">
 
 The exact rules for roads and buildings are in the
-[in-world asset conventions](src/pipeline/README.md#in-world-asset-conventions).
+[in-world asset conventions](src/README.md#in-world-asset-conventions).
 
 # Technical Details
 
@@ -69,7 +69,5 @@ python -m pytest -q
 pythonw src/application.pyw
 ```
 
-Start at the [source architecture overview](src/README.md), then follow the
-package guides: [config](src/config/README.md), [engine](src/engine/README.md),
-[pipeline](src/pipeline/README.md), and [gui](src/gui/README.md). Releases
-follow the [release guide](docs/RELEASING.md).
+The source is one package, `src/citygen/`; its guide is [src/README.md](src/README.md). Releases follow the
+[release guide](docs/RELEASING.md).

@@ -129,8 +129,8 @@ No script makes `docs/pics/`; each picture was chosen and copied in by hand.
 
 | Pictures | Where they came from |
 |---|---|
-| `assets_*.png`, `assets_*.gif` | the builds stage: `appdata/02_builds/renders/_contact_sheet.png` and `appdata/02_builds/buildings.gif` |
-| `modern_iso.png`, `medieval_iso.png` | the city stage: `appdata/04_city/renders/seed_<n>.png` |
+| `assets_*.png`, `assets_*.gif` | extraction: `appdata/02_builds/renders/_contact_sheet.png`, and `buildings.gif`, which the app no longer writes (below) |
+| `modern_iso.png`, `medieval_iso.png` | the build: `appdata/04_city/renders/seed_<n>.png` |
 | `ingame*.png`, `base.png` | in-game screenshots |
 | `promo*.png` | the app's window on its Build tab |
 | `type1.png`, `type2.png` | in-game screenshots, annotated with the marker blocks |
@@ -138,18 +138,11 @@ No script makes `docs/pics/`; each picture was chosen and copied in by hand.
 The current renders can't be remade: their seeds, the medieval set's
 extraction regions, and the asset sheets' 1440 px layout were never recorded.
 When you next replace them, write `scripts/update_readme_pics.py` to run those
-stages with fixed settings and copy the results here, then list the copied files in
-`.gitattributes` under it. If `promo*.png` or `base.png` change, re-render the
+steps with fixed settings and copy the results here, then list the copied files in
+`.gitattributes` under it. The GIF was each building's render in turn; the app made it
+on every extraction through 1.3.0 (`write_image_sequence_gif` in `src/pipeline/rendering.py`,
+in git history), so make it in that script. If `promo*.png` or `base.png` change, re-render the
 listing images too (above).
-
-### Keep the build in step with a new pipeline step
-
-Stage step modules are loaded by name through `importlib`, so PyInstaller
-cannot see them. When you add or rename a step in
-[`pipeline.stages.STAGES`](../src/pipeline/stages.py), mirror it in
-`PIPELINE_STAGE_HIDDEN_IMPORTS` in
-[build_windows_release.py](../packaging/build_windows_release.py).
-`tests/test_packaging.py` fails until the two match.
 
 ## Explanation
 
@@ -165,10 +158,11 @@ installer metadata) is kept intentional but is not treated as user-facing
 branding.
 
 **What gets bundled.** The PyInstaller command
-(`base_pyinstaller_command`) collects the `pipeline` and `gui` packages, the
-hidden stage imports above, and five data sets: the page in `gui/static`
-(its icons included), `config/color_render.csv`, `config/default_world`, the window icon,
-`app-icon.ico`, and `app-icon.svg`, which the page shows as its brand. The root `README.md` is copied next to the app. A file the app loads at runtime that is not
+(`base_pyinstaller_command`) starts from `src/application.pyw`, follows the
+`citygen` package's imports, and adds four data sets: the page in
+`citygen/gui/static` (its icons included), `citygen/data` (the sample world and
+`color_render.csv`), the window icon `app-icon.ico`, and `app-icon.svg`, which
+the page shows as its brand. The root `README.md` is copied next to the app. A file the app loads at runtime that is not
 in that list is missing from the release even though it works from a checkout.
 
 **One icon source.** `src/app-icon.svg` is the only icon anyone edits. The build
