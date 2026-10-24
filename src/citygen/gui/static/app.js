@@ -158,6 +158,7 @@ async function start() {
       viewers.roads.reset();
       viewers.builds.reset();
       runs.extract.ground.classList.remove("active");
+      runs.extract.progress.reset();
       steps.preview.classList.remove("done");
       steps.build.classList.remove("done");
     }
