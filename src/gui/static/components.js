@@ -55,6 +55,8 @@ class ImageViewer {
   }
 
   setMessage(message) {
+    this.clearGallery();
+    this.root.classList.remove("blueprint");
     this.layer.hidden = true;
     this.img.removeAttribute("src");
     this.root.classList.remove("has-image");
@@ -66,7 +68,8 @@ class ImageViewer {
     this.setMessage(this.root.dataset.message || "");
   }
 
-  /** Show ``{src}``, or say it's ``{missing}``; resolves once it's on screen. */
+  /** Show ``{src}``, or say it's ``{missing}``; resolves once it's on screen. A ``blueprint`` image is a faded
+   *  stand-in, a scan sweeping over it, until the real one replaces it. */
   load(payload) {
     if (!payload.src) {
       this.setMessage(TEXT.imageMissing(payload.missing));
@@ -75,6 +78,8 @@ class ImageViewer {
     return new Promise((resolve) => {
       this.layer.classList.add("loading");
       this.img.onload = () => {
+        this.clearGallery();
+        this.root.classList.toggle("blueprint", Boolean(payload.blueprint));
         this.placeholder.hidden = true;
         this.layer.hidden = false;
         this.root.classList.add("has-image");
@@ -88,6 +93,31 @@ class ImageViewer {
       };
       this.img.src = payload.src;
     });
+  }
+
+  /** The ``index``-th (from 1) piece a run has rendered, added to a gallery that grows while it renders the rest.
+   *  The first piece starts the gallery afresh; the finished image replaces it. */
+  addPiece(index, src) {
+    if (index === 1 || !this.gallery) {
+      this.clearGallery();
+      this.gallery = document.createElement("div");
+      this.gallery.className = "viewer-gallery";
+      this.root.insertBefore(this.gallery, $(".viewer-caption", this.root));
+      this.layer.hidden = true;
+      this.placeholder.hidden = true;
+      this.root.classList.remove("has-image", "blueprint");
+    }
+    const tile = document.createElement("img");
+    tile.alt = "";
+    tile.draggable = false;
+    tile.src = src;
+    this.gallery.append(tile);
+    this.gallery.scrollTo({ top: this.gallery.scrollHeight, behavior: "smooth" });   // keep the newest in view
+  }
+
+  clearGallery() {
+    this.gallery?.remove();
+    this.gallery = null;
   }
 
   hasImage() {

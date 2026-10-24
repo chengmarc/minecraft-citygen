@@ -8,7 +8,8 @@ import json
 from pathlib import Path
 
 from config.path import (
-    BUILDS_CONTACT_SHEET, ROADS_CONTACT_SHEET, WORLD_PREVIEW_CACHE, has_region_files, resolve_region_dir,
+    BUILDS_CONTACT_SHEET, BUILDS_RENDERS, ROADS_CONTACT_SHEET, ROADS_RENDERS, WORLD_PREVIEW_CACHE,
+    has_region_files, resolve_region_dir,
 )
 from config.world import (
     BUILD_TYPES, RELEASE_NAMES, ROAD_BOX, SAVE,
@@ -331,13 +332,25 @@ class ExtractTab:
         timing = progress.ProgressTimingRecorder()
         timing.start()
 
+        # Each piece's render is saved as <its name>.png before its progress names it: shown as it lands.
+        renders = {stages.ROADS_RENDER: ("roads", ROADS_RENDERS), stages.BUILDS_RENDER: ("builds", BUILDS_RENDERS)}
+
         def job(report):
             def on_stage_progress(stage, completed, total, label):
                 phase = _extract_phase(stage, label)
                 timing.record(stage, completed, total, label, phase=phase)
                 report(*extract_progress(stage, phase, completed, total), creep="extraction")
 
-            on_progress = coalesce_pipeline_progress(on_stage_progress)
+            coalesced = coalesce_pipeline_progress(on_stage_progress)
+
+            def on_progress(stage, completed, total, label):
+                if stage in renders and label:   # before the coalescing, which would drop some pieces
+                    viewer, folder = renders[stage]
+                    piece = Path(folder) / f"{label}.png"
+                    if piece.is_file():
+                        self._runner.piece("extract", viewer, int(completed), image(piece))
+                coalesced(stage, completed, total, label)
+
             # No data_version: extraction stamps the version detected from ``save``.
             services.run_stage("roads", save=save, road_box=road_box, progress=on_progress)
             services.run_stage("builds", save=save, build_types=build_types, progress=on_progress)

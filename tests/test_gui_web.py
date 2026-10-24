@@ -109,6 +109,23 @@ class ExtractTests(_ApiTestCase):
         self.assertEqual(self.event_names()[-2:], ["done", "finished"])
         files.save_progress_timing.assert_called_once()
 
+    def test_each_rendered_piece_is_shown_as_it_lands(self):
+        with tempfile.TemporaryDirectory() as renders:
+            def fake_stage(name, *, progress=None, **params):
+                if name == "roads":
+                    Path(renders, "07_small_1x1_I.png").write_bytes(b"png")
+                    progress(stages.ROADS_RENDER, 1, 3, "07_small_1x1_I")
+                    progress(stages.ROADS_RENDER, 3, 3, "Rendered road contact sheet.")
+
+            with (
+                mock.patch.object(extract_module, "ROADS_RENDERS", renders),
+                mock.patch.object(extract_module.services, "run_stage", side_effect=fake_stage),
+            ):
+                self.api.run_extract()
+
+        pieces = [payload for event, payload in self.events if event == "piece"]
+        self.assertEqual([(p["tab"], p["viewer"], p["index"]) for p in pieces], [("extract", "roads", 1)])
+
     def test_extract_needs_all_three_areas(self):
         self.api.set_area("road", [0, 0, 0], [15, 64, 15])
         state = self.saved[-1]["extraction"]
@@ -202,6 +219,17 @@ class PreviewTests(_ApiTestCase):
         self.assertEqual(self.event_names(), ["progress", "progress", "done", "finished"])
         self.assertEqual(set(self.last("done")["images"]), {"grid", "city"})
 
+    def test_the_road_layout_shows_as_soon_as_its_step_is_done(self):
+        def fake_preview(stage_key, *, seed, algo, progress=None):
+            progress(stages.PREVIEW_GRID, 1, 1, "Rendered road layout preview")
+            progress(stages.PREVIEW_CITY, 2, 2, "Rendered city layout preview")
+
+        with mock.patch.object(algo_module.services, "run_stage", side_effect=fake_preview):
+            self.api.run_preview(algo_module.default_algo_tab_config())
+
+        self.assertEqual(self.event_names(), ["progress", "progress", "partial", "progress", "done", "finished"])
+        self.assertEqual(list(self.last("partial")["images"]), ["grid"])
+
     def test_invalid_config_returns_the_error_without_running(self):
         state = algo_module.default_algo_tab_config()
         state["algo"]["GAP_BIG"] = "lots"
@@ -250,6 +278,32 @@ class BuildTests(_ApiTestCase):
         self.assertEqual([seed for _name, seed, _params in calls], ["9", "9"])
         self.assertEqual(self.event_names()[-2:], ["done", "finished"])
         files.save_progress_timing.assert_called_once()
+
+
+class BuildBlueprintTests(_ApiTestCase):
+    def test_the_previewed_city_stands_in_until_the_render(self):
+        state = {**algo_module.default_algo_tab_config(), "seed": "9"}
+        with (
+            mock.patch.object(algo_module, "source_data_version", return_value=4790),
+            mock.patch.object(algo_module.services, "run_stage"),
+            mock.patch.object(algo_module, "image", return_value={"src": "/files/03_preview/city/seed_9.png?v=1"}),
+        ):
+            self.api.run_build(state)
+
+        partial = self.last("partial")
+        self.assertEqual(partial["tab"], "build")
+        self.assertTrue(partial["images"]["city"]["blueprint"])
+
+    def test_no_blueprint_without_a_preview_of_this_seed(self):
+        state = {**algo_module.default_algo_tab_config(), "seed": "9"}
+        with (
+            mock.patch.object(algo_module, "source_data_version", return_value=4790),
+            mock.patch.object(algo_module.services, "run_stage"),
+            mock.patch.object(algo_module, "image", return_value={"missing": "seed_9.png"}),
+        ):
+            self.api.run_build(state)
+
+        self.assertNotIn("partial", self.event_names())
 
 
 class ProgressWeightMirrorTests(unittest.TestCase):

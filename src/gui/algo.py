@@ -307,6 +307,8 @@ class AlgoTabs:
         def job(report):
             def on_progress(stage, completed, total, _label):
                 report(*preview_progress(stage, completed, total), creep="preview")
+                if stage == stages.PREVIEW_GRID and total and completed >= total:   # ready well before the city
+                    self._runner.show("preview", {"grid": image(grid_preview_path(seed))})
 
             services.run_stage("preview", seed=seed, algo=algo, progress=on_progress)
             return seed
@@ -355,6 +357,10 @@ class AlgoTabs:
             return {"images": {"city": image(city_render_path(seed))}}
 
         self._runner.start("build", job, on_success=on_success)
+        # The city as previewed, standing in until it's rendered (if this seed's preview is still there).
+        blueprint = image(city_preview_path(seed))
+        if "src" in blueprint:
+            self._runner.show("build", {"city": {**blueprint, "blueprint": True}})
         return {}
 
     def open_worlds_folder(self):
