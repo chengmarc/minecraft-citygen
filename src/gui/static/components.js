@@ -3,6 +3,7 @@
 "use strict";
 
 const $ = (selector, root = document) => root.querySelector(selector);
+const ZOOM_STEP = 1.12;   // each notch of the wheel
 const $$ = (selector, root = document) => [...root.querySelectorAll(selector)];
 
 /** Show the error dialog. */
@@ -42,7 +43,10 @@ class ImageViewer {
       });
     }
     this.interceptPointer = null;   // (event) => true to take a press away from panning
-    this.zoomLevel = 0;
+    // data-bounded="width" or "height": the picture fills the viewer that way at the least, and can't be dragged off
+    // into empty space. Unbounded, it fits whole, and can be zoomed out past that and dragged anywhere. See limits().
+    this.bounded = root.dataset.bounded || null;
+    this.fitted = true;   // at the base view, so a resize fits it again
     this.scale = 1;
     this.x = 0;
     this.y = 0;
@@ -52,7 +56,10 @@ class ImageViewer {
     root.addEventListener("wheel", (event) => this.onWheel(event), { passive: false });
     root.addEventListener("pointerdown", (event) => this.onPointerDown(event));
     root.addEventListener("dblclick", () => this.fit());
-    new ResizeObserver(() => { if (this.zoomLevel === 0) this.fit(); }).observe(root);
+    new ResizeObserver(() => {
+      if (this.fitted) this.fit();
+      else if (this.hasImage()) this.apply();   // bounded, it's held inside the new size
+    }).observe(root);
   }
 
   setMessage(message) {
@@ -138,18 +145,53 @@ class ImageViewer {
     return this.size;
   }
 
+  /** What the view may be, for this viewer and picture: the one place bounding is decided.
+   *
+   *  - ``base``: the scale of the base view: across the viewer's width, down its height, or (unbounded) the whole
+   *    picture in it;
+   *  - ``min`` / ``max``: how far it zooms, from the base: bounded, never smaller; unbounded, 12 notches smaller;
+   *    either, 40 notches bigger (1.12x a notch);
+   *  - ``hold``: whether the picture's kept inside: centred where it's smaller than the viewer, its edges no further
+   *    in than the viewer's where it's bigger. */
+  limits() {
+    const { clientWidth: w, clientHeight: h } = this.root;
+    const { width: iw, height: ih } = this.imageSize();
+    const base = { width: w / iw, height: h / ih }[this.bounded] ?? Math.min(w / iw, h / ih);
+    return {
+      base,
+      min: this.bounded ? base : base * ZOOM_STEP ** -12,
+      max: base * ZOOM_STEP ** 40,
+      hold: Boolean(this.bounded),
+    };
+  }
+
+  /** The view brought within its limits. */
+  constrain() {
+    const { min, max, hold } = this.limits();
+    this.scale = Math.min(Math.max(this.scale, min), max);
+    if (!hold) return;
+    const { clientWidth: w, clientHeight: h } = this.root;
+    const iw = this.size.width * this.scale;
+    const ih = this.size.height * this.scale;
+    this.x = iw <= w ? (w - iw) / 2 : Math.min(0, Math.max(w - iw, this.x));
+    this.y = ih <= h ? (h - ih) / 2 : Math.min(0, Math.max(h - ih, this.y));
+  }
+
+  /** The base view: at the base scale, centred, and from the top when it fills the width (a tall contact sheet is
+   *  read by dragging down it). */
   fit() {
     if (!this.hasImage()) return;
     const { clientWidth: w, clientHeight: h } = this.root;
     const { width: iw, height: ih } = this.imageSize();
-    this.zoomLevel = 0;
-    this.scale = Math.min(w / iw, h / ih);
+    this.fitted = true;
+    this.scale = this.limits().base;
     this.x = (w - iw * this.scale) / 2;
-    this.y = (h - ih * this.scale) / 2;
+    this.y = this.bounded === "width" ? 0 : (h - ih * this.scale) / 2;
     this.apply();
   }
 
   apply() {
+    if (this.hasImage()) this.constrain();
     this.layer.style.transform = `translate(${this.x}px, ${this.y}px) scale(${this.scale})`;
     this.overlay.style.borderWidth = `${2 / this.scale}px`;   // a 2px outline at any zoom
     this.zoomReadout.value = `${Math.round(this.scale * 100)}%`;
@@ -173,7 +215,7 @@ class ImageViewer {
     });
   }
 
-  // 1.12x per wheel notch, from -12 to +40 notches from the fit, about the cursor.
+  // A notch of the wheel at a time, about the cursor.
   onWheel(event) {
     event.preventDefault();
     if (!this.hasImage() || event.deltaY === 0) return;
@@ -181,14 +223,15 @@ class ImageViewer {
     this.zoomBy(-event.deltaY / 100, event.clientX - rect.left, event.clientY - rect.top);
   }
 
-  /** Zoom by ``notches`` about a point of the viewer (its centre by default). */
+  /** Zoom by ``notches`` about a point of the viewer (its centre by default), within limits(). */
   zoomBy(notches, mx = this.root.clientWidth / 2, my = this.root.clientHeight / 2) {
     if (!this.hasImage()) return;
-    const next = Math.min(Math.max(this.zoomLevel + notches, -12), 40);
-    if (next === this.zoomLevel) return;
-    const factor = 1.12 ** (next - this.zoomLevel);
-    this.zoomLevel = next;
-    this.scale *= factor;
+    const { min, max } = this.limits();
+    const scale = Math.min(Math.max(this.scale * ZOOM_STEP ** notches, min), max);
+    if (scale === this.scale) return;
+    const factor = scale / this.scale;
+    this.fitted = false;
+    this.scale = scale;
     this.x = mx - (mx - this.x) * factor;
     this.y = my - (my - this.y) * factor;
     this.apply();
