@@ -13,7 +13,8 @@ from config.path import resolve_region_dir
 from engine.world.anvil_world_reader import World
 from engine.render.palette import block_color
 
-BACKGROUND = (36, 40, 48)
+# Where there's no world (no chunk, or no surface block), the map is transparent: it shows whatever it's drawn on.
+EMPTY = (0, 0, 0, 0)
 MAX_PREVIEW_SIZE = 2048
 PARTIAL_EVERY_SECONDS = 0.4
 REGION_FILE_PATTERN = re.compile(r"^r\.(-?\d+)\.(-?\d+)\.mca$")
@@ -60,7 +61,7 @@ def render_topdown_preview(save_path, *, on_progress=None, on_partial=None):
 
     width = math.ceil(span_x / step)
     height = math.ceil(span_z / step)
-    image = np.full((height, width, 3), BACKGROUND, dtype=np.uint8)
+    image = np.zeros((height, width, 4), dtype=np.uint8)   # all EMPTY until drawn
     meta = {"x0": x0, "x1": x1, "z0": z0, "z1": z1, "step": step}
     last_partial = time.monotonic()
 
@@ -70,7 +71,7 @@ def render_topdown_preview(save_path, *, on_progress=None, on_partial=None):
             on_progress(done, total)
         if on_partial is not None and done < total and time.monotonic() - last_partial >= PARTIAL_EVERY_SECONDS:
             last_partial = time.monotonic()
-            on_partial(Image.fromarray(image, "RGB"), meta)
+            on_partial(Image.fromarray(image, "RGBA"), meta)
 
     if step == 1:
         cz_range = range(z0 >> 4, (z1 >> 4) + 1)
@@ -82,9 +83,9 @@ def render_topdown_preview(save_path, *, on_progress=None, on_partial=None):
                     continue
                 entries = world.heightmap_surface_blocks(cx, cz)
                 tile = np.array(
-                    [block_color(e[0]) if e is not None else BACKGROUND for e in entries],
+                    [(*block_color(e[0]), 255) if e is not None else EMPTY for e in entries],
                     dtype=np.uint8,
-                ).reshape(16, 16, 3)
+                ).reshape(16, 16, 4)
                 image[(cz << 4) - z0:(cz << 4) - z0 + 16,
                       (cx << 4) - x0:(cx << 4) - x0 + 16] = tile
             row_done(i + 1, total)
@@ -102,7 +103,7 @@ def render_topdown_preview(save_path, *, on_progress=None, on_partial=None):
                     continue
                 result = world.heightmap_surface_block(wx, wz)
                 if result is not None:
-                    image[iz, ix] = block_color(result[0])
+                    image[iz, ix] = (*block_color(result[0]), 255)
             row_done(iz + 1, height)
 
-    return Image.fromarray(image, "RGB"), meta
+    return Image.fromarray(image, "RGBA"), meta

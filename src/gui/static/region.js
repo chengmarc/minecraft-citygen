@@ -4,12 +4,11 @@
 "use strict";
 
 const CHUNK_SIZE = 16;
-// What the map shows where it isn't drawn yet: the engine's BACKGROUND (engine/render/topdown.py).
-const MAP_BACKGROUND = "rgb(36, 40, 48)";
 const POP_MS = 300;
 
-/** The map's chunks popping in as it's drawn, like Extract's pieces: a canvas over the map, inside its zoomed layer,
- *  covering each newly drawn band with what was there before, then growing and fading each chunk of it in. */
+/** The map's chunks popping in as it's drawn, like Extract's pieces. The map is transparent where there's no world,
+ *  so the picture showing can't hide the next one: it stays the previous picture while a canvas over it, inside the
+ *  zoomed layer, grows and fades each newly drawn chunk in; then the caller swaps the picture and ends the canvas. */
 class ChunkReveal {
   constructor(viewer) {
     this.viewer = viewer;
@@ -17,9 +16,9 @@ class ChunkReveal {
     this.frame = 0;
   }
 
-  /** Pop ``after``'s chunks (``tile`` px squares) into rows ``fromRow``..``toRow`` over ``before`` (an image, or the
-   *  undrawn background); the map underneath already shows ``after``. Resolves when they're all in. */
-  play(before, after, fromRow, toRow, tile) {
+  /** Pop ``after``'s chunks (``tile`` px squares) in, over rows ``fromRow``..``toRow``. Resolves when they're all in,
+   *  with the canvas still up: ``finish()`` takes it down, once the picture under it shows ``after``. */
+  play(after, fromRow, toRow, tile) {
     this.finish();
     if (toRow <= fromRow || matchMedia("(prefers-reduced-motion: reduce)").matches) return Promise.resolve();
     const done = new Promise((resolve) => { this.resolve = resolve; });
@@ -31,17 +30,6 @@ class ChunkReveal {
     this.viewer.layer.insertBefore(canvas, this.viewer.overlay);
     this.canvas = canvas;
     const ctx = canvas.getContext("2d");
-    const under = (x, y, w, h) => {
-      if (before) {
-        ctx.drawImage(before, x, y, w, h, x, y, w, h);
-      } else {
-        ctx.fillStyle = MAP_BACKGROUND;
-        ctx.fillRect(x, y, w, h);
-      }
-    };
-    // The band, and 2px either side, where before and after are the same: the canvas's edge, smoothed as the layer
-    // is scaled, would otherwise let a line of the new rows show through.
-    under(0, Math.max(0, fromRow - 2), width, Math.min(canvas.height, toRow + 2) - Math.max(0, fromRow - 2));
 
     // Roughly top to bottom across the band, each chunk a little early or late, so it ripples in.
     const tiles = [];
@@ -65,21 +53,25 @@ class ChunkReveal {
         }
         const e = 1 - (1 - p) ** 3;   // ease out
         const s = 0.6 + 0.4 * e;
-        under(t.x, t.y, t.w, t.h);
+        ctx.clearRect(t.x, t.y, t.w, t.h);
         ctx.globalAlpha = e;
         ctx.drawImage(after, t.x, t.y, t.w, t.h, t.x + (t.w * (1 - s)) / 2, t.y + (t.h * (1 - s)) / 2, t.w * s, t.h * s);
         ctx.globalAlpha = 1;
         if (p >= 1) t.done = true;
         else pending += 1;
       }
-      if (pending) this.frame = requestAnimationFrame(step);
-      else this.finish();
+      if (pending) {
+        this.frame = requestAnimationFrame(step);
+      } else {
+        this.resolve?.();
+        this.resolve = null;
+      }
     };
     this.frame = requestAnimationFrame(step);
     return done;
   }
 
-  /** Stop at once: the map underneath already shows everything. */
+  /** Take the canvas down: at the end of a band, or at once (the dialog opened again, an error). */
   finish() {
     cancelAnimationFrame(this.frame);
     this.canvas?.remove();
@@ -87,6 +79,14 @@ class ChunkReveal {
     this.resolve?.();
     this.resolve = null;
   }
+}
+
+/** A transparent picture the map's size, for the view and the selection to be set up on before any chunk is in. */
+function blankPicture(width, height) {
+  const canvas = document.createElement("canvas");
+  canvas.width = width;
+  canvas.height = height;
+  return canvas.toDataURL();
 }
 
 class RegionMap {
@@ -107,7 +107,6 @@ class RegionMap {
     this.onApply = null;
     this.reveal = new ChunkReveal(this.viewer);
     this.frames = Promise.resolve();   // the map's pictures, shown one after another
-    this.frameImage = null;            // the picture showing, once drawn
     this.drawn = 0;                    // how far down it's drawn, from 0 to 1
     this.opening = 0;                  // which opening of the dialog the pictures belong to
 
@@ -129,7 +128,6 @@ class RegionMap {
     this.selection = null;
     this.opening += 1;
     this.reveal.finish();
-    this.frameImage = null;
     this.drawn = 0;
     this.applyButton.disabled = true;
     this.viewer.reset();
@@ -189,15 +187,16 @@ class RegionMap {
     const tile = Math.max(8, Math.round(CHUNK_SIZE / this.meta.step));
     const height = next.naturalHeight;
     const row = (fraction) => (fraction >= 1 ? height : Math.min(height, Math.round((fraction * height) / tile) * tile));
-    const before = this.frameImage;
-    const fromRow = row(this.drawn);
-    if (first) await this.viewer.load(payload);   // fitted; the canvas covers the drawn rows before it's painted
-    const popped = this.reveal.play(before, next, fromRow, row(drawn), tile);
-    if (!first) this.viewer.img.src = payload.src;   // under the canvas, which holds the old rows until they pop in
-    this.frameImage = next;
+    if (first) {   // the map's size, nothing in it yet: fitted, with the area's box on it, before the first chunks pop in
+      await this.viewer.load({ src: blankPicture(next.naturalWidth, height) });
+      if (!this.selection) this.selectWorld(this.bounds.start, this.bounds.end);
+    }
+    await this.reveal.play(next, row(this.drawn), row(drawn), tile);
+    if (opening !== this.opening) return;
+    this.viewer.img.src = payload.src;              // the whole new picture, the same as the canvas over it shows
+    await this.viewer.img.decode().catch(() => {});
+    this.reveal.finish();
     this.drawn = drawn;
-    if (!this.selection) this.selectWorld(this.bounds.start, this.bounds.end);
-    await popped;
   }
 
   chunkAt(event) {
