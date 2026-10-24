@@ -35,7 +35,7 @@ def _open_contact_source(image_source):
     return nullcontext(image_source)
 
 
-def write_contact(images, out, cols=8, cell_w=180, cell_h=180, on_progress=None):
+def write_contact(images, out, *, cols, cell_w, cell_h, on_progress=None):
     """Grid ``(label, image-or-path)`` pairs onto one sheet and save it to ``out``; thumbnails shrink to fit."""
     rows = max(1, (len(images) + cols - 1) // cols)
     sheet = Image.new("RGBA", (cols * cell_w, rows * cell_h), CONTACT_SHEET_BG)

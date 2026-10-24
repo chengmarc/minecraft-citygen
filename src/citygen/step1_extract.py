@@ -79,7 +79,7 @@ def extract_roads(world, road_box, data_version, progress):
         progress("road_pieces", index - 1, total)   # before its (slow) extraction
         name = sign_text_above(world, comp.emerald).replace(" ", "").strip()
         if name and len(comp.cuboids) == 1:   # a road piece has one layer, and a sign naming it
-            cells, block_entities = extract_cuboid(world, comp.cuboids[0], force_persistent_leaves=True)
+            cells, block_entities = extract_cuboid(world, comp.cuboids[0])
             write_sponge_schem_cells(
                 cells, os.path.join(ROADS_SCHEM, name + ".schem"), data_version,
                 offset=(0, -comp.ground_offset, 0), block_entities=block_entities,
@@ -125,7 +125,7 @@ def extract_builds(world, build_types, data_version, progress):
             stack = parse_range(sign_text_above(world, comp.emerald), (r"stack\s*:\s*",))
             entry["stack"] = stack if stack is not None else [1, 1]
         for part, cuboid in zip(parts, comp.cuboids):
-            cells, block_entities = extract_cuboid(world, cuboid, force_persistent_leaves=True)
+            cells, block_entities = extract_cuboid(world, cuboid)
             write_sponge_schem_cells(cells, piece_path(BUILDS_SCHEM, key, part), data_version, block_entities=block_entities)
             entry["pieces"][part] = cuboid[3] - cuboid[2] + 1
         catalog[key] = entry

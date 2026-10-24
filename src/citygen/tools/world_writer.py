@@ -364,7 +364,7 @@ def _write_world_icon(out_dir, icon_path):
         icon.save(os.path.join(out_dir, "icon.png"))
 
 
-def _write_level_dat(out_dir, data_version, spawn, source_world, world_name=EXPORTED_WORLD_NAME):
+def _write_level_dat(out_dir, data_version, spawn, source_world, world_name):
     """Edit the copied world's ``level.dat`` in place.
 
     The copied save already has the source world's native structure, so only edit

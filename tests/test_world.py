@@ -226,20 +226,11 @@ class _FixedBlockWorld:
         return None  # no block entities in this fake
 
 
-def _single(world, *, force):
-    # A 1x1x1 cuboid -> cells[0][0][0] is the one block state string.
-    cells, _block_entities = extract_cuboid(world, (0, 0, 0, 0, 0, 0), force_persistent_leaves=force)
-    return cells[0][0][0]
-
-
 def test_grown_leaves_forced_persistent():
     world = _FixedBlockWorld("minecraft:cherry_leaves", {"distance": "7", "persistent": "false"})
-    assert _single(world, force=True) == "minecraft:cherry_leaves[distance=7,persistent=true]"
-
-
-def test_grown_leaves_untouched_when_disabled():
-    world = _FixedBlockWorld("minecraft:cherry_leaves", {"distance": "7", "persistent": "false"})
-    assert _single(world, force=False) == "minecraft:cherry_leaves[distance=7,persistent=false]"
+    # A 1x1x1 cuboid -> cells[0][0][0] is the one block state string.
+    cells, _block_entities = extract_cuboid(world, (0, 0, 0, 0, 0, 0))
+    assert cells[0][0][0] == "minecraft:cherry_leaves[distance=7,persistent=true]"
 
 
 # --- world preview bounds -------------------------------------------------
@@ -268,4 +259,3 @@ def test_topdown_preview_shows_the_picture_so_far_while_it_draws(monkeypatch):
     assert snapshots
     assert all(size == image.size and m == meta for size, m in snapshots)
     assert image.mode == "RGBA" and image.getchannel("A").getextrema() == (0, 255)   # no world: transparent
-

@@ -64,7 +64,7 @@ def default_extraction_tab_config():
     }
 
 
-def version_selector_items(min_data_version=None):
+def version_selector_items(min_data_version):
     """The paste-target dropdown's values, newest first after ``AUTO_VERSION`` (which text.js names).
 
     Indicator only: it lists the MC versions the output can be pasted into

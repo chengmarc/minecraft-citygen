@@ -375,7 +375,7 @@ def is_stacked(entry):
     return all(name in pieces for name in STACK_PARTS)
 
 
-def piece_path(builds_dir, key, part=WHOLE):
+def piece_path(builds_dir, key, part):
     name = key if part == WHOLE else f"{key}_{part}"
     return os.path.join(builds_dir, name + ".schem")
 
