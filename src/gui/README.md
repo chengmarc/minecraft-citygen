@@ -23,16 +23,17 @@ Once the field exists on `Algo`
 ([config guide](../config/README.md#add-a-generation-knob)), in
 [algo.py](algo.py):
 
-1. Add `("<FIELD_UPPER>", "<Label>", "<tooltip>")` to `PREVIEW_CONFIGS`. The
-   default comes from `config.algo.ALGO`.
-2. Add the name to one of the `PREVIEW_CONFIG_GROUPS` — the advanced panel only
-   builds fields for grouped names.
-3. For an integer, add a `(min, max)` slider range to `PREVIEW_SLIDER_RANGES`.
-   A `frozenset` field needs its own branch in `build_algo_from_values` and in
-   `form_spec`, as `BANNED_BUILDINGS` has.
+1. Add `"<FIELD_UPPER>"` to `KNOBS`. The default comes from `config.algo.ALGO`.
+2. Add the name to one of the `GROUPS` — the advanced panel only builds fields
+   for grouped names.
+3. For an integer, add a `(min, max)` slider range to `SLIDER_RANGES`. A
+   `frozenset` field goes in `SET_KNOBS`, as `BANNED_BUILDINGS` does.
+4. Give it a label and a tip in `TEXT.form.knobs` in
+   [static/text.js](static/text.js).
 
 The page builds the form from `form_spec`, so there's no HTML to change. The
 Preview and Build tabs share one form state, so the knob shows up in both.
+`tests/test_gui_web.py` fails until step 4 is done.
 
 ### Run a pipeline stage from a tab
 
@@ -55,7 +56,8 @@ segments. Extract and Build runs write measured timings to
 `appdata/progress_timings.json`, one section per tab; set the weights from those. Keep
 one weight per step: `tests/test_gui_web.py` checks that the preview and construct
 weight lists match the pipeline's steps, so adding a step fails the test until you
-add a weight.
+add a weight. A new segment's code also needs its name in `TEXT.segments` in
+[static/text.js](static/text.js).
 
 ## Explanation
 

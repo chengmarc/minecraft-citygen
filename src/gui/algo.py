@@ -1,7 +1,9 @@
 """Preview and Build: the algorithm form, Stage 3 for the preview, Stages 4 then 5 for the build.
 
-Each knob of the form names one :class:`config.algo.Algo` field, upper-cased. Both tabs edit the same saved
-``algo`` section, so the city you preview is the one you build.
+Each knob of the form names one :class:`config.algo.Algo` field, upper-cased, and its value is text, as the page sends
+it. The form's words -- each knob's label and tip, the groups' names, the selectors' option names -- are in the page's
+text.js, keyed by the codes here. Both tabs edit the same saved ``algo`` section, so the city you preview is the one
+you build.
 """
 
 from __future__ import annotations
@@ -23,34 +25,40 @@ from gui.server import image
 # --- The form: which knobs show, and how their values become an ``Algo``
 
 class ConfigError(ValueError):
-    """Raised when an algorithm/city config value is invalid."""
+    """A knob's value is invalid. Its message is the knob's name, which the page words."""
 
 
-PREVIEW_CONFIGS = [
-    ("FINE", "City size", "Changes the footprint of the finished city."),
-    ("GAP_MIXED", "Road density", "Controls how tightly Avenues and Streets are packed across the city."),
-    ("GAP_BIG", "Avenue spacing", "Higher values create fewer Avenues."),
-    ("PAD_BIG", "Avenue edge margin", "Keeps Avenues farther from the edge of the city."),
-    ("GAP_SMALL", "Street spacing", "Lower values create more Streets."),
-    ("PAD_SMALL", "Street edge margin", "Keeps Streets farther from the edge of the city."),
-    ("N_BIG_CORNERS", "Avenue turns", "Adds more bends to Avenues."),
-    ("N_BIG_TEES", "Avenue T-junctions", "Adds more T-junctions to Avenues."),
-    ("N_SMALL_CORNERS", "Street turns", "Adds more bends to Streets."),
-    ("N_SMALL_TEES", "Street T-junctions", "Adds more T-junctions to Streets."),
-    ("BANNED_BUILDINGS", "Skip building IDs", "Optional comma-separated building IDs to leave out of generation."),
-    ("TYPE1_TOP_FIT_CHOICES", "House style variety", "Higher values mix in more different standard house designs."),
-    ("LANDMARK_SPACING", "Landmark spacing", "Minimum fine-cell distance between landmark footprints."),
+# Every knob, in the order the form's values are kept.
+KNOBS = [
+    "FINE",
+    "GAP_MIXED",
+    "GAP_BIG",
+    "PAD_BIG",
+    "GAP_SMALL",
+    "PAD_SMALL",
+    "N_BIG_CORNERS",
+    "N_BIG_TEES",
+    "N_SMALL_CORNERS",
+    "N_SMALL_TEES",
+    "BANNED_BUILDINGS",
+    "TYPE1_TOP_FIT_CHOICES",
+    "LANDMARK_SPACING",
 ]
 
-PREVIEW_CONFIG_LOOKUP = {name: (label, description) for name, label, description in PREVIEW_CONFIGS}
+# The header's selectors: knobs chosen from a few values, which text.js names.
+SELECTOR_OPTIONS = {
+    "FINE": ("40", "60", "80", "100", "120"),
+    "GAP_MIXED": ("3", "4", "5", "6", "7"),
+}
 
-PREVIEW_CONFIG_GROUPS = [
-    ("Avenue and Street spacing", ["GAP_BIG", "PAD_BIG", "GAP_SMALL", "PAD_SMALL"]),
-    ("Avenue and Street shape", ["N_BIG_CORNERS", "N_BIG_TEES", "N_SMALL_CORNERS", "N_SMALL_TEES"]),
-    ("Building mix", ["TYPE1_TOP_FIT_CHOICES", "LANDMARK_SPACING", "BANNED_BUILDINGS"]),
+# The advanced panel's groups, by code; it builds fields only for grouped knobs.
+GROUPS = [
+    ("spacing", ["GAP_BIG", "PAD_BIG", "GAP_SMALL", "PAD_SMALL"]),
+    ("shape", ["N_BIG_CORNERS", "N_BIG_TEES", "N_SMALL_CORNERS", "N_SMALL_TEES"]),
+    ("buildings", ["TYPE1_TOP_FIT_CHOICES", "LANDMARK_SPACING", "BANNED_BUILDINGS"]),
 ]
 
-PREVIEW_SLIDER_RANGES = {
+SLIDER_RANGES = {
     "GAP_BIG": (2, 10),
     "GAP_SMALL": (2, 10),
     "PAD_BIG": (2, 10),
@@ -63,121 +71,69 @@ PREVIEW_SLIDER_RANGES = {
     "LANDMARK_SPACING": (1, 10),
 }
 
-CANVAS_SIZE_OPTIONS = {
-    "Very Small": "40",
-    "Small": "60",
-    "Normal": "80",
-    "Big": "100",
-    "Very Big": "120",
-}
-
-CLEARANCE_OPTIONS = {
-    "Very Dense": "3",
-    "Dense": "4",
-    "Normal": "5",
-    "Sparse": "6",
-    "Very Sparse": "7",
-}
-
-# Config values the header row exposes as labelled selectors rather than raw
-# integers. Maps config name -> (label->value options, human-facing name).
-SELECTOR_OPTIONS = {
-    "FINE": (CANVAS_SIZE_OPTIONS, "City size"),
-    "GAP_MIXED": (CLEARANCE_OPTIONS, "Road density"),
-}
+# Knobs typed as text: a comma-separated set, which becomes a ``frozenset`` field.
+SET_KNOBS = {"BANNED_BUILDINGS"}
 
 
-def selector_value(name, label):
-    """Resolve a selector label (e.g. 'Small') to its numeric config value."""
-    options, human = SELECTOR_OPTIONS[name]
-    try:
-        return options[label]
-    except KeyError as exc:
-        raise ConfigError(f"{human} must be one of the selector values.") from exc
-
-
-def selector_label(name, value):
-    """Resolve a numeric config value back to its selector label, or None."""
-    options, _human = SELECTOR_OPTIONS[name]
-    for label, numeric in options.items():
-        if str(value) == numeric:
-            return label
-    return None
-
-
-def config_default(name):
+def _default(name):
     value = getattr(ALGO, name.lower())
-    if isinstance(value, frozenset):
-        return ", ".join(sorted(value))
-    if name in SELECTOR_OPTIONS:
-        label = selector_label(name, value)
-        if label is not None:
-            return label
-    return str(value)
+    return ", ".join(sorted(value)) if isinstance(value, frozenset) else str(value)
 
 
 def form_values(saved=None):
-    """Every knob's value as text: the saved one, else the default."""
-    return {
-        name: str(saved[name]).strip() if saved and name in saved else config_default(name)
-        for name, _label, _description in PREVIEW_CONFIGS
-    }
+    """Every knob's value: the saved one, else the default.
+
+    A selector's saved value that isn't one of its options is dropped, as are the option labels older versions saved.
+    """
+    values = {}
+    for name in KNOBS:
+        value = str(saved[name]).strip() if saved and name in saved else None
+        if value is None or (name in SELECTOR_OPTIONS and value not in SELECTOR_OPTIONS[name]):
+            value = _default(name)
+        values[name] = value
+    return values
 
 
-def build_algo_from_values(values):
-    """The :class:`config.algo.Algo` that :func:`form_values` describes."""
+def build_algo(values):
+    """The :class:`config.algo.Algo` that :func:`form_values` describes; raises :class:`ConfigError`."""
     knobs = {}
-    for name, _label, _description in PREVIEW_CONFIGS:
+    for name in KNOBS:
         value = values[name]
-        if name == "BANNED_BUILDINGS":
+        if name in SET_KNOBS:
             knobs[name.lower()] = frozenset(parse_set(value))
             continue
-        if name in SELECTOR_OPTIONS:
-            value = selector_value(name, value)
+        if name in SELECTOR_OPTIONS and value not in SELECTOR_OPTIONS[name]:
+            raise ConfigError(name)
         try:
             knobs[name.lower()] = int(value)
         except ValueError as exc:
-            raise ConfigError(f"{name} must be an integer.") from exc
+            raise ConfigError(name) from exc
     return replace(ALGO, **knobs)
 
 
-def default_algo_tab_config():
+def default_state():
+    """The Preview and Build tabs' saved state as a fresh install has it."""
+    return {"seed": str(DEFAULT_SEED), "algo": form_values()}
+
+
+def form_spec():
+    """The form the page builds: the header's selectors and the advanced panel's groups."""
+
+    def field(name):
+        if name in SET_KNOBS:
+            return {"name": name, "kind": "text"}
+        minimum, maximum = SLIDER_RANGES.get(name, (-99999, 99999))
+        return {"name": name, "kind": "slider", "min": minimum, "max": maximum}
+
     return {
-        "seed": str(DEFAULT_SEED),
-        "algo": form_values(),
+        "selectors": [{"name": name, "options": list(options)} for name, options in SELECTOR_OPTIONS.items()],
+        "groups": [{"code": code, "fields": [field(name) for name in names]} for code, names in GROUPS],
     }
 
 
 # --- The tabs
 
 SEED_MAX = 2_147_483_647
-
-
-def form_spec():
-    """The algorithm form the page builds: header selectors and the advanced groups."""
-    selectors = [
-        {
-            "name": name,
-            "label": PREVIEW_CONFIG_LOOKUP[name][0],
-            "description": PREVIEW_CONFIG_LOOKUP[name][1],
-            "options": list(options),
-        }
-        for name, (options, _human) in SELECTOR_OPTIONS.items()
-    ]
-    groups = []
-    for title, names in PREVIEW_CONFIG_GROUPS:
-        fields = []
-        for name in names:
-            label, description = PREVIEW_CONFIG_LOOKUP[name]
-            field = {"name": name, "label": label, "description": description}
-            if name == "BANNED_BUILDINGS":
-                field.update(kind="text", placeholder="e.g. 001, 002")
-            else:
-                minimum, maximum = PREVIEW_SLIDER_RANGES.get(name, (-99999, 99999))
-                field.update(kind="slider", min=minimum, max=maximum)
-            fields.append(field)
-        groups.append({"title": title, "fields": fields})
-    return {"selectors": selectors, "groups": groups}
 
 
 def _new_seed(current_seed):
@@ -199,20 +155,20 @@ class AlgoTabs:
         self._world_path = world_path
 
     def state(self):
-        saved = self._settings.get("algo") or default_algo_tab_config()
+        saved = self._settings.get("algo") or default_state()
         return {**saved, "algo": form_values(saved.get("algo"))}
 
     def save(self, state):
         self._settings.set("algo", state)
 
     def reset(self):
-        state = default_algo_tab_config()
+        state = default_state()
         self.save(state)
         return state
 
     def _algo(self, state):
         try:
-            return build_algo_from_values(form_values(state.get("algo"))), None
+            return build_algo(form_values(state.get("algo"))), None
         except ConfigError as exc:
             return None, {"code": "invalid_config", "detail": str(exc)}
 
@@ -250,7 +206,7 @@ class AlgoTabs:
         try:
             int(seed)
         except ValueError:
-            return {"error": {"code": "invalid_seed", "detail": "Seed must be an integer."}}
+            return {"error": {"code": "invalid_seed"}}
         algo, error = self._algo(state)
         if error:
             return {"error": error}

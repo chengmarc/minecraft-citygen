@@ -41,13 +41,77 @@ const TEXT = {
   mapFailed: "Failed to load world preview.",
   mapLoading: "Loading world preview...",
   mapDrawing: "Drawing your world from above. You can already pan, zoom, and choose your area.",
+  autoVersion: "Auto",
+  // Each run bar's segments, by the codes gui/progress.py gives them.
+  segments: {
+    extract: {
+      scan_roads: "Scan roads",
+      road_pieces: "Road pieces",
+      road_sheet: "Road sheet",
+      scan_builds: "Scan buildings",
+      build_pieces: "Building pieces",
+      build_sheet: "Building sheet",
+    },
+    preview: {
+      road_pieces: "Road pieces",
+      build_pieces: "Building pieces",
+      road_layout: "Road layout",
+      city_layout: "City layout",
+    },
+    build: {
+      roads: "Roads",
+      placement: "Placement",
+      buildings: "Buildings",
+      schematic: "Schematic",
+      render: "Render",
+      world: "World",
+    },
+  },
+  // The algorithm form, by the knob names and codes in gui/form.py.
+  form: {
+    more: "More settings",
+    fewer: "Fewer settings",
+    knobs: {
+      FINE: ["City size", "Changes the footprint of the finished city."],
+      GAP_MIXED: ["Road density", "Controls how tightly Avenues and Streets are packed across the city."],
+      GAP_BIG: ["Avenue spacing", "Higher values create fewer Avenues."],
+      PAD_BIG: ["Avenue edge margin", "Keeps Avenues farther from the edge of the city."],
+      GAP_SMALL: ["Street spacing", "Lower values create more Streets."],
+      PAD_SMALL: ["Street edge margin", "Keeps Streets farther from the edge of the city."],
+      N_BIG_CORNERS: ["Avenue turns", "Adds more bends to Avenues."],
+      N_BIG_TEES: ["Avenue T-junctions", "Adds more T-junctions to Avenues."],
+      N_SMALL_CORNERS: ["Street turns", "Adds more bends to Streets."],
+      N_SMALL_TEES: ["Street T-junctions", "Adds more T-junctions to Streets."],
+      BANNED_BUILDINGS: ["Skip building IDs", "Optional comma-separated building IDs to leave out of generation."],
+      TYPE1_TOP_FIT_CHOICES: ["House style variety", "Higher values mix in more different standard house designs."],
+      LANDMARK_SPACING: ["Landmark spacing", "Minimum fine-cell distance between landmark footprints."],
+    },
+    // A selector's options, by value.
+    options: {
+      FINE: { 40: "Very Small", 60: "Small", 80: "Normal", 100: "Big", 120: "Very Big" },
+      GAP_MIXED: { 3: "Very Dense", 4: "Dense", 5: "Normal", 6: "Sparse", 7: "Very Sparse" },
+    },
+    // Named for screen readers only: no heading is shown.
+    groups: {
+      spacing: "Avenue and Street spacing",
+      shape: "Avenue and Street shape",
+      buildings: "Building mix",
+    },
+    placeholders: {
+      BANNED_BUILDINGS: "e.g. 001, 002",
+    },
+  },
 };
 
 // An error's code from Python, as the dialog's title and message, given its tab's text and its detail.
 const ERRORS = {
   running: (tab) => ({ title: tab.running[0], message: tab.running[1] }),
-  invalid_config: (tab, detail) => ({ title: tab.invalidConfig, message: detail }),
-  invalid_seed: (_tab, detail) => ({ title: "Invalid seed", message: detail }),
+  // ``detail`` is the knob's name.
+  invalid_config: (tab, detail) => ({
+    title: tab.invalidConfig,
+    message: `"${TEXT.form.knobs[detail]?.[0] ?? detail}" isn't a valid setting.`,
+  }),
+  invalid_seed: () => ({ title: "Invalid seed", message: "Seed must be an integer." }),
   worlds_folder: (_tab, detail) => ({ title: "Could not open worlds folder", message: detail }),
   not_a_world: (_tab, detail) => ({
     title: "Not an MC world",

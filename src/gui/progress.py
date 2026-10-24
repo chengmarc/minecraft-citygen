@@ -36,15 +36,16 @@ WEIGHTS = {
     "build": BUILD_CONSTRUCT_WEIGHTS + [BUILD_RENDER_WEIGHT, BUILD_WORLD_WEIGHT],
 }
 
-# The run bar's segments, in step order: each one's label, and how many of the tab's weights it spans. Build groups construction's eight steps: road network and grid; catalog and placements; assembly, voxels and
+# The run bar's segments, in step order: each one's code (text.js names it), and how many of the tab's weights it
+# spans. Build groups construction's eight steps: road network and grid; catalog and placements; assembly, voxels and
 # trees; the schematic. Then the render and the world export.
 SEGMENTS = {
     "extract": [
-        ("Scan roads", 1), ("Road pieces", 1), ("Road sheet", 1),
-        ("Scan buildings", 1), ("Building pieces", 1), ("Building sheet", 1),
+        ("scan_roads", 1), ("road_pieces", 1), ("road_sheet", 1),
+        ("scan_builds", 1), ("build_pieces", 1), ("build_sheet", 1),
     ],
-    "preview": [("Road pieces", 1), ("Building pieces", 1), ("Road layout", 1), ("City layout", 1)],
-    "build": [("Roads", 2), ("Placement", 2), ("Buildings", 3), ("Schematic", 1), ("Render", 1), ("World", 1)],
+    "preview": [("road_pieces", 1), ("build_pieces", 1), ("road_layout", 1), ("city_layout", 1)],
+    "build": [("roads", 2), ("placement", 2), ("buildings", 3), ("schematic", 1), ("render", 1), ("world", 1)],
 }
 
 # How far toward the next milestone the bar creeps, and how often it moves.
@@ -90,14 +91,14 @@ def weighted_item_milestone(weights, index, completed, total, maximum):
 
 
 def segment_spans(weights, segments):
-    """Each ``(label, count)`` segment as ``{"label", "start", "end"}``, in percent of the whole run."""
+    """Each ``(code, count)`` segment as ``{"code", "start", "end"}``, in percent of the whole run."""
     total = sum(weights) or 1
     spans = []
     index = 0
     done = 0
-    for label, count in segments:
+    for code, count in segments:
         size = sum(weights[index:index + count])
-        spans.append({"label": label, "start": done * 100 / total, "end": (done + size) * 100 / total})
+        spans.append({"code": code, "start": done * 100 / total, "end": (done + size) * 100 / total})
         index += count
         done += size
     return spans
