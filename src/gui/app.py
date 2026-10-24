@@ -19,7 +19,7 @@ from pathlib import Path
 if __package__ in (None, ""):   # run as a script, as the release build does: src/ onto the path
     sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from config.path import APP_NAME  # noqa: E402
+from config.path import APP_ICON, APP_NAME  # noqa: E402
 from gui import files, server  # noqa: E402
 from gui.bridge import Api  # noqa: E402
 
@@ -200,7 +200,7 @@ def main(argv: list[str] | None = None) -> int:
 
             window.events.shown += style_title_bar
         threading.Thread(target=_warm_up_renderer, daemon=True).start()
-        icon = files.APP_ICON_PATH if os.path.isfile(files.APP_ICON_PATH) else None
+        icon = APP_ICON if os.path.isfile(APP_ICON) else None
         # Private mode (the default) keeps WebView2's data in a temp folder: writable even from the Store's install.
         webview.start(debug=options.debug, icon=icon)
         return 0

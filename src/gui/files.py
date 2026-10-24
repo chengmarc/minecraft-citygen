@@ -1,4 +1,4 @@
-"""Files the GUI owns on disk: the window icon, saved settings, timings, and artifact cleanup."""
+"""Files the GUI owns on disk: saved settings, timings, the startup error log, and artifact cleanup."""
 
 from __future__ import annotations
 
@@ -8,13 +8,11 @@ import shutil
 import subprocess
 import sys
 
-from config.path import APP_DATA, APP_ICON, BUILDS_CONTACT_SHEET, ROADS_CONTACT_SHEET, ROOT, SAVES, SETTINGS
+from config.path import APP_DATA, BUILDS_CONTACT_SHEET, ROADS_CONTACT_SHEET, ROOT, SAVES, SETTINGS
 
 
-APP_ICON_PATH = APP_ICON
 STARTUP_ERROR_LOG = os.path.join(ROOT, "application_startup_error.log")
 PROGRESS_TIMINGS_PATH = os.path.join(APP_DATA, "progress_timings.json")
-SAVED_GUI_CONFIG_PATH = SETTINGS
 
 
 def extracted_assets_ready():
@@ -22,10 +20,10 @@ def extracted_assets_ready():
 
 
 def load_saved_gui_config():
-    if not os.path.exists(SAVED_GUI_CONFIG_PATH):
+    if not os.path.exists(SETTINGS):
         return {}
     try:
-        with open(SAVED_GUI_CONFIG_PATH, "r", encoding="utf-8") as fh:
+        with open(SETTINGS, "r", encoding="utf-8") as fh:
             data = json.load(fh)
     except (OSError, ValueError):
         return {}
@@ -33,8 +31,8 @@ def load_saved_gui_config():
 
 
 def save_saved_gui_config(config):
-    os.makedirs(os.path.dirname(SAVED_GUI_CONFIG_PATH), exist_ok=True)
-    with open(SAVED_GUI_CONFIG_PATH, "w", encoding="utf-8") as fh:
+    os.makedirs(os.path.dirname(SETTINGS), exist_ok=True)
+    with open(SETTINGS, "w", encoding="utf-8") as fh:
         json.dump(config, fh, indent=2)
 
 
@@ -80,7 +78,7 @@ def clear_pipeline_artifacts():
     if not os.path.isdir(APP_DATA):
         return
     keep = os.path.normpath(SAVES)
-    settings = os.path.normpath(SAVED_GUI_CONFIG_PATH)
+    settings = os.path.normpath(SETTINGS)
     for entry in os.listdir(APP_DATA):
         path = os.path.join(APP_DATA, entry)
         normalized = os.path.normpath(path)
