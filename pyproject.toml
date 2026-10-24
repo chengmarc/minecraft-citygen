@@ -23,15 +23,14 @@ build = [
 ]
 
 [project.gui-scripts]
-citygen = "gui.app:main"
+citygen = "citygen.gui.app:main"
 
 [tool.setuptools.package-data]
-config = ["default_world/*", "default_world/**/*", "color_render.csv"]
-gui = ["static/*", "static/icons/*"]
+citygen = ["data/*", "data/**/*", "gui/static/*", "gui/static/**/*"]
 
 [tool.setuptools.package-dir]
 "" = "src"
 
 [tool.setuptools.packages.find]
 where = ["src"]
-include = ["config", "config.*", "engine", "engine.*", "gui", "gui.*", "pipeline", "pipeline.*"]
+include = ["citygen", "citygen.*"]

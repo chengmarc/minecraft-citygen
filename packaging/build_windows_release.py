@@ -48,26 +48,14 @@ ICON_SVG = SRC_ROOT / "app-icon.svg"  # the one icon source; everything else is 
 ICON_PNG = BUILD_ROOT / "app-icon.png"
 ICON_ICO = BUILD_ROOT / "app-icon.ico"  # also bundled as the window icon (config.path.APP_ICON)
 ICON_PNG_SIZE = 1024
-DEFAULT_WORLD_DIR = SRC_ROOT / "config" / "default_world"
+DATA_DIR = SRC_ROOT / "citygen" / "data"
+DEFAULT_WORLD_DIR = DATA_DIR / "default_world"
 WORLD_ICON = DEFAULT_WORLD_DIR / "icon.png"  # tracked: the save-list icon of the bundled world and every exported city
 WORLD_ICON_SIZE = 64
 README_FILES = (
     (ROOT / "README.md", "README.md"),
 )
 WINDOWS_DATA_SEP = ";"
-PIPELINE_STAGE_HIDDEN_IMPORTS = (
-    "pipeline.01_roads.extract",
-    "pipeline.01_roads.render",
-    "pipeline.02_builds.extract",
-    "pipeline.02_builds.render",
-    "pipeline.03_preview.roads",
-    "pipeline.03_preview.builds",
-    "pipeline.03_preview.grid",
-    "pipeline.03_preview.city",
-    "pipeline.04_city.construct",
-    "pipeline.04_city.render",
-    "pipeline.05_world.export",
-)
 
 
 def load_version() -> str:
@@ -176,28 +164,20 @@ def base_pyinstaller_command(*, onefile: bool, icon_path: Path | None) -> list[s
         str(BUILD_ROOT / "spec"),
         "--paths",
         str(SRC_ROOT),
-        "--collect-submodules",
-        "pipeline",
-        "--collect-submodules",
-        "gui",
         "--add-data",
-        data_arg(SRC_ROOT / "gui" / "static", "gui/static"),
+        data_arg(SRC_ROOT / "citygen" / "gui" / "static", "citygen/gui/static"),
         "--add-data",
         data_arg(ICON_ICO, "."),
         "--add-data",
         data_arg(ICON_SVG, "."),
         "--add-data",
-        data_arg(SRC_ROOT / "config" / "color_render.csv", "config"),
-        "--add-data",
-        data_arg(DEFAULT_WORLD_DIR, "config/default_world"),
+        data_arg(DATA_DIR, "citygen/data"),
     ]
-    for module_name in PIPELINE_STAGE_HIDDEN_IMPORTS:
-        command.extend(["--hidden-import", module_name])
     if onefile:
         command.append("--onefile")
     if icon_path is not None and icon_path.exists():
         command.extend(["--icon", str(icon_path)])
-    command.append(str(SRC_ROOT / "gui" / "app.py"))
+    command.append(str(SRC_ROOT / "application.pyw"))
     return command
 
 

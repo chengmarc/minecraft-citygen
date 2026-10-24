@@ -5,17 +5,16 @@ import numpy as np
 import nbtlib
 from nbtlib import Byte, Compound, String
 
-from config.algo import CELL
-from engine.schematic import building as building_schem
-from engine.schematic import city as city_grid
-from engine.schematic import road as road_schem
-from engine.schematic.reader import (
+from citygen.settings import CELL
+from citygen import schem
+from citygen import build
+from citygen.schem import (
     decode_schem_block_entities,
     decode_schem_cells,
     decode_schem_offset,
 )
-from engine.schematic.transform import Tile, BlockEntity, rot_state, rot_tile
-from engine.schematic.writer import (
+from citygen.schem import Tile, BlockEntity, rot_state, rot_tile
+from citygen.schem import (
     sponge_schem_from_cells,
     sponge_schem_from_grid,
     write_sponge_schem_cells,
@@ -170,9 +169,9 @@ def test_road_asset_loaders_keep_network_tiles_fill_props_and_ground_fill_separa
         V2612,
         offset=(0, -3, 0),
     )
-    tiles = road_schem.load_tiles(str(tmp_path))
-    fillers = road_schem.load_fillers(str(tmp_path))
-    ground_fill = road_schem.load_ground_fill_tile(str(tmp_path))
+    tiles = build.load_tiles(str(tmp_path))
+    fillers = build.load_fillers(str(tmp_path))
+    ground_fill = build.load_ground_fill_tile(str(tmp_path))
 
     assert set(tiles) == {"02"}
     assert tiles["02"].ground_offset == 1
@@ -188,10 +187,10 @@ def test_building_assembly_uses_piece_shape_not_placement_type(tmp_path):
     write_sponge_schem_cells([[["minecraft:top"]]], str(tmp_path / "001_top.schem"), V2612)
     write_sponge_schem_cells([[["minecraft:whole"]]], str(tmp_path / "002.schem"), V2612)
 
-    stacked = building_schem.assemble(str(tmp_path), "001", 2, {
+    stacked = schem.assemble(str(tmp_path), "001", 2, {
         "001": {"type": 1, "pieces": {"bottom": 1, "middle": 1, "top": 1}},
     })
-    whole = building_schem.assemble(str(tmp_path), "002", 0, {
+    whole = schem.assemble(str(tmp_path), "002", 0, {
         "002": {"type": 2, "pieces": {"whole": 1}},
     })
 
@@ -209,10 +208,10 @@ def test_building_pieces_are_reread_after_a_new_extraction(tmp_path):
     # and every later read must see the new building, not the cached old one.
     catalog = {"001": {"type": 1, "pieces": {"whole": 1}}}
     write_sponge_schem_cells([[["minecraft:quartz_block"]]], str(tmp_path / "001.schem"), V2612)
-    assert building_schem.assemble(str(tmp_path), "001", 0, catalog).cells == [[["minecraft:quartz_block"]]]
+    assert schem.assemble(str(tmp_path), "001", 0, catalog).cells == [[["minecraft:quartz_block"]]]
 
     write_sponge_schem_cells([[["minecraft:mossy_cobblestone"]]], str(tmp_path / "001.schem"), V2612)
-    assert building_schem.assemble(str(tmp_path), "001", 0, catalog).cells == [[["minecraft:mossy_cobblestone"]]]
+    assert schem.assemble(str(tmp_path), "001", 0, catalog).cells == [[["minecraft:mossy_cobblestone"]]]
 
 
 # --- city ground fill ----------------------------------------------------
@@ -220,7 +219,7 @@ def test_building_pieces_are_reread_after_a_new_extraction(tmp_path):
 def _fill_first_cell(tile, **kwargs):
     """Ground-fill a 12x12 grid with ``ground_y=3``; return its first cell's columns."""
     grid = np.zeros((6, 12, 12), dtype=np.int16)
-    city_grid.place_ground_fill(
+    build.place_ground_fill(
         grid,
         {"minecraft:air": 0},
         np.zeros((12, 12), dtype=bool),
@@ -230,7 +229,7 @@ def _fill_first_cell(tile, **kwargs):
         ground_fill_tile=tile,
         **kwargs,
     )
-    z0 = x0 = city_grid.PLAYER_ANCHOR_MARGIN
+    z0 = x0 = build.PLAYER_ANCHOR_MARGIN
     return grid[:, z0:z0 + CELL, x0:x0 + CELL]
 
 

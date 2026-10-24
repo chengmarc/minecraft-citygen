@@ -4,10 +4,10 @@ import unittest
 
 import numpy as np
 
-from config.algo import Algo
-from engine.core import city_layout as C
-from engine.core import road_network as R
-from engine.render.isometric import render_grid_visible_iso
+from citygen.settings import Algo
+from citygen import city_layout as C
+from citygen import road_network as R
+from citygen.isometric import render_grid_visible_iso
 
 
 def _network_snapshot(net):
@@ -148,7 +148,7 @@ if __name__ == "__main__":
 def test_render_colors_prefer_vivid_columns_and_fall_back_to_sampled_rgb(tmp_path, monkeypatch):
     # color_render.csv contract: renders use vivid_*; a row whose vivid_* is blank
     # (e.g. hand-added) still renders with its sampled r/g/b instead of vanishing.
-    from engine.render import palette
+    from citygen import blocks as palette
 
     csv_path = tmp_path / "colors.csv"
     csv_path.write_text(
@@ -165,7 +165,7 @@ def test_render_colors_prefer_vivid_columns_and_fall_back_to_sampled_rgb(tmp_pat
 def test_contact_sheet_is_transparent_between_thumbnails(tmp_path):
     from PIL import Image
 
-    from engine.render.contact_sheet import write_contact
+    from citygen.contact_sheet import write_contact
 
     thumb = Image.new("RGBA", (20, 20), (200, 40, 40, 255))
     sheet = write_contact([("a", thumb)], tmp_path / "sheet.png", cols=2, cell_w=60, cell_h=60)
@@ -177,7 +177,7 @@ def test_contact_sheet_is_transparent_between_thumbnails(tmp_path):
 def test_city_render_is_trimmed_to_what_is_drawn_with_its_margin():
     from PIL import Image
 
-    from engine.render.isometric import trim_to_content
+    from citygen.isometric import trim_to_content
 
     image = Image.new("RGBA", (200, 300), (0, 0, 0, 0))
     image.paste((90, 120, 60, 255), (40, 150, 160, 280))   # the city, low on a tall canvas

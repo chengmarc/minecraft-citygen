@@ -1,12 +1,12 @@
-"""Configuration layer: version compatibility and where the app keeps its data."""
+"""Settings and paths: version compatibility, and where the app keeps its data."""
 import os
 import tempfile
 import unittest
 from pathlib import Path
 from unittest import mock
 
-from config import path as config_path
-from config import world as config_world
+from citygen import paths as config_path
+from citygen import settings as config_world
 
 
 # --- version detection ----------------------------------------------------
@@ -16,7 +16,7 @@ class VersionTests(unittest.TestCase):
         self.assertEqual(config_world.HARD_FLOOR_DATA_VERSION, 4790)  # MC 26.1.2
 
     def test_detect_world_data_version_reads_bundled_world(self):
-        world = Path(__file__).resolve().parents[1] / "src" / "config" / "default_world"
+        world = Path(__file__).resolve().parents[1] / "src" / "citygen" / "data" / "default_world"
         self.assertEqual(config_world.detect_world_data_version(str(world)), 4790)  # bundled world is 26.1.2
 
     def test_detect_world_data_version_is_none_without_a_readable_level_dat(self):
@@ -33,8 +33,7 @@ class CheckoutRootTests(unittest.TestCase):
     def test_a_checkout_keeps_its_data_at_the_repo_root_not_beside_the_entry_script(self):
         with tempfile.TemporaryDirectory() as repo:
             src = Path(repo) / "src"
-            for package in ("config", "engine", "gui", "pipeline"):
-                (src / package).mkdir(parents=True)
+            (src / "citygen").mkdir(parents=True)
             (src / "application.pyw").touch()
             (Path(repo) / "pyproject.toml").touch()
 

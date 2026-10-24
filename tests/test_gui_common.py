@@ -8,7 +8,7 @@ import tempfile
 import unittest
 from unittest import mock
 
-from gui import files
+from citygen.gui import files
 
 
 class ClearPipelineArtifactsTests(unittest.TestCase):

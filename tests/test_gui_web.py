@@ -5,24 +5,21 @@ The bridge is plain Python, so these run without pywebview or a window.
 
 from __future__ import annotations
 
-import importlib
 import io
-import os
 import re
 import tempfile
 import unittest
 from pathlib import Path
 from unittest import mock
 
-from config.algo import ALGO
-from config.world import BlockRegion
-from gui import algo as algo_module
-from gui import app as app_module
-from gui import extract as extract_module
-from gui import files, progress, server, world_map
-from gui import form as form_module
-from gui.bridge import Api
-from pipeline import stages
+from citygen import build, extract, preview, topdown
+from citygen.gui import app as app_module
+from citygen.gui import city_tabs as algo_module
+from citygen.gui import extract_tab as extract_module
+from citygen.gui import files, progress, server
+from citygen.gui import form as form_module
+from citygen.gui.bridge import Api
+from citygen.settings import ALGO, BlockRegion
 
 
 class _ImmediateThread:
@@ -93,40 +90,34 @@ class LaunchGatingTests(_ApiTestCase):
 
 
 class ExtractTests(_ApiTestCase):
-    def test_extraction_run_passes_source_and_regions_to_road_then_build_stages(self):
+    def test_extraction_run_passes_the_source_world_and_its_areas(self):
         calls = []
-        progress_stage = {"roads": stages.ROADS_EXTRACT, "builds": stages.BUILDS_EXTRACT}
 
-        def fake_stage(name, *, progress=None, **params):
-            calls.append((name, params))
-            progress(progress_stage[name], 1, 1, "done")
+        def fake_run(save, road_box, build_types, on_progress):
+            calls.append((save, road_box, build_types))
+            on_progress("scan_roads", 1, 1)
+            on_progress("build_sheet", 1, 1)
 
-        with mock.patch.object(extract_module.services, "run_stage", side_effect=fake_stage):
+        with mock.patch.object(extract, "run", side_effect=fake_run):
             self.assertEqual(self.api.run_extract(), {})
 
-        self.assertEqual([name for name, _params in calls], ["roads", "builds"])
-        roads, builds = calls[0][1], calls[1][1]
-        world_path = extract_module.default_extraction_tab_config()["world_path"]
-        self.assertEqual(set(roads), {"save", "road_box"})
-        self.assertEqual(set(builds), {"save", "build_types"})
-        self.assertEqual(roads["save"], world_path)
-        self.assertEqual(builds["save"], world_path)
-        self.assertIsInstance(roads["road_box"], BlockRegion)
-        self.assertEqual([region.build_type for region in builds["build_types"]], [1, 2])
+        save, road_box, build_types = calls[0]
+        self.assertEqual(save, extract_module.default_extraction_tab_config()["world_path"])
+        self.assertIsInstance(road_box, BlockRegion)
+        self.assertEqual([region.build_type for region in build_types], [1, 2])
         self.assertEqual(self.event_names()[0], "progress")
         self.assertEqual(self.event_names()[-2:], ["done", "finished"])
 
     def test_each_rendered_piece_is_shown_as_it_lands(self):
         with tempfile.TemporaryDirectory() as renders:
-            def fake_stage(name, *, progress=None, **params):
-                if name == "roads":
-                    Path(renders, "07_small_1x1_I.png").write_bytes(b"png")
-                    progress(stages.ROADS_RENDER, 1, 3, "07_small_1x1_I")
-                    progress(stages.ROADS_RENDER, 3, 3, "Rendered road contact sheet.")
+            def fake_run(_save, _road_box, _build_types, on_progress):
+                Path(renders, "07_small_1x1_I.png").write_bytes(b"png")
+                on_progress("road_sheet", 1, 3, "07_small_1x1_I")
+                on_progress("road_sheet", 3, 3)
 
             with (
                 mock.patch.object(extract_module, "ROADS_RENDERS", renders),
-                mock.patch.object(extract_module.services, "run_stage", side_effect=fake_stage),
+                mock.patch.object(extract, "run", side_effect=fake_run),
             ):
                 self.api.run_extract()
 
@@ -204,7 +195,7 @@ class ExtractTests(_ApiTestCase):
         meta = {"x0": 0, "x1": 255, "z0": 0, "z1": 255, "step": 2}
         png = Path(files.APP_DATA) / "world_preview" / "x.png"
         with (
-            mock.patch.object(world_map, "cached_topdown_preview", return_value=(png, meta)),
+            mock.patch.object(topdown, "cached_topdown_preview", return_value=(png, meta)),
             mock.patch.object(extract_module, "image", return_value={"src": "/files/world_preview/x.png?v=1"}),
         ):
             self.assertEqual(self.api.load_world_map(), {})
@@ -220,7 +211,7 @@ class ExtractTests(_ApiTestCase):
             return Path("map.png"), meta
 
         with (
-            mock.patch.object(world_map, "cached_topdown_preview", side_effect=fake_cached),
+            mock.patch.object(topdown, "cached_topdown_preview", side_effect=fake_cached),
             mock.patch.object(extract_module, "image", return_value={"src": "/files/x.png?v=1"}),
         ):
             self.api.load_world_map()
@@ -228,45 +219,39 @@ class ExtractTests(_ApiTestCase):
         partial = [payload for event, payload in self.events if event == "worldMap" and payload.get("partial")]
         self.assertEqual(partial[0]["drawn"], 0.25)
 
-    def test_extract_progress_reaches_each_phase_end(self):
-        value, soft_target, _detail = progress.extract_progress(stages.ROADS_RENDER, "render", 4, 4)
+    def test_extract_progress_reaches_each_step_end_without_creeping_past_it(self):
+        value, soft_target, _detail = progress.bar("extract", "road_sheet", 4, 4)
+        next_value, _soft, _detail = progress.bar("extract", "scan_builds", 0, 1)
 
-        end = progress.weighted_milestone(progress.WEIGHTS["extract"], 3, progress.PROGRESS_BAR_SCALE)
-        self.assertEqual(value, end)
+        self.assertEqual(value, next_value)
         self.assertIsNone(soft_target)
-
-    def test_an_extraction_step_scans_while_its_detail_says_so(self):
-        self.assertEqual(progress.extract_phase(stages.ROADS_EXTRACT, f"{stages.SCANNING} road region..."), "scan")
-        self.assertEqual(progress.extract_phase(stages.ROADS_EXTRACT, "07_small_1x1_I"), "export")
-        self.assertEqual(progress.extract_phase(stages.ROADS_EXTRACT, None), "export")
 
 
 class PreviewTests(_ApiTestCase):
-    def test_preview_run_passes_a_fresh_seed_and_the_algo_to_the_service(self):
+    def test_preview_run_passes_a_fresh_seed_and_the_algo(self):
         calls = {}
 
-        def fake_preview(stage_key, *, seed, algo, progress=None):
-            calls.update(stage=stage_key, seed=seed, algo=algo)
-            progress(stages.PREVIEW_CITY, 2, 2, "Rendered city layout preview")
+        def fake_preview(seed, algo, on_progress):
+            calls.update(seed=seed, algo=algo)
+            on_progress("city_layout", 2, 2)
 
         state = form_module.default_state()
-        with mock.patch.object(algo_module.services, "run_stage", side_effect=fake_preview):
+        with mock.patch.object(preview, "run", side_effect=fake_preview):
             answer = self.api.run_preview(state)
 
-        self.assertEqual(calls["stage"], "preview")
         self.assertEqual(calls["algo"], ALGO)
-        self.assertNotEqual(calls["seed"], state["seed"])
-        self.assertEqual(answer["state"]["seed"], calls["seed"])
-        self.assertEqual(self.saved[-1]["algo"]["seed"], calls["seed"])
+        self.assertNotEqual(str(calls["seed"]), state["seed"])
+        self.assertEqual(answer["state"]["seed"], str(calls["seed"]))
+        self.assertEqual(self.saved[-1]["algo"]["seed"], str(calls["seed"]))
         self.assertEqual(self.event_names(), ["progress", "progress", "done", "finished"])
         self.assertEqual(set(self.last("done")["images"]), {"grid", "city"})
 
     def test_the_road_layout_shows_as_soon_as_its_step_is_done(self):
-        def fake_preview(stage_key, *, seed, algo, progress=None):
-            progress(stages.PREVIEW_GRID, 1, 1, "Rendered road layout preview")
-            progress(stages.PREVIEW_CITY, 2, 2, "Rendered city layout preview")
+        def fake_preview(_seed, _algo, on_progress):
+            on_progress("road_layout", 1, 1)
+            on_progress("city_layout", 2, 2)
 
-        with mock.patch.object(algo_module.services, "run_stage", side_effect=fake_preview):
+        with mock.patch.object(preview, "run", side_effect=fake_preview):
             self.api.run_preview(form_module.default_state())
 
         self.assertEqual(self.event_names(), ["progress", "progress", "partial", "progress", "done", "finished"])
@@ -275,15 +260,15 @@ class PreviewTests(_ApiTestCase):
     def test_invalid_config_returns_the_error_without_running(self):
         state = form_module.default_state()
         state["algo"]["GAP_BIG"] = "lots"
-        with mock.patch.object(algo_module.services, "run_stage") as run_stage:
+        with mock.patch.object(preview, "run") as run:
             answer = self.api.run_preview(state)
 
-        run_stage.assert_not_called()
+        run.assert_not_called()
         self.assertEqual(answer["error"], {"code": "invalid_config", "detail": "GAP_BIG"})
         self.assertEqual(self.events, [])
 
-    def test_stage_failure_reports_and_still_finishes(self):
-        with mock.patch.object(algo_module.services, "run_stage", side_effect=RuntimeError("no roads")):
+    def test_a_failed_run_reports_and_still_finishes(self):
+        with mock.patch.object(preview, "run", side_effect=RuntimeError("no roads")):
             self.api.run_preview(form_module.default_state())
 
         self.assertEqual(self.event_names(), ["progress", "failed", "finished"])
@@ -301,23 +286,19 @@ class BuildTests(_ApiTestCase):
 
     def test_build_run_exports_city_using_the_selected_source_world(self):
         calls = []
-        progress_stage = {"city": stages.CITY_RENDER, "world": stages.WORLD_EXPORT}
 
-        def record(name, *, seed, progress=None, **params):
-            calls.append((name, seed, params))
-            progress(progress_stage[name], 1, 1, "done")
+        def fake_build(seed, algo, save, on_progress):
+            calls.append((seed, algo, save))
+            on_progress("construct", 5, 8, "Composing voxel grid")
+            on_progress("world", 1, 1)
 
         state = {**form_module.default_state(), "seed": "9"}
-        with (
-            mock.patch.object(algo_module, "source_data_version", return_value=4790),
-            mock.patch.object(algo_module.services, "run_stage", side_effect=record),
-        ):
+        with mock.patch.object(build, "run", side_effect=fake_build):
             self.assertEqual(self.api.run_build(state), {})
 
-        self.assertEqual([name for name, _seed, _params in calls], ["city", "world"])
-        self.assertEqual(calls[0][2], {"algo": ALGO, "data_version": 4790})
-        self.assertEqual(calls[1][2], {"save": "C:/mc/source-world"})
-        self.assertEqual([seed for _name, seed, _params in calls], ["9", "9"])
+        self.assertEqual(calls, [(9, ALGO, "C:/mc/source-world")])
+        details = [payload.get("detail") for event, payload in self.events if event == "progress"]
+        self.assertIn("Composing voxel grid", details)
         self.assertEqual(self.event_names()[-2:], ["done", "finished"])
 
 
@@ -325,8 +306,7 @@ class BuildBlueprintTests(_ApiTestCase):
     def test_the_previewed_city_stands_in_until_the_render(self):
         state = {**form_module.default_state(), "seed": "9"}
         with (
-            mock.patch.object(algo_module, "source_data_version", return_value=4790),
-            mock.patch.object(algo_module.services, "run_stage"),
+            mock.patch.object(build, "run"),
             mock.patch.object(algo_module, "image", return_value={"src": "/files/03_preview/city/seed_9.png?v=1"}),
         ):
             self.api.run_build(state)
@@ -338,8 +318,7 @@ class BuildBlueprintTests(_ApiTestCase):
     def test_no_blueprint_without_a_preview_of_this_seed(self):
         state = {**form_module.default_state(), "seed": "9"}
         with (
-            mock.patch.object(algo_module, "source_data_version", return_value=4790),
-            mock.patch.object(algo_module.services, "run_stage"),
+            mock.patch.object(build, "run"),
             mock.patch.object(algo_module, "image", return_value={"missing": "seed_9.png"}),
         ):
             self.api.run_build(state)
@@ -347,15 +326,11 @@ class BuildBlueprintTests(_ApiTestCase):
         self.assertNotIn("partial", self.event_names())
 
 
-class ProgressWeightMirrorTests(unittest.TestCase):
-    """Progress weights are hand-tuned per pipeline step; keep one per step."""
+class ProgressTests(unittest.TestCase):
+    """Progress weights are hand-tuned, one per step a run reports."""
 
-    def test_preview_weights_match_preview_stage_steps(self):
-        self.assertEqual(len(progress.PREVIEW_STEP_WEIGHTS), len(stages.STAGES["preview"]))
-
-    def test_construct_weights_match_construct_steps(self):
-        construct = importlib.import_module(stages.CITY_CONSTRUCT)
-        self.assertEqual(len(progress.BUILD_CONSTRUCT_WEIGHTS), len(construct.STEPS))
+    def test_construct_has_a_weight_per_step(self):
+        self.assertEqual(len(progress.CONSTRUCT_WEIGHTS), len(build.STEPS))
 
     def test_run_bar_segments_span_every_weight_once(self):
         for tab, segments in progress.SEGMENTS.items():
@@ -369,21 +344,20 @@ class ProgressWeightMirrorTests(unittest.TestCase):
                 self.assertEqual(before["end"], after["start"])
 
     def test_build_progress_names_only_the_construction_steps(self):
-        _value, _soft, detail = progress.build_progress(stages.CITY_CONSTRUCT, 5, 8, "Composing voxel grid")
-        _value, _soft, render_detail = progress.build_progress(stages.CITY_RENDER, 0, 1, "done")
+        _value, _soft, detail = progress.bar("build", "construct", 5, 8, "Composing voxel grid")
+        _value, _soft, render_detail = progress.bar("build", "render", 0, 1, "done")
 
         self.assertEqual(detail, "Composing voxel grid")
         self.assertIsNone(render_detail)
 
     def test_preview_progress_creeps_toward_the_next_item(self):
-        value, soft_target, _status = progress.preview_progress(stages.PREVIEW_CITY, 1, 2)
+        start, _soft, _detail = progress.bar("preview", "city_layout", 0, 2)
+        value, soft_target, detail = progress.bar("preview", "city_layout", 1, 2)
+        end, _soft, _detail = progress.bar("preview", "city_layout", 2, 2)
 
-        step = [step.module for step in stages.STAGES["preview"]].index(stages.PREVIEW_CITY)
-        expected = progress.weighted_item_milestone(
-            progress.PREVIEW_STEP_WEIGHTS, step, 1, 2, progress.PROGRESS_BAR_SCALE,
-        )
-        self.assertAlmostEqual(value, expected)
+        self.assertAlmostEqual(value, (start + end) / 2)
         self.assertGreater(soft_target, value)
+        self.assertEqual(detail, progress.PREVIEW_DETAILS["city_layout"])
 
 
 class ServerTests(unittest.TestCase):
@@ -452,11 +426,11 @@ class WorldPreviewTests(unittest.TestCase):
 
             reported = []
             with (
-                mock.patch.object(world_map, "WORLD_PREVIEW_CACHE", cache),
-                mock.patch.object(world_map, "render_topdown_preview", side_effect=fake_render),
-                mock.patch.object(world_map, "_preview_region_mtime", return_value=mtime),
+                mock.patch.object(topdown, "WORLD_PREVIEW_CACHE", cache),
+                mock.patch.object(topdown, "render_topdown_preview", side_effect=fake_render),
+                mock.patch.object(topdown, "_preview_region_mtime", return_value=mtime),
             ):
-                png, _meta = world_map.cached_topdown_preview("C:/mc/world", on_partial=lambda p, m: reported.append(p))
+                png, _meta = topdown.cached_topdown_preview("C:/mc/world", on_partial=lambda p, m: reported.append(p))
             return png, reported
 
         with tempfile.TemporaryDirectory() as cache:

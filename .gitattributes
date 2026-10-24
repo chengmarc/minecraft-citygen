@@ -2,10 +2,10 @@
 # Never edit them by hand: change the source and rerun the generator named above each group.
 
 # scripts/update_render_colors.py --version 26.1.2 (downloads MC's client JAR)
-src/config/color_render.csv linguist-generated
+src/citygen/data/color_render.csv linguist-generated
 
 # packaging/build_windows_release.py --icon-only (renders src/app-icon.svg with Edge)
-src/config/default_world/icon.png linguist-generated
+src/citygen/data/default_world/icon.png linguist-generated
 
 # store-listing/generator/render.py (renders logo.html and shots.html with Edge)
 store-listing/*.png linguist-generated

@@ -15,29 +15,14 @@ def load_build_script():
     return module
 
 
-def test_pyinstaller_command_includes_numbered_pipeline_stage_modules():
-    build = load_build_script()
-
-    command = build.base_pyinstaller_command(onefile=False, icon_path=None)
-
-    hidden = {value for flag, value in zip(command, command[1:]) if flag == "--hidden-import"}
-    assert set(build.PIPELINE_STAGE_HIDDEN_IMPORTS) <= hidden
-
-
-def test_pyinstaller_command_bundles_the_page():
+def test_pyinstaller_command_bundles_the_page_and_the_data():
     build = load_build_script()
 
     command = build.base_pyinstaller_command(onefile=False, icon_path=None)
 
     data = {value for flag, value in zip(command, command[1:]) if flag == "--add-data"}
-    assert build.data_arg(build.SRC_ROOT / "gui" / "static", "gui/static") in data
-
-
-def test_pyinstaller_hidden_imports_mirror_the_stage_registry():
-    from pipeline.stages import STAGES
-
-    stage_modules = {step.module for steps in STAGES.values() for step in steps}
-    assert set(load_build_script().PIPELINE_STAGE_HIDDEN_IMPORTS) == stage_modules
+    assert build.data_arg(build.SRC_ROOT / "citygen" / "gui" / "static", "citygen/gui/static") in data
+    assert build.data_arg(build.DATA_DIR, "citygen/data") in data
 
 
 def test_msix_version_appends_the_zero_revision_the_store_requires():
@@ -66,9 +51,9 @@ def test_msix_manifest_renders_to_valid_xml_with_the_store_identity(monkeypatch)
 
 
 def test_packaging_mirrors_the_app_name_from_config():
-    # The build script and installer don't import config.path, so they repeat the
+    # The build script and installer don't import citygen.paths, so they repeat the
     # name; a rename that misses one ships an installer for a missing .exe.
-    from config.path import APP_NAME
+    from citygen.paths import APP_NAME
 
     build = load_build_script()
     iss = (Path(__file__).resolve().parents[1] / "packaging" / "windows_installer.iss").read_text(encoding="utf-8")

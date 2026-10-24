@@ -11,10 +11,10 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from engine.render import topdown
-from engine.render.topdown import region_world_bounds
-from engine.world.anvil_world_reader import World
-from engine.world.marker_extract import (
+from citygen import topdown
+from citygen.topdown import region_world_bounds
+from citygen.world_reader import World
+from citygen.extract import (
     extract_cuboid,
     group_marker_cuboids,
     marker_blocks_in_region,
@@ -125,9 +125,8 @@ class AnvilWorldReaderTests(unittest.TestCase):
 def test_gold_markers_pair_with_closest_unused_diamonds():
     golds = [(10, 64, 10), (100, 64, 10)]
     diamonds = [(6, 70, 6), (90, 80, 2)]
-    cuboids, skipped = pair_gold_diamond_markers(golds, diamonds)
+    cuboids = pair_gold_diamond_markers(golds, diamonds)
 
-    assert skipped == []
     assert cuboids == [
         ((6, 10, 64, 70, 6, 10), (10, 64, 10)),
         ((90, 100, 64, 80, 2, 10), (100, 64, 10)),
@@ -135,18 +134,12 @@ def test_gold_markers_pair_with_closest_unused_diamonds():
 
 
 def test_gold_markers_ignore_diamonds_outside_north_west_up_direction():
-    cuboids, skipped = pair_gold_diamond_markers(
+    cuboids = pair_gold_diamond_markers(
         golds=[(10, 64, 10)],
         diamonds=[(9, 63, 9), (11, 70, 9), (9, 70, 11)],
     )
 
     assert cuboids == []
-    assert skipped == [
-        (10, 10, "no north/west/up diamond marker available for gold (10, 64, 10)"),
-        (9, 9, "unused diamond marker (9, 63, 9)"),
-        (11, 9, "unused diamond marker (11, 70, 9)"),
-        (9, 11, "unused diamond marker (9, 70, 11)"),
-    ]
 
 
 def test_build_cuboids_group_by_vertical_alignment():
@@ -157,9 +150,8 @@ def test_build_cuboids_group_by_vertical_alignment():
         ((0, 8, 70, 79, 0, 8), (8, 70, 8)),
     ]
 
-    components, skipped = group_marker_cuboids(cuboids, emeralds=[(9, 63, 9), (29, 70, 9)])
+    components = group_marker_cuboids(cuboids, emeralds=[(9, 63, 9), (29, 70, 9)])
 
-    assert skipped == []
     assert len(components) == 2
     assert components[0].cuboids == [
         (0, 8, 64, 69, 0, 8),
@@ -171,22 +163,20 @@ def test_build_cuboids_group_by_vertical_alignment():
 
 
 def test_build_cuboids_skip_invalid_layer_counts():
-    components, skipped = group_marker_cuboids([
+    components = group_marker_cuboids([
         ((0, 8, 64, 69, 0, 8), (8, 64, 8)),
         ((0, 8, 70, 79, 0, 8), (8, 70, 8)),
     ], emeralds=[(9, 64, 9)])
 
     assert components == []
-    assert skipped == [(0, 0, "expected 1 or 3 vertically aligned layer(s), got 2")]
 
 
 def test_build_cuboids_require_emerald_adjacent_to_bottom_gold():
-    components, skipped = group_marker_cuboids([
+    components = group_marker_cuboids([
         ((0, 8, 64, 69, 0, 8), (8, 64, 8)),
     ], emeralds=[(10, 64, 10)])
 
     assert components == []
-    assert skipped == [(0, 0, "no horizontally adjacent emerald marker for gold (8, 64, 8)")]
 
 
 class _SectionMarkerWorld:
@@ -269,7 +259,7 @@ if __name__ == "__main__":
 
 
 def test_topdown_preview_shows_the_picture_so_far_while_it_draws(monkeypatch):
-    from config.world import SAVE
+    from citygen.settings import SAVE
 
     monkeypatch.setattr(topdown, "PARTIAL_EVERY_SECONDS", 0)   # a snapshot after every row but the last
     snapshots = []
