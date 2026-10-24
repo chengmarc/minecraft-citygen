@@ -150,8 +150,6 @@ def default_algo_tab_config():
 
 # --- The tabs
 
-PREVIEW_STEPS = {step.module: (index, step.label) for index, step in enumerate(stages.STAGES["preview"])}
-
 SEED_MAX = 2_147_483_647
 
 
@@ -182,66 +180,11 @@ def form_spec():
     return {"selectors": selectors, "groups": groups}
 
 
-def preview_progress(stage, completed, total):
-    """``(value, soft_target, detail)`` for a Stage 3 step, in PROGRESS_BAR_SCALE units; the detail is the step's name."""
-    step_index, step_label = PREVIEW_STEPS[stage]
-    total_f = float(total) if total > 0 else 1.0
-    completed_f = max(0.0, min(float(completed), total_f))
-
-    def milestone(done):
-        return progress.weighted_item_milestone(
-            progress.PREVIEW_STEP_WEIGHTS, step_index, done, total_f, progress.PROGRESS_BAR_SCALE,
-        )
-
-    value = milestone(completed_f)
-    soft_target = None
-    if completed_f < total_f:
-        soft_target = progress.soft_target(value, milestone(completed_f + 1.0), "preview")
-    return value, soft_target, step_label
-
-
-def build_progress(stage, completed, total, label=""):
-    """``(value, soft_target, detail)`` for a Stage 4 or 5 step, in PROGRESS_BAR_SCALE units.
-
-    Construction names the step it's starting in ``label``, which is the detail; the other steps have none.
-    """
-    scale = progress.PROGRESS_BAR_SCALE
-    construct_weights = progress.GENERATION_CONSTRUCT_WEIGHTS
-    weights = progress.GENERATION_WEIGHTS
-    n = int(completed)
-    detail = label if stage == stages.CITY_CONSTRUCT and label and n < len(construct_weights) else None
-
-    if stage == stages.CITY_CONSTRUCT:
-        value = progress.weighted_milestone(weights, n, scale)
-        soft_target = None
-        if n < len(construct_weights):
-            next_value = progress.weighted_milestone(weights, n + 1, scale)
-            soft_target = progress.soft_target(value, next_value, "generation")
-        return value, soft_target, detail
-
-    segment = len(construct_weights) if stage == stages.CITY_RENDER else len(construct_weights) + 1
-    t = float(total) if total > 0 else 1.0
-    value = progress.weighted_item_milestone(weights, segment, n, t, scale)
-    soft_target = None
-    if n < total:
-        next_value = progress.weighted_item_milestone(weights, segment, n + 1, t, scale)
-        soft_target = progress.soft_target(value, next_value, "generation")
-    return value, soft_target, detail
-
-
 def _new_seed(current_seed):
     seed = str(random.randint(0, SEED_MAX))
     while seed == current_seed:
         seed = str(random.randint(0, SEED_MAX))
     return seed
-
-
-def _build_timing_key(event):
-    return {
-        stages.CITY_CONSTRUCT: "construct",
-        stages.CITY_RENDER: "render",
-        stages.WORLD_EXPORT: "export",
-    }.get(event["stage"])
 
 
 class AlgoTabs:
@@ -286,7 +229,7 @@ class AlgoTabs:
 
         def job(report):
             def on_progress(stage, completed, total, _label):
-                report(*preview_progress(stage, completed, total), creep="preview")
+                report(*progress.preview_progress(stage, completed, total))
                 if stage == stages.PREVIEW_GRID and total and completed >= total:   # ready well before the city
                     self._runner.show("preview", {"grid": image(grid_preview_path(seed))})
 
@@ -313,27 +256,19 @@ class AlgoTabs:
             return {"error": error}
         save = self._world_path()
         data_version = source_data_version(save)
-        timing = progress.ProgressTimingRecorder()
-        timing.start()
+        timing = progress.ProgressTimingRecorder("build")
 
         def job(report):
             def on_progress(stage, completed, total, label):
                 timing.record(stage, completed, total, label)
-                report(*build_progress(stage, completed, total, label))
+                report(*progress.build_progress(stage, completed, total, label))
 
             services.run_stage("city", seed=seed, algo=algo, data_version=data_version, progress=on_progress)
             services.run_stage("world", seed=seed, save=save, progress=on_progress)
             return seed
 
         def on_success(seed):
-            files.save_progress_timing("generation", timing.finish(
-                phase_key=_build_timing_key,
-                weights={
-                    "construct": list(progress.GENERATION_CONSTRUCT_WEIGHTS),
-                    "render": progress.GENERATION_RENDER_WEIGHT,
-                    "export": progress.GENERATION_WORLD_WEIGHT,
-                },
-            ))
+            files.save_progress_timing("build", timing.finish())
             return {"images": {"city": image(city_render_path(seed))}}
 
         self._runner.start("build", job, on_success=on_success)
