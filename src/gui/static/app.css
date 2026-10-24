@@ -33,7 +33,6 @@
   --accent-pressed: #26620f;
   --accent-soft: #e6f4da;
   --accent-border: #a9d98a;
-  --accent-disabled: #c8d3bb;
   --accent-text: #2d6a12;
   /* Dirt */
   --dirt-top: #b67a3f;
@@ -81,7 +80,8 @@ h2, h3, p { margin: 0; }
 [hidden] { display: none !important; }
 :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
-/* --- Icons: the SVGs in icons/, line drawings on a 24px grid, used as masks so they take the text colour. */
+/* --- Icons: the SVGs in icons/, line drawings on a 24px grid with a 2.8 stroke, used as masks so they take the text
+   colour. */
 .icon {
   display: inline-block;
   flex: none;
@@ -386,24 +386,27 @@ input[readonly]:hover, input[readonly]:focus { border-color: var(--border); box-
 }
 .btn:active:not(:disabled) { transform: translateY(1px); }
 
-/* Primary: a grass block's top, a lighter edge above, a deeper one below. */
+/* Primary: grass, a gentle fall from light to deep, its edge a darker green rather than an outline, and its top
+   catching the light. Its own layer, so Windows smooths its white text in grey, not ClearType's colour fringes,
+   which show on saturated green. */
 .btn.primary {
-  background: linear-gradient(var(--accent-top), var(--accent));
-  border-color: var(--accent-hover);
+  background: linear-gradient(#52b225, #3f961e);
+  border-color: rgba(38, 98, 15, 0.5);
   color: #fff;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.28), var(--glow-green);
-  text-shadow: 0 1px 0 rgba(38, 98, 15, 0.35);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.25), inset 0 -1px 0 rgba(38, 98, 15, 0.15), var(--glow-green);
+  will-change: transform;
 }
 .btn.primary:hover:not(:disabled) {
-  background: linear-gradient(#66c934, var(--accent-hover));
+  background: linear-gradient(#5bbd2c, #43991f);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.28), 0 2px 4px rgba(38, 98, 15, 0.3), 0 10px 24px -6px rgba(61, 146, 29, 0.5);
 }
 .btn.primary:active:not(:disabled) { background: var(--accent-pressed); box-shadow: inset 0 2px 3px rgba(0, 0, 0, 0.2); }
+/* Not yet: the window's own muted surface, its label still readable. */
 .btn.primary:disabled {
-  background: var(--accent-disabled);
-  border-color: var(--accent-disabled);
+  background: var(--surface-muted);
+  border-color: var(--border);
+  color: var(--muted);
   box-shadow: none;
-  text-shadow: none;
 }
 
 .btn.secondary {
@@ -417,7 +420,7 @@ input[readonly]:hover, input[readonly]:focus { border-color: var(--border); box-
 .btn.secondary:active:not(:disabled) { background: var(--surface-muted); }
 .btn.secondary:disabled { color: var(--muted); opacity: 0.55; box-shadow: none; }
 
-.btn.big { gap: 10px; height: 54px; min-width: 176px; padding: 0 24px; font-size: 22px; }
+.btn.big { gap: 6px; height: 54px; min-width: 176px; padding: 0 24px; border-radius: var(--radius-md); font-size: 22px; font-weight: 700; }
 .btn.big .icon { width: 30px; height: 30px; }
 
 /* The advanced form's disclosure. */
