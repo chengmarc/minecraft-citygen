@@ -37,6 +37,7 @@ PART_LAYERS = {
     },
     "gui": {
         "files": 0,
+        "form": 0,
         "progress": 0,
         "server": 0,
         "world_map": 0,

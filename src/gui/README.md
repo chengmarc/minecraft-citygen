@@ -21,7 +21,7 @@ pythonw src/application.pyw --debug  # with the page's developer tools (F12)
 
 Once the field exists on `Algo`
 ([config guide](../config/README.md#add-a-generation-knob)), in
-[algo.py](algo.py):
+[form.py](form.py):
 
 1. Add `"<FIELD_UPPER>"` to `KNOBS`. The default comes from `config.algo.ALGO`.
 2. Add the name to one of the `GROUPS` — the advanced panel only builds fields
@@ -119,7 +119,8 @@ src/application.pyw  ->  gui.app:main  (window + server + bridge)  ->  static/ (
 | [session.py](session.py) | Saved settings, and background runs that report to the page |
 | [extract.py](extract.py) | **Extract**: source world, sample areas and their defaults, the version selector, Stages 1–2 |
 | [world_map.py](world_map.py) | The region map's picture: the world's top-down preview, rendered once per world and cached |
-| [algo.py](algo.py) | **Preview** (Stage 3) and **Build** (Stages 4–5): the algorithm form, form values → `Algo` |
+| [algo.py](algo.py) | **Preview** (Stage 3) and **Build** (Stages 4–5) |
+| [form.py](form.py) | The algorithm form both share: its knobs, groups and ranges, form values → `Algo` |
 | [progress.py](progress.py) | Each tab's run bar: per-step weights, pipeline progress → bar position, creep, segments, and timing records |
 | [files.py](files.py) | Files the GUI owns (below), artifact cleanup, opening folders |
 | [static/](static/) | The page: `index.html`, `app.css` (the colours), `text.js` (the words), `components.js`, `region.js`, `app.js`, and the button icons, SVGs in `icons/` |

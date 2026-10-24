@@ -11,9 +11,11 @@ from __future__ import annotations
 import threading
 
 from gui import files, progress
-from gui.algo import AlgoTabs, form_spec
+from gui.algo import AlgoTabs
 from gui.extract import ExtractTab
+from gui.form import form_spec
 from gui.session import Runner, Settings
+
 
 class Api:
     """Every call the page can make. Methods return plain JSON-able values."""
