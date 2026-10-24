@@ -20,27 +20,27 @@ class ConfigError(ValueError):
 
 
 PREVIEW_CONFIGS = [
-    ("FINE", "City Size", "Changes the footprint of the finished city."),
-    ("GAP_MIXED", "Road Density", "Controls how tightly Avenues and Streets are packed across the city."),
-    ("GAP_BIG", "Avenue Spacing", "Higher values create fewer Avenues."),
-    ("PAD_BIG", "Avenue Edge Margin", "Keeps Avenues farther from the edge of the city."),
-    ("GAP_SMALL", "Street Spacing", "Lower values create more Streets."),
-    ("PAD_SMALL", "Street Edge Margin", "Keeps Streets farther from the edge of the city."),
-    ("N_BIG_CORNERS", "Avenue Turns", "Adds more bends to Avenues."),
-    ("N_BIG_TEES", "Avenue T-Junctions", "Adds more T-junctions to Avenues."),
-    ("N_SMALL_CORNERS", "Street Turns", "Adds more bends to Streets."),
-    ("N_SMALL_TEES", "Street T-Junctions", "Adds more T-junctions to Streets."),
-    ("BANNED_BUILDINGS", "Skip Building IDs", "Optional comma-separated building IDs to leave out of generation."),
-    ("TYPE1_TOP_FIT_CHOICES", "House Style Variety", "Higher values mix in more different standard house designs."),
-    ("LANDMARK_SPACING", "Landmark Spacing", "Minimum fine-cell distance between landmark footprints."),
+    ("FINE", "City size", "Changes the footprint of the finished city."),
+    ("GAP_MIXED", "Road density", "Controls how tightly Avenues and Streets are packed across the city."),
+    ("GAP_BIG", "Avenue spacing", "Higher values create fewer Avenues."),
+    ("PAD_BIG", "Avenue edge margin", "Keeps Avenues farther from the edge of the city."),
+    ("GAP_SMALL", "Street spacing", "Lower values create more Streets."),
+    ("PAD_SMALL", "Street edge margin", "Keeps Streets farther from the edge of the city."),
+    ("N_BIG_CORNERS", "Avenue turns", "Adds more bends to Avenues."),
+    ("N_BIG_TEES", "Avenue T-junctions", "Adds more T-junctions to Avenues."),
+    ("N_SMALL_CORNERS", "Street turns", "Adds more bends to Streets."),
+    ("N_SMALL_TEES", "Street T-junctions", "Adds more T-junctions to Streets."),
+    ("BANNED_BUILDINGS", "Skip building IDs", "Optional comma-separated building IDs to leave out of generation."),
+    ("TYPE1_TOP_FIT_CHOICES", "House style variety", "Higher values mix in more different standard house designs."),
+    ("LANDMARK_SPACING", "Landmark spacing", "Minimum fine-cell distance between landmark footprints."),
 ]
 
 PREVIEW_CONFIG_LOOKUP = {name: (label, description) for name, label, description in PREVIEW_CONFIGS}
 
 PREVIEW_CONFIG_GROUPS = [
-    ("Avenue and Street Spacing", ["GAP_BIG", "PAD_BIG", "GAP_SMALL", "PAD_SMALL"]),
-    ("Avenue and Street Shape", ["N_BIG_CORNERS", "N_BIG_TEES", "N_SMALL_CORNERS", "N_SMALL_TEES"]),
-    ("Building Mix", ["TYPE1_TOP_FIT_CHOICES", "LANDMARK_SPACING", "BANNED_BUILDINGS"]),
+    ("Avenue and Street spacing", ["GAP_BIG", "PAD_BIG", "GAP_SMALL", "PAD_SMALL"]),
+    ("Avenue and Street shape", ["N_BIG_CORNERS", "N_BIG_TEES", "N_SMALL_CORNERS", "N_SMALL_TEES"]),
+    ("Building mix", ["TYPE1_TOP_FIT_CHOICES", "LANDMARK_SPACING", "BANNED_BUILDINGS"]),
 ]
 
 PREVIEW_SLIDER_RANGES = {
@@ -75,8 +75,8 @@ CLEARANCE_OPTIONS = {
 # Config values the header row exposes as labelled selectors rather than raw
 # integers. Maps config name -> (label->value options, human-facing name).
 SELECTOR_OPTIONS = {
-    "FINE": (CANVAS_SIZE_OPTIONS, "City Size"),
-    "GAP_MIXED": (CLEARANCE_OPTIONS, "Grid Density"),
+    "FINE": (CANVAS_SIZE_OPTIONS, "City size"),
+    "GAP_MIXED": (CLEARANCE_OPTIONS, "Road density"),
 }
 
 

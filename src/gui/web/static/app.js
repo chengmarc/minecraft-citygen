@@ -11,12 +11,14 @@ const citygen = {
 };
 window.citygen = citygen;
 
-/** One tab's status line, progress bar and action button, and whether it's running. */
+/** One tab's run bar (status, percent, progress), its action button, and whether it's running. */
 class TabRun {
-  constructor(page, button) {
-    this.status = $(".run .status", page);
-    this.progress = new ProgressBar($(".run .progress", page));
+  constructor(page, button, step) {
+    this.runbar = $(".runbar", page);
+    this.status = $(".status", this.runbar);
+    this.progress = new ProgressBar($(".progress", this.runbar), $(".percent", this.runbar));
     this.button = button;
+    this.step = step;
     this.running = false;
     this.gate = { ready: false, tooltip: "" };
   }
@@ -45,6 +47,7 @@ class TabRun {
   }
 
   progressEvent(payload) {
+    this.runbar.classList.add("active");
     if (payload.value === 0 && payload.softTarget == null) this.progress.start();
     else this.progress.milestone(payload);
     this.status.textContent = payload.status;
@@ -53,6 +56,7 @@ class TabRun {
   done(payload) {
     this.progress.finish();
     this.status.textContent = payload.status;
+    this.step.classList.add("done");
   }
 
   failed(payload) {
@@ -68,7 +72,7 @@ class TabRun {
 }
 
 function setUpTabs() {
-  const tabs = $$(".tab");
+  const tabs = $$(".step");
   for (const tab of tabs) {
     tab.addEventListener("click", () => {
       for (const other of tabs) {
@@ -88,13 +92,15 @@ async function start() {
   const viewers = Object.fromEntries(
     ["roads", "builds", "grid", "city-preview", "city-render"].map((name) => [name, new ImageViewer($(`#viewer-${name}`))]),
   );
+  const steps = Object.fromEntries($$(".step").map((step) => [step.dataset.tab, step]));
   const runs = {
-    extract: new TabRun($("#extract"), $("#extract-button")),
-    preview: new TabRun($("#preview"), $('#preview [data-action="run"]')),
-    build: new TabRun($("#build"), $('#build [data-action="run"]')),
+    extract: new TabRun($("#extract"), $("#extract-button"), steps.extract),
+    preview: new TabRun($("#preview"), $('#preview [data-action="run"]'), steps.preview),
+    build: new TabRun($("#build"), $('#build [data-action="run"]'), steps.build),
   };
   const setGates = (gates) => {
     for (const [tab, gate] of Object.entries(gates)) runs[tab].setGate(gate);
+    steps.extract.classList.toggle("done", gates.preview.ready);   // the extracted assets are there
   };
 
   // --- Extract
@@ -102,7 +108,7 @@ async function start() {
   const sourceVersion = $("#source-version");
   const targetVersion = $("#target-version");
   const regionMap = new RegionMap($("#region-dialog"), api);
-  const areaTitles = { road: "Road Region Selector", house: "House Region Selector", landmark: "Landmark Region Selector" };
+  const areaTitles = { road: "Choose the road area", house: "Choose the house area", landmark: "Choose the landmark area" };
 
   const showExtraction = ({ extraction, gates }) => {
     if (document.activeElement !== worldPath) worldPath.value = extraction.worldPath;
@@ -112,7 +118,7 @@ async function start() {
     for (const card of $$(".area-card")) {
       const area = extraction.areas[card.dataset.area];
       const chip = $(".chip", card);
-      chip.textContent = area.selected ? "Selected" : "Not Selected";
+      chip.textContent = area.selected ? "Selected" : "Not selected";
       chip.classList.toggle("selected", area.selected);
       $(".area-detail", card).textContent = area.detail;
       $("button", card).disabled = !extraction.worldReady;
@@ -135,10 +141,13 @@ async function start() {
   $("#browse-button").addEventListener("click", async () => {
     const answer = await api.browse_world();
     if (answer.warning) showError(answer.warning);
-    if (answer.changed) {
+    if (answer.changed) {   // a new world: its artifacts were cleared, so nothing is done yet
       worldPath.value = answer.extraction.worldPath;
       viewers.roads.reset();
       viewers.builds.reset();
+      runs.extract.runbar.classList.remove("active");
+      steps.preview.classList.remove("done");
+      steps.build.classList.remove("done");
     }
     showExtraction(answer);
   });

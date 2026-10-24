@@ -59,9 +59,7 @@ class RegionMap {
       this.progress.root.hidden = true;
       this.meta = payload.meta;
       this.viewer.load(payload).then((shown) => {
-        if (!shown) return;
-        this.selectWorld(this.bounds.start, this.bounds.end);
-        this.status.textContent = "Hold Shift and drag to snap-select chunks.";
+        if (shown) this.selectWorld(this.bounds.start, this.bounds.end);   // the status then reads the selection
       });
     } else {
       this.progress.set((payload.completed / Math.max(payload.total, 1)) * 100);
