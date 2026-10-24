@@ -495,8 +495,16 @@ class PageMirrorTests(unittest.TestCase):
             words = re.search(rf"{name}: \{{([^}}]*)\}}", text).group(1)
             self.assertEqual(re.findall(r"(\d+):", words), list(options), name)
 
+    def test_the_page_loads_every_script_and_stylesheet_it_has(self):
+        page = self.read("index.html")
+        linked = re.findall(r'<(?:script src|link rel="stylesheet" href)="([^"]+)"', page)
+        present = sorted(
+            path.relative_to(server.STATIC).as_posix() for path in server.STATIC.rglob("*") if path.suffix in (".js", ".css")
+        )
+        self.assertEqual(sorted(linked), present)
+
     def test_the_region_map_snaps_to_the_same_chunks(self):
-        self.assertIn(f"const CHUNK_SIZE = {extract_module.CHUNK_SIZE};", self.read("region.js"))
+        self.assertIn(f"const CHUNK_SIZE = {extract_module.CHUNK_SIZE};", self.read("region/region.js"))
 
     def test_the_window_reads_its_colours_from_the_page(self):
         for color in app_module.page_colors("app-bg", "sky", "sky-text"):

@@ -1,0 +1,66 @@
+/* The window is layered like the app icon: sky blue along the top (the brand and the steps), grass green for
+   everything you act on and everything that grows (the big buttons, focus, progress, what's done), and dirt brown
+   at the bottom (the strip of ground the window stands on, under the faint brown of its panels). New colours
+   should follow the same layers.
+   gui/app.py reads --sky, --sky-text and --app-bg from this file for the native title bar and the window behind the page:
+   keep them plain #rrggbb. */
+:root {
+  /* Sky */
+  --sky: #cfe4f8;
+  --sky-deep: #b9d8f4;
+  --sky-tab: #e6f1fc;
+  --sky-tab-hover: #f4f9fe;
+  --sky-border: #aecbe8;
+  --sky-text: #2f5274;
+  /* The faintest dirt brown for the window and its panels: nearly gray, just warm, so the green actions stand out. */
+  --app-bg: #f2f0ed;
+  --surface: #ffffff;
+  --surface-alt: #faf9f7;
+  --surface-panel: #f5f3f0;
+  --surface-muted: #e9e6e2;
+  --surface-sunken: #d8d3cc;
+  /* The canvas behind the renders: a sky, deeper at the top, nearly white at the bottom, for the city to float in. */
+  --canvas-top: #b8dbf7;
+  --canvas-bottom: #f1f8fe;
+  --border: #e0dbd4;
+  --border-strong: #c4bdb4;
+  --text: #2a221a;
+  --text-soft: #4a3e32;
+  --muted: #7a6d60;
+  /* Grass: the app icon's green, deep enough for white text. */
+  --accent-top: #5cbf2a;
+  --accent: #3d921d;
+  --accent-hover: #327c16;
+  --accent-pressed: #26620f;
+  --accent-soft: #e6f4da;
+  --accent-border: #a9d98a;
+  --accent-text: #2d6a12;
+  /* Dirt, and what's written on it. */
+  --dirt-top: #b67a3f;
+  --dirt: #8b5a2b;
+  --on-ground: #fdf6ec;
+  --on-ground-muted: rgba(253, 246, 236, 0.62);
+  --danger: #b4452f;
+  /* The area selected on the region map: a strong sky blue, since the map itself is mostly grass and dirt. */
+  --selection: rgb(30, 136, 229);
+  --selection-fill: rgba(30, 136, 229, 0.3);
+  /* Shadows are warm and lit from above, like everything else here: each depth a tight contact shadow under a
+     soft ambient one. --lift is the top edge catching the light, for surfaces that sit up off another. */
+  --shadow-sm: 0 1px 2px rgba(74, 52, 30, 0.10), 0 2px 6px rgba(74, 52, 30, 0.06);
+  --shadow-lg: 0 4px 12px rgba(74, 52, 30, 0.10), 0 24px 64px rgba(74, 52, 30, 0.18);
+  /* The viewers and the dock: one level, side by side on the window, so their shadow stays within the 12px gap
+     between them instead of falling on each other. */
+  --shadow-panel: 0 1px 2px rgba(74, 52, 30, 0.16), 0 3px 8px -2px rgba(74, 52, 30, 0.24);
+  --shadow-sunken: inset 0 1px 2px rgba(74, 52, 30, 0.10);
+  --lift: inset 0 1px 0 rgba(255, 255, 255, 0.7);
+  /* What a picture casts on the sky behind it: traced around its own outline, so every piece on a transparent sheet,
+     and the city itself, sits up off the canvas. */
+  --picture-shadow: drop-shadow(0 2px 3px rgba(47, 82, 116, 0.25));
+  --glow-green: 0 1px 2px rgba(38, 98, 15, 0.3), 0 6px 16px -4px rgba(61, 146, 29, 0.4);
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --ease: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --font: "Segoe UI Variable Text", "Segoe UI", system-ui, sans-serif;
+  --font-display: "Segoe UI Variable Display", "Segoe UI", system-ui, sans-serif;
+}
