@@ -12,7 +12,7 @@ from config.env import env_raw
 APP_NAME = "MC CityGen"
 SOURCE_ROOT = str(Path(__file__).resolve().parents[1])
 _REQUIRED_PACKAGE_DIRS = ("config", "engine", "gui", "pipeline")
-_REPO_MARKERS = (".git", "application.pyw", "pyproject.toml")
+_REPO_MARKERS = (".git", "pyproject.toml")
 
 
 def _norm(path: os.PathLike[str] | str) -> str:

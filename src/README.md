@@ -12,7 +12,7 @@ tree; each package guide covers one boundary.
 ```bash
 python -m pip install -e .
 python -m pytest -q
-pythonw application.pyw
+pythonw src/application.pyw
 ```
 
 Use pytest, not `unittest`: [tests/conftest.py](../tests/conftest.py) puts

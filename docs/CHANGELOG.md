@@ -35,6 +35,7 @@ The format is based on Keep a Changelog, and versions should match the release v
 - repo scripts are in `scripts/`, was `tools/`; the palette updater downloads the MC
   client JAR into `build/`
 - release notes are in `docs/release-notes/`, was `docs/release/`
+- a checkout runs with `pythonw src/application.pyw`, was at the repo root
 
 ## [1.3.0] - 2026-10-14
 
