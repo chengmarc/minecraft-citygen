@@ -210,6 +210,15 @@ async function start() {
   };
   Object.assign(citygen.handlers, {
     progress: (payload) => runs[payload.tab].progressEvent(payload),
+    // What a run has so far: images ready early, and Extract's pieces as each one is rendered.
+    partial: (payload) => {
+      for (const [name, image] of Object.entries(payload.images)) {
+        if (image.src) shows[payload.tab][name].load(image);
+      }
+    },
+    piece: (payload) => {
+      if (payload.src) shows[payload.tab][payload.viewer].addPiece(payload.index, payload.src);
+    },
     done: (payload) => {
       for (const [name, image] of Object.entries(payload.images)) shows[payload.tab][name].load(image);
       runs[payload.tab].done();

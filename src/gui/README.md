@@ -60,7 +60,8 @@ the prerequisite gates, and every run live in Python, which answers with facts
 and short codes (`{"code": "running"}`, a chunk count, the pipeline's own step
 names); every other word the page shows is in [static/text.js](static/text.js). The page calls the bridge and
 redraws from what it answers, or from the events a run sends: `progress`,
-`done`, `failed`, and `finished`, each naming its tab, through
+`done`, `failed`, and `finished`, each naming its tab (and on the way, `partial`
+and `piece` for what a run has ready so far), through
 `citygen.receive(event, payload)`. [bridge.py](bridge.py) imports
 nothing from pywebview, so `tests/test_gui_web.py` exercises it without a window.
 

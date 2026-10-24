@@ -9,6 +9,10 @@ words them):
 - ``done``: the images the run made;
 - ``failed``: the error's text, if it had any;
 - ``finished``: after either, with every tab's gate.
+
+On the way, a run can show what it has so far: ``partial`` swaps in images that are
+ready early (Preview's road layout, Build's blueprint), and ``piece`` adds one
+rendered piece to a viewer's growing gallery (Extract).
 """
 
 from __future__ import annotations
@@ -44,6 +48,14 @@ class Runner:
 
     def is_running(self, tab):
         return tab in self._running
+
+    def show(self, tab, images):
+        """Images a run has ready before it's done: ``{viewer: image}``, an image marked ``blueprint`` as a stand-in."""
+        self._emit("partial", {"tab": tab, "images": images})
+
+    def piece(self, tab, viewer, index, image):
+        """The ``index``-th (from 1) piece a run has rendered, for ``viewer``'s gallery; the first starts it afresh."""
+        self._emit("piece", {"tab": tab, "viewer": viewer, "index": index, **image})
 
     def start(self, tab, job, *, on_success):
         """Run ``job(report)``; ``report(value, soft_target, detail=None, creep=...)`` takes PROGRESS_BAR_SCALE units.
