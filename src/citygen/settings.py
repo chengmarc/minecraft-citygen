@@ -12,8 +12,6 @@ from typing import Iterable
 
 import nbtlib
 
-from citygen.paths import DEFAULT_WORLD
-
 CELL = 9  # simulation pixels and production blocks per fine cell; fixed by the asset geometry
 DEFAULT_SEED = 5
 
@@ -56,20 +54,6 @@ def _coerce_xyz_point(values: Iterable[int]) -> tuple[int, int, int]:
 
 
 @dataclass(frozen=True, slots=True)
-class VerticalRange:
-    start: int
-    end: int
-
-    def __post_init__(self) -> None:
-        lo, hi = sorted((int(self.start), int(self.end)))
-        object.__setattr__(self, "start", lo)
-        object.__setattr__(self, "end", hi)
-
-    def as_tuple(self) -> tuple[int, int]:
-        return self.start, self.end
-
-
-@dataclass(frozen=True, slots=True)
 class BlockRegion:
     x0: int
     x1: int
@@ -98,9 +82,6 @@ class BlockRegion:
         x0, y0, z0 = _coerce_xyz_point(start)
         x1, y1, z1 = _coerce_xyz_point(end)
         return cls(x0, x1, z0, z1, y0, y1)
-
-    def as_xyz_pair(self) -> tuple[tuple[int, int, int], tuple[int, int, int]]:
-        return (self.x0, self.y0, self.z0), (self.x1, self.y1, self.z1)
 
 
 @dataclass(frozen=True, slots=True)
@@ -157,14 +138,12 @@ def source_data_version(save_path: str | None) -> int:
     return max(resolved, HARD_FLOOR_DATA_VERSION)
 
 
-SAVE = DEFAULT_WORLD
+# The bundled world's three sample areas, as the (start, end) block corners the Extract tab saves. Only x and z
+# select: markers are found anywhere in BUILD_MARKER_Y_RANGE.
+SAMPLE_AREAS = {
+    "road": ((-80, 65, 16), (-17, 75, 127)),
+    "house": ((-384, 64, -192), (-17, 65, -17)),
+    "landmark": ((16, 64, -320), (351, 65, 143)),
+}
 
-ROAD_BOX = BlockRegion.from_xyz_pair((-80, 65, 16), (-17, 75, 127))
-
-# Build regions' y0/y1 is retained as catalog metadata; marker blocks define extracted geometry.
-BUILD_TYPES = (
-    BuildRegion(1, BlockRegion.from_xyz_pair((-384, 64, -192), (-17, 65, -17))),
-    BuildRegion(2, BlockRegion.from_xyz_pair((16, 64, -320), (351, 65, 143))),
-)
-
-BUILD_MARKER_Y_RANGE = VerticalRange(60, 230)
+BUILD_MARKER_Y_RANGE = (60, 230)

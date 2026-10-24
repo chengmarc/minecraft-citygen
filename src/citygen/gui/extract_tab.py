@@ -10,16 +10,11 @@ from citygen import step1_extract
 from citygen.tools import render_topdown
 from citygen.gui import files
 from citygen.gui.server import image
-from citygen.paths import BUILDS_CONTACT_SHEET, BUILDS_RENDERS, has_region_files, ROADS_CONTACT_SHEET, ROADS_RENDERS
+from citygen.paths import (
+    BUILDS_CONTACT_SHEET, BUILDS_RENDERS, DEFAULT_WORLD, has_region_files, ROADS_CONTACT_SHEET, ROADS_RENDERS,
+)
 from citygen.settings import (
-    BlockRegion,
-    BUILD_TYPES,
-    BuildRegion,
-    detect_world_data_version,
-    release_name_for,
-    RELEASE_NAMES,
-    ROAD_BOX,
-    SAVE,
+    BlockRegion, BuildRegion, detect_world_data_version, release_name_for, RELEASE_NAMES, SAMPLE_AREAS,
 )
 
 
@@ -29,38 +24,11 @@ from citygen.settings import (
 AUTO_VERSION = "auto"
 
 
-def region_to_xyz_pair(region):
-    if isinstance(region, BuildRegion):
-        return region.bounds.as_xyz_pair()
-    if isinstance(region, BlockRegion):
-        return region.as_xyz_pair()
-    raise TypeError(f"Unsupported region type: {type(region).__name__}")
-
-
-def first_build_region(build_types, build_type):
-    for region in build_types:
-        if region.build_type == build_type:
-            return region
-    return BuildRegion(build_type, BlockRegion(0, 0, 0, 0, 64, 64))
-
-
-def _serialize_xyz_pair(start, end):
-    return {
-        "start": list(start),
-        "end": list(end),
-    }
-
-
 def default_extraction_tab_config():
-    road_start, road_end = region_to_xyz_pair(ROAD_BOX)
-    house_start, house_end = region_to_xyz_pair(first_build_region(BUILD_TYPES, 1))
-    landmark_start, landmark_end = region_to_xyz_pair(first_build_region(BUILD_TYPES, 2))
     return {
-        "world_path": SAVE,
+        "world_path": DEFAULT_WORLD,
         "target_version": AUTO_VERSION,
-        "road": _serialize_xyz_pair(road_start, road_end),
-        "house": _serialize_xyz_pair(house_start, house_end),
-        "landmark": _serialize_xyz_pair(landmark_start, landmark_end),
+        **{key: {"start": list(start), "end": list(end)} for key, (start, end) in SAMPLE_AREAS.items()},
     }
 
 
@@ -92,7 +60,7 @@ def chunk_span(start, end):
     return [max_x // CHUNK_SIZE - min_x // CHUNK_SIZE + 1, max_z // CHUNK_SIZE - min_z // CHUNK_SIZE + 1]
 
 
-AREAS = ("road", "house", "landmark")
+AREAS = tuple(SAMPLE_AREAS)   # road, house, landmark
 
 # Extract's reports are coalesced into this many buckets per step, so the page isn't sent events that don't move its bar.
 PROGRESS_BUCKETS = 100
