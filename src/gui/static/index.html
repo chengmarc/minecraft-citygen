@@ -44,9 +44,13 @@
       <div class="dock-row">
         <div class="field">
           <label for="world-path">MC world</label>
-          <div class="input-group">
-            <input type="text" id="world-path" class="world-path" placeholder="Select an MC world folder" spellcheck="false">
-            <button type="button" class="btn secondary" id="browse-button"><i class="icon icon-folder"></i>Browse</button>
+          <div class="world-row">
+            <button type="button" class="btn secondary" id="default-world-button"
+                    title="Go back to the sample world that comes with MC CityGen, with its three areas."><i class="icon icon-home"></i>Default</button>
+            <div class="input-group">
+              <input type="text" id="world-path" class="world-path" placeholder="Select an MC world folder" spellcheck="false">
+              <button type="button" class="btn secondary" id="browse-button"><i class="icon icon-folder"></i>Browse</button>
+            </div>
           </div>
         </div>
         <div class="field">
@@ -136,11 +140,15 @@
       <p class="hints"><kbd>Shift</kbd> + drag to select <span>·</span> drag to pan <span>·</span> scroll to zoom</p>
     </header>
     <div class="map-frame">
-      <div class="progress" role="progressbar" aria-valuemin="0"><div class="progress-chunk"></div></div>
       <div class="viewer" id="viewer-region" data-icon="map" data-message="Loading world preview..."></div>
     </div>
     <footer class="dialog-foot">
-      <p class="status"></p>
+      <div class="foot-info">
+        <p class="status"></p>
+        <div class="runbar map-run"><span class="status"></span><span class="percent"></span>
+          <div class="progress" role="progressbar" aria-valuemin="0" aria-valuemax="100"><div class="progress-chunk"></div></div>
+        </div>
+      </div>
       <button type="button" class="btn secondary" data-action="cancel" autofocus>Cancel</button>
       <button type="button" class="btn primary" data-action="apply" disabled>Use selection</button>
     </footer>

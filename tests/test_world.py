@@ -11,6 +11,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
+from engine.render import topdown
 from engine.render.topdown import region_world_bounds
 from engine.world.anvil_world_reader import World
 from engine.world.marker_extract import (
@@ -265,3 +266,15 @@ class WorldPreviewTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+def test_topdown_preview_shows_the_picture_so_far_while_it_draws(monkeypatch):
+    from config.world import SAVE
+
+    monkeypatch.setattr(topdown, "PARTIAL_EVERY_SECONDS", 0)   # a snapshot after every row but the last
+    snapshots = []
+    image, meta = topdown.render_topdown_preview(SAVE, on_partial=lambda im, m: snapshots.append((im.size, m)))
+
+    assert snapshots
+    assert all(size == image.size and m == meta for size, m in snapshots)
+

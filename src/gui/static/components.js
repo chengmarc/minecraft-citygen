@@ -235,7 +235,7 @@ class ProgressBar {
   }
 
   set(value) {
-    this.root.classList.remove("indeterminate");
+    this.root.classList.toggle("running", value < 100);
     this.value = value;
     this.root.setAttribute("aria-valuenow", String(Math.round(value)));
     if (this.percent) this.percent.textContent = `${Math.floor(value)}%`;
@@ -252,13 +252,6 @@ class ProgressBar {
       segment.element.classList.toggle("active", active);
       if (active) this.activeIndex = index;
     });
-  }
-
-  indeterminate() {
-    this.stop();
-    if (this.chunk) this.chunk.style.width = "";
-    this.root.classList.add("indeterminate");
-    this.root.removeAttribute("aria-valuenow");
   }
 
   start() { this.stop(); this.set(0); }
@@ -313,9 +306,7 @@ class AlgoControls {
 
     for (const group of form.groups) {
       const fieldset = document.createElement("fieldset");
-      const legend = document.createElement("legend");
-      legend.textContent = group.title;
-      fieldset.append(legend);
+      fieldset.setAttribute("aria-label", group.title);   // no heading shown: the group is named for screen readers
       for (const spec of group.fields) fieldset.append(this.buildRow(prefix, spec, onChange));
       $(".advanced-inner", this.panel).append(fieldset);
     }

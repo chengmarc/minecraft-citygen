@@ -74,6 +74,9 @@ class Api:
     def browse_world(self):
         return {**self._extract.browse_world(), **self._extraction()}
 
+    def use_default_world(self):
+        return {**self._extract.use_default_world(), **self._extraction()}
+
     def area_bounds(self, key):
         return self._extract.area_bounds(key)
 

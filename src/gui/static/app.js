@@ -147,8 +147,8 @@ async function start() {
   });
   targetVersion.addEventListener("change", async () => showExtraction(await api.set_target_version(targetVersion.value)));
 
-  $("#browse-button").addEventListener("click", async () => {
-    const answer = await api.browse_world();
+  // Browse to a world, or back to the default one.
+  const worldAnswer = (answer) => {
     if (answer.warning) showError(describeError(answer.warning, "extract"));
     if (answer.changed) {   // a new world: its artifacts were cleared, so nothing is done yet
       worldPath.value = answer.extraction.worldPath;
@@ -159,7 +159,9 @@ async function start() {
       steps.build.classList.remove("done");
     }
     showExtraction(answer);
-  });
+  };
+  $("#browse-button").addEventListener("click", async () => worldAnswer(await api.browse_world()));
+  $("#default-world-button").addEventListener("click", async () => worldAnswer(await api.use_default_world()));
 
   for (const card of $$(".area-card")) {
     const key = card.dataset.area;

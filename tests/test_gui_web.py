@@ -158,6 +158,21 @@ class ExtractTests(_ApiTestCase):
         self.assertFalse(any(area["chunks"] for area in answer["extraction"]["areas"].values()))
         self.assertFalse(answer["gates"]["extract"])
 
+    def test_default_brings_back_the_bundled_world_and_its_areas(self):
+        self.picked = "C:/mc/new-world"
+        with (
+            mock.patch.object(extract_module, "has_region_files", return_value=True),
+            mock.patch.object(files, "clear_pipeline_artifacts") as clear,
+        ):
+            self.api.browse_world()
+            answer = self.api.use_default_world()
+
+        default = extract_module.default_extraction_tab_config()
+        self.assertTrue(answer["changed"])
+        self.assertEqual(answer["extraction"]["worldPath"], default["world_path"])
+        self.assertTrue(all(area["chunks"] for area in answer["extraction"]["areas"].values()))
+        self.assertEqual(clear.call_count, 2)   # the browse, then the default
+
     def test_cancelling_the_folder_picker_changes_nothing(self):
         answer = self.api.browse_world()
 
@@ -188,6 +203,23 @@ class ExtractTests(_ApiTestCase):
             self.assertEqual(self.api.load_world_map(), {})
 
         self.assertEqual(self.last("worldMap"), {"src": "/files/world_preview/x.png?v=1", "meta": meta})
+
+    def test_the_map_so_far_says_how_far_down_it_is_drawn(self):
+        meta = {"x0": 0, "x1": 63, "z0": 0, "z1": 63, "step": 1}
+
+        def fake_cached(save_path, *, on_progress, on_partial):
+            on_progress(1, 4)
+            on_partial(Path("partial.png"), meta)
+            return Path("map.png"), meta
+
+        with (
+            mock.patch.object(extract_module, "cached_topdown_preview", side_effect=fake_cached),
+            mock.patch.object(extract_module, "image", return_value={"src": "/files/x.png?v=1"}),
+        ):
+            self.api.load_world_map()
+
+        partial = [payload for event, payload in self.events if event == "worldMap" and payload.get("partial")]
+        self.assertEqual(partial[0]["drawn"], 0.25)
 
     def test_extract_progress_reaches_each_phase_end(self):
         value, soft_target = extract_module.extract_progress(stages.ROADS_RENDER, "render", 4, 4)
@@ -402,6 +434,36 @@ class ServerTests(unittest.TestCase):
 
 
 class WorldPreviewTests(unittest.TestCase):
+    def test_each_picture_so_far_is_its_own_file_and_a_new_render_clears_the_last(self):
+        from PIL import Image
+
+        meta = {"x0": 0, "x1": 15, "z0": 0, "z1": 15, "step": 1}
+
+        def render(cache, mtime, pictures):
+            def fake_render(save_path, *, on_progress=None, on_partial=None):
+                for _ in range(pictures):
+                    on_partial(Image.new("RGB", (16, 16)), meta)
+                return Image.new("RGB", (16, 16)), meta
+
+            reported = []
+            with (
+                mock.patch.object(extract_module, "WORLD_PREVIEW_CACHE", cache),
+                mock.patch.object(extract_module, "render_topdown_preview", side_effect=fake_render),
+                mock.patch.object(extract_module, "_preview_region_mtime", return_value=mtime),
+            ):
+                png, _meta = extract_module.cached_topdown_preview("C:/mc/world", on_partial=lambda p, m: reported.append(p))
+            return png, reported
+
+        with tempfile.TemporaryDirectory() as cache:
+            png, first = render(cache, 1.0, pictures=2)
+            self.assertEqual(len(set(first)), 2)                      # two pictures, two files
+            self.assertTrue(all(path.exists() for path in first))     # kept, for a page still fetching them
+            self.assertTrue(png.exists())
+
+            _png, second = render(cache, 2.0, pictures=1)             # the world changed: drawn again
+            self.assertEqual(second, first[:1])
+            self.assertFalse(first[1].exists())                       # the last render's other picture is gone
+
     def test_chunk_span_counts_partial_chunks_and_negative_coordinates(self):
         self.assertEqual(extract_module.chunk_span((-1, 0, 0), (16, 0, 15)), [3, 1])
 

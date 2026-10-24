@@ -101,12 +101,15 @@ def _preview_region_mtime(save_path):
         return 0.0
 
 
-def cached_topdown_preview(save_path, on_progress=None):
+def cached_topdown_preview(save_path, on_progress=None, on_partial=None):
     """The world's top-down preview as ``(png_path, meta)``, rendered only when the cache is stale.
 
     The cache in ``WORLD_PREVIEW_CACHE`` is keyed on save_path and invalidated when
     any .mca file changes, so reopening the region map is instant. ``on_progress``
-    is only called on a cache miss (an actual render).
+    and ``on_partial(png_path, meta)`` are only called on a cache miss (an actual
+    render): each picture so far is saved beside the cache as its own
+    ``<key>.partial-<n>.png``, so a page still fetching one gets that picture and not
+    a later one. A render clears the last render's; every launch clears them all.
     """
     png_path, json_path = _preview_cache_paths(save_path)
     mtime = _preview_region_mtime(save_path)
@@ -120,8 +123,21 @@ def cached_topdown_preview(save_path, on_progress=None):
         except Exception:
             pass  # fall through to re-render on any cache read failure
 
-    image, meta = render_topdown_preview(save_path, on_progress=on_progress)
     png_path.parent.mkdir(parents=True, exist_ok=True)
+    for old in png_path.parent.glob(f"{png_path.stem}.partial-*.png"):
+        old.unlink(missing_ok=True)
+    partials = 0
+
+    def save_partial(image, meta):
+        nonlocal partials
+        partials += 1
+        path = png_path.with_name(f"{png_path.stem}.partial-{partials}.png")
+        image.save(path)
+        on_partial(path, meta)
+
+    image, meta = render_topdown_preview(
+        save_path, on_progress=on_progress, on_partial=save_partial if on_partial is not None else None,
+    )
     image.save(png_path)
     with open(json_path, "w") as f:
         json.dump({**meta, "mtime": mtime}, f)
@@ -284,6 +300,13 @@ class ExtractTab:
         files.clear_pipeline_artifacts()
         return {"changed": True}
 
+    def use_default_world(self):
+        """Back to the bundled sample world, with its own three areas: as a fresh install starts. Like any change of
+        world, the pipeline's artifacts are cleared."""
+        self._save(default_extraction_tab_config())
+        files.clear_pipeline_artifacts()
+        return {"changed": True}
+
     def area_bounds(self, key):
         """The area the region map opens on: the saved selection, or the default sample area."""
         pair = _area_pair(self._saved().get(key))
@@ -296,17 +319,25 @@ class ExtractTab:
         self._save({**self._saved(), key: {"start": [int(v) for v in start], "end": [int(v) for v in end]}})
 
     def load_world_map(self):
-        """Render (or load the cached) top-down world preview; answers with ``worldMap`` events."""
+        """Render (or load the cached) top-down world preview; answers with ``worldMap`` events: progress, the map so
+        far (``partial``) while it's drawn, then the map."""
         save_path = str(self._saved().get("world_path", "")).strip()
         if not save_path or not has_region_files(save_path):
             return {"error": {"code": "no_world"}}
 
+        drawn = 0.0   # how far down the map has been drawn, from 0 to 1: the progress just before each snapshot
+
+        def on_progress(done, total):
+            nonlocal drawn
+            drawn = done / total if total else 1.0
+            self._emit("worldMap", {"completed": done, "total": total})
+
+        def on_partial(path, meta):
+            self._emit("worldMap", {**image(path), "meta": meta, "partial": True, "drawn": drawn})
+
         def worker():
             try:
-                png_path, meta = cached_topdown_preview(
-                    save_path,
-                    on_progress=lambda done, total: self._emit("worldMap", {"completed": done, "total": total}),
-                )
+                png_path, meta = cached_topdown_preview(save_path, on_progress=on_progress, on_partial=on_partial)
             except Exception as exc:  # boundary: surface any preview-load failure in the map
                 self._emit("worldMap", {"error": str(exc).strip() or None})
                 return
