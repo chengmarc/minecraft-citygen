@@ -109,6 +109,25 @@ screenshots). The screenshots put a caption beside a picture from `docs/pics/`;
 change the captions or pictures in `shots.html`, and the matching claims in
 `LISTING.md` with them.
 
+### Update the README pictures
+
+No script makes `docs/pics/`; each picture was chosen and copied in by hand.
+
+| Pictures | Where they came from |
+|---|---|
+| `assets_*.png`, `assets_*.gif` | the builds stage: `appdata/02_builds/renders/_contact_sheet.png` and `appdata/02_builds/buildings.gif` |
+| `modern_iso.png`, `medieval_iso.png` | the city stage: `appdata/04_city/renders/seed_<n>.png` |
+| `ingame*.png`, `base.png` | in-game screenshots |
+| `promo*.png` | the app's window on its Build tab |
+| `type1.png`, `type2.png` | in-game screenshots, annotated with the marker blocks |
+
+The current renders can't be remade: their seeds, the medieval set's
+extraction regions, and the asset sheets' 1440 px layout were never recorded.
+When you next replace them, write `scripts/update_readme_pics.py` to run those
+stages with fixed settings and copy the results here, then list the copied files in
+`.gitattributes` under it. If `promo*.png` or `base.png` change, re-render the
+listing images too (above).
+
 ### Keep the build in step with a new pipeline step
 
 Stage step modules are loaded by name through `importlib`, so PyInstaller
