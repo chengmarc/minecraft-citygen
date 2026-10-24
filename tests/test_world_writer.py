@@ -13,13 +13,13 @@ import nbtlib
 from nbtlib import Byte, Compound, String
 from PIL import Image
 
-from config.path import WORLD_ICON, resolve_region_dir
-from config.world import HARD_FLOOR_DATA_VERSION
-from engine.blocks import AIR_BLOCKS, parse_state
-from engine.schematic.transform import BlockEntity
-from engine.schematic.writer import write_sponge_schem_grid
-from engine.world.anvil_world_reader import World
-from engine.world import writer as world_writer
+from citygen.paths import WORLD_ICON, resolve_region_dir
+from citygen.settings import HARD_FLOOR_DATA_VERSION
+from citygen.blocks import AIR_BLOCKS, parse_state
+from citygen.schem import BlockEntity
+from citygen.schem import write_sponge_schem_grid
+from citygen.world_reader import World
+from citygen import world_writer
 
 STONE = "minecraft:stone"
 STAIRS = "minecraft:oak_stairs[facing=east,half=bottom,shape=straight,waterlogged=false]"
