@@ -277,4 +277,5 @@ def test_topdown_preview_shows_the_picture_so_far_while_it_draws(monkeypatch):
 
     assert snapshots
     assert all(size == image.size and m == meta for size, m in snapshots)
+    assert image.mode == "RGBA" and image.getchannel("A").getextrema() == (0, 255)   # no world: transparent
 
