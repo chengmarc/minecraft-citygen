@@ -19,9 +19,9 @@ committing. To reset, delete `appdata/` (everything the app writes) and `build/`
 
 | File | What it is |
 |---|---|
-| [extract.py](citygen/extract.py) | **The Extract tab's run**: find the marker blocks in the world, export each road piece and building as `.schem`, write `buildings.json`, render the contact sheets |
-| [preview.py](citygen/preview.py) | **The Preview tab's run**: flat top-down stand-ins, laid out as the seed's road layout and city layout |
-| [build.py](citygen/build.py) | **The Build tab's run**: the road grid, seated buildings and lot fill as one `.schem`, its render, and the exported world |
+| [step1_extract.py](citygen/step1_extract.py) | **The Extract tab's run**: find the marker blocks in the world, export each road piece and building as `.schem`, write `buildings.json`, render the contact sheets |
+| [step2_preview.py](citygen/step2_preview.py) | **The Preview tab's run**: flat top-down stand-ins, laid out as the seed's road layout and city layout |
+| [step3_build.py](citygen/step3_build.py) | **The Build tab's run**: the road grid, seated buildings and lot fill as one `.schem`, its render, and the exported world |
 | [road_network.py](citygen/road_network.py) | The road grid for a seed, and the road tile catalogue |
 | [city_layout.py](citygen/city_layout.py) | Lots and building placement (`plan_city`), shared by preview and build |
 | [schem.py](citygen/schem.py) | Sponge v3 `.schem` read/write, tile rotation, voxel grids, the building catalog and its pieces |
@@ -42,15 +42,15 @@ word it shows), `tokens.css` (colours; the title bar reads three of them), `app.
 
 ## How a run works
 
-Each tab calls one function, `run`, in its module. A run takes the tab's settings as arguments and reports
+The three `step*_` modules are the pipeline: each tab calls its module's `run`, which takes the tab's settings and reports
 `progress(step, completed, total[, detail])` by step code; [gui/progress.py](citygen/gui/progress.py) gives each step
 a hand-tuned weight on the bar, and the page names the bar's segments by the same codes (`TEXT.segments`).
 
 | Tab | Runs | Steps |
 |---|---|---|
-| Extract | `extract.run(save, road_box, build_types, progress)` | `scan_roads`, `road_pieces`, `road_sheet`, `scan_builds`, `build_pieces`, `build_sheet` |
-| Preview | `preview.run(seed, algo, progress)` | `road_pieces`, `build_pieces`, `road_layout`, `city_layout` |
-| Build | `build.run(seed, algo, save, progress)` | `construct` (eight steps, `build.STEPS`), `render`, `world` |
+| Extract | `step1_extract.run(save, road_box, build_types, progress)` | `scan_roads`, `road_pieces`, `road_sheet`, `scan_builds`, `build_pieces`, `build_sheet` |
+| Preview | `step2_preview.run(seed, algo, progress)` | `road_pieces`, `build_pieces`, `road_layout`, `city_layout` |
+| Build | `step3_build.run(seed, algo, save, progress)` | `construct` (eight steps, `step3_build.STEPS`), `render`, `world` |
 
 Every run reads and writes `appdata/`, so runs go one at a time. Preview and Build stay disabled until extraction's two
 contact sheets exist. Each launch, and each change of source world, clears `appdata/` except the exported worlds and

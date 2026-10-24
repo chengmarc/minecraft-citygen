@@ -2,7 +2,7 @@
 segments.
 
 Everything is keyed by tab (``extract``, ``preview``, ``build``), then by the step codes each tab's run reports (see
-``run`` in citygen.extract, citygen.preview and citygen.build). The bar runs from 0 to PROGRESS_BAR_SCALE. A report
+``run`` in citygen.step1_extract, citygen.step2_preview and citygen.step3_build). The bar runs from 0 to PROGRESS_BAR_SCALE. A report
 becomes ``(value, soft_target, detail)``: where the bar jumps, where it creeps toward until the next report, and the
 words that stand in for the running segment's name (or None).
 """
@@ -11,7 +11,7 @@ from __future__ import annotations
 
 PROGRESS_BAR_SCALE = 1000
 
-# Construction reports each of its eight steps (citygen.build.STEPS) as it starts it.
+# Construction reports each of its eight steps (citygen.step3_build.STEPS) as it starts it.
 CONSTRUCT_WEIGHTS = [1, 1, 1, 1, 22, 4, 4, 16]
 
 WEIGHTS = {

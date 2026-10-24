@@ -12,7 +12,7 @@ import unittest
 from pathlib import Path
 from unittest import mock
 
-from citygen import build, extract, preview, render_topdown
+from citygen import render_topdown, step1_extract, step2_preview, step3_build
 from citygen.gui import app as app_module
 from citygen.gui import city_tabs as algo_module
 from citygen.gui import extract_tab as extract_module
@@ -98,7 +98,7 @@ class ExtractTests(_ApiTestCase):
             on_progress("scan_roads", 1, 1)
             on_progress("build_sheet", 1, 1)
 
-        with mock.patch.object(extract, "run", side_effect=fake_run):
+        with mock.patch.object(step1_extract, "run", side_effect=fake_run):
             self.assertEqual(self.api.run_extract(), {})
 
         save, road_box, build_types = calls[0]
@@ -117,7 +117,7 @@ class ExtractTests(_ApiTestCase):
 
             with (
                 mock.patch.object(extract_module, "ROADS_RENDERS", renders),
-                mock.patch.object(extract, "run", side_effect=fake_run),
+                mock.patch.object(step1_extract, "run", side_effect=fake_run),
             ):
                 self.api.run_extract()
 
@@ -236,7 +236,7 @@ class PreviewTests(_ApiTestCase):
             on_progress("city_layout", 2, 2)
 
         state = form_module.default_state()
-        with mock.patch.object(preview, "run", side_effect=fake_preview):
+        with mock.patch.object(step2_preview, "run", side_effect=fake_preview):
             answer = self.api.run_preview(state)
 
         self.assertEqual(calls["algo"], ALGO)
@@ -251,7 +251,7 @@ class PreviewTests(_ApiTestCase):
             on_progress("road_layout", 1, 1)
             on_progress("city_layout", 2, 2)
 
-        with mock.patch.object(preview, "run", side_effect=fake_preview):
+        with mock.patch.object(step2_preview, "run", side_effect=fake_preview):
             self.api.run_preview(form_module.default_state())
 
         self.assertEqual(self.event_names(), ["progress", "progress", "partial", "progress", "done", "finished"])
@@ -260,7 +260,7 @@ class PreviewTests(_ApiTestCase):
     def test_invalid_config_returns_the_error_without_running(self):
         state = form_module.default_state()
         state["algo"]["GAP_BIG"] = "lots"
-        with mock.patch.object(preview, "run") as run:
+        with mock.patch.object(step2_preview, "run") as run:
             answer = self.api.run_preview(state)
 
         run.assert_not_called()
@@ -268,7 +268,7 @@ class PreviewTests(_ApiTestCase):
         self.assertEqual(self.events, [])
 
     def test_a_failed_run_reports_and_still_finishes(self):
-        with mock.patch.object(preview, "run", side_effect=RuntimeError("no roads")):
+        with mock.patch.object(step2_preview, "run", side_effect=RuntimeError("no roads")):
             self.api.run_preview(form_module.default_state())
 
         self.assertEqual(self.event_names(), ["progress", "failed", "finished"])
@@ -293,7 +293,7 @@ class BuildTests(_ApiTestCase):
             on_progress("world", 1, 1)
 
         state = {**form_module.default_state(), "seed": "9"}
-        with mock.patch.object(build, "run", side_effect=fake_build):
+        with mock.patch.object(step3_build, "run", side_effect=fake_build):
             self.assertEqual(self.api.run_build(state), {})
 
         self.assertEqual(calls, [(9, ALGO, "C:/mc/source-world")])
@@ -306,7 +306,7 @@ class BuildBlueprintTests(_ApiTestCase):
     def test_the_previewed_city_stands_in_until_the_render(self):
         state = {**form_module.default_state(), "seed": "9"}
         with (
-            mock.patch.object(build, "run"),
+            mock.patch.object(step3_build, "run"),
             mock.patch.object(algo_module, "image", return_value={"src": "/files/03_preview/city/seed_9.png?v=1"}),
         ):
             self.api.run_build(state)
@@ -318,7 +318,7 @@ class BuildBlueprintTests(_ApiTestCase):
     def test_no_blueprint_without_a_preview_of_this_seed(self):
         state = {**form_module.default_state(), "seed": "9"}
         with (
-            mock.patch.object(build, "run"),
+            mock.patch.object(step3_build, "run"),
             mock.patch.object(algo_module, "image", return_value={"missing": "seed_9.png"}),
         ):
             self.api.run_build(state)
@@ -339,7 +339,7 @@ class ProgressTests(unittest.TestCase):
     """Progress weights are hand-tuned, one per step a run reports."""
 
     def test_construct_has_a_weight_per_step(self):
-        self.assertEqual(len(progress.CONSTRUCT_WEIGHTS), len(build.STEPS))
+        self.assertEqual(len(progress.CONSTRUCT_WEIGHTS), len(step3_build.STEPS))
 
     def test_run_bar_segments_span_every_weight_once(self):
         for tab, segments in progress.SEGMENTS.items():
