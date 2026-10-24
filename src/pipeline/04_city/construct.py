@@ -10,7 +10,7 @@ if __package__ in (None, ""):
 
 from config.algo import ALGO, DEFAULT_SEED
 from config.path import BUILD_CATALOG, BUILDS_SCHEM, ROADS_SCHEM, city_schem_path
-from config.world import DATA_VERSION
+from config.world import HARD_FLOOR_DATA_VERSION
 from engine.core.city_layout import FILLER_STREAM, plan_city, seeded_rng
 from engine.core.road_network import gen_networks, make_size
 from engine.schematic import city
@@ -46,7 +46,7 @@ def _load_fill_assets(no_ground_fill):
 
 
 def run(
-    *, seed=DEFAULT_SEED, fine=None, algo=ALGO, data_version=DATA_VERSION, out=None, no_ground_fill=False,
+    *, seed=DEFAULT_SEED, fine=None, algo=ALGO, data_version=HARD_FLOOR_DATA_VERSION, out=None, no_ground_fill=False,
     logger=None, progress=None,
 ):
     logger = logger or noop

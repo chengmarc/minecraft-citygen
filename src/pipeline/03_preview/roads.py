@@ -26,10 +26,9 @@ if __package__ in (None, ""):
     sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
 from config.algo import CELL
-from config.path import PREVIEW_ROADS, PREVIEW_ROADS_CONTACT_SHEET
+from config.path import PREVIEW_ROADS
 from config.render import CITY_GROUND_FILL_RGBA
 from engine.core.road_network import iter_tile_catalogue, tile_footprint
-from engine.render.contact_sheet import write_contact
 from pipeline.step import noop, run_stage_cli
 
 SMALL_PAD = 1
@@ -225,13 +224,11 @@ def run(*, logger=None, progress=None):
     logger = logger or noop
     progress = progress or noop
     os.makedirs(PREVIEW_ROADS, exist_ok=True)
-    imgs = {}
     total = len(TILES) + len(FILL_TILES)
     for index, (name, (w, h, conns)) in enumerate(TILES.items(), start=1):
         img = make_tile(w, h, conns)
         path = os.path.join(PREVIEW_ROADS, name + ".png")
         img.save(path)
-        imgs[name] = img
         logger(f"saved {name}.png ({w}x{h})")
         progress(index, total, name)
 
@@ -239,23 +236,10 @@ def run(*, logger=None, progress=None):
         img = make_fill_tile(canopy)
         path = os.path.join(PREVIEW_ROADS, name + ".png")
         img.save(path)
-        imgs[name] = img
         logger(f"saved {name}.png ({CELL}x{CELL})")
         progress(len(TILES) + offset + 1, total, name)
 
-    zoom = 8
-    write_contact(
-        list(imgs.items()),
-        PREVIEW_ROADS_CONTACT_SHEET,
-        cols=5,
-        cell_w=CELL * 2 * zoom + 12,
-        cell_h=CELL * 2 * zoom + 40,
-        max_scale=zoom,
-        resample=Image.Resampling.NEAREST,
-    )
-    logger(f"saved {PREVIEW_ROADS_CONTACT_SHEET}")
-    return {"count": total, "contact_sheet": PREVIEW_ROADS_CONTACT_SHEET}
-
+    return {"count": total}
 
 if __name__ == "__main__":
     run_stage_cli(run)

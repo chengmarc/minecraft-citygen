@@ -36,7 +36,7 @@ def _missing_region_dir_message(save_path, checked_paths):
         f"Configured save: {save_path or '<not set>'}\n"
         "Checked:\n"
         f"{checked_lines}\n"
-        "Set MC_CITY_SAVE to your world folder or paste it into the Extraction tab."
+        "Choose your world folder on the Extract tab."
     )
 
 

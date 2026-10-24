@@ -7,8 +7,6 @@ import sys
 import tempfile
 from pathlib import Path
 
-from config.env import env_raw
-
 APP_NAME = "MC CityGen"
 SOURCE_ROOT = str(Path(__file__).resolve().parents[1])
 _REQUIRED_PACKAGE_DIRS = ("config", "engine", "gui", "pipeline")
@@ -40,9 +38,6 @@ def _repo_checkout_root(path: str) -> str:
 
 def _user_data_root() -> str:
     """Per-user writable data dir, following each platform's convention."""
-    override = env_raw("APP_ROOT")
-    if override:
-        return _norm(override)
     home = Path.home()
     if sys.platform.startswith("win"):
         base = os.environ.get("LOCALAPPDATA") or os.environ.get("APPDATA") or str(home / "AppData" / "Roaming")
@@ -81,9 +76,6 @@ def _packaged_data_root(family_name: str) -> str:
     folder, where Explorer cannot follow the original path. Writing straight to the
     redirect target keeps "open saves folder" working and still gets wiped on uninstall.
     """
-    override = env_raw("APP_ROOT")
-    if override:
-        return _norm(override)
     base = os.environ.get("LOCALAPPDATA") or str(Path.home() / "AppData" / "Local")
     return _norm(Path(base) / "Packages" / family_name / "LocalCache" / "Local" / APP_NAME)
 
@@ -169,12 +161,9 @@ BUILDS_SCHEM = _data_dir("02_builds", "schem")
 BUILDS_RENDERS = _data_dir("02_builds", "renders")
 BUILDS_CONTACT_SHEET = str(Path(BUILDS_RENDERS) / CONTACT_SHEET)
 BUILD_CATALOG = _data_dir("02_builds", "buildings.json")
-BUILDS_GIF = _data_dir("02_builds", "buildings.gif")
 
 PREVIEW_ROADS = _data_dir("03_preview", "roads")
-PREVIEW_ROADS_CONTACT_SHEET = str(Path(PREVIEW_ROADS) / CONTACT_SHEET)
 PREVIEW_BUILDS = _data_dir("03_preview", "builds")
-PREVIEW_BUILDS_CONTACT_SHEET = str(Path(PREVIEW_BUILDS) / CONTACT_SHEET)
 PREVIEW_GRID = _data_dir("03_preview", "grid")
 PREVIEW_CITY = _data_dir("03_preview", "city")
 

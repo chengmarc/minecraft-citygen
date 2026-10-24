@@ -234,16 +234,13 @@ class ExtractTab:
             BuildRegion(1, BlockRegion.from_xyz_pair(*pairs["house"])),
             BuildRegion(2, BlockRegion.from_xyz_pair(*pairs["landmark"])),
         )
-        timing = progress.ProgressTimingRecorder("extract")
 
         # Each piece's render is saved as <its name>.png before its progress names it: shown as it lands.
         renders = {stages.ROADS_RENDER: ("roads", ROADS_RENDERS), stages.BUILDS_RENDER: ("builds", BUILDS_RENDERS)}
 
         def job(report):
             def on_stage_progress(stage, completed, total, label):
-                phase = progress.extract_phase(stage, label)
-                timing.record(stage, completed, total, label, phase=phase)
-                report(*progress.extract_progress(stage, phase, completed, total))
+                report(*progress.extract_progress(stage, progress.extract_phase(stage, label), completed, total))
 
             coalesced = progress.coalesce_extract_progress(on_stage_progress)
 
@@ -259,9 +256,7 @@ class ExtractTab:
             services.run_stage("roads", save=save, road_box=road_box, progress=on_progress)
             services.run_stage("builds", save=save, build_types=build_types, progress=on_progress)
 
-        def on_success(_result):
-            files.save_progress_timing("extract", timing.finish())
-            return {"images": {"roads": image(ROADS_CONTACT_SHEET), "builds": image(BUILDS_CONTACT_SHEET)}}
-
-        self._runner.start("extract", job, on_success=on_success)
+        self._runner.start("extract", job, on_success=lambda _result: {
+            "images": {"roads": image(ROADS_CONTACT_SHEET), "builds": image(BUILDS_CONTACT_SHEET)},
+        })
         return {}

@@ -1,5 +1,4 @@
-"""Configuration layer: env parsing and version compatibility."""
-import importlib
+"""Configuration layer: version compatibility and where the app keeps its data."""
 import os
 import tempfile
 import unittest
@@ -8,38 +7,6 @@ from unittest import mock
 
 from config import path as config_path
 from config import world as config_world
-
-
-# --- config.world env parsing ---------------------------------------------
-
-class WorldConfigEnvTests(unittest.TestCase):
-    def test_config_world_accepts_new_and_legacy_env_formats(self):
-        original = importlib.import_module("config.world")
-        try:
-            with mock.patch.dict(
-                os.environ,
-                {
-                    "MC_CITY_ROAD_BOX": "((1, 2, 3), (4, 5, 6))",
-                    "MC_CITY_BUILD_TYPES": "1, ((7, 8, 9), (10, 11, 12)); 2, 13, 16, 15, 18, 14, 17",
-                },
-                clear=False,
-            ):
-                config_world = importlib.reload(original)
-
-            self.assertEqual(config_world.ROAD_BOX.as_tuple(), ((1, 2, 3), (4, 5, 6)))
-            self.assertEqual(config_world.BUILD_TYPES[0].as_tuple(), (1, (7, 8, 9), (10, 11, 12)))
-            self.assertEqual(config_world.BUILD_TYPES[1].as_tuple(), (2, (13, 14, 15), (16, 17, 18)))
-        finally:
-            importlib.reload(original)
-
-    def test_save_path_falls_back_to_default_when_env_override_is_empty(self):
-        original = importlib.import_module("config.world")
-        try:
-            with mock.patch.dict(os.environ, {"MC_CITY_SAVE": ""}, clear=False):
-                config_world = importlib.reload(original)
-            self.assertEqual(config_world.SAVE, config_world.DEFAULT_WORLD)
-        finally:
-            importlib.reload(original)
 
 
 # --- version detection ----------------------------------------------------
@@ -83,7 +50,7 @@ class FrozenAppRootTests(unittest.TestCase):
     def test_packaged_app_writes_to_the_real_package_folder(self):
         local = str(Path.home() / "AppData" / "Local")
         with mock.patch.object(config_path, "_package_family_name", return_value="CityGen_abc123"), \
-                mock.patch.dict(os.environ, {"LOCALAPPDATA": local, "MC_CITY_APP_ROOT": ""}):
+                mock.patch.dict(os.environ, {"LOCALAPPDATA": local}):
             root = config_path._frozen_app_root()
         expected = Path(local) / "Packages" / "CityGen_abc123" / "LocalCache" / "Local" / "MC CityGen"
         self.assertEqual(root, os.path.normpath(expected))

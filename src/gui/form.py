@@ -10,7 +10,6 @@ from __future__ import annotations
 from dataclasses import replace
 
 from config.algo import ALGO, DEFAULT_SEED
-from config.env import parse_set
 
 
 class ConfigError(ValueError):
@@ -89,7 +88,7 @@ def build_algo(values):
     for name in KNOBS:
         value = values[name]
         if name in SET_KNOBS:
-            knobs[name.lower()] = frozenset(parse_set(value))
+            knobs[name.lower()] = frozenset(part.strip() for part in value.replace(";", ",").split(",") if part.strip())
             continue
         if name in SELECTOR_OPTIONS and value not in SELECTOR_OPTIONS[name]:
             raise ConfigError(name)

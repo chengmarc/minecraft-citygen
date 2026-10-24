@@ -1,4 +1,4 @@
-"""Files the GUI owns on disk: saved settings, timings, the startup error log, and artifact cleanup."""
+"""Files the GUI owns on disk: saved settings, the startup error log, and artifact cleanup."""
 
 from __future__ import annotations
 
@@ -12,7 +12,6 @@ from config.path import APP_DATA, BUILDS_CONTACT_SHEET, ROADS_CONTACT_SHEET, ROO
 
 
 STARTUP_ERROR_LOG = os.path.join(ROOT, "application_startup_error.log")
-PROGRESS_TIMINGS_PATH = os.path.join(APP_DATA, "progress_timings.json")
 
 
 def extracted_assets_ready():
@@ -35,22 +34,6 @@ def save_saved_gui_config(config):
     with open(SETTINGS, "w", encoding="utf-8") as fh:
         json.dump(config, fh, indent=2)
 
-
-def save_progress_timing(section, payload):
-    """Persist latest progress timing diagnostics for weight tuning."""
-    os.makedirs(os.path.dirname(PROGRESS_TIMINGS_PATH), exist_ok=True)
-    data = {}
-    if os.path.exists(PROGRESS_TIMINGS_PATH):
-        try:
-            with open(PROGRESS_TIMINGS_PATH, "r", encoding="utf-8") as fh:
-                loaded = json.load(fh)
-            if isinstance(loaded, dict):
-                data = loaded
-        except (OSError, ValueError):
-            data = {}
-    data[section] = payload
-    with open(PROGRESS_TIMINGS_PATH, "w", encoding="utf-8") as fh:
-        json.dump(data, fh, indent=2)
 
 
 def open_in_file_manager(path):

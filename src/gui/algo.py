@@ -96,22 +96,16 @@ class AlgoTabs:
             return {"error": error}
         save = self._world_path()
         data_version = source_data_version(save)
-        timing = progress.ProgressTimingRecorder("build")
 
         def job(report):
             def on_progress(stage, completed, total, label):
-                timing.record(stage, completed, total, label)
                 report(*progress.build_progress(stage, completed, total, label))
 
             services.run_stage("city", seed=seed, algo=algo, data_version=data_version, progress=on_progress)
             services.run_stage("world", seed=seed, save=save, progress=on_progress)
             return seed
 
-        def on_success(seed):
-            files.save_progress_timing("build", timing.finish())
-            return {"images": {"city": image(city_render_path(seed))}}
-
-        self._runner.start("build", job, on_success=on_success)
+        self._runner.start("build", job, on_success=lambda seed: {"images": {"city": image(city_render_path(seed))}})
         # The city as previewed, standing in until it's rendered (if this seed's preview is still there).
         blueprint = image(city_preview_path(seed))
         if "src" in blueprint:
