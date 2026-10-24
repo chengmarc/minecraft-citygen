@@ -58,6 +58,7 @@ class ImageViewer {
   setMessage(message) {
     this.clearGallery();
     this.root.classList.remove("blueprint");
+    this.size = null;
     this.layer.hidden = true;
     this.img.removeAttribute("src");
     this.root.classList.remove("has-image");
@@ -70,30 +71,38 @@ class ImageViewer {
   }
 
   /** Show ``{src}``, or say it's ``{missing}``; resolves once it's on screen. A ``blueprint`` image is a faded
-   *  stand-in, a scan sweeping over it, until the real one replaces it. */
-  load(payload) {
+   *  stand-in, a scan sweeping over it, until the real one replaces it.
+   *
+   *  A picture the size of the one showing (the next preview, the same layout drawn again) swaps in where it is,
+   *  keeping the zoom and the pan; another size is fitted to the viewer and fades in. */
+  async load(payload) {
     if (!payload.src) {
       this.setMessage(TEXT.imageMissing(payload.missing));
-      return Promise.resolve(false);
+      return false;
     }
-    return new Promise((resolve) => {
-      this.layer.classList.add("loading");
-      this.img.onload = () => {
-        this.clearGallery();
-        this.root.classList.toggle("blueprint", Boolean(payload.blueprint));
-        this.placeholder.hidden = true;
-        this.layer.hidden = false;
-        this.root.classList.add("has-image");
-        this.fit();
-        requestAnimationFrame(() => this.layer.classList.remove("loading"));   // fade the new image in
-        resolve(true);
-      };
-      this.img.onerror = () => {
-        this.setMessage(`Failed to load image:\n${payload.src}`);
-        resolve(false);
-      };
-      this.img.src = payload.src;
-    });
+    const next = new Image();
+    next.src = payload.src;
+    try {
+      await next.decode();
+    } catch {
+      this.setMessage(`Failed to load image:\n${payload.src}`);
+      return false;
+    }
+    const size = { width: next.naturalWidth, height: next.naturalHeight };
+    const keepView = this.hasImage() && size.width === this.size.width && size.height === this.size.height;
+    this.clearGallery();
+    this.root.classList.toggle("blueprint", Boolean(payload.blueprint));
+    if (!keepView) this.layer.classList.add("loading");
+    this.img.src = payload.src;
+    await this.img.decode().catch(() => {});   // decoded already: ready to paint at once
+    this.size = size;
+    if (keepView) return true;
+    this.placeholder.hidden = true;
+    this.layer.hidden = false;
+    this.root.classList.add("has-image");
+    this.fit();
+    requestAnimationFrame(() => this.layer.classList.remove("loading"));   // fade the new image in
+    return true;
   }
 
   /** The ``index``-th (from 1) piece a run has rendered, added to a gallery that grows while it renders the rest.
@@ -122,11 +131,11 @@ class ImageViewer {
   }
 
   hasImage() {
-    return !this.layer.hidden && this.img.naturalWidth > 0;
+    return !this.layer.hidden && Boolean(this.size);
   }
 
   imageSize() {
-    return { width: this.img.naturalWidth, height: this.img.naturalHeight };
+    return this.size;
   }
 
   fit() {
