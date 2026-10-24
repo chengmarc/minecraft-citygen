@@ -22,8 +22,9 @@ from config.path import APP_NAME  # noqa: E402
 from gui import files, server  # noqa: E402
 from gui.bridge import Api  # noqa: E402
 
-APP_WIDTH = 1366
-APP_HEIGHT = 768
+# The window opens at its smallest size, and can only grow from there.
+APP_WIDTH = 1280
+APP_HEIGHT = 800
 # The page's tokens (static/app.css): the window background, and the sky the title bar runs into.
 APP_BG = "#f2f0ed"
 SKY = "#cfe4f8"
@@ -182,7 +183,7 @@ def main(argv: list[str] | None = None) -> int:
             js_api=Api(emit, pick_folder=pick_folder),
             width=APP_WIDTH,
             height=APP_HEIGHT,
-            min_size=(960, 720),
+            min_size=(APP_WIDTH, APP_HEIGHT),
             background_color=APP_BG,
         )
         if sys.platform == "win32":
