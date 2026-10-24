@@ -70,7 +70,7 @@ def extract_roads(world, road_box, data_version, progress):
     clear_schems(ROADS_SCHEM)
     progress("scan_roads", 0, chunk_scan_count(road_box.x0, road_box.x1, road_box.z0, road_box.z1))
     components = detect_marker_assets(
-        world, road_box.x0, road_box.x1, road_box.z0, road_box.z1, BUILD_MARKER_Y_RANGE.as_tuple(),
+        world, road_box.x0, road_box.x1, road_box.z0, road_box.z1, BUILD_MARKER_Y_RANGE,
         on_progress=lambda done, total: progress("scan_roads", done, total),
     )
     extracted = 0
@@ -104,7 +104,7 @@ def extract_builds(world, build_types, data_version, progress):
     for index, (region_type, r) in enumerate(zip((region.build_type for region in build_types), regions)):
         offset = sum(chunk_counts[:index])
         components = detect_marker_assets(
-            world, r.x0, r.x1, r.z0, r.z1, BUILD_MARKER_Y_RANGE.as_tuple(),
+            world, r.x0, r.x1, r.z0, r.z1, BUILD_MARKER_Y_RANGE,
             on_progress=lambda done, _total, _offset=offset: progress("scan_builds", _offset + done, total_chunks),
         )
         builds.extend((region_type, component) for component in components)
