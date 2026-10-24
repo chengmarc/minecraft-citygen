@@ -172,3 +172,19 @@ def test_contact_sheet_is_transparent_between_thumbnails(tmp_path):
 
     assert sheet.getpixel((sheet.width - 1, sheet.height - 1))[3] == 0   # the empty second cell
     assert Image.open(tmp_path / "sheet.png").mode == "RGBA"
+
+
+def test_city_render_is_trimmed_to_what_is_drawn_with_its_margin():
+    from PIL import Image
+
+    from engine.render.isometric import trim_to_content
+
+    image = Image.new("RGBA", (200, 300), (0, 0, 0, 0))
+    image.paste((90, 120, 60, 255), (40, 150, 160, 280))   # the city, low on a tall canvas
+
+    trimmed = trim_to_content(image, margin=10)
+
+    assert trimmed.size == (140, 150)
+    assert trimmed.getchannel("A").getbbox() == (10, 10, 130, 140)
+    assert trim_to_content(Image.new("RGBA", (5, 5)), margin=10).size == (5, 5)   # nothing drawn: as it was
+

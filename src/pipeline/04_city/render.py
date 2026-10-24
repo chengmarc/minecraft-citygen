@@ -11,7 +11,7 @@ if __package__ in (None, ""):
 
 from config.algo import DEFAULT_SEED
 from config.path import city_render_path, city_schem_path
-from engine.render.isometric import render_schem_visible_iso
+from engine.render.isometric import render_schem_visible_iso, trim_to_content
 from pipeline.step import noop, run_stage_cli
 
 
@@ -22,7 +22,7 @@ def run(*, seed=DEFAULT_SEED, logger=None, progress=None):
     if not os.path.exists(schem):
         raise FileNotFoundError(f"City schematic not found: {schem}. Run Stage 4 construct first.")
     progress(0, 1, "Rendering city schematic")
-    im = render_schem_visible_iso(schem)
+    im = trim_to_content(render_schem_visible_iso(schem))   # no empty sky above the tallest building
     out = city_render_path(seed)
     os.makedirs(os.path.dirname(out), exist_ok=True)
     im.save(out)
