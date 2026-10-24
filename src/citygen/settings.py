@@ -99,9 +99,6 @@ class BlockRegion:
         x1, y1, z1 = _coerce_xyz_point(end)
         return cls(x0, x1, z0, z1, y0, y1)
 
-    def as_tuple(self) -> tuple[tuple[int, int, int], tuple[int, int, int]]:
-        return self.as_xyz_pair()
-
     def as_xyz_pair(self) -> tuple[tuple[int, int, int], tuple[int, int, int]]:
         return (self.x0, self.y0, self.z0), (self.x1, self.y1, self.z1)
 
@@ -110,10 +107,6 @@ class BlockRegion:
 class BuildRegion:
     build_type: int
     bounds: BlockRegion
-
-    def as_tuple(self) -> tuple[int, tuple[int, int, int], tuple[int, int, int]]:
-        start, end = self.bounds.as_xyz_pair()
-        return self.build_type, start, end
 
 
 # Forward-only compatibility floor. Older schematics can be upgraded forward into

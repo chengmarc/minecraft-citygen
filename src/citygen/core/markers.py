@@ -237,7 +237,7 @@ def _cuboid_block_entities(world, cuboid):
     return result
 
 
-def extract_cuboid(world, cuboid, *, force_persistent_leaves=False):
+def extract_cuboid(world, cuboid):
     """Read a cuboid into (cells, block_entities), blanking marker blocks to air.
 
     Marker blocks (gold/diamond/emerald) are blanked to air; signs and other
@@ -245,7 +245,7 @@ def extract_cuboid(world, cuboid, *, force_persistent_leaves=False):
     records (the authoring markers live outside the cuboid, so in-cuboid signs are
     real content).
 
-    ``force_persistent_leaves`` rewrites grown leaves (``persistent=false``) to
+    Grown leaves (``persistent=false``) are rewritten to
     ``persistent=true`` so they do not decay after a paste: non-persistent leaves
     whose logs fall out of range vanish over ticks, degrading the build (cherry
     canopies are the usual casualty).
@@ -261,7 +261,7 @@ def extract_cuboid(world, cuboid, *, force_persistent_leaves=False):
                 base = name.split(":")[1]
                 if base in MARKER_BLOCKS:
                     name, props = "minecraft:air", None
-                elif force_persistent_leaves and base.endswith("leaves") \
+                elif base.endswith("leaves") \
                         and props and props.get("persistent") == "false":
                     props = {**props, "persistent": "true"}
                 row.append(format_state(name, props))

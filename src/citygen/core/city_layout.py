@@ -304,10 +304,9 @@ def place_type1(avail, road_cells, lots, catalog, chooser, fine, top_fit_choices
     return placed
 
 
-def place_city(road_cells, lots, catalog, fine, rng, type2_frontage_cells=None, algo=DEFAULT_ALGO):
+def place_city(road_cells, lots, catalog, fine, rng, type2_frontage_cells, algo=DEFAULT_ALGO):
     """Place type-2 buildings by longest big-road frontage, then fill with type-1."""
     avail = {cell for lot in lots for cell in lot}
-    type2_frontage_cells = road_cells if type2_frontage_cells is None else type2_frontage_cells
     placed = []
     placed += place_type2(avail, type2_frontage_cells, catalog, fine, algo.landmark_spacing)
     placed += place_type1(avail, road_cells, lots, catalog, rng, fine, algo.type1_top_fit_choices)

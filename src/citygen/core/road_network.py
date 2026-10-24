@@ -134,13 +134,8 @@ def tile_footprint(layer, base):
 _LOOKUP_BY_LAYER = {layer: _compile_tile_lookup(catalogue) for layer, catalogue in TILES_BY_LAYER.items()}
 
 
-def _net_size(net, size=None):
-    return net["size"] if size is None else size
-
-
-def _generate_avenues(rng, size, step, lo=2, hi=None):
+def _generate_avenues(rng, step, lo, hi):
     """Big avenues on the coarse grid, evenly spaced with a little jitter."""
-    hi = size.coarse - 2 if hi is None else hi
     base = sorted({min(hi, max(lo, a + rng.randint(-1, 1)))
                    for a in range(lo, hi + 1, step)})
     out = []
@@ -200,9 +195,8 @@ def _gap_to(v, a, b):
     return 0 if a <= v <= b else (a - v if v < a else v - b)
 
 
-def _generate_streets(band_iv, size, algo, lo=2, hi=None):
+def _generate_streets(band_iv, size, algo, lo, hi):
     """Small streets that keep clear of big bands and each other."""
-    hi = size.fine - 2 if hi is None else hi
     kept = []
     for v in range(lo, hi + 1):
         if v // 2 in (0, size.coarse - 1):
@@ -217,8 +211,8 @@ def _generate_streets(band_iv, size, algo, lo=2, hi=None):
 
 def _generate_big_network(rng, size, algo):
     pad = algo.pad_big
-    big_rows = _generate_avenues(rng, size, algo.gap_big, lo=pad, hi=size.coarse - 1 - pad)
-    big_cols = _generate_avenues(rng, size, algo.gap_big, lo=pad, hi=size.coarse - 1 - pad)
+    big_rows = _generate_avenues(rng, algo.gap_big, lo=pad, hi=size.coarse - 1 - pad)
+    big_cols = _generate_avenues(rng, algo.gap_big, lo=pad, hi=size.coarse - 1 - pad)
     big_rows_ext = {r: (0, size.coarse - 1) for r in big_rows}
     big_cols_ext = {c: (0, size.coarse - 1) for c in big_cols}
 
@@ -272,22 +266,19 @@ def _on_lines(x, y, rows, cols, row_ext, col_ext):
             (x in cols and col_ext[x][0] <= y <= col_ext[x][1]))
 
 
-def _raw_big_node(net, cx, cy, size=None):
-    size = _net_size(net, size)
+def _raw_big_node(net, cx, cy, size):
     return (0 <= cx < size.coarse and 0 <= cy < size.coarse and
             _on_lines(cx, cy, net["big_rows"], net["big_cols"],
                       net["big_rows_ext"], net["big_cols_ext"]))
 
 
-def _raw_small_node(net, fx, fy, size=None):
-    size = _net_size(net, size)
+def _raw_small_node(net, fx, fy, size):
     return (0 <= fx < size.fine and 0 <= fy < size.fine and
             _on_lines(fx, fy, net["small_rows"], net["small_cols"],
                       net["small_rows_ext"], net["small_cols_ext"]))
 
 
-def _cache_road_cells(net, size=None):
-    size = _net_size(net, size)
+def _cache_road_cells(net, size):
     big_cells = {(cx, cy) for cy in range(size.coarse) for cx in range(size.coarse)
                  if _raw_big_node(net, cx, cy, size)}
     big_fine_cells = {(2 * cx + dx, 2 * cy + dy)
