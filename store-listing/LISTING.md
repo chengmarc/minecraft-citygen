@@ -12,7 +12,7 @@ Center (`MSIX_DISPLAY_NAME` in [build_windows_release.py](../packaging/build_win
 
 ## Properties
 
-- **Category:** Utilities & tools. **Subcategory:** none.
+- **Category:** Multimedia design. **Subcategory:** Kids + family.
 - **Privacy policy:** paste the whole of [PRIVACY.md](PRIVACY.md) as it is; it is plain text written for the box.
 - **Website:**
 
