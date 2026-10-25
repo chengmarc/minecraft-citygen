@@ -9,7 +9,7 @@
   <h1>MC CityGen - Procedural City Generator</h1>
   
   <img src="store-listing/desktop/screenshot-1-promo.png">
-  <img src="store-listing/desktop/screenshot-3-styles.png">
+  <img src="store-listing/desktop/screenshot-4-styles.png">
 
 </div>
 
