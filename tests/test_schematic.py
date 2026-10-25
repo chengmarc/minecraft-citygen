@@ -7,7 +7,7 @@ from nbtlib import Byte, Compound, String
 
 from citygen.settings import CELL
 from citygen.tools import catalog
-from citygen.core import assemble
+from citygen.core import assemble, road_pieces
 from citygen.tools.schem import (
     decode_schem_block_entities,
     decode_schem_cells,
@@ -169,16 +169,13 @@ def test_road_asset_loaders_keep_network_tiles_fill_props_and_ground_fill_separa
         V2612,
         offset=(0, -3, 0),
     )
-    tiles = assemble._load_tiles(str(tmp_path))
-    fillers = assemble._load_fillers(str(tmp_path))
-    ground_fill = assemble._load_ground_fill_tile(str(tmp_path))
+    pieces = road_pieces.load_road_pieces(str(tmp_path))
 
-    assert set(tiles) == {"02"}
-    assert tiles["02"].ground_offset == 1
-    assert len(fillers) == 1
-    assert fillers[0].ground_offset == 2
-    assert ground_fill is not None
-    assert ground_fill.ground_offset == 3
+    assert set(pieces.tiles) == {"02"}
+    assert pieces.tiles["02"].ground_offset == 1
+    assert len(pieces.fill_props) == 1
+    assert pieces.fill_props[0].ground_offset == 2
+    assert pieces.ground_fill.ground_offset == 3
 
 
 def test_building_assembly_uses_piece_shape_not_placement_type(tmp_path):
