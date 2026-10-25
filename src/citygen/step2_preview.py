@@ -10,7 +10,7 @@ from __future__ import annotations
 import os
 from pathlib import Path
 
-from citygen.core.assemble import fill_prop_paths
+from citygen.core.road_pieces import fill_prop_paths
 from citygen.core.city_layout import filler_rng, plan_city, seat
 from citygen.core.road_network import gen_networks, iter_placements, iter_tile_catalogue, make_size, tile_footprint
 from citygen.paths import BUILD_CATALOG, city_preview_path, grid_preview_path, ROADS_SCHEM

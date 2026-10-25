@@ -3,8 +3,6 @@
 
 from __future__ import annotations
 
-import glob
-import os
 from typing import Any, NamedTuple
 
 import numpy as np
@@ -14,53 +12,9 @@ from citygen.core.road_network import iter_placements, iter_tile_catalogue, rot_
 from citygen.settings import CELL
 from citygen.tools.blocks import is_air
 from citygen.tools.catalog import assemble, middle_count
-from citygen.tools.schem import intern_state, new_palette, read_tile, rot_tile, stamp_tile, translate_block_entities
+from citygen.tools.schem import intern_state, new_palette, rot_tile, stamp_tile, translate_block_entities
 
 # --- The road grid
-
-# Fill props (e.g. 15_fill_1x1_A) share the road region and marker convention but
-# are not road-network tiles: they fill empty lot cells in the city, so they are
-# kept out of the road-grid tile set and loaded separately. So is the ground
-# fill, asset 18, laid under every empty lot cell.
-_FILL_TOKEN = "fill"
-_GROUND_FILL_PREFIX = "18"
-_ROAD_TILE_PREFIXES = frozenset(name[:2] for _layer, _base, name in iter_tile_catalogue())
-
-
-def _road_pieces(roads_dir):
-    return sorted(glob.glob(os.path.join(roads_dir, "*.schem")))
-
-
-def _load_tiles(roads_dir):
-    tiles = {}
-    for path in _road_pieces(roads_dir):
-        name = os.path.basename(path)
-        if name[:2] not in _ROAD_TILE_PREFIXES:
-            continue
-        tiles[name[:2]] = read_tile(path)
-    return tiles
-
-
-def fill_prop_paths(roads_dir):
-    """The fill props among the extracted road pieces: every one named with ``fill`` but the ground fill, in the
-    order build and preview both draw from."""
-    return [
-        path for path in _road_pieces(roads_dir)
-        if _FILL_TOKEN in os.path.basename(path) and os.path.basename(path)[:2] != _GROUND_FILL_PREFIX
-    ]
-
-
-def _load_fillers(roads_dir):
-    """Load the fill-prop tiles (self-contained, ground-seated cell fillers)."""
-    return [read_tile(path) for path in fill_prop_paths(roads_dir)]
-
-
-def _load_ground_fill_tile(roads_dir):
-    """Load the dedicated empty-lot ground filler authored as road asset 18."""
-    for path in _road_pieces(roads_dir):
-        if os.path.basename(path)[:2] == _GROUND_FILL_PREFIX:
-            return read_tile(path)
-    return None
 
 
 def _tile_port_dirs(tile):
@@ -116,9 +70,9 @@ class RoadGrid(NamedTuple):
     block_entities: list
 
 
-def build_road_grid(net, roads_dir):
-    """Stamp every road tile of ``net`` into one voxel grid, from the road pieces extracted into ``roads_dir``."""
-    tiles = _load_tiles(roads_dir)
+def build_road_grid(net, tiles):
+    """Stamp every road tile of ``net`` into one voxel grid, from the network ``tiles`` of
+    :func:`citygen.core.road_pieces.load_road_pieces`."""
     road_ground_offsets = {tile.ground_offset for tile in tiles.values()}
     if len(road_ground_offsets) > 1:
         raise ValueError(f"road assets disagree on ground offsets: {sorted(road_ground_offsets)}")
@@ -170,10 +124,10 @@ def _city_ground_y(placements, catalog_meta):
     return _CITY_GROUND_Y + max_below_ground + _BUILD_SNAP_DROP
 
 
-def assemble_city(seed, roads, placements, catalog_meta, roads_dir, builds_dir, stage):
+def assemble_city(seed, roads, placements, catalog_meta, road_pieces, builds_dir, stage):
     """The city as one voxel grid: ``roads`` (from :func:`build_road_grid`), each of ``placements`` assembled from the
-    pieces in ``builds_dir``, and every empty lot cell filled from the fill pieces in ``roads_dir``, all seated on one
-    ground plane.
+    pieces in ``builds_dir``, and every empty lot cell filled from ``road_pieces``' fill props and ground fill, all
+    seated on one ground plane.
 
     ``stage(n)`` as each of its three stages starts: the buildings, the grid, the lot fill. Returns ``(grid, palette,
     ground, block_entities)``, ``ground`` being the plane's height in the grid.
@@ -188,15 +142,12 @@ def assemble_city(seed, roads, placements, catalog_meta, roads_dir, builds_dir, 
     instances, building_top = _assemble_instances(seed, placements, catalog_meta, ground_y, builds_dir)
 
     stage(1)
-    fillers = _load_fillers(roads_dir)
-    ground_fill_tile = _load_ground_fill_tile(roads_dir)
-    if ground_fill_tile is None:
-        raise FileNotFoundError("missing road ground-fill asset 18 among the extracted road pieces; extract again")
+    fillers, ground_fill_tile = road_pieces.fill_props, road_pieces.ground_fill
     max_height = _max_grid_height(road_y0, roads.height, building_top, ground_y, fillers, ground_fill_tile)
     grid, palette, build_mask, block_entities = _compose_grid(roads, road_y0, max_height, instances)
 
     stage(2)
-    _filler_count, filler_block_entities = _place_lot_fill(
+    filler_block_entities = _place_lot_fill(
         grid, palette, build_mask, roads.network["road_cells"], roads.network["size"], ground_y, fillers,
         ground_fill_tile, filler_rng(seed),
     )
@@ -231,11 +182,7 @@ def _assemble_instances(seed, placements, catalog_meta, ground_y, builds_dir):
 
 def _max_grid_height(road_y0, road_height, building_top, ground_y, fillers, ground_fill_tile):
     filler_top = max((_seat_y(ground_y, tile.ground_offset) + tile.height for tile in fillers), default=0)
-    ground_fill_top = (
-        _seat_y(ground_y, ground_fill_tile.ground_offset) + ground_fill_tile.height
-        if ground_fill_tile is not None
-        else 0
-    )
+    ground_fill_top = _seat_y(ground_y, ground_fill_tile.ground_offset) + ground_fill_tile.height
     return max(road_y0 + road_height, building_top, filler_top, ground_fill_top)
 
 
@@ -284,8 +231,6 @@ def _place_ground_fill(
     already received a self-contained fill prop (15/16/17), preserving that
     prop's authored ground without mixing in asset 18 around it.
     """
-    if ground_fill_tile is None:
-        return
     y0 = _seat_y(ground_y, ground_fill_tile.ground_offset)
     if ground_fill_tile.block_entities:
         raise ValueError("ground-fill asset 18 must not contain block entities")
@@ -354,10 +299,7 @@ def _place_fillers(grid, master_palette, build_mask, road_cells, size, ground_y,
 
 
 def _place_lot_fill(grid, master_palette, build_mask, road_cells, size, ground_y, fillers, ground_fill_tile, filler_rng):
-    """Fill props into empty lot cells, then ground fill around them; return (prop count, block entities)."""
-    if ground_fill_tile is None:
-        return 0, []
-
+    """Fill props into empty lot cells, then ground fill around them; return the props' block entities."""
     block_entities = []
     tree_cells = set()
     if fillers:
@@ -365,7 +307,7 @@ def _place_lot_fill(grid, master_palette, build_mask, road_cells, size, ground_y
             grid, master_palette, build_mask, road_cells, size, ground_y, fillers, filler_rng
         )
     _place_ground_fill(grid, master_palette, build_mask, road_cells, size, ground_y, ground_fill_tile, tree_cells)
-    return len(tree_cells), block_entities
+    return block_entities
 
 
 def _finalize_block_entities(block_entities, grid_shape):

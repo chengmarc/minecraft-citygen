@@ -9,6 +9,7 @@ import os
 from citygen.core.assemble import assemble_city, build_road_grid
 from citygen.core.city_layout import plan_city
 from citygen.core.road_network import gen_networks, make_size
+from citygen.core.road_pieces import load_road_pieces
 from citygen.paths import (
     BUILD_CATALOG, BUILDS_SCHEM, city_render_path, city_schem_path, exported_world_name, exported_world_path,
     ROADS_SCHEM, WORLD_ICON,
@@ -60,7 +61,8 @@ def construct(seed, algo, data_version, step):
     network = gen_networks(seed, make_size(algo.fine), algo)
 
     step(1)
-    roads = build_road_grid(network, ROADS_SCHEM)
+    road_pieces = load_road_pieces(ROADS_SCHEM)
+    roads = build_road_grid(network, road_pieces.tiles)
 
     step(2)
     catalog_meta = read_catalog(BUILD_CATALOG)
@@ -69,7 +71,7 @@ def construct(seed, algo, data_version, step):
     _lots, placements = plan_city(seed, network, catalog_meta, algo)
 
     grid, palette, ground, block_entities = assemble_city(
-        seed, roads, placements, catalog_meta, ROADS_SCHEM, BUILDS_SCHEM, lambda n: step(4 + n),
+        seed, roads, placements, catalog_meta, road_pieces, BUILDS_SCHEM, lambda n: step(4 + n),
     )
 
     step(7)
