@@ -4,8 +4,8 @@ A run sends the page four kinds of event, each naming its tab, with facts, not w
 words them):
 
 - ``progress``: first with no step, as the run starts; then each of the run's reports as it comes, its ``step``
-  code, ``completed`` of ``total``, and ``detail``, the pipeline's own name for what's under way when it has one.
-  The page (progress/steps.js) puts each on the bar;
+  code, ``completed`` of ``total``, and ``detail``, a fact about what's under way when the step has one (Extract's
+  contact sheets name each piece). The page (progress/steps.js) puts each on the bar, and text.js words it;
 - ``done``: the images the run made;
 - ``failed``: the error's text, if it had any;
 - ``finished``: after either, with every tab's gate.

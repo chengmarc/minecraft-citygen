@@ -72,7 +72,16 @@ NOT AN OFFICIAL MINECRAFT PRODUCT. NOT APPROVED BY OR ASSOCIATED WITH MOJANG OR 
 
 ### What's new in this version
 
-Leave blank: this is the first submission.
+Rewrite this for each submission; for 2.0.0 (1500 characters or fewer):
+
+```
+A new look: the three steps, Extract, Preview and Build, check off as you go, and the progress bar is a strip of ground that grows grass as each step finishes.
+• The window is now built on Microsoft Edge WebView2, which comes with Windows 11 and most of Windows 10.
+• Each tab's settings and progress sit in one panel below the pictures, which are labelled and zoomable.
+• Road and building pieces show on transparent sheets.
+• Extract has a Reset, back to the sample world and its areas.
+• Your settings, cities and exported worlds carry over.
+```
 
 ### Product features
 
@@ -96,12 +105,13 @@ Read and change the code: open source under Apache 2.0
 
 ### Screenshots
 
-Upload in this order (the first is shown first). Each is the app's Build tab with a finished city:
+Upload in this order (the first is shown first). They follow the app's tabs in the order a user goes through them:
 
-1. `desktop/screenshot-1-promo.png`: a whole modern city from the buildings you make
-2. `desktop/screenshot-2-seeds.png`: the same buildings, a new city from a new seed
-3. `desktop/screenshot-3-styles.png`: a medieval town, the city taking your buildings' style
-4. `desktop/screenshot-4-size.png`: a small town, from village to metropolis
+1. `desktop/screenshot-1-promo.png`: the Build tab, a whole modern city from the buildings you make
+2. `desktop/screenshot-2-extract.png`: the Extract tab, your own buildings found in your world and turned into pieces
+3. `desktop/screenshot-3-preview.png`: the Preview tab, the road network and building layout before you build
+4. `desktop/screenshot-4-styles.png`: the Build tab, a medieval town, the city taking your buildings' style
+5. `desktop/screenshot-5-size.png`: the Build tab, a medieval village, from village to metropolis
 
 ### Store logos
 

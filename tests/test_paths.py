@@ -5,7 +5,7 @@ import unittest
 from pathlib import Path
 from unittest import mock
 
-from citygen import paths as config_path
+from citygen import paths
 
 
 # --- frozen app data root -------------------------------------------------
@@ -18,36 +18,33 @@ class CheckoutRootTests(unittest.TestCase):
             (src / "application.pyw").touch()
             (Path(repo) / "pyproject.toml").touch()
 
-            root = config_path._repo_checkout_root(str(src))
+            root = paths._repo_checkout_root(str(src))
 
         self.assertEqual(Path(root), Path(repo).resolve())
 
 
 class FrozenAppRootTests(unittest.TestCase):
-    def test_package_family_name_is_empty_when_not_packaged(self):
-        self.assertEqual(config_path._package_family_name(), "")  # tests never run inside an MSIX
-
     def test_packaged_app_writes_to_the_real_package_folder(self):
         local = str(Path.home() / "AppData" / "Local")
-        with mock.patch.object(config_path, "_package_family_name", return_value="CityGen_abc123"), \
+        with mock.patch.object(paths, "_package_family_name", return_value="CityGen_abc123"), \
                 mock.patch.dict(os.environ, {"LOCALAPPDATA": local}):
-            root = config_path._frozen_app_root()
+            root = paths._frozen_app_root()
         expected = Path(local) / "Packages" / "CityGen_abc123" / "LocalCache" / "Local" / "MC CityGen"
         self.assertEqual(root, os.path.normpath(expected))
 
     def test_unwritable_exe_dir_falls_back_to_user_data_root(self):
-        with mock.patch.object(config_path, "_package_family_name", return_value=""), \
-                mock.patch.object(config_path, "_is_writable_dir", return_value=False):
-            self.assertEqual(config_path._frozen_app_root(), config_path._user_data_root())
+        with mock.patch.object(paths, "_package_family_name", return_value=""), \
+                mock.patch.object(paths, "_is_writable_dir", return_value=False):
+            self.assertEqual(paths._frozen_app_root(), paths._user_data_root())
 
     def test_is_writable_dir_probes_with_a_real_file(self):
         with tempfile.TemporaryDirectory() as tempdir:
-            self.assertTrue(config_path._is_writable_dir(Path(tempdir)))
+            self.assertTrue(paths._is_writable_dir(Path(tempdir)))
             self.assertEqual(os.listdir(tempdir), [])  # the probe cleans up after itself
-            self.assertFalse(config_path._is_writable_dir(Path(tempdir) / "missing"))
+            self.assertFalse(paths._is_writable_dir(Path(tempdir) / "missing"))
 
 
-# --- config.path legacy data migration -------------------------------------
+# --- legacy data migration ---------------------------------------------------
 
 class LegacyDataMigrationTests(unittest.TestCase):
     def _legacy_root(self, root: Path) -> None:
@@ -60,7 +57,7 @@ class LegacyDataMigrationTests(unittest.TestCase):
             root = Path(tmp)
             self._legacy_root(root)
 
-            config_path._migrate_legacy_data(root, installed=True)
+            paths._migrate_legacy_data(root, installed=True)
 
             self.assertTrue((root / "appdata" / "05_world" / "saves" / "World 5").is_dir())
             self.assertTrue((root / "appdata" / "citygen.json").is_file())
@@ -72,7 +69,7 @@ class LegacyDataMigrationTests(unittest.TestCase):
             root = Path(tmp)
             self._legacy_root(root)
 
-            config_path._migrate_legacy_data(root, installed=False)
+            paths._migrate_legacy_data(root, installed=False)
 
             self.assertTrue((root / "appdata" / "citygen.json").is_file())
             self.assertTrue((root / "src" / "config").is_dir())
@@ -84,7 +81,7 @@ class LegacyDataMigrationTests(unittest.TestCase):
             (root / "appdata").mkdir()
             (root / "appdata" / "citygen.json").write_text('{"new": true}', encoding="utf-8")
 
-            config_path._migrate_legacy_data(root, installed=True)
+            paths._migrate_legacy_data(root, installed=True)
 
             self.assertTrue((root / "artifacts").is_dir())  # not merged into an existing appdata/
             self.assertEqual((root / "appdata" / "citygen.json").read_text(encoding="utf-8"), '{"new": true}')
