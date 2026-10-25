@@ -81,6 +81,19 @@ const TEXT = {
       road_layout: "Rendering road layout preview",
       city_layout: "Rendering city layout preview",
     },
+    build: {
+      // Construction's steps, by the index it reports (citygen.step3_build.construct).
+      construct: [
+        "Generating road network",
+        "Building road grid",
+        "Loading building catalog",
+        "Planning placements",
+        "Assembling building instances",
+        "Composing voxel grid",
+        "Placing trees and filling lots",
+        "Writing schematic",
+      ],
+    },
   },
   // The algorithm form, by the knob names and codes in gui/form.py.
   form: {

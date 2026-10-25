@@ -1,8 +1,8 @@
 """Road network model -- generation and the tile catalogue, with no rendering.
 
 `gen_networks()` builds the seeded network; `iter_placements()` says which tile
-goes where. Stage 3 draws it (`engine.render.road_layout`) and Stage 4 stamps
-it in blocks (`engine.schematic.road`).
+goes where. The preview draws it (`citygen.tools.render_standins.compose`) and
+the build stamps it in blocks (`citygen.core.assemble.build_road_grid`).
 
 Overlay model (big 2x2, small 1x1, mixed 1x2). Two independent Manhattan
 networks are generated, then composited:

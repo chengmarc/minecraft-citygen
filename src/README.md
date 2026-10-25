@@ -61,7 +61,7 @@ names the bar's segments by the same codes (`TEXT.segments`).
 |---|---|---|
 | Extract | `step1_extract.run(save, road_box, build_types, progress)` | `scan_roads`, `road_pieces`, `road_sheet`, `scan_builds`, `build_pieces`, `build_sheet` |
 | Preview | `step2_preview.run(seed, algo, progress)` | `road_pieces`, `build_pieces`, `road_layout`, `city_layout` |
-| Build | `step3_build.run(seed, algo, save, progress)` | `construct` (eight steps, `step3_build.STEPS`), `render`, `world` |
+| Build | `step3_build.run(seed, algo, save, progress)` | `construct` (eight steps, `step3_build.CONSTRUCT_STEPS`), `render`, `world` |
 
 Every run reads and writes `appdata/`, so runs go one at a time. Preview and Build stay disabled until extraction's two
 contact sheets exist. Each launch, and each change of source world, clears `appdata/` except the exported worlds and

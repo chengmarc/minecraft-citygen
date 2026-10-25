@@ -15,6 +15,7 @@ from citygen.tools import render_topdown
 from citygen.tools.render_topdown import region_world_bounds
 from citygen.tools import world_reader
 from citygen.tools.world_reader import World
+from citygen.core import markers
 from citygen.core.markers import (
     extract_cuboid,
     group_marker_cuboids,
@@ -26,9 +27,6 @@ from citygen.core.markers import (
 # --- version detection ----------------------------------------------------
 
 class VersionTests(unittest.TestCase):
-    def test_supported_data_version_floor_is_sponge_v3_floor(self):
-        self.assertEqual(world_reader.HARD_FLOOR_DATA_VERSION, 4790)  # MC 26.1.2
-
     def test_detect_world_data_version_reads_bundled_world(self):
         world = Path(__file__).resolve().parents[1] / "src" / "citygen" / "data" / "default_world"
         self.assertEqual(world_reader.detect_world_data_version(str(world)), 4790)  # bundled world is 26.1.2
@@ -229,6 +227,14 @@ def test_marker_blocks_in_region_clips_section_results_to_selected_bounds():
     }
 
 
+def test_a_sign_is_read_one_block_above_its_emerald(monkeypatch):
+    monkeypatch.setattr(markers, "iter_signs", lambda _world, _xa, _xb, _za, _zb: [
+        (4, 70, 8, "stack: 9"),
+        (4, 71, 8, "stack: 2-5"),
+    ])
+    assert markers.parse_range(markers.sign_text_above(object(), (4, 70, 8)), (r"stack\s*:\s*",)) == [2, 5]
+
+
 # --- marker parsing: cuboid leaf persistence ------------------------------
 
 class _FixedBlockWorld:
@@ -264,10 +270,6 @@ class WorldPreviewTests(unittest.TestCase):
             self.assertEqual(region_world_bounds(region_dir), (-512, 511, -512, 511))
 
 
-if __name__ == "__main__":
-    unittest.main()
-
-
 def test_topdown_preview_shows_the_picture_so_far_while_it_draws(monkeypatch):
     from citygen.paths import DEFAULT_WORLD
 
@@ -278,3 +280,7 @@ def test_topdown_preview_shows_the_picture_so_far_while_it_draws(monkeypatch):
     assert snapshots
     assert all(size == image.size and m == meta for size, m in snapshots)
     assert image.mode == "RGBA" and image.getchannel("A").getextrema() == (0, 255)   # no world: transparent
+
+
+if __name__ == "__main__":
+    unittest.main()

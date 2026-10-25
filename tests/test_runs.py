@@ -10,7 +10,6 @@ import pytest
 from PIL import Image
 
 from citygen import step1_extract, step2_preview, step3_build
-from citygen.core import markers
 from citygen.tools import contact_sheet
 from citygen.settings import ALGO, BlockRegion, BuildRegion
 
@@ -50,12 +49,8 @@ def test_road_extraction_clears_the_last_runs_pieces_even_when_it_finds_none(tmp
     assert not stale.exists()
 
 
-def test_a_sign_is_read_one_block_above_its_emerald(monkeypatch):
-    monkeypatch.setattr(markers, "iter_signs", lambda _world, _xa, _xb, _za, _zb: [
-        (4, 70, 8, "stack: 9"),
-        (4, 71, 8, "stack: 2-5"),
-    ])
-    assert markers.parse_range(markers.sign_text_above(object(), (4, 70, 8)), (r"stack\s*:\s*",)) == [2, 5]
+def test_an_area_counts_the_chunks_it_touches_partly_and_below_zero():
+    assert BlockRegion.from_xyz_pair((-1, 0, 0), (16, 0, 15)).chunk_span() == (3, 1)
 
 
 def test_extraction_reports_its_steps_in_order(monkeypatch, tmp_path):
@@ -131,7 +126,7 @@ def test_build_constructs_renders_then_exports_into_a_world_named_for_its_seed(m
     def fake_construct(seed, algo, data_version, step):
         calls.append(("construct", seed, data_version))
         step(0)
-        step(len(step3_build.STEPS))
+        step(step3_build.CONSTRUCT_STEPS)
 
     def fake_schem_to_world(schem, out, **kwargs):
         calls.append(("world", Path(out).name, kwargs["world_name"], kwargs["source_world"]))
@@ -144,9 +139,9 @@ def test_build_constructs_renders_then_exports_into_a_world_named_for_its_seed(m
     monkeypatch.setattr(step3_build, "schem_to_world", fake_schem_to_world)
     steps = []
 
-    step3_build.run(12, ALGO, "source", lambda step, completed, total, detail=None: steps.append((step, detail)))
+    step3_build.run(12, ALGO, "source", lambda step, completed, total: steps.append((step, completed)))
 
     assert calls == [("construct", 12, 4903), ("world", "MC CityGen World 12", "MC CityGen World 12", "source")]
     assert (tmp_path / "seed_12.png").exists()
-    assert steps[0] == ("construct", step3_build.STEPS[0])
-    assert [step for step, _detail in steps[-3:]] == ["render", "render", "world"]
+    assert steps[0] == ("construct", 0)
+    assert [step for step, _completed in steps[-3:]] == ["render", "render", "world"]

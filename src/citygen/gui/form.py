@@ -1,6 +1,6 @@
 """The algorithm form Preview and Build share: which knobs show, and how the form's values become an ``Algo``.
 
-Each knob names one :class:`config.algo.Algo` field, upper-cased. Its value is text, as the page sends it. The form's
+Each knob names one :class:`citygen.settings.Algo` field, upper-cased. Its value is text, as the page sends it. The form's
 words -- each knob's label and tip, the groups' names, the selectors' option names -- are in the page's text.js, keyed
 by the codes here.
 """
@@ -83,7 +83,7 @@ def form_values(saved=None):
 
 
 def build_algo(values):
-    """The :class:`config.algo.Algo` that :func:`form_values` describes; raises :class:`ConfigError`."""
+    """The :class:`citygen.settings.Algo` that :func:`form_values` describes; raises :class:`ConfigError`."""
     knobs = {}
     for name in KNOBS:
         value = values[name]
@@ -110,7 +110,7 @@ def form_spec():
     def field(name):
         if name in SET_KNOBS:
             return {"name": name, "kind": "text"}
-        minimum, maximum = SLIDER_RANGES.get(name, (-99999, 99999))
+        minimum, maximum = SLIDER_RANGES[name]
         return {"name": name, "kind": "slider", "min": minimum, "max": maximum}
 
     return {
