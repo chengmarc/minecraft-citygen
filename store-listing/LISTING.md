@@ -105,13 +105,13 @@ Read and change the code: open source under Apache 2.0
 
 ### Screenshots
 
-Upload in this order (the first is shown first). They follow the app's tabs in the order a user goes through them:
+Upload in this order (the first is shown first). Screenshot n shows `docs/pics/promo<n>.png`:
 
 1. `desktop/screenshot-1-promo.png`: the Build tab, a whole modern city from the buildings you make
-2. `desktop/screenshot-2-extract.png`: the Extract tab, your own buildings found in your world and turned into pieces
-3. `desktop/screenshot-3-preview.png`: the Preview tab, the road network and building layout before you build
-4. `desktop/screenshot-4-styles.png`: the Build tab, a medieval town, the city taking your buildings' style
-5. `desktop/screenshot-5-size.png`: the Build tab, a medieval village, from village to metropolis
+2. `desktop/screenshot-2-size.png`: the Build tab, a medieval village, from village to metropolis
+3. `desktop/screenshot-3-styles.png`: the Build tab, a medieval town, the city taking your buildings' style
+4. `desktop/screenshot-4-extract.png`: the Extract tab, your own buildings found in your world and turned into pieces
+5. `desktop/screenshot-5-preview.png`: the Preview tab, the road network and building layout before you build
 
 ### Store logos
 

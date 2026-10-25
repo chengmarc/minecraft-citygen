@@ -1,7 +1,7 @@
 <!doctype html>
 <!-- The Store's screenshots: render.py loads this page at 1366 x 768 (rendered at 2x) once per shot, named by the
      hash. Laid out as agent-2b's are: a caption on the left and the app on the right, the real window captured on one
-     of its tabs (docs/pics/promo*.png), in the order a user goes through them. Needs Edge's --allow-file-access-from-files, to read them from file://. -->
+     of its tabs. Screenshot n shows docs/pics/promo<n>.png, in that folder's order. Needs Edge's --allow-file-access-from-files, to read them from file://. -->
 <html lang="en">
 <head>
 <meta charset="utf-8">
@@ -52,6 +52,16 @@
       text: "Mark up a few roads and buildings in your MC world, and get back streets, houses and landmarks, ready to play.",
       window: "../../docs/pics/promo1.png",
     },
+    size: {
+      title: 'From a village<br><span class="brand">to a metropolis.</span>',
+      text: "Five city sizes, from this village to the city on the first shot. Tune road density, spacing and the building mix.",
+      window: "../../docs/pics/promo2.png",
+    },
+    styles: {
+      title: 'Any style<br><span class="brand">you build.</span>',
+      text: "Your city takes the look of the buildings you give it. This medieval town comes from the built-in medieval set.",
+      window: "../../docs/pics/promo3.png",
+    },
     extract: {
       title: 'Your buildings,<br><span class="brand">your city.</span>',
       text: "Mark each building with a gold, a diamond and an emerald block. The app finds them in your world and turns them into pieces.",
@@ -61,16 +71,6 @@
       title: 'See it first,<br><span class="brand">then build.</span>',
       text: "Preview the road network and the building layout, roll a new seed until you like it, then build.",
       window: "../../docs/pics/promo5.png",
-    },
-    styles: {
-      title: 'Any style<br><span class="brand">you build.</span>',
-      text: "Your city takes the look of the buildings you give it. This medieval town comes from the built-in medieval set.",
-      window: "../../docs/pics/promo3.png",
-    },
-    size: {
-      title: 'From a village<br><span class="brand">to a metropolis.</span>',
-      text: "Five city sizes, from this village to the city on the first shot. Tune road density, spacing and the building mix.",
-      window: "../../docs/pics/promo2.png",
     },
   };
 
