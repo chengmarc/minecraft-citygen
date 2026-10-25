@@ -36,6 +36,7 @@
 ## Modern Assets
 
 <img src="docs/pics/assets_modern.png" alt="Modern built-in asset sheet" width="100%">
+
 ## Medieval Assets
 
 <img src="docs/pics/assets_medieval.png" alt="Medieval built-in asset sheet" width="100%">
