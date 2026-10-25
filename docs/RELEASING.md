@@ -132,7 +132,7 @@ No script makes `docs/pics/`; each picture was chosen and copied in by hand.
 | `assets_*.png`, `assets_*.gif` | extraction: `appdata/02_builds/renders/_contact_sheet.png`, and `buildings.gif`, which the app no longer writes (below) |
 | `modern_iso.png`, `medieval_iso.png` | the build: `appdata/04_city/renders/seed_<n>.png` |
 | `ingame*.png`, `base.png` | in-game screenshots |
-| `promo*.png` | the app's window on its Build tab |
+| `promo*.png` | the app's window: `promo1`–`promo3` on the Build tab, `promo4` on Extract, `promo5` on Preview; `shots.html` says which shot uses which |
 | `type1.png`, `type2.png` | in-game screenshots, annotated with the marker blocks |
 
 The current renders can't be remade: their seeds, the medieval set's

@@ -24,9 +24,10 @@ EDGE_PROFILE = LISTING.parent / "build" / "edge-render"  # a profile of its own,
 # Partner Center's sizes: screenshots 1366 x 768 or larger, box art 2160 x 2160, poster art 1440 x 2160, tile 300 x 300.
 IMAGES = [
     ("desktop/screenshot-1-promo.png", "shots.html#promo", 1366, 768, 2),
-    ("desktop/screenshot-2-seeds.png", "shots.html#seeds", 1366, 768, 2),
-    ("desktop/screenshot-3-styles.png", "shots.html#styles", 1366, 768, 2),
-    ("desktop/screenshot-4-size.png", "shots.html#size", 1366, 768, 2),
+    ("desktop/screenshot-2-extract.png", "shots.html#extract", 1366, 768, 2),
+    ("desktop/screenshot-3-preview.png", "shots.html#preview", 1366, 768, 2),
+    ("desktop/screenshot-4-styles.png", "shots.html#styles", 1366, 768, 2),
+    ("desktop/screenshot-5-size.png", "shots.html#size", 1366, 768, 2),
     ("box-art-2160.png", "logo.html", 1080, 1080, 2),
     ("poster-art-1440x2160.png", "logo.html", 720, 1080, 2),
     ("store-logo-300.png", "logo.html#tile", 300, 300, 1),
