@@ -34,8 +34,9 @@ The format is based on Keep a Changelog, and versions should match the release v
   `build/packaging/`
 - the Store listing is in `store-listing/`, was `store/`: the logos at its top, the
   screenshots in `desktop/`, and what renders them in `generator/`
-- repo scripts are in `scripts/`, was `tools/`; the palette updater downloads the MC
-  client JAR into `build/`
+- the block-colour generator is `src/citygen/data/color_render_update.py`, beside
+  the `color_render.csv` it writes, was `tools/update_render_colors.py`; it downloads
+  the MC client JAR into `build/`. The other repo scripts in `tools/` are gone
 - release notes are in `docs/release-notes/`, was `docs/release/`
 - a checkout runs with `pythonw src/application.pyw`, was at the repo root
 - the source is one package, `src/citygen/`, was `config/`, `engine/`, `pipeline/`
