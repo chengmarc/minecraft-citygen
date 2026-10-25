@@ -33,10 +33,12 @@
 
 # Built-in Assets
 
-| Assets Overview | Individual Asset |
-| --- | --- |
-| <img src="docs/pics/assets_modern.png" alt="Modern built-in asset sheet" width="100%"> | <img src="docs/pics/assets_modern.gif" alt="Modern built-in assets animated preview" width="100%"> | 
-| <img src="docs/pics/assets_medieval.png" alt="Medieval built-in asset sheet" width="100%"> | <img src="docs/pics/assets_medieval.gif" alt="Medieval built-in assets animated preview" width="100%"> | 
+## Modern Assets
+
+<img src="docs/pics/assets_modern.png" alt="Modern built-in asset sheet" width="100%">
+## Medieval Assets
+
+<img src="docs/pics/assets_medieval.png" alt="Medieval built-in asset sheet" width="100%">
 
 # Tutorial - Marking Your Own Assets
 
