@@ -8,6 +8,13 @@
     <linearGradient id="tileRim" x1="0" y1="0" x2="1" y2="1">
       <stop offset="0" stop-color="#fff" stop-opacity=".7"/><stop offset=".4" stop-color="#fff" stop-opacity=".08"/><stop offset=".75" stop-color="#fff" stop-opacity=".04"/><stop offset="1" stop-color="#fff" stop-opacity=".4"/>
     </linearGradient>
+    <!-- The drop shadows take the colour of what they sit under: blue beside the sky, dark earth below the dirt. -->
+    <linearGradient id="ambientTint" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="0" y2="1024">
+      <stop offset=".6" stop-color="#2C64A8"/><stop offset=".85" stop-color="#3A2614"/>
+    </linearGradient>
+    <linearGradient id="contactTint" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="0" y2="1024">
+      <stop offset=".6" stop-color="#0E2A4E"/><stop offset=".85" stop-color="#1E0F04"/>
+    </linearGradient>
     <filter id="ambient" filterUnits="userSpaceOnUse" x="-16" y="-16" width="1056" height="1056"><feGaussianBlur stdDeviation="6"/></filter>
     <filter id="contact" filterUnits="userSpaceOnUse" x="-16" y="-16" width="1056" height="1056"><feGaussianBlur stdDeviation="3"/></filter>
     <filter id="blur" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="14"/></filter>
@@ -22,8 +29,8 @@
     </radialGradient>
   </defs>
   <!-- Squircle tile, sheen, rim and drop shadow kept from the shared icon family. -->
-  <use href="#sq" fill="#2C64A8" opacity=".9" filter="url(#ambient)" transform="translate(512 512) scale(0.98) translate(-512 -512) translate(0 5)"/>
-  <use href="#sq" fill="#0E2A4E" opacity=".6" filter="url(#contact)" transform="translate(0 3)"/>
+  <use href="#sq" fill="url(#ambientTint)" opacity=".9" filter="url(#ambient)" transform="translate(512 512) scale(0.98) translate(-512 -512) translate(0 5)"/>
+  <use href="#sq" fill="url(#contactTint)" opacity=".6" filter="url(#contact)" transform="translate(0 3)"/>
   <g clip-path="url(#tile)">
     <rect width="1024" height="1024" fill="url(#sky)"/>
         <polygon points="68.59,643.20 512.00,899.20 512.00,1411.20 68.59,1155.20" fill="#9A6332"/>
