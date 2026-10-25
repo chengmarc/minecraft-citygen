@@ -4,7 +4,7 @@ All notable changes to this project should be documented in this file.
 
 The format is based on Keep a Changelog, and versions should match the release version you publish.
 
-## [Unreleased]
+## [2.0.0] - 2026-10-25
 
 ### Changed
 

@@ -1,6 +1,6 @@
 # MC CityGen 2.0.0 Release Notes
 
-Released on TBD.
+Released on October 25, 2026.
 
 MC CityGen 2.0.0 rebuilds the window: it is now an HTML page in Microsoft Edge
 WebView2, was Qt, with a new look around the same three tabs. Everything the
