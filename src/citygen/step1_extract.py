@@ -5,6 +5,7 @@ contact sheets.
 from __future__ import annotations
 
 import glob
+import math
 import os
 from pathlib import Path
 
@@ -46,11 +47,6 @@ def run(save, road_box, build_types, progress):
     )
 
 
-def chunk_scan_count(x0, x1, z0, z1):
-    """Number of region chunks touched by an x/z block rectangle."""
-    return ((max(x0, x1) >> 4) - (min(x0, x1) >> 4) + 1) * ((max(z0, z1) >> 4) - (min(z0, z1) >> 4) + 1)
-
-
 def clear_schems(directory):
     """Make ``directory`` and delete the last run's ``.schem`` files from it."""
     os.makedirs(directory, exist_ok=True)
@@ -62,7 +58,7 @@ def clear_schems(directory):
 def extract_roads(world, road_box, data_version, progress):
     """Each marked road piece and fill prop, as ``<the name on its sign>.schem``."""
     clear_schems(ROADS_SCHEM)
-    progress("scan_roads", 0, chunk_scan_count(road_box.x0, road_box.x1, road_box.z0, road_box.z1))
+    progress("scan_roads", 0, math.prod(road_box.chunk_span()))
     components = detect_marker_assets(
         world, road_box.x0, road_box.x1, road_box.z0, road_box.z1, BUILD_MARKER_Y_RANGE,
         on_progress=lambda done, total: progress("scan_roads", done, total),
@@ -91,7 +87,7 @@ def extract_builds(world, build_types, data_version, progress):
     """Each marked building as its pieces' ``.schem`` files, and the catalog of them all (``buildings.json``)."""
     clear_schems(BUILDS_SCHEM)
     regions = [region.bounds for region in build_types]
-    chunk_counts = [chunk_scan_count(r.x0, r.x1, r.z0, r.z1) for r in regions]
+    chunk_counts = [math.prod(r.chunk_span()) for r in regions]
     total_chunks = sum(chunk_counts)
     progress("scan_builds", 0, total_chunks)
     builds = []

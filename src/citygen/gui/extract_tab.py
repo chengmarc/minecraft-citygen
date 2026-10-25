@@ -49,16 +49,6 @@ def version_selector_items(min_data_version):
 
 # --- The tab
 
-CHUNK_SIZE = 16   # static/region/region.js snaps to the same chunks
-
-
-def chunk_span(start, end):
-    """How many chunks a block region covers, as ``[x, z]``."""
-    min_x, max_x = sorted((int(start[0]), int(end[0])))
-    min_z, max_z = sorted((int(start[2]), int(end[2])))
-    return [max_x // CHUNK_SIZE - min_x // CHUNK_SIZE + 1, max_z // CHUNK_SIZE - min_z // CHUNK_SIZE + 1]
-
-
 AREAS = tuple(SAMPLE_AREAS)   # road, house, landmark
 
 # Extract's reports are coalesced into this many buckets per step, so the page isn't sent events that don't move its bar.
@@ -137,7 +127,7 @@ class ExtractTab:
         areas = {}
         for key in AREAS:
             pair = _area_pair(saved.get(key))
-            areas[key] = {"chunks": chunk_span(*pair) if pair else None}
+            areas[key] = {"chunks": list(BlockRegion.from_xyz_pair(*pair).chunk_span()) if pair else None}
         return {
             "worldPath": path,
             "worldReady": self.world_ready(),

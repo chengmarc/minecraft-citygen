@@ -20,28 +20,19 @@ from citygen.tools.schem import write_sponge_schem_grid
 from citygen.tools.world_reader import source_data_version
 from citygen.tools.world_writer import schem_to_world
 
-# What construction reports as it starts each of its steps, in order; gui/static/progress/steps.js weights each one.
-STEPS = (
-    "Generating road network",
-    "Building road grid",
-    "Loading building catalog",
-    "Planning placements",
-    "Assembling building instances",
-    "Composing voxel grid",
-    "Placing trees and filling lots",
-    "Writing schematic",
-)
+# How many steps construction reports, by index as it starts each (see construct); gui/static/progress/steps.js weights
+# each one, and text.js words each one.
+CONSTRUCT_STEPS = 8
 
 
 def run(seed, algo, save, progress):
     """Build the city of ``seed`` under ``algo``, render it, and write it into a copy of the ``save`` world.
 
     The city is stamped with the source world's version (see ``source_data_version``). ``progress(step, completed,
-    total, detail)`` reports ``construct`` (whose detail names the step it's starting), ``render``, then ``world``.
+    total)`` reports ``construct`` (whose ``completed`` is the index of the step it's starting), ``render``, then
+    ``world``.
     """
-    construct(seed, algo, source_data_version(save), lambda n: progress(
-        "construct", n, len(STEPS), STEPS[n] if n < len(STEPS) else None,
-    ))
+    construct(seed, algo, source_data_version(save), lambda n: progress("construct", n, CONSTRUCT_STEPS))
     schem = city_schem_path(seed)
     progress("render", 0, 1)
     image = trim_to_content(render_schem_visible_iso(schem))   # no empty sky above the tallest building
@@ -56,7 +47,11 @@ def run(seed, algo, save, progress):
 
 
 def construct(seed, algo, data_version, step):
-    """Compose the city's voxel grid and write it as ``city_schem_path(seed)``; ``step(n)`` as step ``n`` starts."""
+    """Compose the city's voxel grid and write it as ``city_schem_path(seed)``; ``step(n)`` as step ``n`` starts.
+
+    The steps: the road network, the road grid, the building catalog, the placements, then (in ``assemble_city``) the
+    buildings, the voxel grid and the lot fill, and last the schematic.
+    """
     step(0)
     network = gen_networks(seed, make_size(algo.fine), algo)
 
@@ -82,4 +77,4 @@ def construct(seed, algo, data_version, step):
         offset=(0, -(ground + 1), 0),
         block_entities=block_entities,
     )
-    step(len(STEPS))
+    step(CONSTRUCT_STEPS)

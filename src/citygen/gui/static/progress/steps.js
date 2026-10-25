@@ -7,7 +7,8 @@
 
 "use strict";
 
-// Construction reports each of its eight steps (citygen.step3_build.STEPS) as it starts it.
+// Construction reports each of its eight steps (citygen.step3_build.CONSTRUCT_STEPS) by index as it starts it;
+// text.js words each one (TEXT.stepDetails.build.construct).
 const CONSTRUCT_WEIGHTS = [1, 1, 1, 1, 22, 4, 4, 16];
 
 // Between reports the bar creeps toward the next milestone: up to ``headroom`` of the way there, moving every ``tickMs``
@@ -70,15 +71,15 @@ function stepPosition(run, index, completed, total) {
 }
 
 /** A run's report on tab ``tab``, as the bar's milestone: ``{value, softTarget, tickMs, creepRate, detail}``.
- *  Construction reports ``completed`` as the step it's starting, out of eight, with its name as the detail. */
-function runReport(tab, { step, completed, total, detail = null }) {
+ *  Construction reports ``completed`` as the index of the step it's starting, out of eight. */
+function runReport(tab, { step, completed, total }) {
   const run = RUN_STEPS[tab];
   const steps = Object.keys(run.weights);
   const creep = { tickMs: run.tickMs, creepRate: CREEP_RATE };
   if (step === "construct") {
     const done = completed >= CONSTRUCT_WEIGHTS.length;
     const index = steps.indexOf(`construct.${Math.min(completed, CONSTRUCT_WEIGHTS.length - 1)}`);
-    return { ...stepPosition(run, index, done ? 1 : 0, 1), ...creep, detail: done ? null : detail };
+    return { ...stepPosition(run, index, done ? 1 : 0, 1), ...creep, detail: done ? null : TEXT.stepDetails.build.construct[completed] };
   }
   const shown = tab === "preview" ? TEXT.stepDetails.preview[step] : null;
   return { ...stepPosition(run, steps.indexOf(step), completed, total), ...creep, detail: shown };

@@ -10,6 +10,7 @@ from dataclasses import dataclass
 from typing import Iterable
 
 CELL = 9  # simulation pixels and production blocks per fine cell; fixed by the asset geometry
+CHUNK_SIZE = 16  # MC's chunk edge, in blocks; gui/static/region/region.js snaps to the same chunks
 DEFAULT_SEED = 5
 
 
@@ -79,6 +80,13 @@ class BlockRegion:
         x0, y0, z0 = _coerce_xyz_point(start)
         x1, y1, z1 = _coerce_xyz_point(end)
         return cls(x0, x1, z0, z1, y0, y1)
+
+    def chunk_span(self) -> tuple[int, int]:
+        """How many chunks the region touches along x and z, partial chunks included."""
+        return (
+            self.x1 // CHUNK_SIZE - self.x0 // CHUNK_SIZE + 1,
+            self.z1 // CHUNK_SIZE - self.z0 // CHUNK_SIZE + 1,
+        )
 
 
 @dataclass(frozen=True, slots=True)

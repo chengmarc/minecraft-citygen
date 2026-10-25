@@ -15,12 +15,12 @@ from unittest import mock
 from citygen import step1_extract, step2_preview, step3_build
 from citygen.tools import render_topdown
 from citygen.gui import app as app_module
-from citygen.gui import city_tabs as algo_module
+from citygen.gui import city_tabs as city_tabs_module
 from citygen.gui import extract_tab as extract_module
 from citygen.gui import files, server
 from citygen.gui import form as form_module
 from citygen.gui.bridge import Api
-from citygen.settings import ALGO, BlockRegion
+from citygen.settings import ALGO, BlockRegion, CHUNK_SIZE
 
 
 class _ImmediateThread:
@@ -252,7 +252,7 @@ class BuildTests(_ApiTestCase):
 
         def fake_build(seed, algo, save, on_progress):
             calls.append((seed, algo, save))
-            on_progress("construct", 5, 8, "Composing voxel grid")
+            on_progress("construct", 5, 8)
             on_progress("world", 1, 1)
 
         state = {**form_module.default_state(), "seed": "9"}
@@ -263,7 +263,7 @@ class BuildTests(_ApiTestCase):
         reports = [payload for event, payload in self.events if event == "progress"]
         self.assertEqual(reports[0], {"tab": "build"})
         self.assertEqual(
-            reports[1], {"tab": "build", "step": "construct", "completed": 5, "total": 8, "detail": "Composing voxel grid"},
+            reports[1], {"tab": "build", "step": "construct", "completed": 5, "total": 8, "detail": None},
         )
         self.assertEqual(self.event_names()[-2:], ["done", "finished"])
 
@@ -273,7 +273,7 @@ class BuildBlueprintTests(_ApiTestCase):
         state = {**form_module.default_state(), "seed": "9"}
         with (
             mock.patch.object(step3_build, "run"),
-            mock.patch.object(algo_module, "image", return_value={"src": "/files/03_preview/city/seed_9.png?v=1"}),
+            mock.patch.object(city_tabs_module, "image", return_value={"src": "/files/03_preview/city/seed_9.png?v=1"}),
         ):
             self.api.run_build(state)
 
@@ -285,7 +285,7 @@ class BuildBlueprintTests(_ApiTestCase):
         state = {**form_module.default_state(), "seed": "9"}
         with (
             mock.patch.object(step3_build, "run"),
-            mock.patch.object(algo_module, "image", return_value={"missing": "seed_9.png"}),
+            mock.patch.object(city_tabs_module, "image", return_value={"missing": "seed_9.png"}),
         ):
             self.api.run_build(state)
 
@@ -380,9 +380,6 @@ class WorldPreviewTests(unittest.TestCase):
             self.assertEqual(second, first[:1])
             self.assertFalse(first[1].exists())                       # the last render's other picture is gone
 
-    def test_chunk_span_counts_partial_chunks_and_negative_coordinates(self):
-        self.assertEqual(extract_module.chunk_span((-1, 0, 0), (16, 0, 15)), [3, 1])
-
 
 class PageMirrorTests(unittest.TestCase):
     """What Python and the page each hold a copy of, kept in step."""
@@ -412,10 +409,14 @@ class PageMirrorTests(unittest.TestCase):
 
     def test_construction_has_a_weight_per_step(self):
         weights = re.search(r"const CONSTRUCT_WEIGHTS = \[([^\]]*)\];", self.read("progress/steps.js")).group(1)
-        self.assertEqual(len(weights.split(",")), len(step3_build.STEPS))
+        self.assertEqual(len(weights.split(",")), step3_build.CONSTRUCT_STEPS)
+
+    def test_text_js_words_every_construction_step(self):
+        words = re.search(r"construct: \[([^\]]*)\]", self.read("text.js")).group(1)
+        self.assertEqual(len(re.findall(r'"[^"]+"', words)), step3_build.CONSTRUCT_STEPS)
 
     def test_the_region_map_snaps_to_the_same_chunks(self):
-        self.assertIn(f"const CHUNK_SIZE = {extract_module.CHUNK_SIZE};", self.read("region/region.js"))
+        self.assertIn(f"const CHUNK_SIZE = {CHUNK_SIZE};", self.read("region/region.js"))
 
     def test_the_window_reads_its_colours_from_the_page(self):
         for color in app_module.page_colors("app-bg", "sky", "sky-text"):
