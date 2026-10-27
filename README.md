@@ -6,7 +6,7 @@
   <a href="https://apps.microsoft.com/detail/9NPSMX3TB1T7"><img src="docs/badges/badge-microsoft-store.svg" height="50"></a>
   <img src="docs/badges/badge-mc.svg" height="50">
 
-  <h1>MC CityGen - Procedural City Generator</h1>
+  <h1>MC CityGen - Modular City Generator</h1>
   
   <img src="store-listing/desktop/screenshot-1-promo.png">
   <img src="store-listing/desktop/screenshot-2-size.png">
