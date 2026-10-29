@@ -8,12 +8,16 @@
 
   <h1>MC CityGen - Modular City Generator</h1>
   
-  <img src="store-listing/desktop/screenshot-1-promo.png">
-  <img src="store-listing/desktop/screenshot-2-size.png">
-  <img src="store-listing/desktop/screenshot-3-styles.png">
+  <img src="docs/social-preview.png">
 
 </div>
 
+## Screenshots
+
+<img src="store-listing/desktop/screenshot-1-promo.png">
+<img src="store-listing/desktop/screenshot-2-size.png">
+<img src="store-listing/desktop/screenshot-3-styles.png">
+ 
 ## Generated Cities
 
 <table>

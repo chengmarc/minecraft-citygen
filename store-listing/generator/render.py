@@ -1,6 +1,7 @@
 """Render the images uploaded to Partner Center into store-listing/: the logos there, the screenshots in desktop/.
+Also GitHub's social preview, docs/social-preview.png, uploaded in the repo's Settings.
 
-They are drawn by the pages beside this script (logo.html, shots.html) from the app's own
+They are drawn by the pages beside this script (logo.html, shots.html, social.html) from the app's own
 files: its icon and the pictures in docs/pics/. Uses Microsoft Edge, which comes
 with Windows, in headless mode, and nothing outside the standard library.
 LISTING.md says where each image goes.
@@ -22,6 +23,7 @@ EDGE_PROFILE = LISTING.parent / "build" / "edge-render"  # a profile of its own,
 
 # Each image: file (in store-listing/), page (with its hash), its size in CSS pixels, and its scale.
 # Partner Center's sizes: screenshots 1366 x 768 or larger, box art 2160 x 2160, poster art 1440 x 2160, tile 300 x 300.
+# GitHub's social preview: 1280 x 640, under 1 MB.
 IMAGES = [
     ("desktop/screenshot-1-promo.png", "shots.html#promo", 1366, 768, 2),
     ("desktop/screenshot-2-size.png", "shots.html#size", 1366, 768, 2),
@@ -31,6 +33,7 @@ IMAGES = [
     ("box-art-2160.png", "logo.html", 1080, 1080, 2),
     ("poster-art-1440x2160.png", "logo.html", 720, 1080, 2),
     ("store-logo-300.png", "logo.html#tile", 300, 300, 1),
+    ("../docs/social-preview.png", "social.html", 1280, 640, 1),
 ]
 TRANSPARENT = {"store-logo-300.png"}
 
@@ -58,7 +61,7 @@ def main() -> None:
             old.unlink()
 
     for name, page, width, height, scale in IMAGES:
-        file = LISTING / name
+        file = (LISTING / name).resolve()
         page_file, _, page_hash = page.partition("#")
         url = (GENERATOR / page_file).as_uri() + (f"#{page_hash}" if page_hash else "")
         # --virtual-time-budget lets the page load what it fetches before the shot is taken, without waiting in real time.
@@ -77,7 +80,7 @@ def main() -> None:
         expected = (width * scale, height * scale)
         if size != expected:
             raise SystemExit(f"{name} is {size[0]} x {size[1]}, expected {expected[0]} x {expected[1]}.")
-        print(f"store-listing/{name}  {size[0]} x {size[1]}")
+        print(f"{file.relative_to(LISTING.parent).as_posix()}  {size[0]} x {size[1]}")
 
 
 if __name__ == "__main__":
