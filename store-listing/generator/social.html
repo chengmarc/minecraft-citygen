@@ -1,0 +1,111 @@
+<!doctype html>
+<!-- GitHub's social preview, the card shown when the repo's link is shared: render.py loads this page at 1280 x 640
+     into docs/social-preview.png, which is uploaded in the repo's Settings. GitHub crops a little off the edges in
+     places, so everything stays 56px clear of them. -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="brand.css">
+<style>
+  html, body { width: 1280px; height: 640px; }
+  /* The same backdrop as the screenshots: the in-game shot, blurred, shaded darker behind the name. */
+  body::before { display: none; }
+  .backdrop { position: absolute; inset: -12px; background: url(../../docs/pics/base.png) center / cover no-repeat; filter: blur(4px); }
+  .shade {
+    position: absolute; inset: 0;
+    background: linear-gradient(90deg, rgba(0, 0, 0, 0.62) 0%, rgba(0, 0, 0, 0.45) 38%, rgba(0, 0, 0, 0.15) 70%, rgba(0, 0, 0, 0.25) 100%);
+  }
+
+  .caption { position: absolute; left: 64px; top: 0; bottom: 0; width: 520px; display: flex; flex-direction: column; justify-content: center; text-shadow: 0 2px 12px rgba(0, 0, 0, 0.75); }
+  .caption img { width: 150px; height: 150px; margin-left: -8px; filter: drop-shadow(0 8px 16px rgba(0, 0, 0, 0.45)); }
+  h1 { margin: 20px 0 0; font-size: 72px; line-height: 1; font-weight: 700; letter-spacing: -0.02em; }
+  /* Gradient text draws its shadow over itself, so the accent gets a drop shadow instead. */
+  h1 .brand { text-shadow: none; filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.85)); }
+  .caption p { margin: 14px 0 0; font-size: 30px; font-weight: 500; color: rgba(255, 255, 255, 0.88); }
+  .facts { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 30px; }
+  .facts span {
+    padding: 6px 14px; border-radius: 999px; font: 600 15px "Segoe UI Variable Text", "Segoe UI", sans-serif; text-shadow: none;
+    background: rgba(0, 0, 0, 0.5); border: 1px solid rgba(255, 255, 255, 0.22);
+  }
+
+  /* The modern city from the README. Its render is transparent around the city, so the shadow follows its outline. */
+  .city { position: absolute; display: block; filter: drop-shadow(0 18px 24px rgba(0, 0, 0, 0.6)); }
+  /* Placed by hand with #edit. */
+  .city.modern { left: 511px; top: 130px; width: 742px; }
+
+  /* #edit: drag a city to move it, scroll on it to resize it, arrow keys nudge the last one touched (Shift for 10px).
+     The panel under the card shows the CSS for the line above. */
+  .edit .city { cursor: move; user-select: none; -webkit-user-drag: none; }
+  .edit .city.active { outline: 1px dashed rgba(255, 255, 255, 0.7); }
+  .edit .panel {
+    position: fixed; left: 0; top: 652px; width: 1280px; padding: 10px 14px; display: flex; gap: 14px; align-items: center;
+    font: 13px/1.5 Consolas, monospace; color: #fff; background: #222; border-radius: 6px;
+  }
+  .edit .panel pre { flex: 1; margin: 0; }
+  .edit .panel button { font: 600 13px "Segoe UI", sans-serif; padding: 8px 16px; cursor: pointer; }
+</style>
+</head>
+<body>
+  <div class="backdrop"></div>
+  <div class="shade"></div>
+  <div class="caption">
+    <img src="../../src/app-icon.svg" alt="">
+    <h1>MC <span class="brand">CityGen</span></h1>
+    <p>Procedural City Generator</p>
+    <!-- The same facts as on the screenshots (shots.html). -->
+    <div class="facts"><span>Java Edition 26.1.2+</span><span>Works offline</span><span>Modern &amp; medieval sets</span></div>
+  </div>
+  <img class="city modern" src="../../docs/pics/modern_iso.png" alt="">
+<script>
+  if (location.hash === "#edit") {
+    document.documentElement.className = "edit";
+    document.body.insertAdjacentHTML("beforeend",
+      '<div class="panel"><pre></pre><button>Copy</button></div>');
+    const pre = document.querySelector(".panel pre");
+    const cities = [...document.querySelectorAll(".city")];
+    let active = cities[cities.length - 1];
+
+    const box = el => ({ left: el.offsetLeft, top: el.offsetTop, width: el.offsetWidth });
+    const place = (el, b) => Object.assign(el.style, { left: b.left + "px", top: b.top + "px", width: b.width + "px" });
+    const show = () => {
+      cities.forEach(c => c.classList.toggle("active", c === active));
+      pre.textContent = cities.map(c => {
+        const b = box(c);
+        return `.city.${c.classList[1]} { left: ${b.left}px; top: ${b.top}px; width: ${b.width}px; }`;
+      }).join("\n");
+    };
+
+    cities.forEach(c => {
+      c.addEventListener("pointerdown", e => {
+        active = c; show();
+        const start = box(c), x = e.clientX, y = e.clientY;
+        c.setPointerCapture(e.pointerId);
+        const move = m => { place(c, { ...start, left: start.left + m.clientX - x, top: start.top + m.clientY - y }); show(); };
+        c.addEventListener("pointermove", move);
+        c.addEventListener("pointerup", () => c.removeEventListener("pointermove", move), { once: true });
+      });
+      // Resizes about the city's centre, 4% a notch.
+      c.addEventListener("wheel", e => {
+        e.preventDefault(); active = c;
+        const b = box(c), width = Math.round(b.width * (e.deltaY < 0 ? 1.04 : 1 / 1.04));
+        const grow = width / b.width, height = c.offsetHeight;
+        place(c, { width, left: Math.round(b.left - (width - b.width) / 2), top: Math.round(b.top - height * (grow - 1) / 2) });
+        show();
+      }, { passive: false });
+    });
+    addEventListener("keydown", e => {
+      const step = e.shiftKey ? 10 : 1, d = { ArrowLeft: [-step, 0], ArrowRight: [step, 0], ArrowUp: [0, -step], ArrowDown: [0, step] }[e.key];
+      if (!d) return;
+      e.preventDefault();
+      const b = box(active);
+      place(active, { ...b, left: b.left + d[0], top: b.top + d[1] });
+      show();
+    });
+    document.querySelector(".panel button").onclick = e => {
+      navigator.clipboard.writeText(pre.textContent).then(() => { e.target.textContent = "Copied"; });
+    };
+    show();
+  }
+</script>
+</body>
+</html>
