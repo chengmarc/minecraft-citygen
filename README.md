@@ -1,6 +1,6 @@
 <div align="center">
 
-  <img src="src/app-icon.svg" width="180"><br>
+  <img src="docs/app-icon.png" width="180"><br>
 
   <a href="https://github.com/chengmarc/minecraft-citygen/releases/latest/download/MC.CityGen-setup.exe"><img src="docs/badges/badge-download.svg" height="50"></a>
   <a href="https://apps.microsoft.com/detail/9NPSMX3TB1T7"><img src="docs/badges/badge-microsoft-store.svg" height="50"></a>

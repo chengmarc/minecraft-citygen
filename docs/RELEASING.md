@@ -183,7 +183,8 @@ in that list is missing from the release even though it works from a checkout.
 renders it to `build/packaging/app-icon.png` with headless Microsoft Edge, then
 makes the Store package logos, `app-icon.ico` and the bundled world's 64 px
 `icon.png` from that PNG; the `.ico` is both the installer's icon and the bundled
-window icon. The world icon is the one rendered icon that is tracked, because the
+window icon. `store-listing/generator/render.py` draws the Store logos and
+`docs/app-icon.png` from the SVG itself. The world icon is the one rendered icon that is tracked, because the
 app reads it from the source tree. It uses Edge because most
 SVG renderers ignore the clip path that rounds the tile and the blur filters.
 From a checkout, `python packaging/build_windows_release.py --icon-only` makes
