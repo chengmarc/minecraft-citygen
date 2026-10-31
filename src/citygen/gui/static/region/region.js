@@ -24,7 +24,6 @@ class RegionMap {
     // one opens at once): the footer is the buttons' height either way, so the map never changes size under it.
     this.runbar = $(".runbar", dialog);
     this.progress = new ProgressBar($(".progress", this.runbar));
-    $(".status", this.runbar).textContent = TEXT.mapDrawing;
     this.applyButton = $('[data-action="apply"]', dialog);
     this.meta = null;
     this.selection = null;   // [[x, y, z], [x, y, z]] in blocks
@@ -75,7 +74,7 @@ class RegionMap {
   receive(payload) {
     if (!this.dialog.open) return;
     if ("error" in payload || "missing" in payload) {
-      const message = "missing" in payload ? TEXT.mapMissing(payload.missing) : payload.error || TEXT.mapFailed;
+      const message = "missing" in payload ? fill(TEXT.mapMissing, { path: payload.missing }) : payload.error || TEXT.mapFailed;
       this.reveal.finish();
       this.runbar.classList.remove("active");
       this.viewer.setMessage(message);
@@ -183,9 +182,9 @@ class RegionMap {
       height: (worldZ1 + 1 - worldZ0) / step,
     });
     this.applyButton.disabled = false;
-    this.status.textContent = TEXT.selection(
-      [worldX0, worldX1], [worldZ0, worldZ1], [chunkX1 - chunkX0 + 1, chunkZ1 - chunkZ0 + 1],
-    );
+    this.status.textContent = fill(TEXT.selection, {
+      x0: worldX0, x1: worldX1, z0: worldZ0, z1: worldZ1, chunksX: chunkX1 - chunkX0 + 1, chunksZ: chunkZ1 - chunkZ0 + 1,
+    });
   }
 
   /** Select the chunks a block area covers. */

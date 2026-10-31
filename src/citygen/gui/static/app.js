@@ -15,7 +15,6 @@ window.citygen = citygen;
 class TabRun {
   constructor(tab, button, step) {
     this.tab = tab;
-    this.text = TEXT.tabs[tab];
     this.ground = $(`.ground-run[data-tab="${tab}"]`);   // shown while its tab is
     const named = runSegments(tab).map(({ code, start, end }) => ({ label: TEXT.segments[tab][code], start, end }));
     this.progress = new ProgressBar($(".progress", this.ground), { segments: named });
@@ -23,6 +22,15 @@ class TabRun {
     this.step = step;
     this.running = false;
     this.ready = false;
+  }
+
+  get text() {
+    return TEXT.tabs[this.tab];
+  }
+
+  /** The language changed: the bar's steps get their new names. */
+  relabel() {
+    this.progress.setLabels(runSegments(this.tab).map(({ code }) => TEXT.segments[this.tab][code]));
   }
 
   /** Whether the run can start, from Python: Extract needs its world and areas, the others the assets. */
@@ -70,7 +78,7 @@ class TabRun {
   }
 
   failed(payload) {
-    const failure = describeFailure(this.tab, payload.detail);
+    const failure = describeFailure(this.tab, payload);
     this.progress.setDetail(failure.title);
     showError(failure);
   }
@@ -99,6 +107,7 @@ function setUpTabs() {
 async function start() {
   const api = window.pywebview.api;
   const boot = await api.bootstrap();
+  await useLanguage(boot.language in LANGUAGES ? boot.language : systemLanguage());
   setUpTabs();
 
   const viewers = Object.fromEntries(
@@ -131,9 +140,9 @@ async function start() {
     for (const card of $$(".area-card")) {
       const { chunks } = extraction.areas[card.dataset.area];
       const chip = $(".chip", card);
-      chip.textContent = TEXT.areaChip(Boolean(chunks));
+      chip.textContent = chunks ? TEXT.areaSelected : TEXT.areaNotSelected;
       chip.classList.toggle("selected", Boolean(chunks));
-      $(".area-detail", card).textContent = TEXT.area(chunks);
+      $(".area-detail", card).textContent = chunks ? fill(TEXT.area, { x: chunks[0], z: chunks[1] }) : TEXT.noArea;
       $("button", card).disabled = !extraction.worldReady;
     }
     setGates(gates);
@@ -215,6 +224,17 @@ async function start() {
     preview: { grid: viewers.grid, city: viewers["city-preview"] },
     build: { city: viewers["city-render"] },
   };
+
+  // --- The language: in place, as a reload would lose the pictures and any run under way
+  const language = $("#language");
+  language.append(...Object.entries(LANGUAGES).map(([code, name]) => new Option(name, code)));
+  language.value = document.documentElement.lang;
+  language.addEventListener("change", async () => {
+    await useLanguage(language.value);
+    Object.values(runs).forEach((run) => run.relabel());
+    showExtraction(await api.set_language(language.value));
+  });
+
   Object.assign(citygen.handlers, {
     progress: (payload) => runs[payload.tab].progressEvent(payload),
     // What a run has so far: images ready early, and Extract's pieces as each one is rendered.
@@ -237,6 +257,8 @@ async function start() {
     },
     worldMap: (payload) => regionMap.receive(payload),
   });
+
+  document.body.classList.add("ready");
 }
 
 window.addEventListener("pywebviewready", start);

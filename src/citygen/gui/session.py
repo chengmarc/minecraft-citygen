@@ -1,13 +1,13 @@
 """What the tabs share: the saved settings, and background runs that report to the page.
 
-A run sends the page four kinds of event, each naming its tab, with facts, not wording (the page's text.js
-words them):
+A run sends the page four kinds of event, each naming its tab, with facts, not wording (the page's language files
+word them):
 
 - ``progress``: first with no step, as the run starts; then each of the run's reports as it comes, its ``step``
   code, ``completed`` of ``total``, and ``detail``, a fact about what's under way when the step has one (Extract's
-  contact sheets name each piece). The page (progress/steps.js) puts each on the bar, and text.js words it;
+  contact sheets name each piece). The page (progress/steps.js) puts each on the bar, and words it;
 - ``done``: the images the run made;
-- ``failed``: the error's text, if it had any;
+- ``failed``: the error's ``code`` if it's a :class:`citygen.errors.RunFailure`, and its text, if it had any;
 - ``finished``: after either, with every tab's gate.
 
 On the way, a run can show what it has so far: ``partial`` swaps in images that are
@@ -25,7 +25,7 @@ JOB_LOCK = threading.Lock()
 
 
 class Settings:
-    """``citygen.json``, one section per tab, written through on every change."""
+    """``citygen.json``, one section per tab and one for the app's language, written through on every change."""
 
     def __init__(self):
         self._config = files.load_saved_gui_config()
@@ -77,7 +77,7 @@ class Runner:
                     result = job(report)
                 payload = on_success(result)
             except Exception as exc:  # boundary: report background failures to the page
-                self._emit("failed", {"tab": tab, "detail": str(exc).strip() or None})
+                self._emit("failed", {"tab": tab, "code": getattr(exc, "code", None), "detail": str(exc).strip() or None})
             else:
                 self._emit("done", {"tab": tab, **payload})
             finally:

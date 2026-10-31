@@ -1,6 +1,7 @@
 <!doctype html>
-<!-- The Store's box art (1:1) and poster art (9:16), and with #tile its app tile icon: render.py loads this page at
-     each size. Everything is sized from the shorter side, so one layout serves both arts. -->
+<!-- The Store's box art (1:1) and poster art (9:16), and its app tile icon: render.py loads this page at each size,
+     once per language. The hash names the language, with .tile for the icon: de, de.tile. Everything is sized from the
+     shorter side, so one layout serves both arts. -->
 <html lang="en">
 <head>
 <meta charset="utf-8">
@@ -25,17 +26,27 @@
   h1 .brand { text-shadow: none; filter: drop-shadow(0 0.5vmin 1.5vmin rgba(0, 0, 0, 0.8)); }
   p { position: relative; margin: 3vmin 0 0; font-size: 4.4vmin; font-weight: 500; color: rgba(255, 255, 255, 0.88); text-shadow: 0 0.4vmin 2vmin rgba(0, 0, 0, 0.75); }
 
-  /* #tile: the icon alone, filling a transparent square. */
+  /* Segoe UI has no Chinese or Japanese: each names its own font, as the app does (src/citygen/gui/static/tokens.css). */
+  html:lang(zh) body { font-family: "Segoe UI Variable Display", "Segoe UI", "Microsoft YaHei UI", sans-serif; }
+  html:lang(ja) body { font-family: "Segoe UI Variable Display", "Segoe UI", "Yu Gothic UI", sans-serif; }
+
+  /* .tile: the icon alone, filling a transparent square. */
   .tile body { background: transparent; }
   .tile body::before, .tile h1, .tile p { display: none; }
   /* In pixels: headless Edge keeps a minimum window size, larger than the tile, and shoots its top-left corner. */
   .tile img { position: fixed; left: 0; top: 0; width: 300px; height: 300px; filter: none; }
 </style>
-<script>if (location.hash === "#tile") document.documentElement.className = "tile";</script>
+<script>
+  const [language, part] = location.hash.slice(1).split(".");
+  document.documentElement.lang = language;
+  if (part === "tile") document.documentElement.className = "tile";
+</script>
 </head>
 <body>
   <img src="../../src/app-icon.svg" alt="">
   <h1>MC <span class="brand">CityGen</span></h1>
-  <p>Procedural City Generator</p>
+  <p id="tagline"></p>
+  <script src="captions.js"></script>
+  <script>document.getElementById("tagline").textContent = CAPTIONS[language].tagline;</script>
 </body>
 </html>

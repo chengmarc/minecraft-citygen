@@ -3,7 +3,12 @@
 from __future__ import annotations
 
 import importlib.util
+import json
+import re
+import sys
 from pathlib import Path
+
+import pytest
 
 
 def load_build_script():
@@ -48,6 +53,178 @@ def test_msix_manifest_renders_to_valid_xml_with_the_store_identity(monkeypatch)
     assert root.find("m:Applications/m:Application", ns).get("Executable") == f"{build.APP_NAME}.exe"
     manifest = ET.tostring(root, encoding="unicode")
     assert [logo for logo in build.MSIX_LOGOS if f"Assets\\{logo}" not in manifest] == []
+
+
+LISTING = Path(__file__).resolve().parents[1] / "store-listing"
+
+
+def load_render_script():
+    spec = importlib.util.spec_from_file_location("render", LISTING / "_generator" / "render.py")
+    module = importlib.util.module_from_spec(spec)
+    assert spec.loader is not None
+    spec.loader.exec_module(module)
+    return module
+
+
+def app_languages():
+    from citygen.gui import server
+
+    return sorted(path.stem for path in (server.STATIC / "i18n").glob("*.json"))
+
+
+def captions():
+    text = (LISTING / "_generator" / "captions.js").read_text(encoding="utf-8")
+    return json.loads(text[text.index("{"):text.rindex("}") + 1])
+
+
+def field(listing, heading):
+    return re.search(rf"^### {heading}\n+```\n(.*?)\n```", listing, re.S | re.M).group(1)
+
+
+def test_every_app_language_has_its_listing_and_screenshots():
+    render = load_render_script()
+
+    assert sorted(render.LANGUAGES) == app_languages()
+    assert sorted(path.parent.name for path in LISTING.glob("*/listing.md")) == app_languages()
+    assert sorted(captions()) == app_languages()
+    for code in app_languages():
+        images = [name for name, *_rest in render.IMAGES if name.startswith(f"{code}/")]
+        assert len(images) == 5 + 3, code
+
+
+def test_every_language_captions_every_shot():
+    english = captions()["en"]
+    for code, words in captions().items():
+        assert words["tagline"], code
+        assert words["shots"].keys() == english["shots"].keys(), code
+        assert len(words["facts"]) == len(english["facts"]), code
+        assert all(shot["title"].count('class="brand"') == 1 for shot in words["shots"].values()), code
+
+
+def test_each_listing_keeps_to_partner_centers_limits():
+    english = (LISTING / "en" / "listing.md").read_text(encoding="utf-8")
+    disclaimer = re.search(r"^NOT AN OFFICIAL.*$", english, re.M).group(0)
+    for path in LISTING.glob("*/listing.md"):
+        listing = path.read_text(encoding="utf-8")
+        description = field(listing, "Description")
+        features = field(listing, "Product features").splitlines()
+        keywords = field(listing, "Keywords").splitlines()
+
+        assert len(description) <= 10_000, path.parent.name
+        assert description.endswith(disclaimer), path.parent.name
+        assert len(field(listing, "What's new in this version")) <= 1500, path.parent.name
+        assert len(field(listing, "Short description")) <= 270, path.parent.name
+        assert len(features) <= 20 and all(len(feature) <= 200 for feature in features), path.parent.name
+        assert len(keywords) <= 7 and all(len(keyword) <= 40 for keyword in keywords), path.parent.name
+        assert sum(len(keyword.split()) for keyword in keywords) <= 21, path.parent.name
+        assert len(field(listing, "Additional system requirements")) <= 200, path.parent.name
+        for shared in ("Copyright and trademark info", "Additional license terms", "Developed by"):
+            assert field(listing, shared) == field(english, shared), path.parent.name
+
+
+def test_the_games_name_appears_only_in_the_disclaimer_the_trademark_credit_and_the_repos_address():
+    # The Store has turned down submissions that used it: see SUBMISSION.md.
+    from citygen.gui import server
+
+    texts = [path.read_text(encoding="utf-8") for path in LISTING.glob("*/listing.md")]
+    texts += [path.read_text(encoding="utf-8") for path in (server.STATIC / "i18n").glob("*.json")]
+    texts.append((LISTING / "_generator" / "captions.js").read_text(encoding="utf-8"))
+
+    for text in texts:
+        for allowed in ("not an official minecraft product", "minecraft is a trademark", "chengmarc/minecraft-citygen"):
+            text = text.lower().replace(allowed, "")
+        assert "minecraft" not in text
+
+
+def test_every_screenshot_comes_from_a_recorded_scene():
+    import sys
+
+    sys.path.insert(0, str(LISTING / "_generator"))
+    try:
+        from capture_windows import SHOTS
+    finally:
+        sys.path.pop(0)
+    recorded = json.loads((LISTING / "_generator" / "scenes.json").read_text(encoding="utf-8"))
+
+    assert tuple(SHOTS) == load_render_script().SHOTS
+    assert {name for name, _tab, _height in SHOTS.values()} == set(recorded)
+
+
+def load_replay():
+    import sys
+
+    sys.path.insert(0, str(LISTING / "_generator"))
+    try:
+        import replay_scenes
+    finally:
+        sys.path.pop(0)
+    return replay_scenes
+
+
+@pytest.mark.skipif(sys.platform != "win32", reason="Windows' own windows")
+def test_a_window_of_the_apps_name_counts_as_the_app_unless_file_explorer_owns_it(monkeypatch):
+    import ctypes
+    from ctypes import wintypes
+
+    replay_scenes = load_replay()
+    create = ctypes.windll.user32.CreateWindowExW
+    create.restype = wintypes.HWND
+    create.argtypes = (
+        wintypes.DWORD, wintypes.LPCWSTR, wintypes.LPCWSTR, wintypes.DWORD, ctypes.c_int, ctypes.c_int, ctypes.c_int,
+        ctypes.c_int, wintypes.HWND, wintypes.HMENU, wintypes.HINSTANCE, wintypes.LPVOID,
+    )
+    window = create(0, "STATIC", replay_scenes.APP_NAME, 0, 0, 0, 0, 0, None, None, None, None)   # never shown
+    assert window
+    try:
+        assert replay_scenes.app_is_open()
+        monkeypatch.setattr(replay_scenes, "_window_program", lambda _hwnd: "explorer.exe")
+        assert not replay_scenes.app_is_open()
+    finally:
+        ctypes.windll.user32.DestroyWindow.argtypes = (wintypes.HWND,)
+        ctypes.windll.user32.DestroyWindow(window)
+
+
+def test_the_cities_are_not_rebuilt_under_an_open_app(monkeypatch):
+    replay_scenes = load_replay()
+    monkeypatch.setattr(replay_scenes, "app_is_open", lambda: True)
+    monkeypatch.setattr(replay_scenes, "replay", lambda *_args: pytest.fail("it replayed"))
+    monkeypatch.setattr(replay_scenes.files, "clear_pipeline_artifacts", lambda: pytest.fail("it cleared appdata"))
+
+    with pytest.raises(SystemExit, match="Close"):
+        replay_scenes.main(["promo"])
+
+
+def load_recorder():
+    spec = importlib.util.spec_from_file_location("record_scene", LISTING / "_generator" / "record_scene.py")
+    module = importlib.util.module_from_spec(spec)
+    assert spec.loader is not None
+    spec.loader.exec_module(module)
+    return module
+
+
+def fresh_config():
+    from citygen.gui.extract_tab import default_extraction_tab_config
+    from citygen.gui.form import default_state
+
+    return {"algo": {**default_state(), "seed": "7"}, "extraction": default_extraction_tab_config()}
+
+
+def test_a_default_city_is_recorded_as_its_seed_alone():
+    assert load_recorder().scene_of(fresh_config()) == {"seed": "7"}
+
+
+def test_a_city_records_only_what_differs_from_a_fresh_install():
+    config = fresh_config()
+    config["algo"]["algo"]["FINE"] = "40"
+    config["extraction"]["house"] = {"start": [1, 64, 2], "end": [3, 65, 4]}
+    config["extraction"]["world_path"] = "C:/mc/medieval"
+
+    assert load_recorder().scene_of(config) == {
+        "seed": "7",
+        "algo": {"FINE": "40"},
+        "world": "C:/mc/medieval",
+        "areas": {"house": {"start": [1, 64, 2], "end": [3, 65, 4]}},
+    }
 
 
 def test_packaging_mirrors_the_app_name_from_config():

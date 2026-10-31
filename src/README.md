@@ -46,16 +46,16 @@ file formats and renderers they use in `tools/`.
 In `gui/`: `app.py` opens the window; `bridge.py` is every call the page makes; `extract_tab.py` and `city_tabs.py`
 are the tabs, each starting its run on a background thread through `session.py`'s `Runner`; `form.py` is the algorithm
 form; `server.py` serves the page and the images; `files.py` is
-saved settings and cleanup. The page itself: `index.html`, `app.js` (the tabs, wired to the bridge), `text.js` (every
-word it shows), `progress/steps.js` (where each run's progress puts its bar), `tokens.css` (colours; the title bar reads three of them), `app.css`, and one folder per part:
+saved settings and cleanup. The page itself: `index.html`, `app.js` (the tabs, wired to the bridge), `i18n/` (every
+word it shows, one file per language), `text.js` (the languages, and how words reach the page), `progress/steps.js` (where each run's progress puts its bar), `tokens.css` (colours; the title bar reads three of them), `app.css`, and one folder per part:
 `viewer/`, `progress/`, `form/`, `region/`.
 
 ## How a run works
 
 The three `step*_` modules are the pipeline: each tab calls its module's `run`, which takes the tab's settings and reports
 `progress(step, completed, total[, detail])` by step code; the bridge passes each report to the page as it comes,
-[progress/steps.js](citygen/gui/static/progress/steps.js) gives each step a hand-tuned weight on the bar, and `text.js`
-names the bar's segments by the same codes (`TEXT.segments`).
+[progress/steps.js](citygen/gui/static/progress/steps.js) gives each step a hand-tuned weight on the bar, and the
+language files name the bar's segments by the same codes (`TEXT.segments`).
 
 | Tab | Runs | Steps |
 |---|---|---|
@@ -68,9 +68,15 @@ contact sheets exist. Each launch, and each change of source world, clears `appd
 the saved settings, so assets from one world never leak into another's city.
 
 Python owns the state; the page draws it and words it. Python answers with facts and short codes
-(`{"code": "running"}`), and every word on screen is in `text.js`. A run tells the page `progress`, `done`, `failed`
+(`{"code": "running"}`), and every word on screen is in [gui/static/i18n/](citygen/gui/static/i18n). A run tells the page `progress`, `done`, `failed`
 and `finished`, plus `partial` and `piece` for what's ready early, through `citygen.receive(event, payload)`.
 `bridge.py` imports nothing from pywebview, so `tests/test_gui_web.py` drives it without a window.
+
+The app opens in the language picked in its header, or until one is picked, the system's if it has it, else English.
+`index.html` holds keys, not words (`data-text="page.world.browse"`), and `translate()` in `text.js` fills them in, again
+whenever the language changes; a change happens in place, so the pictures and any run under way stay. An error the user
+can act on is a `citygen.errors.RunFailure`, whose code the language files word (`TEXT.failures`). Any other error's
+own text, always English, is shown as it is.
 
 ## How the city is made
 
@@ -135,14 +141,20 @@ the Store build. The bundled files are read from `src/` or PyInstaller's unpack 
 **Add a knob.** Add a field to `Algo` in [settings.py](citygen/settings.py) (an `int`, or a `frozenset[str]`), and read
 it from the `algo` argument, never from `ALGO`. To show it, add its name to `KNOBS` and one of the `GROUPS` in
 [gui/form.py](citygen/gui/form.py), with a range in `SLIDER_RANGES` (or in `SET_KNOBS` for a set), and give it a label
-and tip in `TEXT.form.knobs` in `text.js`. The form is built from `form_spec`, so there's no HTML to change.
+and tip in `form.knobs` in every language file. The form is built from `form_spec`, so there's no HTML to change.
 
 **Add a road tile.** Add `(ports, "NN_<name>")` to `BIG_TILES`, `SMALL_TILES` or `MIXED_TILES` in
 [core/road_network.py](citygen/core/road_network.py) with a new prefix, ports in the unrotated orientation, and author the
 matching asset in the world. Pieces are matched to tiles by prefix alone.
 
 **Add a step to a run.** Report it with a new code from the run, give the code a weight in `weights` and, where steps are grouped, a segment in
-`segments` in [progress/steps.js](citygen/gui/static/progress/steps.js), and name the segment in `TEXT.segments` in `text.js`.
+`segments` in [progress/steps.js](citygen/gui/static/progress/steps.js), and name the segment in `segments` in every language file.
+
+**Add a language.** Copy [gui/static/i18n/en.json](citygen/gui/static/i18n/en.json) to `<code>.json`, translate its values
+and keep each `{placeholder}`, add the language to `LANGUAGES` in `text.js`, and to `Resources` in
+[packaging/AppxManifest.xml](../packaging/AppxManifest.xml). `tests/test_gui_web.py` checks each file has every key and
+placeholder. If its labels run long, give it the wider `--form-label` in `tokens.css`; if Segoe UI lacks its script, name
+a font there too.
 
 **Re-tune a progress bar.** Time a run's steps and set the weights in `RUN_STEPS` in proportion; each tab's weights only
 matter relative to each other.

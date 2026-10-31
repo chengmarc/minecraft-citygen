@@ -8,7 +8,7 @@
 "use strict";
 
 // Construction reports each of its eight steps (citygen.step3_build.CONSTRUCT_STEPS) by index as it starts it;
-// text.js words each one (TEXT.stepDetails.build.construct).
+// the language files word each one (TEXT.stepDetails.build.construct).
 const CONSTRUCT_WEIGHTS = [1, 1, 1, 1, 22, 4, 4, 16];
 
 // Between reports the bar creeps toward the next milestone: up to ``headroom`` of the way there, moving every ``tickMs``
@@ -44,8 +44,8 @@ function stepStart(weights, index) {
   return (weights.slice(0, index).reduce((sum, weight) => sum + weight, 0) / total) * 100;
 }
 
-/** Tab ``tab``'s run-bar segments, in step order: ``{code, start, end}`` in percent of the run (text.js names each
- *  code). A tab without ``segments`` has one per step. */
+/** Tab ``tab``'s run-bar segments, in step order: ``{code, start, end}`` in percent of the run (the language files
+ *  name each code). A tab without ``segments`` has one per step. */
 function runSegments(tab) {
   const { weights, segments } = RUN_STEPS[tab];
   const values = Object.values(weights);

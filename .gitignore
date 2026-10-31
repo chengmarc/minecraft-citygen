@@ -8,3 +8,6 @@ __pycache__/
 build/
 dist/
 appdata/
+# store-listing/_generator/render.py: rendered on demand, 16 MB a language. The README shows the English ones.
+store-listing/*/*.png
+!store-listing/en/*.png

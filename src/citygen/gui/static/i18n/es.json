@@ -1,0 +1,230 @@
+{
+  "page": {
+    "language": "Idioma",
+    "stepsLabel": "Pasos",
+    "steps": {
+      "extract": {
+        "name": "Extraer",
+        "sub": "Piezas de tu mundo",
+        "tip": "Paso 1 de 3: elige un mundo de MC y extrae las piezas de vías, casas y monumentos."
+      },
+      "preview": {
+        "name": "Vista previa",
+        "sub": "Prueba planos de ciudad",
+        "tip": "Paso 2 de 3: prueba semillas y los ajustes de avenidas y calles antes de la construcción final."
+      },
+      "build": {
+        "name": "Construir",
+        "sub": "La ciudad y su mundo",
+        "tip": "Paso 3 de 3: construye la ciudad, renderízala y exporta el mundo de MC."
+      }
+    },
+    "viewers": {
+      "roads": {
+        "caption": "Piezas de vías",
+        "message": "Extrae las piezas para escanear la zona de vías elegida y crear una lámina de vías."
+      },
+      "builds": {
+        "caption": "Piezas de edificios",
+        "message": "Extrae las piezas para escanear las zonas de casas y monumentos elegidas y crear una lámina de edificios."
+      },
+      "grid": {
+        "caption": "Plano de vías",
+        "message": "Genera la vista previa para ver la red de vías antes de construir la ciudad final."
+      },
+      "cityPreview": {
+        "caption": "Plano de la ciudad",
+        "message": "Genera la vista previa para ver cómo encajan los edificios en la red de vías generada."
+      },
+      "cityRender": {
+        "caption": "Ciudad final",
+        "message": "Construye la ciudad para crear el schematic, el renderizado y el mundo de MC exportado."
+      }
+    },
+    "world": {
+      "label": "Mundo de MC",
+      "placeholder": "Selecciona la carpeta de un mundo de MC",
+      "browse": "Examinar",
+      "source": "Versión de origen",
+      "sourceTip": "La versión de MC del mundo seleccionado.",
+      "target": "Versión de destino",
+      "targetTip": "Te permite confirmar en qué versión de MC piensas pegar. MC CityGen sigue marcando los archivos exportados con la versión del mundo de origen.",
+      "reset": "Restablecer",
+      "resetTip": "Vuelve al mundo de ejemplo incluido con MC CityGen, con sus tres zonas.",
+      "run": "Extraer"
+    },
+    "areas": {
+      "road": {
+        "name": "Zona de vías",
+        "tip": "Elige una zona con las piezas de vías que quieres que MC CityGen reutilice."
+      },
+      "house": {
+        "name": "Zona de casas",
+        "tip": "Elige una zona de ejemplo con tus casas estándar o edificios más pequeños."
+      },
+      "landmark": {
+        "name": "Zona de monumentos",
+        "tip": "Elige una zona de ejemplo con edificios altos o especiales que deban destacar en la ciudad."
+      },
+      "choose": "En el mapa"
+    },
+    "preview": {
+      "reset": "Restablecer",
+      "run": "Vista previa"
+    },
+    "build": {
+      "worlds": "Mundos",
+      "worldsTip": "Abre la carpeta de mundos exportados, para copiar uno a tu carpeta saves de MC.",
+      "run": "Construir"
+    },
+    "map": {
+      "select": "arrastra para seleccionar",
+      "pan": "arrastra para mover",
+      "zoom": "rueda para acercar",
+      "cancel": "Cancelar",
+      "apply": "Usar selección"
+    },
+    "ok": "Aceptar"
+  },
+  "tabs": {
+    "extract": {
+      "ready": "Extrae las piezas de vías, casas y monumentos de las zonas elegidas.",
+      "blocked": "Elige primero un mundo de MC y las tres zonas.",
+      "preparing": "Preparando la extracción",
+      "failed": "Error en la extracción",
+      "running": { "title": "Extracción en curso", "message": "Ya hay una extracción en curso." }
+    },
+    "preview": {
+      "ready": "Genera una vista previa rápida del plano de vías y de la ciudad.",
+      "blocked": "Completa primero la extracción.",
+      "preparing": "Preparando la vista previa",
+      "failed": "Error en la vista previa",
+      "running": { "title": "Vista previa en curso", "message": "Ya hay una vista previa en curso." },
+      "invalidConfig": "Ajustes de vista previa no válidos"
+    },
+    "build": {
+      "ready": "Crea el schematic final, el renderizado y el mundo exportado.",
+      "blocked": "Completa primero la extracción.",
+      "preparing": "Creando el plano",
+      "failed": "Error en la generación",
+      "running": { "title": "Construcción en curso", "message": "Ya hay una construcción en curso." },
+      "invalidConfig": "Ajustes de ciudad no válidos"
+    }
+  },
+  "areaTitles": {
+    "road": "Elige la zona de vías",
+    "house": "Elige la zona de casas",
+    "landmark": "Elige la zona de monumentos"
+  },
+  "area": "{x} x {z} chunks",
+  "noArea": "Ninguna zona elegida",
+  "areaSelected": "Elegida",
+  "areaNotSelected": "Sin elegir",
+  "imageMissing": "No se encontró la imagen:\n{path}",
+  "imageFailed": "No se pudo cargar la imagen:\n{src}",
+  "zoomIn": "Acercar",
+  "zoomOut": "Alejar",
+  "mapMissing": "No se encontró la vista previa del mundo:\n{path}",
+  "mapFailed": "No se pudo cargar la vista previa del mundo.",
+  "mapLoading": "Cargando la vista previa del mundo...",
+  "mapDrawing": "Dibujando tu mundo visto desde arriba. Ya puedes mover, acercar y elegir tu zona.",
+  "selection": "Selección: x {x0} a {x1}, z {z0} a {z1} ({chunksX} x {chunksZ} chunks)",
+  "autoVersion": "Auto",
+  "segments": {
+    "extract": {
+      "scan_roads": "Escanear vías",
+      "road_pieces": "Piezas de vías",
+      "road_sheet": "Lámina de vías",
+      "scan_builds": "Escanear edificios",
+      "build_pieces": "Piezas de edificios",
+      "build_sheet": "Lámina de edificios"
+    },
+    "preview": {
+      "road_pieces": "Piezas de vías",
+      "build_pieces": "Piezas de edificios",
+      "road_layout": "Plano de vías",
+      "city_layout": "Plano de la ciudad"
+    },
+    "build": {
+      "roads": "Vías",
+      "placement": "Colocación",
+      "buildings": "Edificios",
+      "schematic": "Schematic",
+      "render": "Renderizado",
+      "world": "Mundo"
+    }
+  },
+  "stepDetails": {
+    "preview": {
+      "road_pieces": "Preparando las vías",
+      "build_pieces": "Preparando los edificios",
+      "road_layout": "Renderizando el plano de vías",
+      "city_layout": "Renderizando la ciudad"
+    },
+    "build": {
+      "construct": [
+        "Generando la red de vías",
+        "Creando la cuadrícula",
+        "Cargando el catálogo",
+        "Planificando la colocación",
+        "Montando los edificios",
+        "Componiendo los vóxeles",
+        "Árboles y parcelas",
+        "Escribiendo el schematic"
+      ]
+    }
+  },
+  "form": {
+    "more": "Más ajustes",
+    "fewer": "Menos ajustes",
+    "knobs": {
+      "FINE": { "label": "Tamaño de la ciudad", "tip": "Cambia la superficie de la ciudad terminada." },
+      "GAP_MIXED": { "label": "Densidad de vías", "tip": "Controla lo juntas que quedan las avenidas y las calles en la ciudad." },
+      "GAP_BIG": { "label": "Separación de avenidas", "tip": "Los valores altos crean menos avenidas." },
+      "PAD_BIG": { "label": "Margen de avenidas", "tip": "Aleja las avenidas del borde de la ciudad." },
+      "GAP_SMALL": { "label": "Separación de calles", "tip": "Los valores bajos crean más calles." },
+      "PAD_SMALL": { "label": "Margen de calles", "tip": "Aleja las calles del borde de la ciudad." },
+      "N_BIG_CORNERS": { "label": "Curvas de avenidas", "tip": "Añade más curvas a las avenidas." },
+      "N_BIG_TEES": { "label": "Cruces de avenidas", "tip": "Añade más cruces en T a las avenidas." },
+      "N_SMALL_CORNERS": { "label": "Curvas de calles", "tip": "Añade más curvas a las calles." },
+      "N_SMALL_TEES": { "label": "Cruces de calles", "tip": "Añade más cruces en T a las calles." },
+      "BANNED_BUILDINGS": { "label": "Omitir ID de edificios", "tip": "Opcional: ID de edificios que se dejan fuera de la generación, separados por comas." },
+      "TYPE1_TOP_FIT_CHOICES": { "label": "Variedad de casas", "tip": "Los valores altos mezclan más diseños distintos de casas estándar." },
+      "LANDMARK_SPACING": { "label": "Separación de monumentos", "tip": "Distancia mínima, en celdas de la cuadrícula, entre las superficies de los monumentos." }
+    },
+    "options": {
+      "FINE": { "40": "Muy pequeña", "60": "Pequeña", "80": "Mediana", "100": "Grande", "120": "Muy grande" },
+      "GAP_MIXED": { "3": "Muy alta", "4": "Alta", "5": "Media", "6": "Baja", "7": "Muy baja" }
+    },
+    "groups": {
+      "spacing": "Separación de avenidas y calles",
+      "shape": "Forma de avenidas y calles",
+      "buildings": "Mezcla de edificios"
+    },
+    "placeholders": {
+      "BANNED_BUILDINGS": "p. ej., 001, 002"
+    }
+  },
+  "errors": {
+    "invalid_config": "«{name}» no es un ajuste válido.",
+    "invalid_seed": { "title": "Semilla no válida", "message": "La semilla debe ser un número entero." },
+    "worlds_folder": { "title": "No se pudo abrir la carpeta de mundos" },
+    "not_a_world": {
+      "title": "No es un mundo de MC",
+      "message": "No se encontraron archivos de región (.mca) en:\n{detail}\n\nSelecciona una carpeta válida de mundo de MC."
+    },
+    "no_world": {
+      "title": "Falta la ruta del mundo",
+      "message": "Elige un mundo de MC válido antes de seleccionar una zona en el mapa."
+    },
+    "areas_missing": {
+      "title": "Zona de extracción no válida",
+      "message": "Elige primero un mundo de MC y las tres zonas."
+    },
+    "unknown": "Algo salió mal"
+  },
+  "failures": {
+    "no_road_pieces": "No se encontraron piezas en la zona de vías. Revisa la zona y que el mundo tenga piezas de vías marcadas.",
+    "no_ground_fill": "Entre las piezas de vías falta el relleno del suelo, la pieza 18. Vuelve a extraer."
+  }
+}

@@ -1,0 +1,230 @@
+{
+  "page": {
+    "language": "Language",
+    "stepsLabel": "Steps",
+    "steps": {
+      "extract": {
+        "name": "Extract",
+        "sub": "Pieces from your world",
+        "tip": "Step 1 of 3: Choose an MC world and extract road, house, and landmark assets."
+      },
+      "preview": {
+        "name": "Preview",
+        "sub": "Try city layouts",
+        "tip": "Step 2 of 3: Test seeds and Avenue/Street settings before the final build."
+      },
+      "build": {
+        "name": "Build",
+        "sub": "The city and its world",
+        "tip": "Step 3 of 3: Build the city, render it, and export the MC world."
+      }
+    },
+    "viewers": {
+      "roads": {
+        "caption": "Road pieces",
+        "message": "Extract assets to scan the selected road sample area and build a road contact sheet."
+      },
+      "builds": {
+        "caption": "Building pieces",
+        "message": "Extract assets to scan the selected house and landmark areas and build a building contact sheet."
+      },
+      "grid": {
+        "caption": "Road layout",
+        "message": "Preview layout to see the road network before building the final city."
+      },
+      "cityPreview": {
+        "caption": "City layout",
+        "message": "Preview layout to see how buildings fit into the generated road network."
+      },
+      "cityRender": {
+        "caption": "Final city",
+        "message": "Build city to create the schematic, the render, and the exported MC world."
+      }
+    },
+    "world": {
+      "label": "MC world",
+      "placeholder": "Select an MC world folder",
+      "browse": "Browse",
+      "source": "Source version",
+      "sourceTip": "The MC version of the world you selected.",
+      "target": "Target version",
+      "targetTip": "Lets you confirm which MC version you plan to paste into. MC CityGen still stamps the exported files to the source world's version.",
+      "reset": "Reset",
+      "resetTip": "Go back to the sample world that comes with MC CityGen, with its three areas.",
+      "run": "Extract"
+    },
+    "areas": {
+      "road": {
+        "name": "Road area",
+        "tip": "Choose an area that contains the road pieces you want MC CityGen to reuse."
+      },
+      "house": {
+        "name": "House area",
+        "tip": "Choose a sample area with your standard houses or smaller buildings."
+      },
+      "landmark": {
+        "name": "Landmark area",
+        "tip": "Choose a sample area with taller or special buildings that should stand out in the city."
+      },
+      "choose": "Choose on map"
+    },
+    "preview": {
+      "reset": "Reset",
+      "run": "Preview"
+    },
+    "build": {
+      "worlds": "Worlds",
+      "worldsTip": "Open the folder of exported worlds, to copy one into your MC saves.",
+      "run": "Build"
+    },
+    "map": {
+      "select": "drag to select",
+      "pan": "drag to pan",
+      "zoom": "scroll to zoom",
+      "cancel": "Cancel",
+      "apply": "Use selection"
+    },
+    "ok": "OK"
+  },
+  "tabs": {
+    "extract": {
+      "ready": "Extract road, house, and landmark pieces from the selected areas.",
+      "blocked": "Choose an MC world and all three areas first.",
+      "preparing": "Preparing extraction",
+      "failed": "Extract failed",
+      "running": { "title": "Extract running", "message": "An extraction is already running." }
+    },
+    "preview": {
+      "ready": "Generate a fast road and city layout preview.",
+      "blocked": "Complete Extract Assets first.",
+      "preparing": "Preparing preview",
+      "failed": "Preview failed",
+      "running": { "title": "Preview running", "message": "A preview is already running." },
+      "invalidConfig": "Invalid preview config"
+    },
+    "build": {
+      "ready": "Build the final schematic, render, and export world.",
+      "blocked": "Complete Extract Assets first.",
+      "preparing": "Building city layout",
+      "failed": "Generation failed",
+      "running": { "title": "Build running", "message": "A build is already running." },
+      "invalidConfig": "Invalid city config"
+    }
+  },
+  "areaTitles": {
+    "road": "Choose the road area",
+    "house": "Choose the house area",
+    "landmark": "Choose the landmark area"
+  },
+  "area": "{x} x {z} chunks",
+  "noArea": "No area selected",
+  "areaSelected": "Selected",
+  "areaNotSelected": "Not selected",
+  "imageMissing": "Image not found:\n{path}",
+  "imageFailed": "Failed to load image:\n{src}",
+  "zoomIn": "Zoom in",
+  "zoomOut": "Zoom out",
+  "mapMissing": "World preview not found:\n{path}",
+  "mapFailed": "Failed to load world preview.",
+  "mapLoading": "Loading world preview...",
+  "mapDrawing": "Drawing your world from above. You can already pan, zoom, and choose your area.",
+  "selection": "Selection: x {x0} to {x1}, z {z0} to {z1} ({chunksX} x {chunksZ} chunks)",
+  "autoVersion": "Auto",
+  "segments": {
+    "extract": {
+      "scan_roads": "Scan roads",
+      "road_pieces": "Road pieces",
+      "road_sheet": "Road sheet",
+      "scan_builds": "Scan buildings",
+      "build_pieces": "Building pieces",
+      "build_sheet": "Building sheet"
+    },
+    "preview": {
+      "road_pieces": "Road pieces",
+      "build_pieces": "Building pieces",
+      "road_layout": "Road layout",
+      "city_layout": "City layout"
+    },
+    "build": {
+      "roads": "Roads",
+      "placement": "Placement",
+      "buildings": "Buildings",
+      "schematic": "Schematic",
+      "render": "Render",
+      "world": "World"
+    }
+  },
+  "stepDetails": {
+    "preview": {
+      "road_pieces": "Generating road preview assets",
+      "build_pieces": "Generating building preview assets",
+      "road_layout": "Rendering road layout preview",
+      "city_layout": "Rendering city layout preview"
+    },
+    "build": {
+      "construct": [
+        "Generating road network",
+        "Building road grid",
+        "Loading building catalog",
+        "Planning placements",
+        "Assembling building instances",
+        "Composing voxel grid",
+        "Placing trees and filling lots",
+        "Writing schematic"
+      ]
+    }
+  },
+  "form": {
+    "more": "More settings",
+    "fewer": "Fewer settings",
+    "knobs": {
+      "FINE": { "label": "City size", "tip": "Changes the footprint of the finished city." },
+      "GAP_MIXED": { "label": "Road density", "tip": "Controls how tightly Avenues and Streets are packed across the city." },
+      "GAP_BIG": { "label": "Avenue spacing", "tip": "Higher values create fewer Avenues." },
+      "PAD_BIG": { "label": "Avenue edge margin", "tip": "Keeps Avenues farther from the edge of the city." },
+      "GAP_SMALL": { "label": "Street spacing", "tip": "Lower values create more Streets." },
+      "PAD_SMALL": { "label": "Street edge margin", "tip": "Keeps Streets farther from the edge of the city." },
+      "N_BIG_CORNERS": { "label": "Avenue turns", "tip": "Adds more bends to Avenues." },
+      "N_BIG_TEES": { "label": "Avenue T-junctions", "tip": "Adds more T-junctions to Avenues." },
+      "N_SMALL_CORNERS": { "label": "Street turns", "tip": "Adds more bends to Streets." },
+      "N_SMALL_TEES": { "label": "Street T-junctions", "tip": "Adds more T-junctions to Streets." },
+      "BANNED_BUILDINGS": { "label": "Skip building IDs", "tip": "Optional comma-separated building IDs to leave out of generation." },
+      "TYPE1_TOP_FIT_CHOICES": { "label": "House style variety", "tip": "Higher values mix in more different standard house designs." },
+      "LANDMARK_SPACING": { "label": "Landmark spacing", "tip": "Minimum fine-cell distance between landmark footprints." }
+    },
+    "options": {
+      "FINE": { "40": "Very Small", "60": "Small", "80": "Normal", "100": "Big", "120": "Very Big" },
+      "GAP_MIXED": { "3": "Very Dense", "4": "Dense", "5": "Normal", "6": "Sparse", "7": "Very Sparse" }
+    },
+    "groups": {
+      "spacing": "Avenue and Street spacing",
+      "shape": "Avenue and Street shape",
+      "buildings": "Building mix"
+    },
+    "placeholders": {
+      "BANNED_BUILDINGS": "e.g. 001, 002"
+    }
+  },
+  "errors": {
+    "invalid_config": "\"{name}\" isn't a valid setting.",
+    "invalid_seed": { "title": "Invalid seed", "message": "Seed must be an integer." },
+    "worlds_folder": { "title": "Could not open worlds folder" },
+    "not_a_world": {
+      "title": "Not an MC world",
+      "message": "No region files (.mca) were found in:\n{detail}\n\nPlease select a valid MC world folder."
+    },
+    "no_world": {
+      "title": "Missing world path",
+      "message": "Choose a valid MC world before selecting an area on the map."
+    },
+    "areas_missing": {
+      "title": "Invalid extraction region",
+      "message": "Choose an MC world and all three areas first."
+    },
+    "unknown": "Something went wrong"
+  },
+  "failures": {
+    "no_road_pieces": "Road extraction found no pieces in the road area. Check the area, or that the world has marked road pieces.",
+    "no_ground_fill": "The road pieces are missing the ground fill, piece 18. Extract again."
+  }
+}

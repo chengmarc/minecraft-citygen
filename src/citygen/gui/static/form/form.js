@@ -15,15 +15,17 @@ class AlgoControls {
 
     const prefix = root.closest(".page").id;
     for (const spec of form.selectors) {
-      const [name, tip] = TEXT.form.knobs[spec.name];
       const label = document.createElement("label");
-      label.textContent = name;
+      label.dataset.text = `form.knobs.${spec.name}.label`;
       label.htmlFor = `${prefix}-${spec.name}`;
       const select = document.createElement("select");
       select.id = label.htmlFor;
-      select.title = tip;
-      const words = TEXT.form.options[spec.name];
-      for (const value of spec.options) select.add(new Option(words[value] ?? value, value));
+      select.dataset.textTitle = `form.knobs.${spec.name}.tip`;
+      for (const value of spec.options) {
+        const option = new Option("", value);
+        option.dataset.text = `form.options.${spec.name}.${value}`;
+        select.add(option);
+      }
       select.addEventListener("change", onChange);
       const field = document.createElement("div");
       field.className = "select-field";
@@ -34,19 +36,19 @@ class AlgoControls {
 
     for (const group of form.groups) {
       const fieldset = document.createElement("fieldset");
-      fieldset.setAttribute("aria-label", TEXT.form.groups[group.code]);   // no heading shown: named for screen readers
+      fieldset.dataset.textLabel = `form.groups.${group.code}`;   // no heading shown: named for screen readers
       for (const spec of group.fields) fieldset.append(this.buildRow(prefix, spec, onChange));
       $(".advanced-inner", this.panel).append(fieldset);
     }
+    translate(root);
   }
 
   buildRow(prefix, spec, onChange) {
     const row = document.createElement("div");
     row.className = "form-row";
-    const [name, tip] = TEXT.form.knobs[spec.name];
-    row.title = tip;
+    row.dataset.textTitle = `form.knobs.${spec.name}.tip`;
     const label = document.createElement("label");
-    label.textContent = name;
+    label.dataset.text = `form.knobs.${spec.name}.label`;
     label.htmlFor = `${prefix}-${spec.name}`;
     row.append(label);
 
@@ -54,7 +56,7 @@ class AlgoControls {
       const input = document.createElement("input");
       input.type = "text";
       input.id = label.htmlFor;
-      input.placeholder = TEXT.form.placeholders[spec.name] ?? "";
+      if (spec.name in TEXT.form.placeholders) input.dataset.textPlaceholder = `form.placeholders.${spec.name}`;
       input.addEventListener("input", onChange);
       row.append(input);
       this.fields[spec.name] = { get: () => input.value.trim(), set: (v) => { input.value = v; } };
@@ -86,7 +88,8 @@ class AlgoControls {
 
   setAdvanced(visible) {
     this.toggle.setAttribute("aria-expanded", String(visible));
-    $("span", this.toggle).textContent = visible ? TEXT.form.fewer : TEXT.form.more;
+    $("span", this.toggle).dataset.text = visible ? "form.fewer" : "form.more";
+    translate(this.toggle);
     this.panel.classList.toggle("open", visible);
     this.panel.inert = !visible;   // closed, its fields can't take focus
   }

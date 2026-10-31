@@ -1,168 +1,75 @@
-// Every word the app shows that isn't in index.html. Python answers with facts and short codes (gui/bridge.py);
-// this is where they become text.
+// The page's words, in one language at a time. Every word the app shows is in i18n/<code>.json; Python answers with
+// facts and short codes (gui/bridge.py), and this is where they become text.
+//
+// index.html and the code that builds elements name their words by key, in data-text (the element's text),
+// data-text-title, data-text-placeholder and data-text-label (its aria-label). translate() fills them in, and again
+// when the language changes.
 
 "use strict";
 
-const TEXT = {
-  tabs: {
-    extract: {
-      ready: "Extract road, house, and landmark pieces from the selected areas.",
-      blocked: "Choose an MC world and all three areas first.",
-      preparing: "Preparing extraction",
-      failed: "Extract failed",
-      running: ["Extract running", "An extraction is already running."],
-    },
-    preview: {
-      ready: "Generate a fast road and city layout preview.",
-      blocked: "Complete Extract Assets first.",
-      preparing: "Preparing preview",
-      failed: "Preview failed",
-      running: ["Preview running", "A preview is already running."],
-      invalidConfig: "Invalid preview config",
-    },
-    build: {
-      ready: "Build the final schematic, render, and export world.",
-      blocked: "Complete Extract Assets first.",
-      preparing: "Building city layout",
-      failed: "Generation failed",
-      running: ["Build running", "A build is already running."],
-      invalidConfig: "Invalid city config",
-    },
-  },
-  areaTitles: {
-    road: "Choose the road area",
-    house: "Choose the house area",
-    landmark: "Choose the landmark area",
-  },
-  area: (chunks) => (chunks ? `${chunks[0]} x ${chunks[1]} chunks` : "No area selected"),
-  areaChip: (selected) => (selected ? "Selected" : "Not selected"),
-  imageMissing: (path) => `Image not found:\n${path}`,
-  imageFailed: (src) => `Failed to load image:\n${src}`,
-  zoomIn: "Zoom in",
-  zoomOut: "Zoom out",
-  mapMissing: (path) => `World preview not found:\n${path}`,
-  mapFailed: "Failed to load world preview.",
-  mapLoading: "Loading world preview...",
-  mapDrawing: "Drawing your world from above. You can already pan, zoom, and choose your area.",
-  // The region map's selection: its block corners, and how many chunks it covers.
-  selection: ([x0, x1], [z0, z1], [chunksX, chunksZ]) =>
-    `Selection: x ${x0} to ${x1}, z ${z0} to ${z1} (${chunksX} x ${chunksZ} chunks)`,
-  autoVersion: "Auto",
-  // Each run bar's segments, by the codes in progress/steps.js.
-  segments: {
-    extract: {
-      scan_roads: "Scan roads",
-      road_pieces: "Road pieces",
-      road_sheet: "Road sheet",
-      scan_builds: "Scan buildings",
-      build_pieces: "Building pieces",
-      build_sheet: "Building sheet",
-    },
-    preview: {
-      road_pieces: "Road pieces",
-      build_pieces: "Building pieces",
-      road_layout: "Road layout",
-      city_layout: "City layout",
-    },
-    build: {
-      roads: "Roads",
-      placement: "Placement",
-      buildings: "Buildings",
-      schematic: "Schematic",
-      render: "Render",
-      world: "World",
-    },
-  },
-  // What stands in for a segment's name while it runs, by the step codes the run reports.
-  stepDetails: {
-    preview: {
-      road_pieces: "Generating road preview assets",
-      build_pieces: "Generating building preview assets",
-      road_layout: "Rendering road layout preview",
-      city_layout: "Rendering city layout preview",
-    },
-    build: {
-      // Construction's steps, by the index it reports (citygen.step3_build.construct).
-      construct: [
-        "Generating road network",
-        "Building road grid",
-        "Loading building catalog",
-        "Planning placements",
-        "Assembling building instances",
-        "Composing voxel grid",
-        "Placing trees and filling lots",
-        "Writing schematic",
-      ],
-    },
-  },
-  // The algorithm form, by the knob names and codes in gui/form.py.
-  form: {
-    more: "More settings",
-    fewer: "Fewer settings",
-    knobs: {
-      FINE: ["City size", "Changes the footprint of the finished city."],
-      GAP_MIXED: ["Road density", "Controls how tightly Avenues and Streets are packed across the city."],
-      GAP_BIG: ["Avenue spacing", "Higher values create fewer Avenues."],
-      PAD_BIG: ["Avenue edge margin", "Keeps Avenues farther from the edge of the city."],
-      GAP_SMALL: ["Street spacing", "Lower values create more Streets."],
-      PAD_SMALL: ["Street edge margin", "Keeps Streets farther from the edge of the city."],
-      N_BIG_CORNERS: ["Avenue turns", "Adds more bends to Avenues."],
-      N_BIG_TEES: ["Avenue T-junctions", "Adds more T-junctions to Avenues."],
-      N_SMALL_CORNERS: ["Street turns", "Adds more bends to Streets."],
-      N_SMALL_TEES: ["Street T-junctions", "Adds more T-junctions to Streets."],
-      BANNED_BUILDINGS: ["Skip building IDs", "Optional comma-separated building IDs to leave out of generation."],
-      TYPE1_TOP_FIT_CHOICES: ["House style variety", "Higher values mix in more different standard house designs."],
-      LANDMARK_SPACING: ["Landmark spacing", "Minimum fine-cell distance between landmark footprints."],
-    },
-    // A selector's options, by value.
-    options: {
-      FINE: { 40: "Very Small", 60: "Small", 80: "Normal", 100: "Big", 120: "Very Big" },
-      GAP_MIXED: { 3: "Very Dense", 4: "Dense", 5: "Normal", 6: "Sparse", 7: "Very Sparse" },
-    },
-    // Named for screen readers only: no heading is shown.
-    groups: {
-      spacing: "Avenue and Street spacing",
-      shape: "Avenue and Street shape",
-      buildings: "Building mix",
-    },
-    placeholders: {
-      BANNED_BUILDINGS: "e.g. 001, 002",
-    },
-  },
+// Every language, in its own name. Each has a file in i18n/, with the same keys and the same {placeholders}.
+const LANGUAGES = {
+  en: "English",
+  de: "Deutsch",
+  es: "Español",
+  fr: "Français",
+  pt: "Português",
+  ru: "Русский",
+  zh: "简体中文",
+  ja: "日本語",
 };
 
-// An error's code from Python, as the dialog's title and message, given its tab's text and its detail.
-const ERRORS = {
-  running: (tab) => ({ title: tab.running[0], message: tab.running[1] }),
-  // ``detail`` is the knob's name.
-  invalid_config: (tab, detail) => ({
-    title: tab.invalidConfig,
-    message: `"${TEXT.form.knobs[detail]?.[0] ?? detail}" isn't a valid setting.`,
-  }),
-  invalid_seed: () => ({ title: "Invalid seed", message: "Seed must be an integer." }),
-  worlds_folder: (_tab, detail) => ({ title: "Could not open worlds folder", message: detail }),
-  not_a_world: (_tab, detail) => ({
-    title: "Not an MC world",
-    message: `No region files (.mca) were found in:\n${detail}\n\nPlease select a valid MC world folder.`,
-  }),
-  no_world: () => ({
-    title: "Missing world path",
-    message: "Choose a valid MC world before selecting an area on the map.",
-  }),
-  areas_missing: () => ({
-    title: "Invalid extraction region",
-    message: "Choose an MC world and all three areas first.",
-  }),
-};
+let TEXT = null;   // the current language's file
+
+/** The first of the system's languages the app has, by its base code (``pt-PT`` is ``pt``), else English. */
+function systemLanguage(tags = navigator.languages) {
+  return tags.map((tag) => tag.split("-")[0].toLowerCase()).find((code) => code in LANGUAGES) ?? "en";
+}
+
+/** Switch the page to language ``code``. */
+async function useLanguage(code) {
+  TEXT = await (await fetch(`i18n/${code}.json`)).json();
+  document.documentElement.lang = code;   // chooses the fonts (tokens.css) and how text breaks
+  translate();
+}
+
+/** The words at ``key``, a dotted path into the language's file. */
+function word(key) {
+  return key.split(".").reduce((words, part) => words[part], TEXT);
+}
+
+/** ``template`` with each ``{name}`` replaced by ``values.name``. */
+function fill(template, values) {
+  return template.replace(/\{(\w+)\}/g, (_match, name) => values[name]);
+}
+
+/** Fill in the words of everything under ``root`` that names them. */
+function translate(root = document) {
+  for (const element of root.querySelectorAll("[data-text]")) element.textContent = word(element.dataset.text);
+  for (const element of root.querySelectorAll("[data-text-title]")) element.title = word(element.dataset.textTitle);
+  for (const element of root.querySelectorAll("[data-text-placeholder]")) {
+    element.placeholder = word(element.dataset.textPlaceholder);
+  }
+  for (const element of root.querySelectorAll("[data-text-label]")) {
+    element.setAttribute("aria-label", word(element.dataset.textLabel));
+  }
+}
 
 /** ``{code, detail}`` from Python, on tab ``tab``, as ``{title, message}`` for the error dialog. */
 function describeError({ code, detail }, tab) {
-  const describe = ERRORS[code];
-  return describe ? describe(TEXT.tabs[tab], detail) : { title: "Something went wrong", message: detail || code };
+  if (code === "running") return TEXT.tabs[tab].running;
+  if (code === "invalid_config") {   // ``detail`` is the knob's name
+    const name = TEXT.form.knobs[detail]?.label ?? detail;
+    return { title: TEXT.tabs[tab].invalidConfig, message: fill(TEXT.errors.invalid_config, { name }) };
+  }
+  const words = TEXT.errors[code];
+  if (!words) return { title: TEXT.errors.unknown, message: detail || code };
+  return { title: words.title, message: fill(words.message ?? "{detail}", { detail }) };
 }
 
-/** A run's failure, as ``{title, message}``: the tab's own title, and the error's text if it had any. */
-function describeFailure(tab, detail) {
+/** A run's failure, as ``{title, message}``: the tab's own title, and the failure's words, its error's text if it has
+ *  none, or the title again. */
+function describeFailure(tab, { code, detail }) {
   const title = TEXT.tabs[tab].failed;
-  return { title, message: detail || title };
+  return { title, message: TEXT.failures[code] ?? (detail || title) };
 }

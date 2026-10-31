@@ -22,7 +22,8 @@ ROUTES = {
 FILES = {"/app-icon.svg": Path(RESOURCE_ROOT) / "app-icon.svg"}
 # Not left to the Windows registry, which can map .js to text/plain.
 CONTENT_TYPES = {
-    ".html": "text/html", ".css": "text/css", ".js": "text/javascript", ".png": "image/png", ".svg": "image/svg+xml",
+    ".html": "text/html", ".css": "text/css", ".js": "text/javascript", ".json": "application/json",
+    ".png": "image/png", ".svg": "image/svg+xml",
 }
 
 

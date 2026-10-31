@@ -4,6 +4,19 @@ All notable changes to this project should be documented in this file.
 
 The format is based on Keep a Changelog, and versions should match the release version you publish.
 
+## [Unreleased]
+
+### Added
+
+- the app speaks Deutsch, Español, Français, Português (Brasil), Русский, 简体中文 and
+  日本語 as well as English. It starts in the system's language if it has it, and a picker at the
+  right of the header changes it at once, keeping the pictures and any run under way
+
+### Changed
+
+- "Modular City Generator", was "Procedural City Generator", in the app's
+  description and the store listing's images
+
 ## [2.0.0] - 2026-10-25
 
 ### Changed

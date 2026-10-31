@@ -12,6 +12,7 @@ import os
 from typing import NamedTuple
 
 from citygen.core.road_network import iter_tile_catalogue
+from citygen.errors import RunFailure
 from citygen.tools.schem import read_tile, Tile
 
 _FILL_TOKEN = "fill"
@@ -44,5 +45,5 @@ def load_road_pieces(roads_dir):
              if os.path.basename(path)[:2] in _ROAD_TILE_PREFIXES}
     ground_fill = next((path for path in paths if os.path.basename(path)[:2] == _GROUND_FILL_PREFIX), None)
     if ground_fill is None:
-        raise FileNotFoundError("missing road ground-fill asset 18 among the extracted road pieces; extract again")
+        raise RunFailure("no_ground_fill", "missing road ground-fill asset 18 among the extracted road pieces; extract again")
     return RoadPieces(tiles, [read_tile(path) for path in fill_prop_paths(roads_dir)], read_tile(ground_fill))

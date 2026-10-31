@@ -1,7 +1,7 @@
 <!doctype html>
 <!-- The Store's screenshots: render.py loads this page at 1366 x 768 (rendered at 2x) once per shot, named by the
      hash. Laid out as agent-2b's are: a caption on the left and the app on the right, the real window captured on one
-     of its tabs. Screenshot n shows docs/pics/promo<n>.png, in that folder's order. Needs Edge's --allow-file-access-from-files, to read them from file://. -->
+     of its tabs, in the shot's language (capture_windows.py). Needs Edge's --allow-file-access-from-files, to read them from file://. -->
 <html lang="en">
 <head>
 <meta charset="utf-8">
@@ -39,53 +39,32 @@
     box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.16), 0 32px 80px rgba(2, 6, 40, 0.6), 0 10px 24px rgba(2, 6, 40, 0.35);
   }
   .window img { display: block; max-width: 900px; max-height: 680px; }
+
+  /* Segoe UI has no Chinese or Japanese: each names its own font, as the app does (src/citygen/gui/static/tokens.css). */
+  html:lang(zh) :is(body, .caption p, .facts span) { font-family: "Segoe UI Variable Display", "Segoe UI", "Microsoft YaHei UI", sans-serif; }
+  html:lang(ja) :is(body, .caption p, .facts span) { font-family: "Segoe UI Variable Display", "Segoe UI", "Yu Gothic UI", sans-serif; }
 </style>
 </head>
 <body>
+<script src="captions.js"></script>
 <script>
-  // One entry per shot: its headline (the accent in the grass gradient), text and the capture of the app's
-  // window. LISTING.md makes the same claims in words; change both together.
-  const FACTS = ["Java Edition 26.1.2+", "Works offline", "Modern & medieval sets"];   // the same on every shot: requirement, offline, scope
-  const SHOTS = {
-    promo: {
-      title: 'A whole city from <span class="brand">the buildings you make.</span>',
-      text: "Mark up a few roads and buildings in your MC world, and get back streets, houses and landmarks, ready to play.",
-      window: "../../docs/pics/promo1.png",
-    },
-    size: {
-      title: 'From a village<br><span class="brand">to a metropolis.</span>',
-      text: "Five city sizes, from this village to the city on the first shot. Tune road density, spacing and the building mix.",
-      window: "../../docs/pics/promo2.png",
-    },
-    styles: {
-      title: 'Any style<br><span class="brand">you build.</span>',
-      text: "Your city takes the look of the buildings you give it. This medieval town comes from the built-in medieval set.",
-      window: "../../docs/pics/promo3.png",
-    },
-    extract: {
-      title: 'Your buildings,<br><span class="brand">your city.</span>',
-      text: "Mark each building with a gold, a diamond and an emerald block. The app finds them in your world and turns them into pieces.",
-      window: "../../docs/pics/promo4.png",
-    },
-    preview: {
-      title: 'See it first,<br><span class="brand">then build.</span>',
-      text: "Preview the road network and the building layout, roll a new seed until you like it, then build.",
-      window: "../../docs/pics/promo5.png",
-    },
-  };
-
-  const shot = SHOTS[location.hash.slice(1) || "promo"];
+  // The words are captions.js's: the headline (its accent in the grass gradient), the text and the facts, by language.
+  // The hash names a language and a shot: ``de.promo``.
+  const [language, name] = location.hash.slice(1).split(".");
+  const words = CAPTIONS[language];
+  const shot = words?.shots[name];
   if (!shot) throw new Error("Unknown shot " + location.hash);
+  document.documentElement.lang = language;
   document.body.insertAdjacentHTML("beforeend", `
     <div class="backdrop"></div>
     <div class="shade"></div>
     <div class="caption">
-      <div class="app"><img src="../../src/app-icon.svg" alt=""><span>MC CityGen<small>Procedural City Generator</small></span></div>
+      <div class="app"><img src="../../src/app-icon.svg" alt=""><span>MC CityGen<small>${words.tagline}</small></span></div>
       <h1>${shot.title}</h1>
       <p>${shot.text}</p>
-      <div class="facts">${FACTS.map(f => `<span>${f}</span>`).join("")}</div>
+      <div class="facts">${words.facts.map(f => `<span>${f.replace("&", "&amp;")}</span>`).join("")}</div>
     </div>
-    <div class="window"><img src="${shot.window}" alt=""></div>`);
+    <div class="window"><img src="../../build/store-listing/windows/${language}/${name}.png" alt=""></div>`);
 </script>
 </body>
 </html>

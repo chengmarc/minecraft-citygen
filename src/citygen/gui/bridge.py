@@ -1,6 +1,6 @@
 """The calls the page makes, and the events it receives.
 
-Python answers with facts and short codes; every word the page shows is in its text.js.
+Python answers with facts and short codes; every word the page shows is in its language files (static/i18n/).
 Nothing here imports pywebview. The page calls the public methods of :class:`Api`
 (``window.pywebview.api.<name>``); the app answers through ``emit(event, payload)``,
 which the host turns into a call to ``citygen.receive`` in the page.
@@ -42,8 +42,13 @@ class Api:
         return {
             "algo": self._algo.state(),
             "form": form_spec(),
+            "language": (self._settings.get("language") or {}).get("code"),   # None: the page follows the system's
             **self._extraction(),
         }
+
+    def set_language(self, code):
+        self._settings.set("language", {"code": code})
+        return self._extraction()
 
     # Preview and Build
 

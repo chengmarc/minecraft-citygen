@@ -16,70 +16,67 @@
   <header class="sky">
     <div class="clouds" aria-hidden="true"><i class="cloud cloud-a"></i><i class="cloud cloud-b"></i><i class="cloud cloud-c"></i><i class="cloud cloud-d"></i><i class="cloud cloud-e"></i><i class="cloud cloud-f"></i><i class="cloud cloud-g"></i><i class="cloud cloud-h"></i></div>
     <div class="brand"><img src="/app-icon.svg" alt="" width="30" height="30"><span>MC CityGen</span></div>
-    <nav class="steps" role="tablist" aria-label="Steps">
-      <button class="step" role="tab" data-tab="extract" aria-selected="true"
-              title="Step 1 of 3: Choose an MC world and extract road, house, and landmark assets.">
-        <span class="step-num">1</span><span class="step-text"><b>Extract</b><small>Pieces from your world</small></span>
+    <nav class="steps" role="tablist" data-text-label="page.stepsLabel">
+      <button class="step" role="tab" data-tab="extract" aria-selected="true" data-text-title="page.steps.extract.tip">
+        <span class="step-num">1</span><span class="step-text"><b data-text="page.steps.extract.name"></b><small data-text="page.steps.extract.sub"></small></span>
       </button>
-      <button class="step" role="tab" data-tab="preview"
-              title="Step 2 of 3: Test seeds and Avenue/Street settings before the final build.">
-        <span class="step-num">2</span><span class="step-text"><b>Preview</b><small>Try city layouts</small></span>
+      <button class="step" role="tab" data-tab="preview" data-text-title="page.steps.preview.tip">
+        <span class="step-num">2</span><span class="step-text"><b data-text="page.steps.preview.name"></b><small data-text="page.steps.preview.sub"></small></span>
       </button>
-      <button class="step" role="tab" data-tab="build"
-              title="Step 3 of 3: Build the city, render it, and export the MC world.">
-        <span class="step-num">3</span><span class="step-text"><b>Build</b><small>The city and its world</small></span>
+      <button class="step" role="tab" data-tab="build" data-text-title="page.steps.build.tip">
+        <span class="step-num">3</span><span class="step-text"><b data-text="page.steps.build.name"></b><small data-text="page.steps.build.sub"></small></span>
       </button>
     </nav>
+    <div class="language" data-text-title="page.language"><i class="icon icon-language"></i><select id="language" data-text-label="page.language"></select></div>
   </header>
 
   <!-- Extract: Stages 1 and 2 -->
   <main class="page" id="extract" role="tabpanel">
     <section class="stage">
-      <div class="viewer" id="viewer-roads" data-caption="Road pieces" data-icon="extract" data-bounded="width"
-           data-message="Extract assets to scan the selected road sample area and build a road contact sheet."></div>
-      <div class="viewer" id="viewer-builds" data-caption="Building pieces" data-icon="extract" data-bounded="width"
-           data-message="Extract assets to scan the selected house and landmark areas and build a building contact sheet."></div>
+      <div class="viewer" id="viewer-roads" data-caption="page.viewers.roads.caption" data-icon="extract" data-bounded="width"
+           data-message="page.viewers.roads.message"></div>
+      <div class="viewer" id="viewer-builds" data-caption="page.viewers.builds.caption" data-icon="extract" data-bounded="width"
+           data-message="page.viewers.builds.message"></div>
     </section>
 
     <section class="dock">
       <div class="dock-row">
         <div class="field">
-          <label for="world-path">MC world</label>
+          <label for="world-path" data-text="page.world.label"></label>
           <div class="input-group">
-            <input type="text" id="world-path" class="world-path" placeholder="Select an MC world folder" spellcheck="false">
-            <button type="button" class="btn secondary" id="browse-button"><i class="icon icon-folder"></i>Browse</button>
+            <input type="text" id="world-path" class="world-path" data-text-placeholder="page.world.placeholder" spellcheck="false">
+            <button type="button" class="btn secondary" id="browse-button"><i class="icon icon-folder"></i><span data-text="page.world.browse"></span></button>
           </div>
         </div>
         <div class="field">
-          <label for="source-version">Source version</label>
+          <label for="source-version" data-text="page.world.source"></label>
           <input type="text" id="source-version" class="source-version" readonly placeholder="-"
-                 title="The MC version of the world you selected.">
+                 data-text-title="page.world.sourceTip">
         </div>
         <div class="field">
-          <label for="target-version">Target version</label>
-          <select id="target-version"
-                  title="Lets you confirm which MC version you plan to paste into. MC CityGen still stamps the exported files to the source world's version."></select>
+          <label for="target-version" data-text="page.world.target"></label>
+          <select id="target-version" data-text-title="page.world.targetTip"></select>
         </div>
         <span class="spacer"></span>
         <button type="button" class="btn primary big" id="reset-world-button"
-                title="Go back to the sample world that comes with MC CityGen, with its three areas."><i class="icon icon-reset"></i>Reset</button>
-        <button type="button" class="btn primary big" id="extract-button" disabled><i class="icon icon-extract"></i>Extract</button>
+                data-text-title="page.world.resetTip"><i class="icon icon-reset"></i><span data-text="page.world.reset"></span></button>
+        <button type="button" class="btn primary big" id="extract-button" disabled><i class="icon icon-extract"></i><span data-text="page.world.run"></span></button>
       </div>
       <div class="areas">
-        <div class="area-card" data-area="road" title="Choose an area that contains the road pieces you want MC CityGen to reuse.">
-          <div class="area-top"><h3>Road area</h3><span class="chip"></span></div>
+        <div class="area-card" data-area="road" data-text-title="page.areas.road.tip">
+          <div class="area-top"><h3 data-text="page.areas.road.name"></h3><span class="chip"></span></div>
           <p class="area-detail"></p>
-          <button type="button" class="btn secondary"><i class="icon icon-map"></i>Choose on map</button>
+          <button type="button" class="btn secondary"><i class="icon icon-map"></i><span data-text="page.areas.choose"></span></button>
         </div>
-        <div class="area-card" data-area="house" title="Choose a sample area with your standard houses or smaller buildings.">
-          <div class="area-top"><h3>House area</h3><span class="chip"></span></div>
+        <div class="area-card" data-area="house" data-text-title="page.areas.house.tip">
+          <div class="area-top"><h3 data-text="page.areas.house.name"></h3><span class="chip"></span></div>
           <p class="area-detail"></p>
-          <button type="button" class="btn secondary"><i class="icon icon-map"></i>Choose on map</button>
+          <button type="button" class="btn secondary"><i class="icon icon-map"></i><span data-text="page.areas.choose"></span></button>
         </div>
-        <div class="area-card" data-area="landmark" title="Choose a sample area with taller or special buildings that should stand out in the city.">
-          <div class="area-top"><h3>Landmark area</h3><span class="chip"></span></div>
+        <div class="area-card" data-area="landmark" data-text-title="page.areas.landmark.tip">
+          <div class="area-top"><h3 data-text="page.areas.landmark.name"></h3><span class="chip"></span></div>
           <p class="area-detail"></p>
-          <button type="button" class="btn secondary"><i class="icon icon-map"></i>Choose on map</button>
+          <button type="button" class="btn secondary"><i class="icon icon-map"></i><span data-text="page.areas.choose"></span></button>
         </div>
       </div>
     </section>
@@ -88,19 +85,19 @@
   <!-- Preview: Stage 3 -->
   <main class="page" id="preview" role="tabpanel" hidden>
     <section class="stage">
-      <div class="viewer" id="viewer-grid" data-caption="Road layout" data-icon="refresh" data-bounded="height"
-           data-message="Preview layout to see the road network before building the final city."></div>
-      <div class="viewer" id="viewer-city-preview" data-caption="City layout" data-icon="refresh" data-bounded="height"
-           data-message="Preview layout to see how buildings fit into the generated road network."></div>
+      <div class="viewer" id="viewer-grid" data-caption="page.viewers.grid.caption" data-icon="refresh" data-bounded="height"
+           data-message="page.viewers.grid.message"></div>
+      <div class="viewer" id="viewer-city-preview" data-caption="page.viewers.cityPreview.caption" data-icon="refresh" data-bounded="height"
+           data-message="page.viewers.cityPreview.message"></div>
     </section>
 
     <section class="dock algo-controls">
       <div class="dock-row">
         <span class="selectors"></span>
-        <button type="button" class="disclosure" aria-expanded="false"><span>More settings</span><i class="chevron"></i></button>
+        <button type="button" class="disclosure" aria-expanded="false"><span></span><i class="chevron"></i></button>
         <span class="spacer"></span>
-        <button type="button" class="btn primary big" data-action="reset"><i class="icon icon-reset"></i>Reset</button>
-        <button type="button" class="btn primary big" data-action="run" disabled><i class="icon icon-refresh"></i>Preview</button>
+        <button type="button" class="btn primary big" data-action="reset"><i class="icon icon-reset"></i><span data-text="page.preview.reset"></span></button>
+        <button type="button" class="btn primary big" data-action="run" disabled><i class="icon icon-refresh"></i><span data-text="page.preview.run"></span></button>
       </div>
       <div class="advanced"><div class="advanced-inner"></div></div>
     </section>
@@ -109,18 +106,18 @@
   <!-- Build: Stages 4 and 5 -->
   <main class="page" id="build" role="tabpanel" hidden>
     <section class="stage">
-      <div class="viewer" id="viewer-city-render" data-caption="Final city" data-icon="render" data-bounded="height"
-           data-message="Build city to create the schematic, the render, and the exported MC world."></div>
+      <div class="viewer" id="viewer-city-render" data-caption="page.viewers.cityRender.caption" data-icon="render" data-bounded="height"
+           data-message="page.viewers.cityRender.message"></div>
     </section>
 
     <section class="dock algo-controls">
       <div class="dock-row">
         <span class="selectors"></span>
-        <button type="button" class="disclosure" aria-expanded="false"><span>More settings</span><i class="chevron"></i></button>
+        <button type="button" class="disclosure" aria-expanded="false"><span></span><i class="chevron"></i></button>
         <span class="spacer"></span>
         <button type="button" class="btn primary big" data-action="worlds"
-                title="Open the folder of exported worlds, to copy one into your MC saves."><i class="icon icon-folder"></i>Worlds</button>
-        <button type="button" class="btn primary big" data-action="run" disabled><i class="icon icon-render"></i>Build</button>
+                data-text-title="page.build.worldsTip"><i class="icon icon-folder"></i><span data-text="page.build.worlds"></span></button>
+        <button type="button" class="btn primary big" data-action="run" disabled><i class="icon icon-render"></i><span data-text="page.build.run"></span></button>
       </div>
       <div class="advanced"><div class="advanced-inner"></div></div>
     </section>
@@ -137,20 +134,20 @@
   <dialog id="region-dialog" class="region-dialog">
     <header class="dialog-head">
       <h2></h2>
-      <p class="hints"><kbd>Shift</kbd> + drag to select <span>·</span> drag to pan <span>·</span> scroll to zoom</p>
+      <p class="hints"><kbd>Shift</kbd> + <span data-text="page.map.select"></span><span class="dot">·</span><span data-text="page.map.pan"></span><span class="dot">·</span><span data-text="page.map.zoom"></span></p>
     </header>
     <div class="map-frame">
-      <div class="viewer" id="viewer-region" data-icon="map" data-message="Loading world preview..."></div>
+      <div class="viewer" id="viewer-region" data-icon="map" data-message="mapLoading"></div>
     </div>
     <footer class="dialog-foot">
       <div class="foot-info">
         <p class="status"></p>
-        <div class="runbar map-run"><span class="status"></span><span class="spinner"></span>
+        <div class="runbar map-run"><span class="status" data-text="mapDrawing"></span><span class="spinner"></span>
           <div class="progress" role="progressbar" aria-valuemin="0" aria-valuemax="100"><div class="progress-chunk"></div></div>
         </div>
       </div>
-      <button type="button" class="btn secondary" data-action="cancel" autofocus>Cancel</button>
-      <button type="button" class="btn primary" data-action="apply" disabled>Use selection</button>
+      <button type="button" class="btn secondary" data-action="cancel" autofocus data-text="page.map.cancel"></button>
+      <button type="button" class="btn primary" data-action="apply" disabled data-text="page.map.apply"></button>
     </footer>
   </dialog>
 
@@ -159,7 +156,7 @@
     <div>
       <h2></h2>
       <p></p>
-      <form method="dialog" class="dialog-foot"><button class="btn primary">OK</button></form>
+      <form method="dialog" class="dialog-foot"><button class="btn primary" data-text="page.ok"></button></form>
     </div>
   </dialog>
 

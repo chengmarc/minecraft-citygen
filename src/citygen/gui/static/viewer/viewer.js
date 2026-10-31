@@ -20,12 +20,12 @@ class ImageViewer {
     this.overlay = $(".viewer-overlay", root);
     this.placeholder = $(".viewer-placeholder", root);
     this.zoomReadout = $(".viewer-tools output", root);
-    $(".viewer-caption", root).textContent = root.dataset.caption || "";
+    if (root.dataset.caption) $(".viewer-caption", root).dataset.text = root.dataset.caption;
     if (root.dataset.icon) $(".viewer-placeholder .icon", root).classList.add(`icon-${root.dataset.icon}`);
     for (const button of $$(".viewer-tools button", root)) {
       button.addEventListener("pointerdown", (event) => event.stopPropagation());   // not a pan
       button.addEventListener("dblclick", (event) => event.stopPropagation());
-      button.title = Number(button.dataset.zoom) > 0 ? TEXT.zoomIn : TEXT.zoomOut;
+      button.dataset.textTitle = Number(button.dataset.zoom) > 0 ? "zoomIn" : "zoomOut";
       button.addEventListener("click", () => this.zoomBy(Number(button.dataset.zoom) * 2));
     }
     this.interceptPointer = null;   // (event) => true to take a press away from panning
@@ -37,7 +37,8 @@ class ImageViewer {
     this.x = 0;
     this.y = 0;
     this.overlayRect = null;
-    this.setMessage(root.dataset.message || "");
+    this.reset();
+    translate(root);
 
     root.addEventListener("wheel", (event) => this.onWheel(event), { passive: false });
     root.addEventListener("pointerdown", (event) => this.onPointerDown(event));
@@ -55,12 +56,17 @@ class ImageViewer {
     this.layer.hidden = true;
     this.img.removeAttribute("src");
     this.root.classList.remove("has-image");
-    $("p", this.placeholder).textContent = message;
+    const text = $("p", this.placeholder);
+    delete text.dataset.text;
+    text.textContent = message;
     this.placeholder.hidden = false;
   }
 
+  /** Back to what it says before it has anything to show, in whichever language is current. */
   reset() {
-    this.setMessage(this.root.dataset.message || "");
+    this.setMessage("");
+    $("p", this.placeholder).dataset.text = this.root.dataset.message;
+    translate(this.placeholder);
   }
 
   /** Show ``{src}``, or say it's ``{missing}``; resolves once it's on screen. A ``blueprint`` image is a faded
@@ -70,7 +76,7 @@ class ImageViewer {
    *  keeping the zoom and the pan; another size is fitted to the viewer and fades in. */
   async load(payload) {
     if (!payload.src) {
-      this.setMessage(TEXT.imageMissing(payload.missing));
+      this.setMessage(fill(TEXT.imageMissing, { path: payload.missing }));
       return false;
     }
     const next = new Image();
@@ -78,7 +84,7 @@ class ImageViewer {
     try {
       await next.decode();
     } catch {
-      this.setMessage(TEXT.imageFailed(payload.src));
+      this.setMessage(fill(TEXT.imageFailed, { src: payload.src }));
       return false;
     }
     const size = { width: next.naturalWidth, height: next.naturalHeight };

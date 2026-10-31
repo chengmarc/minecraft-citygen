@@ -1,12 +1,12 @@
-"""Render the images uploaded to Partner Center into store-listing/: the logos there, the screenshots in desktop/.
-Also GitHub's social preview, docs/social-preview.png, uploaded in the repo's Settings.
+"""Render the images uploaded to Partner Center into store-listing/: the logos and the screenshots, in
+<code>/, one folder per language. Also GitHub's social preview, docs/social-preview.png, uploaded in the repo's Settings.
 
 They are drawn by the pages beside this script (logo.html, shots.html, social.html) from the app's own
-files: its icon and the pictures in docs/pics/. Uses Microsoft Edge, which comes
-with Windows, in headless mode, and nothing outside the standard library.
-LISTING.md says where each image goes.
+files: its icon, the pictures in docs/pics/, and its window in each language, which capture_windows.py shoots first
+from the cities replay_scenes.py builds. Uses Microsoft Edge, which comes with Windows, in headless mode.
+SUBMISSION.md says where each image goes.
 
-Run from the repo root: python store-listing/generator/render.py
+Run from the repo root: python store-listing/_generator/render.py
 """
 
 from __future__ import annotations
@@ -21,21 +21,25 @@ GENERATOR = Path(__file__).resolve().parent
 LISTING = GENERATOR.parent
 EDGE_PROFILE = LISTING.parent / "build" / "edge-render"  # a profile of its own, so a running Edge isn't involved
 
+# Every image is in every language, with captions.js's words, each in its own folder.
+LANGUAGES = ("en", "de", "es", "fr", "ja", "pt", "ru", "zh")
+SHOTS = ("promo", "size", "styles", "extract", "preview")
+TILE = "store-logo-300.png"   # transparent around the icon
+
 # Each image: file (in store-listing/), page (with its hash), its size in CSS pixels, and its scale.
 # Partner Center's sizes: screenshots 1366 x 768 or larger, box art 2160 x 2160, poster art 1440 x 2160, tile 300 x 300.
 # GitHub's social preview: 1280 x 640, under 1 MB.
 IMAGES = [
-    ("desktop/screenshot-1-promo.png", "shots.html#promo", 1366, 768, 2),
-    ("desktop/screenshot-2-size.png", "shots.html#size", 1366, 768, 2),
-    ("desktop/screenshot-3-styles.png", "shots.html#styles", 1366, 768, 2),
-    ("desktop/screenshot-4-extract.png", "shots.html#extract", 1366, 768, 2),
-    ("desktop/screenshot-5-preview.png", "shots.html#preview", 1366, 768, 2),
-    ("box-art-2160.png", "logo.html", 1080, 1080, 2),
-    ("poster-art-1440x2160.png", "logo.html", 720, 1080, 2),
-    ("store-logo-300.png", "logo.html#tile", 300, 300, 1),
+    *(
+        (f"{code}/screenshot-{number}-{shot}.png", f"shots.html#{code}.{shot}", 1366, 768, 2)
+        for code in LANGUAGES
+        for number, shot in enumerate(SHOTS, 1)
+    ),
+    *((f"{code}/box-art-2160.png", f"logo.html#{code}", 1080, 1080, 2) for code in LANGUAGES),
+    *((f"{code}/poster-art-1440x2160.png", f"logo.html#{code}", 720, 1080, 2) for code in LANGUAGES),
+    *((f"{code}/{TILE}", f"logo.html#{code}.tile", 300, 300, 1) for code in LANGUAGES),
     ("../docs/social-preview.png", "social.html", 1280, 640, 1),
 ]
-TRANSPARENT = {"store-logo-300.png"}
 
 
 def find_edge() -> str:
@@ -54,8 +58,11 @@ def png_size(path: Path) -> tuple[int, int]:
 
 
 def main() -> None:
+    from capture_windows import capture   # it needs the citygen package, which nothing else here does
+
     edge = find_edge()
-    for folder in (LISTING, LISTING / "desktop"):
+    capture(edge, LANGUAGES)
+    for folder in (LISTING / code for code in LANGUAGES):
         folder.mkdir(exist_ok=True)
         for old in folder.glob("*.png"):
             old.unlink()
@@ -70,7 +77,7 @@ def main() -> None:
             f"--user-data-dir={EDGE_PROFILE}", f"--force-device-scale-factor={scale}",
             f"--window-size={width},{height}", "--virtual-time-budget=5000", f"--screenshot={file}",
         ]
-        if name in TRANSPARENT:
+        if name.endswith(TILE):
             args.append("--default-background-color=00000000")
         subprocess.run([*args, url], check=False, capture_output=True)
 
