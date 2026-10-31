@@ -92,7 +92,7 @@ with the GitHub release.
    register the unpacked layout instead of installing the unsigned MSIX:
 
    ```powershell
-   Add-AppxPackage -Register "build\release\msix\AppxManifest.xml"
+   Add-AppxPackage -Register "build\packaging\msix\AppxManifest.xml"
    ```
 
    Run the same checks as the installer smoke test. Generated files should land
