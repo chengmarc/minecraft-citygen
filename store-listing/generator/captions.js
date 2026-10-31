@@ -1,5 +1,5 @@
 // The words on the Store's screenshots (shots.html), one set per language, as JSON. The listing text makes the same
-// claims, in each language's listing.md; change them together.
+// claims, in ../localization/; change them together.
 const CAPTIONS = {
   "en": {
     "tagline": "Modular City Generator",

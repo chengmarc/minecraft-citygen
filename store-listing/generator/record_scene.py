@@ -4,7 +4,7 @@ Three cities make the five screenshots: ``promo`` (1, and 4 and 5 from the same 
 Each is kept in scenes.json as what sets it apart from a fresh install: its seed, and any settings, areas or world that
 differ. The same values make the same city: everything random in the pipeline is drawn from the seed.
 
-Run it from the repo root once the app has started the Build: python store-listing/_generator/record_scene.py promo
+Run it from the repo root once the app has started the Build: python store-listing/generator/record_scene.py promo
 The Preview tab picks a new seed on every run, and the Build takes the last one, so record after Build, not before.
 """
 

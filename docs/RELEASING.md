@@ -33,7 +33,7 @@ for GitHub Releases and an MSIX package for the Microsoft Store — built by
    python packaging/build_windows_release.py --clean
    ```
 
-6. Confirm `dist/` holds only the installer
+6. Confirm `dist/` holds only the installer, and after the render below the Store images
    (see [release artifacts](#release-artifacts)), and that the tracked derived
    files are current. The build has already rewritten the bundled world's
    `icon.png`; rerun the other generators listed in
@@ -42,7 +42,7 @@ for GitHub Releases and an MSIX package for the Microsoft Store — built by
 
    ```bash
    python src/citygen/data/color_render_update.py --version 26.1.2
-   python store-listing/_generator/render.py
+   python store-listing/generator/render.py
    git status --short
    ```
 
@@ -108,31 +108,34 @@ with the GitHub release.
 [`store-listing/SUBMISSION.md`](../store-listing/SUBMISSION.md) goes through the
 submission in Partner Center's order, with what's entered once: the properties,
 the wording for the `runFullTrust` restricted capability and the notes for
-certification. Beside it is a folder per language, such as `store-listing/en/`,
-with its Store listing: `listing.md`, its screenshots and its logos.
+certification. Each language's Store listing is its text, such as
+`store-listing/localization/en.md`, and its images, in `dist/en/`.
 
 ### Re-render the listing images
 
 ```bash
-python store-listing/_generator/render.py   # about 3 minutes, and 40 seconds more to rebuild the cities
+python store-listing/generator/render.py   # about 3 minutes, and 40 seconds more to rebuild the cities
 ```
 
 Three cities make the five screenshots: `promo` (1, 4, 5), `size` (2) and `styles` (3).
-`store-listing/_generator/scenes.json` keeps each as its seed and whatever differs from a fresh
+`store-listing/generator/scenes.json` keeps each as its seed and whatever differs from a fresh
 install, and `replay_scenes.py` builds them again, pixel for pixel, without the app and
 without exporting a world. To change one, build the city you want in the app, then run
-`python store-listing/_generator/record_scene.py <name>` before reopening the app or
+`python store-listing/generator/record_scene.py <name>` before reopening the app or
 previewing again. Then run `replay_scenes.py`, as after any change to the pipeline.
 
-`render.py` keeps the cities' pictures in `build/store-listing/`, and rebuilds them only if
+`render.py` keeps the cities' pictures in `build/scenes/`, and rebuilds them only if
 they're missing. That needs the app closed, as it clears `appdata/`, and it refuses otherwise.
 It shoots the app's real page in each language over those pictures, with
 Microsoft Edge in headless mode (`capture_windows.py`), then draws each language's images
-in `<code>/` from `store-listing/_generator/logo.html` (box art, poster art, tile icon) and
-`store-listing/_generator/shots.html` (the screenshots). Git keeps only `en/`'s, which the
-README uses, and `scenes.json`: this command makes the rest. Change the captions in
-`store-listing/_generator/captions.js`, and the matching claims in each language's
-`listing.md` with them.
+in `dist/<code>/` from `store-listing/generator/logo.html` (box art, poster art, tile icon) and
+`store-listing/generator/shots.html` (the screenshots). `--clean` deletes them with the rest of
+`dist/`, so render after the build. Git keeps none of these, only
+`scenes.json` and the README's three English screenshots, which this command copies into
+`docs/screenshots/`. Every changed screenshot stays in git history, about 3 MB each, so commit them
+for a release, not for every render. Change the captions in
+`store-listing/generator/captions.js`, and the matching claims in
+`store-listing/localization/` with them.
 
 ### Update the README pictures
 
@@ -156,7 +159,8 @@ listing images too (above).
 
 ## Explanation
 
-**Why only `dist/` is published.** `dist/` holds only what ships. Everything
+**Why only `dist/` is published.** `dist/` holds only what ships: the installer, and in a
+folder per language the images uploaded to the Store. Everything
 on the way (PyInstaller's app folder and work files in `build/packaging/portable/`
 and `build/packaging/onefile/`, the MSIX layout, the rendered icons) stays in
 `build/packaging/`, and the script removes a standalone exe an earlier build
@@ -222,6 +226,6 @@ not required.
 | [windows_installer.iss](../packaging/windows_installer.iss) | Inno Setup script; receives version and output directory from the build script |
 | [AppxManifest.xml](../packaging/AppxManifest.xml) | MSIX manifest template; the build script fills in the Store identity and version |
 | [store-listing/SUBMISSION.md](../store-listing/SUBMISSION.md) | What to enter in Partner Center, in its order: the properties and submission options, and how to fill in each listing |
-| [store-listing/en/listing.md](../store-listing/en/listing.md) | The Store listing's text in English; each language has its own folder |
+| [store-listing/localization/](../store-listing/localization/) | The Store listing's text, one file per language |
 | [store-listing/PRIVACY.md](../store-listing/PRIVACY.md) | The privacy policy; its GitHub address is the listing's privacy policy URL |
-| [store-listing/_generator/render.py](../store-listing/_generator/render.py) | Renders the listing's images into `store-listing/` |
+| [store-listing/generator/render.py](../store-listing/generator/render.py) | Renders the listing's images into `dist/` |

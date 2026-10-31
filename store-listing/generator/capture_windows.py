@@ -1,4 +1,4 @@
-"""The app's window for each screenshot in each language, into build/store-listing/windows/<code>/<shot>.png.
+"""The app's window for each screenshot in each language, into build/windows/<code>/<shot>.png.
 
 The real page, in headless Edge, on a stand-in for the bridge: it's told the runs are done, with the pictures
 replay_scenes.py makes, and shot. No window opens, and nothing but the words changes between languages. The one thing
@@ -24,7 +24,7 @@ from replay_scenes import PICTURES, regions, SCENES
 from citygen.gui import form, server
 
 BUILD = Path(__file__).resolve().parents[2] / "build"
-WINDOWS = BUILD / "store-listing" / "windows"
+WINDOWS = BUILD / "windows"
 EDGE_PROFILE = BUILD / "edge-capture"
 
 # Each screenshot: the scene its pictures come from, the tab showing, and the window's height. The width is the app's.
