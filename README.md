@@ -6,7 +6,7 @@
   <a href="https://apps.microsoft.com/detail/9NPSMX3TB1T7"><img src="docs/badges/badge-microsoft-store.svg" height="50"></a>
   <img src="docs/badges/badge-mc.svg" height="50">
 
-  <h1>MC CityGen - Modular City Generator</h1>
+  <h1>Minecraft CityGen - Modular City Generator</h1>
   
   <img src="docs/social-preview.png">
 
