@@ -9,14 +9,14 @@
   <h1>Minecraft CityGen - Modular City Generator</h1>
   
   <img src="docs/social-preview.png">
-
+  
 </div>
 
 ## Screenshots
 
-<img src="store-listing/en/screenshot-1-promo.png">
-<img src="store-listing/en/screenshot-2-size.png">
-<img src="store-listing/en/screenshot-3-styles.png">
+<img src="docs/screenshots/screenshot-1-promo.png">
+<img src="docs/screenshots/screenshot-2-size.png">
+<img src="docs/screenshots/screenshot-3-styles.png">
  
 ## Generated Cities
 

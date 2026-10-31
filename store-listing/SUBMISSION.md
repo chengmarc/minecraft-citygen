@@ -2,9 +2,9 @@
 
 How to fill in a Partner Center submission for MC CityGen, in its order: Properties, Store listings, Submission
 options. What's entered once for the product or the submission is here, to paste. What's entered per language is that
-language's Store listing, in its folder beside this file (`en/`, `de/` and so on): its `listing.md`, its screenshots and
-its logos. Pricing and availability, Age ratings and Packages are filled in Partner Center directly. The images are
-rendered by `python store-listing/_generator/render.py`.
+language's Store listing: its text in `localization/<code>.md`, and its images in `dist/<code>/`. Pricing
+and availability, Age ratings and Packages are filled in Partner Center directly. The images are made by
+`python store-listing/generator/render.py`, and only the README's three English screenshots, in `docs/screenshots/`, are kept in git.
 
 The app and its listing call the game "MC": Mojang's usage guidelines don't allow its name in a product's name,
 and the Store has turned down submissions that used it. The name only appears where the guidelines ask for it: the
@@ -34,12 +34,12 @@ Center (`MSIX_DISPLAY_NAME` in [build_windows_release.py](../packaging/build_win
 
 ## Store listings
 
-One per language, each filled in the same way from its folder. Each language in the package needs a listing, or
+One per language, each filled in the same way. Each language in the package needs a listing, or
 removing under Add/remove languages.
 
 ### Text
 
-The fields in `<code>/listing.md`, within Partner Center's limits, which
+The fields in `localization/<code>.md`, within Partner Center's limits, which
 `tests/test_packaging.py` checks:
 
 - **Description:** keep its closing disclaimer in English, as it is in each file. Don't use the game's name
@@ -56,8 +56,8 @@ The fields in `<code>/listing.md`, within Partner Center's limits, which
 
 ### Screenshots
 
-From `<code>/`, in this order (the first is shown first). Each shows the app's window in that language, on the cities
-in `_generator/scenes.json`. Only `en/`'s images are kept in git, for the README, so run `render.py` first:
+From `dist/<code>/`, in this order (the first is shown first). Each shows the app's window in that
+language, on the cities in `generator/scenes.json`:
 
 1. `screenshot-1-promo.png`: the Build tab, a whole modern city from the buildings you make
 2. `screenshot-2-size.png`: the Build tab, a medieval village, from village to metropolis
@@ -67,7 +67,7 @@ in `_generator/scenes.json`. Only `en/`'s images are kept in git, for the README
 
 ### Store logos
 
-From `<code>/`. The tile has no words, so it's the same in every language.
+From `dist/<code>/`. The tile has no words, so it's the same in every language.
 
 | Slot | File |
 |---|---|

@@ -1,11 +1,11 @@
-"""Build the cities in scenes.json again, without the app, and keep their pictures in build/store-listing/scenes/<name>/.
+"""Build the cities in scenes.json again, without the app, and keep their pictures in build/scenes/<name>/.
 
 Each runs Extract, Preview and the Build's construction and render with the recorded values; no world is exported, as
 the screenshots only need the pictures. Like the app's launch, this clears appdata/ but for the exported worlds and the
 saved settings, so it refuses to run with the app open.
 
 render.py runs this for any city whose pictures are missing. Run it yourself after changing the pipeline or a city:
-python store-listing/_generator/replay_scenes.py [name ...]
+python store-listing/generator/replay_scenes.py [name ...]
 """
 
 from __future__ import annotations
@@ -32,7 +32,7 @@ from citygen.tools.world_reader import source_data_version   # noqa: E402
 
 GENERATOR = Path(__file__).resolve().parent
 SCENES = GENERATOR / "scenes.json"
-PICTURES = GENERATOR.parents[1] / "build" / "store-listing" / "scenes"
+PICTURES = GENERATOR.parents[1] / "build" / "scenes"
 
 
 def _window_program(hwnd):

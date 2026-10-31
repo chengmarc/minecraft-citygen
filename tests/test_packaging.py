@@ -56,10 +56,11 @@ def test_msix_manifest_renders_to_valid_xml_with_the_store_identity(monkeypatch)
 
 
 LISTING = Path(__file__).resolve().parents[1] / "store-listing"
+LOCALIZATION = LISTING / "localization"
 
 
 def load_render_script():
-    spec = importlib.util.spec_from_file_location("render", LISTING / "_generator" / "render.py")
+    spec = importlib.util.spec_from_file_location("render", LISTING / "generator" / "render.py")
     module = importlib.util.module_from_spec(spec)
     assert spec.loader is not None
     spec.loader.exec_module(module)
@@ -73,7 +74,7 @@ def app_languages():
 
 
 def captions():
-    text = (LISTING / "_generator" / "captions.js").read_text(encoding="utf-8")
+    text = (LISTING / "generator" / "captions.js").read_text(encoding="utf-8")
     return json.loads(text[text.index("{"):text.rindex("}") + 1])
 
 
@@ -85,7 +86,7 @@ def test_every_app_language_has_its_listing_and_screenshots():
     render = load_render_script()
 
     assert sorted(render.LANGUAGES) == app_languages()
-    assert sorted(path.parent.name for path in LISTING.glob("*/listing.md")) == app_languages()
+    assert sorted(path.stem for path in LOCALIZATION.glob("*.md")) == app_languages()
     assert sorted(captions()) == app_languages()
     for code in app_languages():
         images = [name for name, *_rest in render.IMAGES if name.startswith(f"{code}/")]
@@ -102,33 +103,33 @@ def test_every_language_captions_every_shot():
 
 
 def test_each_listing_keeps_to_partner_centers_limits():
-    english = (LISTING / "en" / "listing.md").read_text(encoding="utf-8")
+    english = (LOCALIZATION / "en.md").read_text(encoding="utf-8")
     disclaimer = re.search(r"^NOT AN OFFICIAL.*$", english, re.M).group(0)
-    for path in LISTING.glob("*/listing.md"):
+    for path in LOCALIZATION.glob("*.md"):
         listing = path.read_text(encoding="utf-8")
         description = field(listing, "Description")
         features = field(listing, "Product features").splitlines()
         keywords = field(listing, "Keywords").splitlines()
 
-        assert len(description) <= 10_000, path.parent.name
-        assert description.endswith(disclaimer), path.parent.name
-        assert len(field(listing, "What's new in this version")) <= 1500, path.parent.name
-        assert len(field(listing, "Short description")) <= 270, path.parent.name
-        assert len(features) <= 20 and all(len(feature) <= 200 for feature in features), path.parent.name
-        assert len(keywords) <= 7 and all(len(keyword) <= 40 for keyword in keywords), path.parent.name
-        assert sum(len(keyword.split()) for keyword in keywords) <= 21, path.parent.name
-        assert len(field(listing, "Additional system requirements")) <= 200, path.parent.name
+        assert len(description) <= 10_000, path.stem
+        assert description.endswith(disclaimer), path.stem
+        assert len(field(listing, "What's new in this version")) <= 1500, path.stem
+        assert len(field(listing, "Short description")) <= 270, path.stem
+        assert len(features) <= 20 and all(len(feature) <= 200 for feature in features), path.stem
+        assert len(keywords) <= 7 and all(len(keyword) <= 40 for keyword in keywords), path.stem
+        assert sum(len(keyword.split()) for keyword in keywords) <= 21, path.stem
+        assert len(field(listing, "Additional system requirements")) <= 200, path.stem
         for shared in ("Copyright and trademark info", "Additional license terms", "Developed by"):
-            assert field(listing, shared) == field(english, shared), path.parent.name
+            assert field(listing, shared) == field(english, shared), path.stem
 
 
 def test_the_games_name_appears_only_in_the_disclaimer_the_trademark_credit_and_the_repos_address():
     # The Store has turned down submissions that used it: see SUBMISSION.md.
     from citygen.gui import server
 
-    texts = [path.read_text(encoding="utf-8") for path in LISTING.glob("*/listing.md")]
+    texts = [path.read_text(encoding="utf-8") for path in LOCALIZATION.glob("*.md")]
     texts += [path.read_text(encoding="utf-8") for path in (server.STATIC / "i18n").glob("*.json")]
-    texts.append((LISTING / "_generator" / "captions.js").read_text(encoding="utf-8"))
+    texts.append((LISTING / "generator" / "captions.js").read_text(encoding="utf-8"))
 
     for text in texts:
         for allowed in ("not an official minecraft product", "minecraft is a trademark", "chengmarc/minecraft-citygen"):
@@ -139,12 +140,12 @@ def test_the_games_name_appears_only_in_the_disclaimer_the_trademark_credit_and_
 def test_every_screenshot_comes_from_a_recorded_scene():
     import sys
 
-    sys.path.insert(0, str(LISTING / "_generator"))
+    sys.path.insert(0, str(LISTING / "generator"))
     try:
         from capture_windows import SHOTS
     finally:
         sys.path.pop(0)
-    recorded = json.loads((LISTING / "_generator" / "scenes.json").read_text(encoding="utf-8"))
+    recorded = json.loads((LISTING / "generator" / "scenes.json").read_text(encoding="utf-8"))
 
     assert tuple(SHOTS) == load_render_script().SHOTS
     assert {name for name, _tab, _height in SHOTS.values()} == set(recorded)
@@ -153,7 +154,7 @@ def test_every_screenshot_comes_from_a_recorded_scene():
 def load_replay():
     import sys
 
-    sys.path.insert(0, str(LISTING / "_generator"))
+    sys.path.insert(0, str(LISTING / "generator"))
     try:
         import replay_scenes
     finally:
@@ -194,8 +195,24 @@ def test_the_cities_are_not_rebuilt_under_an_open_app(monkeypatch):
         replay_scenes.main(["promo"])
 
 
+def test_the_readme_shows_the_english_screenshots_git_tracks(tmp_path, monkeypatch):
+    render = load_render_script()
+    monkeypatch.setattr(render, "LISTING", tmp_path)
+    english = tmp_path / "en"
+    english.mkdir()
+    for number, shot in enumerate(render.SHOTS, 1):
+        (english / f"screenshot-{number}-{shot}.png").write_bytes(shot.encode())
+
+    render.copy_readme_screenshots(english, tmp_path / "screenshots")
+
+    copied = sorted(path.name for path in (tmp_path / "screenshots").iterdir())
+    assert copied == ["screenshot-1-promo.png", "screenshot-2-size.png", "screenshot-3-styles.png"]
+    readme = (LISTING.parent / "README.md").read_text(encoding="utf-8")
+    assert [name for name in copied if f"docs/screenshots/{name}" in readme] == copied
+
+
 def load_recorder():
-    spec = importlib.util.spec_from_file_location("record_scene", LISTING / "_generator" / "record_scene.py")
+    spec = importlib.util.spec_from_file_location("record_scene", LISTING / "generator" / "record_scene.py")
     module = importlib.util.module_from_spec(spec)
     assert spec.loader is not None
     spec.loader.exec_module(module)
