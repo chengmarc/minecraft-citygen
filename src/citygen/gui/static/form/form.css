@@ -58,7 +58,7 @@ fieldset {
   background: var(--surface-panel);
   box-shadow: var(--lift), 0 0 0 1px rgba(74, 52, 30, 0.06), var(--shadow-sm);
 }
-.form-row { display: grid; grid-template-columns: 9.5em 1fr; align-items: center; gap: 12px; margin-top: 14px; }
+.form-row { display: grid; grid-template-columns: var(--form-label) 1fr; align-items: center; gap: 12px; margin-top: 14px; }
 .form-row:first-child { margin-top: 0; }
 .form-row label { color: var(--text-soft); }
 .form-row input[type="text"] { width: 100%; }

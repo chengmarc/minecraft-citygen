@@ -21,7 +21,7 @@ from citygen.tools.world_reader import source_data_version
 from citygen.tools.world_writer import schem_to_world
 
 # How many steps construction reports, by index as it starts each (see construct); gui/static/progress/steps.js weights
-# each one, and text.js words each one.
+# each one, and the language files word each one.
 CONSTRUCT_STEPS = 8
 
 
@@ -33,17 +33,21 @@ def run(seed, algo, save, progress):
     ``world``.
     """
     construct(seed, algo, source_data_version(save), lambda n: progress("construct", n, CONSTRUCT_STEPS))
-    schem = city_schem_path(seed)
     progress("render", 0, 1)
-    image = trim_to_content(render_schem_visible_iso(schem))   # no empty sky above the tallest building
+    render(seed)
+    progress("render", 1, 1)
+    schem_to_world(
+        city_schem_path(seed), exported_world_path(seed), source_world=save, world_name=exported_world_name(seed),
+        icon_path=WORLD_ICON, progress=lambda completed, total, _detail: progress("world", completed, total),
+    )
+
+
+def render(seed):
+    """Render the city of ``seed`` as ``city_render_path(seed)``."""
+    image = trim_to_content(render_schem_visible_iso(city_schem_path(seed)))   # no empty sky above the tallest building
     out = city_render_path(seed)
     os.makedirs(os.path.dirname(out), exist_ok=True)
     image.save(out)
-    progress("render", 1, 1)
-    schem_to_world(
-        schem, exported_world_path(seed), source_world=save, world_name=exported_world_name(seed),
-        icon_path=WORLD_ICON, progress=lambda completed, total, _detail: progress("world", completed, total),
-    )
 
 
 def construct(seed, algo, data_version, step):

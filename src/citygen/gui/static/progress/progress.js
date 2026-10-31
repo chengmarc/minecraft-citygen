@@ -41,6 +41,12 @@ class ProgressBar {
     });
   }
 
+  /** New names for the steps, in order. */
+  setLabels(labels) {
+    this.segments.forEach((segment, index) => { segment.label = labels[index]; });
+    this.render();
+  }
+
   /** What the step under way says instead of its name (the run's live status), or null for its name. */
   setDetail(detail) {
     this.detail = detail;

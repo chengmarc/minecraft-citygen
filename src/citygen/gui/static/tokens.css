@@ -58,4 +58,17 @@
   --ease: cubic-bezier(0.2, 0.8, 0.2, 1);
   --font: "Segoe UI Variable Text", "Segoe UI", system-ui, sans-serif;
   --font-display: "Segoe UI Variable Display", "Segoe UI", system-ui, sans-serif;
+  --form-label: 9.5em;   /* the advanced form's label column */
+}
+/* Their labels run longer. */
+:root:lang(de), :root:lang(es), :root:lang(fr), :root:lang(pt), :root:lang(ru) { --form-label: 12.5em; }
+/* Segoe UI has no Chinese or Japanese, and a kanji drawn from the other language's font looks wrong to its reader, so
+   each names its own font (both come with Windows) after Segoe UI, which keeps the Latin letters and digits. */
+:root:lang(zh) {
+  --font: "Segoe UI Variable Text", "Segoe UI", "Microsoft YaHei UI", "Microsoft YaHei", sans-serif;
+  --font-display: "Segoe UI Variable Display", "Segoe UI", "Microsoft YaHei UI", "Microsoft YaHei", sans-serif;
+}
+:root:lang(ja) {
+  --font: "Segoe UI Variable Text", "Segoe UI", "Yu Gothic UI", "Meiryo UI", sans-serif;
+  --font-display: "Segoe UI Variable Display", "Segoe UI", "Yu Gothic UI", "Meiryo UI", sans-serif;
 }

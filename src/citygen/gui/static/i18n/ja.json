@@ -1,0 +1,230 @@
+{
+  "page": {
+    "language": "言語",
+    "stepsLabel": "手順",
+    "steps": {
+      "extract": {
+        "name": "取り込み",
+        "sub": "ワールドからパーツを集める",
+        "tip": "手順 1/3：MC ワールドを選んで、道路・住宅・ランドマークのパーツを取り込みます。"
+      },
+      "preview": {
+        "name": "プレビュー",
+        "sub": "街の形を試す",
+        "tip": "手順 2/3：建設の前に、シードや道路の設定を試せます。"
+      },
+      "build": {
+        "name": "建設",
+        "sub": "街とワールドを作る",
+        "tip": "手順 3/3：街を建設し、完成イメージと MC ワールドを出力します。"
+      }
+    },
+    "viewers": {
+      "roads": {
+        "caption": "道路パーツ",
+        "message": "「取り込み」を押すと、道路の範囲にあるパーツがここに並びます。"
+      },
+      "builds": {
+        "caption": "建物パーツ",
+        "message": "「取り込み」を押すと、住宅とランドマークの範囲にある建物がここに並びます。"
+      },
+      "grid": {
+        "caption": "道路網",
+        "message": "「プレビュー」を押すと、道路網を確認できます。"
+      },
+      "cityPreview": {
+        "caption": "街の配置",
+        "message": "「プレビュー」を押すと、建物の並び方を確認できます。"
+      },
+      "cityRender": {
+        "caption": "完成イメージ",
+        "message": "「建設」を押すと、schem ファイル、完成イメージ、MC ワールドが作られます。"
+      }
+    },
+    "world": {
+      "label": "MC ワールド",
+      "placeholder": "MC ワールドのフォルダーを選択",
+      "browse": "参照",
+      "source": "ワールドのバージョン",
+      "sourceTip": "選択中のワールドの MC バージョンです。",
+      "target": "貼り付け先",
+      "targetTip": "貼り付ける予定の MC バージョンの確認用です。出力ファイルには元のワールドのバージョンが記録されます。",
+      "reset": "リセット",
+      "resetTip": "付属のサンプルワールドと 3 つの範囲に戻します。",
+      "run": "取り込み"
+    },
+    "areas": {
+      "road": {
+        "name": "道路の範囲",
+        "tip": "再利用したい道路パーツが置いてある範囲を選びます。"
+      },
+      "house": {
+        "name": "住宅の範囲",
+        "tip": "一般の住宅や小さな建物が置いてある範囲を選びます。"
+      },
+      "landmark": {
+        "name": "ランドマークの範囲",
+        "tip": "街の目玉にしたい、高層ビルや特別な建物が置いてある範囲を選びます。"
+      },
+      "choose": "マップで選ぶ"
+    },
+    "preview": {
+      "reset": "リセット",
+      "run": "プレビュー"
+    },
+    "build": {
+      "worlds": "ワールド",
+      "worldsTip": "出力したワールドのフォルダーを開きます。MC の saves フォルダーにコピーすると遊べます。",
+      "run": "建設"
+    },
+    "map": {
+      "select": "ドラッグで選択",
+      "pan": "ドラッグで移動",
+      "zoom": "ホイールで拡大縮小",
+      "cancel": "キャンセル",
+      "apply": "決定"
+    },
+    "ok": "OK"
+  },
+  "tabs": {
+    "extract": {
+      "ready": "選択した範囲から道路・住宅・ランドマークのパーツを取り込みます。",
+      "blocked": "先に MC ワールドと 3 つの範囲を選んでください。",
+      "preparing": "取り込みの準備中",
+      "failed": "取り込みに失敗しました",
+      "running": { "title": "取り込み中です", "message": "完了するまでお待ちください。" }
+    },
+    "preview": {
+      "ready": "道路網と街の配置をすばやく確認します。",
+      "blocked": "先に取り込みを済ませてください。",
+      "preparing": "プレビューの準備中",
+      "failed": "プレビューに失敗しました",
+      "running": { "title": "プレビューの作成中です", "message": "完了するまでお待ちください。" },
+      "invalidConfig": "プレビューの設定に誤りがあります"
+    },
+    "build": {
+      "ready": "schem ファイル、完成イメージ、ワールドを作ります。",
+      "blocked": "先に取り込みを済ませてください。",
+      "preparing": "街を計画中",
+      "failed": "建設に失敗しました",
+      "running": { "title": "建設中です", "message": "完了するまでお待ちください。" },
+      "invalidConfig": "街の設定に誤りがあります"
+    }
+  },
+  "areaTitles": {
+    "road": "道路の範囲を選ぶ",
+    "house": "住宅の範囲を選ぶ",
+    "landmark": "ランドマークの範囲を選ぶ"
+  },
+  "area": "{x} × {z} チャンク",
+  "noArea": "範囲が未選択です",
+  "areaSelected": "選択済み",
+  "areaNotSelected": "未選択",
+  "imageMissing": "画像が見つかりません：\n{path}",
+  "imageFailed": "画像を読み込めません：\n{src}",
+  "zoomIn": "拡大",
+  "zoomOut": "縮小",
+  "mapMissing": "ワールドマップが見つかりません：\n{path}",
+  "mapFailed": "ワールドマップを読み込めません。",
+  "mapLoading": "ワールドマップを読み込んでいます...",
+  "mapDrawing": "ワールドを上空から描いています。描画中でも移動やズーム、範囲の選択ができます。",
+  "selection": "選択中：x {x0}～{x1}、z {z0}～{z1}（{chunksX} × {chunksZ} チャンク）",
+  "autoVersion": "自動",
+  "segments": {
+    "extract": {
+      "scan_roads": "道路を検索",
+      "road_pieces": "道路パーツ",
+      "road_sheet": "道路一覧",
+      "scan_builds": "建物を検索",
+      "build_pieces": "建物パーツ",
+      "build_sheet": "建物一覧"
+    },
+    "preview": {
+      "road_pieces": "道路パーツ",
+      "build_pieces": "建物パーツ",
+      "road_layout": "道路網",
+      "city_layout": "街の配置"
+    },
+    "build": {
+      "roads": "道路",
+      "placement": "配置",
+      "buildings": "建物",
+      "schematic": "schem",
+      "render": "完成イメージ",
+      "world": "ワールド"
+    }
+  },
+  "stepDetails": {
+    "preview": {
+      "road_pieces": "道路を準備中",
+      "build_pieces": "建物を準備中",
+      "road_layout": "道路網を描画中",
+      "city_layout": "街の配置を描画中"
+    },
+    "build": {
+      "construct": [
+        "道路網を作成中",
+        "道路を敷設中",
+        "建物リストを読み込み中",
+        "配置を計画中",
+        "建物を組み立て中",
+        "ブロックを配置中",
+        "木と空き地を仕上げ中",
+        "schem に書き出し中"
+      ]
+    }
+  },
+  "form": {
+    "more": "詳細設定",
+    "fewer": "詳細設定を閉じる",
+    "knobs": {
+      "FINE": { "label": "街の規模", "tip": "完成する街の広さを決めます。" },
+      "GAP_MIXED": { "label": "道路の密度", "tip": "大通りと脇道の混み具合を決めます。" },
+      "GAP_BIG": { "label": "大通りの間隔", "tip": "大きくすると大通りが減ります。" },
+      "PAD_BIG": { "label": "大通りと街の端", "tip": "大きくすると大通りが街の端から離れます。" },
+      "GAP_SMALL": { "label": "脇道の間隔", "tip": "小さくすると脇道が増えます。" },
+      "PAD_SMALL": { "label": "脇道と街の端", "tip": "大きくすると脇道が街の端から離れます。" },
+      "N_BIG_CORNERS": { "label": "大通りの曲がり角", "tip": "大通りの曲がり角が増えます。" },
+      "N_BIG_TEES": { "label": "大通りの T 字路", "tip": "大通りの T 字路が増えます。" },
+      "N_SMALL_CORNERS": { "label": "脇道の曲がり角", "tip": "脇道の曲がり角が増えます。" },
+      "N_SMALL_TEES": { "label": "脇道の T 字路", "tip": "脇道の T 字路が増えます。" },
+      "BANNED_BUILDINGS": { "label": "使わない建物の番号", "tip": "街に入れたくない建物の番号をコンマで区切って入力します（省略可）。" },
+      "TYPE1_TOP_FIT_CHOICES": { "label": "住宅の種類", "tip": "大きくすると、住宅の見た目が多彩になります。" },
+      "LANDMARK_SPACING": { "label": "ランドマークの間隔", "tip": "ランドマークどうしの最小の距離（マス数）です。" }
+    },
+    "options": {
+      "FINE": { "40": "極小", "60": "小", "80": "中", "100": "大", "120": "特大" },
+      "GAP_MIXED": { "3": "高い", "4": "やや高い", "5": "標準", "6": "やや低い", "7": "低い" }
+    },
+    "groups": {
+      "spacing": "道路の間隔",
+      "shape": "道路の形",
+      "buildings": "建物の構成"
+    },
+    "placeholders": {
+      "BANNED_BUILDINGS": "例：001, 002"
+    }
+  },
+  "errors": {
+    "invalid_config": "「{name}」の値が正しくありません。",
+    "invalid_seed": { "title": "シードが正しくありません", "message": "シードは整数で入力してください。" },
+    "worlds_folder": { "title": "ワールドのフォルダーを開けません" },
+    "not_a_world": {
+      "title": "MC ワールドではありません",
+      "message": "このフォルダーにリージョンファイル（.mca）がありません：\n{detail}\n\nMC ワールドのフォルダーを選び直してください。"
+    },
+    "no_world": {
+      "title": "ワールドが選択されていません",
+      "message": "マップで範囲を選ぶ前に、MC ワールドを選んでください。"
+    },
+    "areas_missing": {
+      "title": "取り込む範囲が正しくありません",
+      "message": "先に MC ワールドと 3 つの範囲を選んでください。"
+    },
+    "unknown": "エラーが発生しました"
+  },
+  "failures": {
+    "no_road_pieces": "道路の範囲にパーツが見つかりません。範囲を確認し、道路パーツにマークがあるか確かめてください。",
+    "no_ground_fill": "道路パーツに地面用のパーツ（18 番）がありません。もう一度取り込んでください。"
+  }
+}

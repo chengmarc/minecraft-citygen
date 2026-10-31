@@ -1,0 +1,230 @@
+{
+  "page": {
+    "language": "Sprache",
+    "stepsLabel": "Schritte",
+    "steps": {
+      "extract": {
+        "name": "Extrahieren",
+        "sub": "Teile aus deiner Welt",
+        "tip": "Schritt 1 von 3: Wähle eine MC-Welt und extrahiere Straßen-, Haus- und Wahrzeichen-Teile."
+      },
+      "preview": {
+        "name": "Vorschau",
+        "sub": "Stadtpläne ausprobieren",
+        "tip": "Schritt 2 von 3: Teste Seeds und die Einstellungen für Haupt- und Nebenstraßen vor dem endgültigen Bau."
+      },
+      "build": {
+        "name": "Bauen",
+        "sub": "Die Stadt und ihre Welt",
+        "tip": "Schritt 3 von 3: Baue die Stadt, rendere sie und exportiere die MC-Welt."
+      }
+    },
+    "viewers": {
+      "roads": {
+        "caption": "Straßenteile",
+        "message": "Extrahiere die Teile, um den gewählten Straßenbereich zu scannen und eine Übersicht der Straßenteile zu erstellen."
+      },
+      "builds": {
+        "caption": "Gebäudeteile",
+        "message": "Extrahiere die Teile, um die gewählten Haus- und Wahrzeichen-Bereiche zu scannen und eine Gebäudeübersicht zu erstellen."
+      },
+      "grid": {
+        "caption": "Straßenplan",
+        "message": "Erstelle eine Vorschau, um das Straßennetz zu sehen, bevor du die endgültige Stadt baust."
+      },
+      "cityPreview": {
+        "caption": "Stadtplan",
+        "message": "Erstelle eine Vorschau, um zu sehen, wie sich die Gebäude in das erzeugte Straßennetz einfügen."
+      },
+      "cityRender": {
+        "caption": "Fertige Stadt",
+        "message": "Baue die Stadt, um die Schematic, das Rendering und die exportierte MC-Welt zu erstellen."
+      }
+    },
+    "world": {
+      "label": "MC-Welt",
+      "placeholder": "Ordner einer MC-Welt auswählen",
+      "browse": "Durchsuchen",
+      "source": "Quellversion",
+      "sourceTip": "Die MC-Version der gewählten Welt.",
+      "target": "Zielversion",
+      "targetTip": "Hier bestätigst du, in welche MC-Version du einfügen möchtest. MC CityGen versieht die exportierten Dateien trotzdem mit der Version der Quellwelt.",
+      "reset": "Zurücksetzen",
+      "resetTip": "Zurück zur Beispielwelt von MC CityGen mit ihren drei Bereichen.",
+      "run": "Extrahieren"
+    },
+    "areas": {
+      "road": {
+        "name": "Straßen",
+        "tip": "Wähle einen Bereich mit den Straßenteilen, die MC CityGen wiederverwenden soll."
+      },
+      "house": {
+        "name": "Häuser",
+        "tip": "Wähle einen Beispielbereich mit deinen Standardhäusern oder kleineren Gebäuden."
+      },
+      "landmark": {
+        "name": "Wahrzeichen",
+        "tip": "Wähle einen Beispielbereich mit höheren oder besonderen Gebäuden, die in der Stadt herausstechen sollen."
+      },
+      "choose": "Auf Karte"
+    },
+    "preview": {
+      "reset": "Zurücksetzen",
+      "run": "Vorschau"
+    },
+    "build": {
+      "worlds": "Welten",
+      "worldsTip": "Öffnet den Ordner der exportierten Welten, damit du eine in deinen MC-Ordner „saves“ kopieren kannst.",
+      "run": "Bauen"
+    },
+    "map": {
+      "select": "ziehen zum Auswählen",
+      "pan": "ziehen zum Verschieben",
+      "zoom": "scrollen zum Zoomen",
+      "cancel": "Abbrechen",
+      "apply": "Auswahl verwenden"
+    },
+    "ok": "OK"
+  },
+  "tabs": {
+    "extract": {
+      "ready": "Extrahiert Straßen-, Haus- und Wahrzeichen-Teile aus den gewählten Bereichen.",
+      "blocked": "Wähle zuerst eine MC-Welt und alle drei Bereiche.",
+      "preparing": "Extraktion wird vorbereitet",
+      "failed": "Extraktion fehlgeschlagen",
+      "running": { "title": "Extraktion läuft", "message": "Es läuft bereits eine Extraktion." }
+    },
+    "preview": {
+      "ready": "Erstellt eine schnelle Vorschau von Straßen- und Stadtplan.",
+      "blocked": "Schließe zuerst das Extrahieren ab.",
+      "preparing": "Vorschau wird vorbereitet",
+      "failed": "Vorschau fehlgeschlagen",
+      "running": { "title": "Vorschau läuft", "message": "Es läuft bereits eine Vorschau." },
+      "invalidConfig": "Ungültige Vorschau-Einstellungen"
+    },
+    "build": {
+      "ready": "Erstellt die endgültige Schematic, das Rendering und die exportierte Welt.",
+      "blocked": "Schließe zuerst das Extrahieren ab.",
+      "preparing": "Stadtplan wird gebaut",
+      "failed": "Erstellung fehlgeschlagen",
+      "running": { "title": "Bau läuft", "message": "Es läuft bereits ein Bau." },
+      "invalidConfig": "Ungültige Stadt-Einstellungen"
+    }
+  },
+  "areaTitles": {
+    "road": "Straßenbereich wählen",
+    "house": "Hausbereich wählen",
+    "landmark": "Wahrzeichen-Bereich wählen"
+  },
+  "area": "{x} x {z} Chunks",
+  "noArea": "Kein Bereich gewählt",
+  "areaSelected": "Gewählt",
+  "areaNotSelected": "Nicht gewählt",
+  "imageMissing": "Bild nicht gefunden:\n{path}",
+  "imageFailed": "Bild konnte nicht geladen werden:\n{src}",
+  "zoomIn": "Vergrößern",
+  "zoomOut": "Verkleinern",
+  "mapMissing": "Weltvorschau nicht gefunden:\n{path}",
+  "mapFailed": "Weltvorschau konnte nicht geladen werden.",
+  "mapLoading": "Weltvorschau wird geladen ...",
+  "mapDrawing": "Deine Welt wird von oben gezeichnet. Du kannst schon verschieben, zoomen und deinen Bereich wählen.",
+  "selection": "Auswahl: x {x0} bis {x1}, z {z0} bis {z1} ({chunksX} x {chunksZ} Chunks)",
+  "autoVersion": "Auto",
+  "segments": {
+    "extract": {
+      "scan_roads": "Straßen scannen",
+      "road_pieces": "Straßenteile",
+      "road_sheet": "Straßenübersicht",
+      "scan_builds": "Gebäude scannen",
+      "build_pieces": "Gebäudeteile",
+      "build_sheet": "Gebäudeübersicht"
+    },
+    "preview": {
+      "road_pieces": "Straßenteile",
+      "build_pieces": "Gebäudeteile",
+      "road_layout": "Straßenplan",
+      "city_layout": "Stadtplan"
+    },
+    "build": {
+      "roads": "Straßen",
+      "placement": "Platzierung",
+      "buildings": "Gebäude",
+      "schematic": "Schematic",
+      "render": "Rendering",
+      "world": "Welt"
+    }
+  },
+  "stepDetails": {
+    "preview": {
+      "road_pieces": "Straßen-Vorschau wird erzeugt",
+      "build_pieces": "Gebäude-Vorschau wird erzeugt",
+      "road_layout": "Straßenplan wird gerendert",
+      "city_layout": "Stadtplan wird gerendert"
+    },
+    "build": {
+      "construct": [
+        "Straßennetz erzeugen",
+        "Straßenraster bauen",
+        "Gebäudekatalog laden",
+        "Platzierung planen",
+        "Gebäude zusammensetzen",
+        "Voxelraster erstellen",
+        "Bäume und Flächen füllen",
+        "Schematic schreiben"
+      ]
+    }
+  },
+  "form": {
+    "more": "Mehr Einstellungen",
+    "fewer": "Weniger Einstellungen",
+    "knobs": {
+      "FINE": { "label": "Stadtgröße", "tip": "Ändert die Grundfläche der fertigen Stadt." },
+      "GAP_MIXED": { "label": "Straßendichte", "tip": "Legt fest, wie dicht Haupt- und Nebenstraßen in der Stadt liegen." },
+      "GAP_BIG": { "label": "Hauptstraßen-Abstand", "tip": "Höhere Werte ergeben weniger Hauptstraßen." },
+      "PAD_BIG": { "label": "Hauptstraßen-Rand", "tip": "Hält Hauptstraßen weiter vom Stadtrand fern." },
+      "GAP_SMALL": { "label": "Nebenstraßen-Abstand", "tip": "Niedrigere Werte ergeben mehr Nebenstraßen." },
+      "PAD_SMALL": { "label": "Nebenstraßen-Rand", "tip": "Hält Nebenstraßen weiter vom Stadtrand fern." },
+      "N_BIG_CORNERS": { "label": "Hauptstraßen-Kurven", "tip": "Fügt Hauptstraßen mehr Kurven hinzu." },
+      "N_BIG_TEES": { "label": "Hauptstraßen-Kreuzungen", "tip": "Fügt Hauptstraßen mehr T-Kreuzungen hinzu." },
+      "N_SMALL_CORNERS": { "label": "Nebenstraßen-Kurven", "tip": "Fügt Nebenstraßen mehr Kurven hinzu." },
+      "N_SMALL_TEES": { "label": "Nebenstraßen-Kreuzungen", "tip": "Fügt Nebenstraßen mehr T-Kreuzungen hinzu." },
+      "BANNED_BUILDINGS": { "label": "Gebäude-IDs auslassen", "tip": "Optionale, durch Kommas getrennte Gebäude-IDs, die nicht verwendet werden sollen." },
+      "TYPE1_TOP_FIT_CHOICES": { "label": "Vielfalt der Hausstile", "tip": "Höhere Werte mischen mehr verschiedene Standardhäuser ein." },
+      "LANDMARK_SPACING": { "label": "Wahrzeichen-Abstand", "tip": "Mindestabstand zwischen den Grundflächen der Wahrzeichen, in Rasterzellen." }
+    },
+    "options": {
+      "FINE": { "40": "Sehr klein", "60": "Klein", "80": "Mittel", "100": "Groß", "120": "Sehr groß" },
+      "GAP_MIXED": { "3": "Sehr dicht", "4": "Dicht", "5": "Mittel", "6": "Locker", "7": "Sehr locker" }
+    },
+    "groups": {
+      "spacing": "Abstände der Haupt- und Nebenstraßen",
+      "shape": "Form der Haupt- und Nebenstraßen",
+      "buildings": "Gebäudemischung"
+    },
+    "placeholders": {
+      "BANNED_BUILDINGS": "z. B. 001, 002"
+    }
+  },
+  "errors": {
+    "invalid_config": "„{name}“ ist keine gültige Einstellung.",
+    "invalid_seed": { "title": "Ungültiger Seed", "message": "Der Seed muss eine ganze Zahl sein." },
+    "worlds_folder": { "title": "Weltenordner konnte nicht geöffnet werden" },
+    "not_a_world": {
+      "title": "Keine MC-Welt",
+      "message": "In diesem Ordner wurden keine Regionsdateien (.mca) gefunden:\n{detail}\n\nBitte wähle einen gültigen MC-Weltordner."
+    },
+    "no_world": {
+      "title": "Weltpfad fehlt",
+      "message": "Wähle eine gültige MC-Welt, bevor du einen Bereich auf der Karte auswählst."
+    },
+    "areas_missing": {
+      "title": "Ungültiger Extraktionsbereich",
+      "message": "Wähle zuerst eine MC-Welt und alle drei Bereiche."
+    },
+    "unknown": "Etwas ist schiefgelaufen"
+  },
+  "failures": {
+    "no_road_pieces": "Im Straßenbereich wurden keine Teile gefunden. Prüfe den Bereich, oder ob die Welt markierte Straßenteile enthält.",
+    "no_ground_fill": "Bei den Straßenteilen fehlt die Bodenfüllung, Teil 18. Extrahiere erneut."
+  }
+}

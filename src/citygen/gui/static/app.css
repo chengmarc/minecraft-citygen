@@ -6,6 +6,7 @@
 /* A window, not a document: nothing scrolls it, so a moment's overflow (an animation) never shows a scrollbar. */
 html, body { height: 100%; margin: 0; overflow: hidden; }
 
+body:not(.ready) { visibility: hidden; }   /* app.js shows it, with its words in */
 body {
   display: flex;
   flex-direction: column;
@@ -40,6 +41,7 @@ h2, h3, p { margin: 0; }
 .icon-render { --icon: url(/icons/render.svg); }
 .icon-reset { --icon: url(/icons/reset.svg); }
 .icon-map { --icon: url(/icons/map.svg); }
+.icon-language { --icon: url(/icons/language.svg); }
 
 /* --- The sky: brand, steps, and eight pixel clouds drifting behind them. */
 .sky {
@@ -64,17 +66,40 @@ h2, h3, p { margin: 0; }
 }
 .brand img { filter: drop-shadow(0 2px 3px rgba(47, 82, 116, 0.25)); }
 
-/* The clouds keep to the open sky right of the steps, fading out before they reach them. */
+/* The language picker, at the sky's right end, over the clouds. */
+.language {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  align-self: center;
+  margin-left: auto;
+  padding-bottom: 6px;
+  color: var(--sky-text);
+}
+.language .icon { width: 16px; height: 16px; opacity: 0.75; }
+.language select {
+  height: 28px;
+  padding: 0 4px 0 6px;
+  border-color: transparent;
+  background: rgba(255, 255, 255, 0.55);
+  box-shadow: none;
+  font-size: 13px;
+}
+.language select:hover { border-color: transparent; background: rgba(255, 255, 255, 0.8); }
+.language option { background: var(--surface); color: var(--text); }
+
+/* The clouds keep to the open sky between the steps and the language picker, fading out before they reach either. */
 .clouds {
   position: absolute;
   top: 0;
-  right: 0;
+  right: 120px;
   bottom: 0;
   width: 38%;
   overflow: hidden;
   pointer-events: none;
-  -webkit-mask: linear-gradient(to right, transparent, #000 30%);
-  mask: linear-gradient(to right, transparent, #000 30%);
+  -webkit-mask: linear-gradient(to right, transparent, #000 30%, #000 85%, transparent);
+  mask: linear-gradient(to right, transparent, #000 30%, #000 85%, transparent);
 }
 /* A pixel cloud, 8px pixels, drawn as one shape (cloud.svg): built from separate squares, the seams between them
    showed whenever a cloud sat between whole pixels or was scaled. */
@@ -280,6 +305,7 @@ input[readonly]:hover, input[readonly]:focus { border-color: var(--border); box-
 
 .chip {
   display: inline-flex;
+  flex: none;
   align-items: center;
   gap: 5px;
   padding: 1px 8px 1px 6px;
@@ -288,6 +314,7 @@ input[readonly]:hover, input[readonly]:focus { border-color: var(--border); box-
   color: var(--muted);
   font-size: 11px;
   font-weight: 650;
+  white-space: nowrap;
 }
 .chip::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
 .chip.selected { background: var(--accent-soft); color: var(--accent-text); }
@@ -312,7 +339,7 @@ dialog h2 { font: 650 17px var(--font-display); letter-spacing: -0.01em; }
 .region-dialog[open] { display: flex; flex-direction: column; }
 .dialog-head { display: flex; align-items: baseline; justify-content: space-between; gap: 16px; padding: 18px 20px 12px; }
 .hints { color: var(--muted); font-size: 12px; }
-.hints span { margin: 0 4px; }
+.hints .dot { margin: 0 8px; }
 kbd {
   padding: 1px 6px;
   border: 1px solid var(--border-strong);

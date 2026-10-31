@@ -42,7 +42,7 @@ for GitHub Releases and an MSIX package for the Microsoft Store — built by
 
    ```bash
    python src/citygen/data/color_render_update.py --version 26.1.2
-   python store-listing/generator/render.py
+   python store-listing/_generator/render.py
    git status --short
    ```
 
@@ -100,28 +100,39 @@ with the GitHub release.
    and the saves folder should open in Explorer. Remove it afterwards with
    `Get-AppxPackage chengmarc.167357377D6E6 | Remove-AppxPackage`.
 4. Upload the `.msix` in a new Partner Center submission. If the app's look or
-   the pictures in `docs/pics/` changed, re-render the listing images first
-   (below).
+   words, or the pictures in `docs/pics/`, changed, re-render the listing images
+   first (below).
 
 ### Fill in the Partner Center submission
 
-[`store-listing/LISTING.md`](../store-listing/LISTING.md) has every field to paste, in Partner
-Center's order: the description, features, keywords, system requirements, the
-wording for the `runFullTrust` restricted capability and the notes for
-certification. Its images are beside it: the logos in `store-listing/`, the
-screenshots in `store-listing/desktop/`.
+[`store-listing/SUBMISSION.md`](../store-listing/SUBMISSION.md) goes through the
+submission in Partner Center's order, with what's entered once: the properties,
+the wording for the `runFullTrust` restricted capability and the notes for
+certification. Beside it is a folder per language, such as `store-listing/en/`,
+with its Store listing: `listing.md`, its screenshots and its logos.
 
 ### Re-render the listing images
 
 ```bash
-python store-listing/generator/render.py
+python store-listing/_generator/render.py   # about 3 minutes, and 40 seconds more to rebuild the cities
 ```
 
-It redraws `store-listing/` with Microsoft Edge in headless mode, from
-`store-listing/generator/logo.html` (box art, poster art, tile icon) and `store-listing/generator/shots.html` (the
-screenshots). The screenshots put a caption beside a picture from `docs/pics/`;
-change the captions or pictures in `shots.html`, and the matching claims in
-`LISTING.md` with them.
+Three cities make the five screenshots: `promo` (1, 4, 5), `size` (2) and `styles` (3).
+`store-listing/_generator/scenes.json` keeps each as its seed and whatever differs from a fresh
+install, and `replay_scenes.py` builds them again, pixel for pixel, without the app and
+without exporting a world. To change one, build the city you want in the app, then run
+`python store-listing/_generator/record_scene.py <name>` before reopening the app or
+previewing again. Then run `replay_scenes.py`, as after any change to the pipeline.
+
+`render.py` keeps the cities' pictures in `build/store-listing/`, and rebuilds them only if
+they're missing. That needs the app closed, as it clears `appdata/`, and it refuses otherwise.
+It shoots the app's real page in each language over those pictures, with
+Microsoft Edge in headless mode (`capture_windows.py`), then draws each language's images
+in `<code>/` from `store-listing/_generator/logo.html` (box art, poster art, tile icon) and
+`store-listing/_generator/shots.html` (the screenshots). Git keeps only `en/`'s, which the
+README uses, and `scenes.json`: this command makes the rest. Change the captions in
+`store-listing/_generator/captions.js`, and the matching claims in each language's
+`listing.md` with them.
 
 ### Update the README pictures
 
@@ -132,7 +143,6 @@ No script makes `docs/pics/`; each picture was chosen and copied in by hand.
 | `assets_*.png`, `assets_*.gif` | extraction: `appdata/02_builds/renders/_contact_sheet.png`, and `buildings.gif`, which the app no longer writes (below) |
 | `modern_iso.png`, `medieval_iso.png` | the build: `appdata/04_city/renders/seed_<n>.png` |
 | `ingame*.png`, `base.png` | in-game screenshots |
-| `promo*.png` | the app's window: `promo1`–`promo3` on the Build tab, `promo4` on Extract, `promo5` on Preview; `shots.html` says which shot uses which |
 | `type1.png`, `type2.png` | in-game screenshots, annotated with the marker blocks |
 
 The current renders can't be remade: their seeds, the medieval set's
@@ -141,7 +151,7 @@ When you next replace them, write `docs/pics/update_readme_pics.py` to run those
 steps with fixed settings and copy the results here, then list the copied files in
 `.gitattributes` under it. The GIF was each building's render in turn; the app made it
 on every extraction through 1.3.0 (`write_image_sequence_gif` in `src/pipeline/rendering.py`,
-in git history), so make it in that script. If `promo*.png` or `base.png` change, re-render the
+in git history), so make it in that script. If `base.png` changes, re-render the
 listing images too (above).
 
 ## Explanation
@@ -211,6 +221,7 @@ not required.
 | [build_windows_release.py](../packaging/build_windows_release.py) | Builds the app folder, the installer, an optional one-file exe, and the optional Store MSIX (`--clean`, `--include-standalone`, `--msix`) |
 | [windows_installer.iss](../packaging/windows_installer.iss) | Inno Setup script; receives version and output directory from the build script |
 | [AppxManifest.xml](../packaging/AppxManifest.xml) | MSIX manifest template; the build script fills in the Store identity and version |
-| [store-listing/LISTING.md](../store-listing/LISTING.md) | The Store listing's text, field by field |
+| [store-listing/SUBMISSION.md](../store-listing/SUBMISSION.md) | What to enter in Partner Center, in its order: the properties and submission options, and how to fill in each listing |
+| [store-listing/en/listing.md](../store-listing/en/listing.md) | The Store listing's text in English; each language has its own folder |
 | [store-listing/PRIVACY.md](../store-listing/PRIVACY.md) | The privacy policy; its GitHub address is the listing's privacy policy URL |
-| [store-listing/generator/render.py](../store-listing/generator/render.py) | Renders the listing's images into `store-listing/` |
+| [store-listing/_generator/render.py](../store-listing/_generator/render.py) | Renders the listing's images into `store-listing/` |

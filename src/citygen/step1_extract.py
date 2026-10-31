@@ -10,6 +10,7 @@ import os
 from pathlib import Path
 
 from citygen.core.markers import detect_marker_assets, extract_cuboid, parse_range, sign_text_above
+from citygen.errors import RunFailure
 from citygen.paths import (
     BUILD_CATALOG, BUILDS_CONTACT_SHEET, BUILDS_RENDERS, BUILDS_SCHEM, ROADS_CONTACT_SHEET, ROADS_RENDERS, ROADS_SCHEM,
 )
@@ -77,9 +78,10 @@ def extract_roads(world, road_box, data_version, progress):
             extracted += 1
         progress("road_pieces", index, total)
     if not extracted:
-        raise RuntimeError(
+        raise RunFailure(
+            "no_road_pieces",
             "Road extraction found no assets in the configured region. "
-            "Check the road bounds or the bundled default world content."
+            "Check the road bounds or the bundled default world content.",
         )
 
 

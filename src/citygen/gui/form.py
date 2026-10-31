@@ -1,8 +1,8 @@
 """The algorithm form Preview and Build share: which knobs show, and how the form's values become an ``Algo``.
 
 Each knob names one :class:`citygen.settings.Algo` field, upper-cased. Its value is text, as the page sends it. The form's
-words -- each knob's label and tip, the groups' names, the selectors' option names -- are in the page's text.js, keyed
-by the codes here.
+words -- each knob's label and tip, the groups' names, the selectors' option names -- are in the page's language files,
+keyed by the codes here.
 """
 
 from __future__ import annotations
@@ -33,7 +33,7 @@ KNOBS = [
     "LANDMARK_SPACING",
 ]
 
-# The header's selectors: knobs chosen from a few values, which text.js names.
+# The header's selectors: knobs chosen from a few values, which the language files name.
 SELECTOR_OPTIONS = {
     "FINE": ("40", "60", "80", "100", "120"),
     "GAP_MIXED": ("3", "4", "5", "6", "7"),

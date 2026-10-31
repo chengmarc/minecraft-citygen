@@ -14,9 +14,9 @@
 
 ## Screenshots
 
-<img src="store-listing/desktop/screenshot-1-promo.png">
-<img src="store-listing/desktop/screenshot-2-size.png">
-<img src="store-listing/desktop/screenshot-3-styles.png">
+<img src="store-listing/en/screenshot-1-promo.png">
+<img src="store-listing/en/screenshot-2-size.png">
+<img src="store-listing/en/screenshot-3-styles.png">
  
 ## Generated Cities
 

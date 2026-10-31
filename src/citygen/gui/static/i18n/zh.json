@@ -1,0 +1,230 @@
+{
+  "page": {
+    "language": "语言",
+    "stepsLabel": "步骤",
+    "steps": {
+      "extract": {
+        "name": "提取",
+        "sub": "从存档中提取模块",
+        "tip": "第 1 步（共 3 步）：选择 MC 存档，提取道路、房屋和地标模块。"
+      },
+      "preview": {
+        "name": "预览",
+        "sub": "试试不同的城市布局",
+        "tip": "第 2 步（共 3 步）：正式建造前，先试种子，调整主干道和街道。"
+      },
+      "build": {
+        "name": "建造",
+        "sub": "生成城市和存档",
+        "tip": "第 3 步（共 3 步）：建造城市，渲染效果图，并导出 MC 存档。"
+      }
+    },
+    "viewers": {
+      "roads": {
+        "caption": "道路模块",
+        "message": "点击“提取”后，这里会显示道路区域中的所有模块。"
+      },
+      "builds": {
+        "caption": "建筑模块",
+        "message": "点击“提取”后，这里会显示房屋和地标区域中的所有模块。"
+      },
+      "grid": {
+        "caption": "路网",
+        "message": "点击“预览”查看路网，满意后再建造。"
+      },
+      "cityPreview": {
+        "caption": "城市布局",
+        "message": "点击“预览”查看建筑在路网中的分布。"
+      },
+      "cityRender": {
+        "caption": "建成效果",
+        "message": "点击“建造”生成 schem 文件、效果图和 MC 存档。"
+      }
+    },
+    "world": {
+      "label": "MC 存档",
+      "placeholder": "选择 MC 存档文件夹",
+      "browse": "浏览",
+      "source": "存档版本",
+      "sourceTip": "当前存档的 MC 版本。",
+      "target": "目标版本",
+      "targetTip": "用来确认你要粘贴到哪个 MC 版本。导出文件仍会标记为存档本身的版本。",
+      "reset": "重置",
+      "resetTip": "恢复为自带的示例存档和它的三个区域。",
+      "run": "提取"
+    },
+    "areas": {
+      "road": {
+        "name": "道路区域",
+        "tip": "框选存放道路模块的区域。"
+      },
+      "house": {
+        "name": "房屋区域",
+        "tip": "框选存放普通房屋或小型建筑的区域。"
+      },
+      "landmark": {
+        "name": "地标区域",
+        "tip": "框选存放高楼或特色建筑的区域，这些建筑会成为城市的亮点。"
+      },
+      "choose": "在地图上选择"
+    },
+    "preview": {
+      "reset": "重置",
+      "run": "预览"
+    },
+    "build": {
+      "worlds": "存档",
+      "worldsTip": "打开导出的存档文件夹，复制到 MC 的 saves 目录即可游玩。",
+      "run": "建造"
+    },
+    "map": {
+      "select": "拖动框选",
+      "pan": "拖动平移",
+      "zoom": "滚轮缩放",
+      "cancel": "取消",
+      "apply": "确定"
+    },
+    "ok": "确定"
+  },
+  "tabs": {
+    "extract": {
+      "ready": "从所选区域提取道路、房屋和地标模块。",
+      "blocked": "请先选择 MC 存档和三个区域。",
+      "preparing": "准备提取",
+      "failed": "提取失败",
+      "running": { "title": "正在提取", "message": "提取正在进行中，请稍候。" }
+    },
+    "preview": {
+      "ready": "快速生成路网和城市布局预览。",
+      "blocked": "请先完成提取。",
+      "preparing": "准备预览",
+      "failed": "预览失败",
+      "running": { "title": "正在预览", "message": "预览正在进行中，请稍候。" },
+      "invalidConfig": "预览设置有误"
+    },
+    "build": {
+      "ready": "生成 schem 文件、效果图和存档。",
+      "blocked": "请先完成提取。",
+      "preparing": "正在规划城市",
+      "failed": "生成失败",
+      "running": { "title": "正在建造", "message": "建造正在进行中，请稍候。" },
+      "invalidConfig": "城市设置有误"
+    }
+  },
+  "areaTitles": {
+    "road": "选择道路区域",
+    "house": "选择房屋区域",
+    "landmark": "选择地标区域"
+  },
+  "area": "{x} × {z} 区块",
+  "noArea": "尚未选择区域",
+  "areaSelected": "已选择",
+  "areaNotSelected": "未选择",
+  "imageMissing": "找不到图片：\n{path}",
+  "imageFailed": "图片加载失败：\n{src}",
+  "zoomIn": "放大",
+  "zoomOut": "缩小",
+  "mapMissing": "找不到存档地图：\n{path}",
+  "mapFailed": "存档地图加载失败。",
+  "mapLoading": "正在加载存档地图...",
+  "mapDrawing": "正在绘制俯视地图，现在就可以拖动、缩放和框选区域。",
+  "selection": "已选：x {x0} ~ {x1}，z {z0} ~ {z1}（{chunksX} × {chunksZ} 区块）",
+  "autoVersion": "自动",
+  "segments": {
+    "extract": {
+      "scan_roads": "扫描道路",
+      "road_pieces": "道路模块",
+      "road_sheet": "道路总览",
+      "scan_builds": "扫描建筑",
+      "build_pieces": "建筑模块",
+      "build_sheet": "建筑总览"
+    },
+    "preview": {
+      "road_pieces": "道路模块",
+      "build_pieces": "建筑模块",
+      "road_layout": "路网",
+      "city_layout": "城市布局"
+    },
+    "build": {
+      "roads": "道路",
+      "placement": "布局",
+      "buildings": "建筑",
+      "schematic": "schem 文件",
+      "render": "效果图",
+      "world": "存档"
+    }
+  },
+  "stepDetails": {
+    "preview": {
+      "road_pieces": "准备道路素材",
+      "build_pieces": "准备建筑素材",
+      "road_layout": "绘制路网",
+      "city_layout": "绘制城市布局"
+    },
+    "build": {
+      "construct": [
+        "生成路网",
+        "铺设道路",
+        "读取建筑列表",
+        "规划建筑布局",
+        "组装建筑",
+        "合成方块数据",
+        "种树并填充空地",
+        "写入 schem 文件"
+      ]
+    }
+  },
+  "form": {
+    "more": "更多设置",
+    "fewer": "收起设置",
+    "knobs": {
+      "FINE": { "label": "城市规模", "tip": "决定建成后城市的占地大小。" },
+      "GAP_MIXED": { "label": "路网密度", "tip": "决定主干道和街道的疏密程度。" },
+      "GAP_BIG": { "label": "主干道间距", "tip": "数值越大，主干道越少。" },
+      "PAD_BIG": { "label": "主干道边距", "tip": "让主干道离城市边缘更远。" },
+      "GAP_SMALL": { "label": "街道间距", "tip": "数值越小，街道越多。" },
+      "PAD_SMALL": { "label": "街道边距", "tip": "让街道离城市边缘更远。" },
+      "N_BIG_CORNERS": { "label": "主干道弯道", "tip": "增加主干道的转弯。" },
+      "N_BIG_TEES": { "label": "主干道丁字路口", "tip": "增加主干道的丁字路口。" },
+      "N_SMALL_CORNERS": { "label": "街道弯道", "tip": "增加街道的转弯。" },
+      "N_SMALL_TEES": { "label": "街道丁字路口", "tip": "增加街道的丁字路口。" },
+      "BANNED_BUILDINGS": { "label": "排除建筑编号", "tip": "选填。填入不想出现的建筑编号，用逗号分隔。" },
+      "TYPE1_TOP_FIT_CHOICES": { "label": "房屋样式丰富度", "tip": "数值越大，普通房屋的样式越多。" },
+      "LANDMARK_SPACING": { "label": "地标间距", "tip": "地标之间的最小距离，单位为网格。" }
+    },
+    "options": {
+      "FINE": { "40": "很小", "60": "小", "80": "中", "100": "大", "120": "很大" },
+      "GAP_MIXED": { "3": "很密", "4": "较密", "5": "适中", "6": "较疏", "7": "很疏" }
+    },
+    "groups": {
+      "spacing": "主干道和街道间距",
+      "shape": "主干道和街道形状",
+      "buildings": "建筑搭配"
+    },
+    "placeholders": {
+      "BANNED_BUILDINGS": "例如 001, 002"
+    }
+  },
+  "errors": {
+    "invalid_config": "“{name}”的设置无效。",
+    "invalid_seed": { "title": "种子无效", "message": "种子必须是整数。" },
+    "worlds_folder": { "title": "无法打开存档文件夹" },
+    "not_a_world": {
+      "title": "不是 MC 存档",
+      "message": "这个文件夹里没有区域文件（.mca）：\n{detail}\n\n请重新选择 MC 存档文件夹。"
+    },
+    "no_world": {
+      "title": "未选择存档",
+      "message": "请先选择有效的 MC 存档，再到地图上选择区域。"
+    },
+    "areas_missing": {
+      "title": "提取区域无效",
+      "message": "请先选择 MC 存档和三个区域。"
+    },
+    "unknown": "出错了"
+  },
+  "failures": {
+    "no_road_pieces": "道路区域里没有找到模块。请检查选区，并确认存档中的道路模块已做好标记。",
+    "no_ground_fill": "道路模块缺少地面填充（18 号模块），请重新提取。"
+  }
+}
