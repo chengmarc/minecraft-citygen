@@ -9,3 +9,4 @@ src/citygen/data/default_world/icon.png linguist-generated
 
 # store-listing/generator/render.py (renders logo.html and shots.html with Edge)
 docs/screenshots/*.png linguist-generated
+docs/app-icon.png linguist-generated

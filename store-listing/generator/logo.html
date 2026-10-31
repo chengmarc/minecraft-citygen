@@ -1,7 +1,7 @@
 <!doctype html>
 <!-- The Store's box art (1:1) and poster art (9:16), and its app tile icon: render.py loads this page at each size,
-     once per language. The hash names the language, with .tile for the icon: de, de.tile. Everything is sized from the
-     shorter side, so one layout serves both arts. -->
+     once per language. The hash names the language, with .tile and its size in pixels for the icon alone: de, de.tile.300.
+     Everything else is sized from the shorter side, so one layout serves both arts. -->
 <html lang="en">
 <head>
 <meta charset="utf-8">
@@ -30,16 +30,19 @@
   html:lang(zh) body { font-family: "Segoe UI Variable Display", "Segoe UI", "Microsoft YaHei UI", sans-serif; }
   html:lang(ja) body { font-family: "Segoe UI Variable Display", "Segoe UI", "Yu Gothic UI", sans-serif; }
 
-  /* .tile: the icon alone, filling a transparent square. */
+  /* .tile: the icon alone, filling a transparent square of --tile. */
   .tile body { background: transparent; }
   .tile body::before, .tile h1, .tile p { display: none; }
   /* In pixels: headless Edge keeps a minimum window size, larger than the tile, and shoots its top-left corner. */
-  .tile img { position: fixed; left: 0; top: 0; width: 300px; height: 300px; filter: none; }
+  .tile img { position: fixed; left: 0; top: 0; width: var(--tile); height: var(--tile); filter: none; }
 </style>
 <script>
-  const [language, part] = location.hash.slice(1).split(".");
+  const [language, part, size] = location.hash.slice(1).split(".");
   document.documentElement.lang = language;
-  if (part === "tile") document.documentElement.className = "tile";
+  if (part === "tile") {
+    document.documentElement.className = "tile";
+    document.documentElement.style.setProperty("--tile", `${size}px`);
+  }
 </script>
 </head>
 <body>

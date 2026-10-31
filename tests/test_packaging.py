@@ -93,6 +93,12 @@ def test_every_app_language_has_its_listing_and_screenshots():
         assert len(images) == 5 + 3, code
 
 
+def test_the_app_icon_png_is_rendered_from_the_svg():
+    render = load_render_script()
+
+    assert ("../docs/app-icon.png", "logo.html#en.tile.180", 180, 180, 1) in render.IMAGES
+
+
 def test_every_language_captions_every_shot():
     english = captions()["en"]
     for code, words in captions().items():

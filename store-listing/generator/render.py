@@ -1,6 +1,6 @@
 """Render the images uploaded to Partner Center into dist/: the logos and the screenshots, in
-<code>/, one folder per language. Also GitHub's social preview, docs/social-preview.png, uploaded in the repo's Settings, and the
-README's three English screenshots, in docs/screenshots/.
+<code>/, one folder per language. Also GitHub's social preview, docs/social-preview.png, uploaded in the repo's Settings, the
+README's three English screenshots, in docs/screenshots/, and docs/app-icon.png.
 
 They are drawn by the pages beside this script (logo.html, shots.html, social.html) from the app's own
 files: its icon, the pictures in docs/pics/, and its window in each language, which capture_windows.py shoots first
@@ -27,7 +27,6 @@ EDGE_PROFILE = LISTING.parent / "build" / "edge-render"  # a profile of its own,
 # Every image is in every language, with captions.js's words, each in its own folder.
 LANGUAGES = ("en", "de", "es", "fr", "ja", "pt", "ru", "zh")
 SHOTS = ("promo", "size", "styles", "extract", "preview")
-TILE = "store-logo-300.png"   # transparent around the icon
 
 # What the README shows: the first screenshots in English, copied where git tracks them.
 README_SCREENSHOTS = LISTING.parent / "docs" / "screenshots"
@@ -44,8 +43,9 @@ IMAGES = [
     ),
     *((f"{code}/box-art-2160.png", f"logo.html#{code}", 1080, 1080, 2) for code in LANGUAGES),
     *((f"{code}/poster-art-1440x2160.png", f"logo.html#{code}", 720, 1080, 2) for code in LANGUAGES),
-    *((f"{code}/{TILE}", f"logo.html#{code}.tile", 300, 300, 1) for code in LANGUAGES),
+    *((f"{code}/store-logo-300.png", f"logo.html#{code}.tile.300", 300, 300, 1) for code in LANGUAGES),
     ("../docs/social-preview.png", "social.html", 1280, 640, 1),
+    ("../docs/app-icon.png", "logo.html#en.tile.180", 180, 180, 1),
 ]
 
 
@@ -84,7 +84,7 @@ def main() -> None:
             f"--user-data-dir={EDGE_PROFILE}", f"--force-device-scale-factor={scale}",
             f"--window-size={width},{height}", "--virtual-time-budget=5000", f"--screenshot={file}",
         ]
-        if name.endswith(TILE):
+        if ".tile." in page:   # transparent around the icon
             args.append("--default-background-color=00000000")
         subprocess.run([*args, url], check=False, capture_output=True)
 
