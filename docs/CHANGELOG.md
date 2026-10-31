@@ -4,7 +4,7 @@ All notable changes to this project should be documented in this file.
 
 The format is based on Keep a Changelog, and versions should match the release version you publish.
 
-## [Unreleased]
+## [2.1.0] - 2026-10-31
 
 ### Added
 
@@ -16,6 +16,13 @@ The format is based on Keep a Changelog, and versions should match the release v
 
 - "Modular City Generator", was "Procedural City Generator", in the app's
   description and the store listing's images
+- the Store listing's text is one file per language in `store-listing/localization/`,
+  and what's entered once for a submission is in `store-listing/SUBMISSION.md`, was
+  `store-listing/LISTING.md`
+- the Store images are rendered into `dist/<code>/`, one folder per language, was
+  tracked in `store-listing/`. Git keeps only the README's three screenshots, in
+  `docs/screenshots/`
+- `store-listing/generator/render.py` also makes `docs/app-icon.png`
 
 ## [2.0.0] - 2026-10-25
 
