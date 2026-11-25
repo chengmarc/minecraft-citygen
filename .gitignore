@@ -8,6 +8,6 @@ __pycache__/
 build/
 dist/
 
-# promo/generator/render.py's Store images, made again for each submission; the rest of promo/out/ is kept.
-/promo/out/store/
+# The images promo/generator/ renders, all uploaded by hand: made again whenever they're needed, never kept.
+/promo/out/
 appdata/

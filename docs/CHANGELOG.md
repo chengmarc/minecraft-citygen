@@ -19,6 +19,8 @@ The format is based on Keep a Changelog, and versions should match the release v
   `PRIVACY.md` in `promo/listing/`, and the images in `promo/out/`, by where each goes
 - the Store's images are rendered into `promo/out/store/microsoft-store/<code>/`, was `dist/<code>/`,
   so `dist/` holds only what ships
+- nothing in `promo/out/` is kept in git: the Store's images, the social preview and the portfolio tile
+  are made again by `render.py` whenever they're needed
 - GitHub's social preview is `promo/out/social-preview.png`, was `docs/social-preview.png`,
   and shows the README's badges
 - the privacy policy, whose address is the listing's privacy policy URL, is

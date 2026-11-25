@@ -10,8 +10,8 @@ They are drawn by the pages beside this script (logo.html, shots.html, social.ht
 own files: its icon, the pictures in docs/pics/, and its window in each language, which capture_windows.py shoots
 first from the cities replay_scenes.py builds. Uses Microsoft Edge, which comes with Windows, in headless mode.
 
-Git keeps the social preview and the portfolio tile, which are uploaded by hand and wanted between renders, and the
-README's images; the Store's, in promo/out/store/, are made again for each submission.
+Git keeps only the README's images. Everything in promo/out/ is uploaded by hand, so it's made again whenever
+it's needed, and never kept.
 
 Run from the repo root: python promo/generator/render.py
 With --no-store, only what doesn't need the app's window: the social preview, the portfolio tile and the README's
