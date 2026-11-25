@@ -10,5 +10,4 @@ src/citygen/data/default_world/icon.png linguist-generated
 # promo/generator/render.py (renders the pages beside it with Edge)
 docs/screenshots/*.png linguist-generated
 docs/app-icon.png linguist-generated
-promo/out/github/*.png linguist-generated
-promo/out/portfolio/*.png linguist-generated
+promo/out/*.png linguist-generated

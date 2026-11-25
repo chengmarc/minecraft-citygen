@@ -2,16 +2,16 @@
 
     promo/out/store/microsoft-store/<code>/  uploaded to Partner Center, one folder per language: the logos and the
                                              screenshots (../listing/SUBMISSION.md says where each goes)
-    promo/out/github/social-preview.png      GitHub's social preview, uploaded in the repo's Settings -> Social preview
-    promo/out/portfolio/portfolio.png        a square tile for the portfolio section of a job profile
+    promo/out/social-preview.png             GitHub's social preview, uploaded in the repo's Settings -> Social preview
+    promo/out/portfolio.png                  a square tile for the portfolio section of a job profile
     docs/app-icon.png, docs/screenshots/     what the README shows: the icon, and the first three English screenshots
 
 They are drawn by the pages beside this script (logo.html, shots.html, social.html, portfolio.html) from the app's
 own files: its icon, the pictures in docs/pics/, and its window in each language, which capture_windows.py shoots
 first from the cities replay_scenes.py builds. Uses Microsoft Edge, which comes with Windows, in headless mode.
 
-Git keeps promo/out/github/ and promo/out/portfolio/, which are uploaded by hand and wanted between renders, and the
-README's images; the Store's images are made again for each submission.
+Git keeps the social preview and the portfolio tile, which are uploaded by hand and wanted between renders, and the
+README's images; the Store's, in promo/out/store/, are made again for each submission.
 
 Run from the repo root: python promo/generator/render.py
 With --no-store, only what doesn't need the app's window: the social preview, the portfolio tile and the README's
@@ -55,8 +55,8 @@ STORE_IMAGES = [
 ]
 # GitHub's social preview: 1280 x 640, under 1 MB. The portfolio tile: square, mostly seen as a small thumbnail.
 OTHER_IMAGES = [
-    ("promo/out/github/social-preview.png", "social.html", 1280, 640, 1),
-    ("promo/out/portfolio/portfolio.png", "portfolio.html", 1080, 1080, 1),
+    ("promo/out/social-preview.png", "social.html", 1280, 640, 1),
+    ("promo/out/portfolio.png", "portfolio.html", 1080, 1080, 1),
     ("docs/app-icon.png", "logo.html#en.tile.180", 180, 180, 1),
 ]
 IMAGES = STORE_IMAGES + OTHER_IMAGES

@@ -136,8 +136,8 @@ for a release, not for every render. Change the captions in
 `promo/listing/localization/` with them.
 
 The same command draws the images uploaded by hand elsewhere, which git keeps:
-`promo/out/github/social-preview.png` (from `social.html`; upload it again in the repo's
-Settings → Social preview when it changes) and `promo/out/portfolio/portfolio.png` (from
+`promo/out/social-preview.png` (from `social.html`; upload it again in the repo's
+Settings → Social preview when it changes) and `promo/out/portfolio.png` (from
 `portfolio.html`, a square tile for a job profile's portfolio). `--no-store` draws just those
 and `docs/app-icon.png`, in a few seconds, without the app's window.
 

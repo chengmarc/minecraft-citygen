@@ -8,7 +8,7 @@ The format is based on Keep a Changelog, and versions should match the release v
 
 ### Added
 
-- a square portfolio tile, `promo/out/portfolio/portfolio.png`, for a job profile's portfolio
+- a square portfolio tile, `promo/out/portfolio.png`, for a job profile's portfolio
 - `promo/generator/render.py --no-store` draws just the social preview, the portfolio tile and
   `docs/app-icon.png`, in a few seconds, without the app's window
 
@@ -19,7 +19,7 @@ The format is based on Keep a Changelog, and versions should match the release v
   `PRIVACY.md` in `promo/listing/`, and the images in `promo/out/`, by where each goes
 - the Store's images are rendered into `promo/out/store/microsoft-store/<code>/`, was `dist/<code>/`,
   so `dist/` holds only what ships
-- GitHub's social preview is `promo/out/github/social-preview.png`, was `docs/social-preview.png`,
+- GitHub's social preview is `promo/out/social-preview.png`, was `docs/social-preview.png`,
   and shows the README's badges
 - the privacy policy, whose address is the listing's privacy policy URL, is
   `promo/listing/PRIVACY.md`
