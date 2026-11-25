@@ -5,7 +5,7 @@ the screenshots only need the pictures. Like the app's launch, this clears appda
 saved settings, so it refuses to run with the app open.
 
 render.py runs this for any city whose pictures are missing. Run it yourself after changing the pipeline or a city:
-python store-listing/generator/replay_scenes.py [name ...]
+python promo/generator/replay_scenes.py [name ...]
 """
 
 from __future__ import annotations

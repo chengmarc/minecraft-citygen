@@ -7,4 +7,10 @@ __pycache__/
 
 build/
 dist/
+
+# promo/generator/render.py's images: the Store's are made again for each submission; the ones uploaded by hand
+# elsewhere are kept.
+/promo/out/*
+!/promo/out/github/
+!/promo/out/portfolio/
 appdata/

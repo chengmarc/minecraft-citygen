@@ -55,12 +55,13 @@ def test_msix_manifest_renders_to_valid_xml_with_the_store_identity(monkeypatch)
     assert [logo for logo in build.MSIX_LOGOS if f"Assets\\{logo}" not in manifest] == []
 
 
-LISTING = Path(__file__).resolve().parents[1] / "store-listing"
-LOCALIZATION = LISTING / "localization"
+PROMO = Path(__file__).resolve().parents[1] / "promo"
+GENERATOR = PROMO / "generator"
+LOCALIZATION = PROMO / "listing" / "localization"
 
 
 def load_render_script():
-    spec = importlib.util.spec_from_file_location("render", LISTING / "generator" / "render.py")
+    spec = importlib.util.spec_from_file_location("render", GENERATOR / "render.py")
     module = importlib.util.module_from_spec(spec)
     assert spec.loader is not None
     spec.loader.exec_module(module)
@@ -74,7 +75,7 @@ def app_languages():
 
 
 def captions():
-    text = (LISTING / "generator" / "captions.js").read_text(encoding="utf-8")
+    text = (GENERATOR / "captions.js").read_text(encoding="utf-8")
     return json.loads(text[text.index("{"):text.rindex("}") + 1])
 
 
@@ -89,14 +90,14 @@ def test_every_app_language_has_its_listing_and_screenshots():
     assert sorted(path.stem for path in LOCALIZATION.glob("*.md")) == app_languages()
     assert sorted(captions()) == app_languages()
     for code in app_languages():
-        images = [name for name, *_rest in render.IMAGES if name.startswith(f"{code}/")]
+        images = [name for name, *_rest in render.IMAGES if name.startswith(f"{render.STORE}/{code}/")]
         assert len(images) == 5 + 3, code
 
 
 def test_the_app_icon_png_is_rendered_from_the_svg():
     render = load_render_script()
 
-    assert ("../docs/app-icon.png", "logo.html#en.tile.180", 180, 180, 1) in render.IMAGES
+    assert ("docs/app-icon.png", "logo.html#en.tile.180", 180, 180, 1) in render.IMAGES
 
 
 def test_every_language_captions_every_shot():
@@ -135,7 +136,7 @@ def test_the_games_name_appears_only_in_the_disclaimer_the_trademark_credit_and_
 
     texts = [path.read_text(encoding="utf-8") for path in LOCALIZATION.glob("*.md")]
     texts += [path.read_text(encoding="utf-8") for path in (server.STATIC / "i18n").glob("*.json")]
-    texts.append((LISTING / "generator" / "captions.js").read_text(encoding="utf-8"))
+    texts.append((GENERATOR / "captions.js").read_text(encoding="utf-8"))
 
     for text in texts:
         for allowed in ("not an official minecraft product", "minecraft is a trademark", "chengmarc/minecraft-citygen"):
@@ -146,12 +147,12 @@ def test_the_games_name_appears_only_in_the_disclaimer_the_trademark_credit_and_
 def test_every_screenshot_comes_from_a_recorded_scene():
     import sys
 
-    sys.path.insert(0, str(LISTING / "generator"))
+    sys.path.insert(0, str(GENERATOR))
     try:
         from capture_windows import SHOTS
     finally:
         sys.path.pop(0)
-    recorded = json.loads((LISTING / "generator" / "scenes.json").read_text(encoding="utf-8"))
+    recorded = json.loads((GENERATOR / "scenes.json").read_text(encoding="utf-8"))
 
     assert tuple(SHOTS) == load_render_script().SHOTS
     assert {name for name, _tab, _height in SHOTS.values()} == set(recorded)
@@ -160,7 +161,7 @@ def test_every_screenshot_comes_from_a_recorded_scene():
 def load_replay():
     import sys
 
-    sys.path.insert(0, str(LISTING / "generator"))
+    sys.path.insert(0, str(GENERATOR))
     try:
         import replay_scenes
     finally:
@@ -203,7 +204,7 @@ def test_the_cities_are_not_rebuilt_under_an_open_app(monkeypatch):
 
 def test_the_readme_shows_the_english_screenshots_git_tracks(tmp_path, monkeypatch):
     render = load_render_script()
-    monkeypatch.setattr(render, "LISTING", tmp_path)
+    monkeypatch.setattr(render, "ROOT", tmp_path)
     english = tmp_path / "en"
     english.mkdir()
     for number, shot in enumerate(render.SHOTS, 1):
@@ -213,12 +214,12 @@ def test_the_readme_shows_the_english_screenshots_git_tracks(tmp_path, monkeypat
 
     copied = sorted(path.name for path in (tmp_path / "screenshots").iterdir())
     assert copied == ["screenshot-1-promo.png", "screenshot-2-size.png", "screenshot-3-styles.png"]
-    readme = (LISTING.parent / "README.md").read_text(encoding="utf-8")
+    readme = (PROMO.parent / "README.md").read_text(encoding="utf-8")
     assert [name for name in copied if f"docs/screenshots/{name}" in readme] == copied
 
 
 def load_recorder():
-    spec = importlib.util.spec_from_file_location("record_scene", LISTING / "generator" / "record_scene.py")
+    spec = importlib.util.spec_from_file_location("record_scene", GENERATOR / "record_scene.py")
     module = importlib.util.module_from_spec(spec)
     assert spec.loader is not None
     spec.loader.exec_module(module)

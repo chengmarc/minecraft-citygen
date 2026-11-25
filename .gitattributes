@@ -7,6 +7,8 @@ src/citygen/data/color_render.csv linguist-generated
 # packaging/build_windows_release.py --icon-only (renders src/app-icon.svg with Edge)
 src/citygen/data/default_world/icon.png linguist-generated
 
-# store-listing/generator/render.py (renders logo.html and shots.html with Edge)
+# promo/generator/render.py (renders the pages beside it with Edge)
 docs/screenshots/*.png linguist-generated
 docs/app-icon.png linguist-generated
+promo/out/github/*.png linguist-generated
+promo/out/portfolio/*.png linguist-generated

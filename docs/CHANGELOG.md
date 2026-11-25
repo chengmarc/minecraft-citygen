@@ -4,6 +4,26 @@ All notable changes to this project should be documented in this file.
 
 The format is based on Keep a Changelog, and versions should match the release version you publish.
 
+## [Unreleased]
+
+### Added
+
+- a square portfolio tile, `promo/out/portfolio/portfolio.png`, for a job profile's portfolio
+- `promo/generator/render.py --no-store` draws just the social preview, the portfolio tile and
+  `docs/app-icon.png`, in a few seconds, without the app's window
+
+### Changed
+
+- the Store listing and every designed image are in `promo/`, was `store-listing/`: the pages and
+  `render.py` that draw them in `promo/generator/`, the listing's text, `SUBMISSION.md` and
+  `PRIVACY.md` in `promo/listing/`, and the images in `promo/out/`, by where each goes
+- the Store's images are rendered into `promo/out/store/microsoft-store/<code>/`, was `dist/<code>/`,
+  so `dist/` holds only what ships
+- GitHub's social preview is `promo/out/github/social-preview.png`, was `docs/social-preview.png`,
+  and shows the README's badges
+- the privacy policy, whose address is the listing's privacy policy URL, is
+  `promo/listing/PRIVACY.md`
+
 ## [2.1.0] - 2026-10-31
 
 ### Added

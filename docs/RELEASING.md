@@ -33,16 +33,15 @@ for GitHub Releases and an MSIX package for the Microsoft Store — built by
    python packaging/build_windows_release.py --clean
    ```
 
-6. Confirm `dist/` holds only the installer, and after the render below the Store images
-   (see [release artifacts](#release-artifacts)), and that the tracked derived
-   files are current. The build has already rewritten the bundled world's
-   `icon.png`; rerun the other generators listed in
+6. Confirm `dist/` holds only the installer (see [release artifacts](#release-artifacts)),
+   and that the tracked derived files are current. The build has already rewritten
+   the bundled world's `icon.png`; rerun the other generators listed in
    [.gitattributes](../.gitattributes), then expect `git status` to show no
    changes:
 
    ```bash
    python src/citygen/data/color_render_update.py --version 26.1.2
-   python store-listing/generator/render.py
+   python promo/generator/render.py
    git status --short
    ```
 
@@ -105,37 +104,42 @@ with the GitHub release.
 
 ### Fill in the Partner Center submission
 
-[`store-listing/SUBMISSION.md`](../store-listing/SUBMISSION.md) goes through the
+[`promo/listing/SUBMISSION.md`](../promo/listing/SUBMISSION.md) goes through the
 submission in Partner Center's order, with what's entered once: the properties,
 the wording for the `runFullTrust` restricted capability and the notes for
 certification. Each language's Store listing is its text, such as
-`store-listing/localization/en.md`, and its images, in `dist/en/`.
+`promo/listing/localization/en.md`, and its images, in `promo/out/store/microsoft-store/en/`.
 
 ### Re-render the listing images
 
 ```bash
-python store-listing/generator/render.py   # about 3 minutes, and 40 seconds more to rebuild the cities
+python promo/generator/render.py   # about 3 minutes, and 40 seconds more to rebuild the cities
 ```
 
 Three cities make the five screenshots: `promo` (1, 4, 5), `size` (2) and `styles` (3).
-`store-listing/generator/scenes.json` keeps each as its seed and whatever differs from a fresh
+`promo/generator/scenes.json` keeps each as its seed and whatever differs from a fresh
 install, and `replay_scenes.py` builds them again, pixel for pixel, without the app and
 without exporting a world. To change one, build the city you want in the app, then run
-`python store-listing/generator/record_scene.py <name>` before reopening the app or
+`python promo/generator/record_scene.py <name>` before reopening the app or
 previewing again. Then run `replay_scenes.py`, as after any change to the pipeline.
 
 `render.py` keeps the cities' pictures in `build/scenes/`, and rebuilds them only if
 they're missing. That needs the app closed, as it clears `appdata/`, and it refuses otherwise.
 It shoots the app's real page in each language over those pictures, with
 Microsoft Edge in headless mode (`capture_windows.py`), then draws each language's images
-in `dist/<code>/` from `store-listing/generator/logo.html` (box art, poster art, tile icon) and
-`store-listing/generator/shots.html` (the screenshots). `--clean` deletes them with the rest of
-`dist/`, so render after the build. Git keeps none of these, only
+in `promo/out/store/microsoft-store/<code>/` from `promo/generator/logo.html` (box art, poster art, tile icon) and
+`promo/generator/shots.html` (the screenshots). Git keeps none of these, only
 `scenes.json` and the README's three English screenshots, which this command copies into
 `docs/screenshots/`. Every changed screenshot stays in git history, about 3 MB each, so commit them
 for a release, not for every render. Change the captions in
-`store-listing/generator/captions.js`, and the matching claims in
-`store-listing/localization/` with them.
+`promo/generator/captions.js`, and the matching claims in
+`promo/listing/localization/` with them.
+
+The same command draws the images uploaded by hand elsewhere, which git keeps:
+`promo/out/github/social-preview.png` (from `social.html`; upload it again in the repo's
+Settings → Social preview when it changes) and `promo/out/portfolio/portfolio.png` (from
+`portfolio.html`, a square tile for a job profile's portfolio). `--no-store` draws just those
+and `docs/app-icon.png`, in a few seconds, without the app's window.
 
 ### Update the README pictures
 
@@ -183,7 +187,7 @@ in that list is missing from the release even though it works from a checkout.
 renders it to `build/packaging/app-icon.png` with headless Microsoft Edge, then
 makes the Store package logos, `app-icon.ico` and the bundled world's 64 px
 `icon.png` from that PNG; the `.ico` is both the installer's icon and the bundled
-window icon. `store-listing/generator/render.py` draws the Store logos and
+window icon. `promo/generator/render.py` draws the Store logos and
 `docs/app-icon.png` from the SVG itself. The world icon is the one rendered icon that is tracked, because the
 app reads it from the source tree. It uses Edge because most
 SVG renderers ignore the clip path that rounds the tile and the blur filters.
@@ -226,7 +230,7 @@ not required.
 | [build_windows_release.py](../packaging/build_windows_release.py) | Builds the app folder, the installer, an optional one-file exe, and the optional Store MSIX (`--clean`, `--include-standalone`, `--msix`) |
 | [windows_installer.iss](../packaging/windows_installer.iss) | Inno Setup script; receives version and output directory from the build script |
 | [AppxManifest.xml](../packaging/AppxManifest.xml) | MSIX manifest template; the build script fills in the Store identity and version |
-| [store-listing/SUBMISSION.md](../store-listing/SUBMISSION.md) | What to enter in Partner Center, in its order: the properties and submission options, and how to fill in each listing |
-| [store-listing/localization/](../store-listing/localization/) | The Store listing's text, one file per language |
-| [store-listing/PRIVACY.md](../store-listing/PRIVACY.md) | The privacy policy; its GitHub address is the listing's privacy policy URL |
-| [store-listing/generator/render.py](../store-listing/generator/render.py) | Renders the listing's images into `dist/` |
+| [promo/listing/SUBMISSION.md](../promo/listing/SUBMISSION.md) | What to enter in Partner Center, in its order: the properties and submission options, and how to fill in each listing |
+| [promo/listing/localization/](../promo/listing/localization/) | The Store listing's text, one file per language |
+| [promo/listing/PRIVACY.md](../promo/listing/PRIVACY.md) | The privacy policy; its GitHub address is the listing's privacy policy URL |
+| [promo/generator/render.py](../promo/generator/render.py) | Renders the listing's images into `promo/out/store/`, the social preview and the portfolio tile |

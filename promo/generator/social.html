@@ -1,6 +1,6 @@
 <!doctype html>
 <!-- GitHub's social preview, the card shown when the repo's link is shared: render.py loads this page at 1280 x 640
-     into docs/social-preview.png, which is uploaded in the repo's Settings. GitHub crops a little off the edges in
+     into promo/out/github/social-preview.png, which is uploaded in the repo's Settings. GitHub crops a little off the edges in
      places, so everything stays 56px clear of them. -->
 <html lang="en">
 <head>
@@ -28,6 +28,9 @@
     background: rgba(0, 0, 0, 0.5); border: 1px solid rgba(255, 255, 255, 0.22);
   }
 
+  /* The README's badges, in its order, under the facts. */
+  .badges { display: flex; gap: 8px; margin-top: 18px; align-items: center; }
+  .badges img { display: block; height: 40px; }
   /* The modern city from the README. Its render is transparent around the city, so the shadow follows its outline. */
   .city { position: absolute; display: block; filter: drop-shadow(0 18px 24px rgba(0, 0, 0, 0.6)); }
   /* Placed by hand with #edit. */
@@ -54,6 +57,7 @@
     <p>Modular City Generator</p>
     <!-- The same facts as on the screenshots (shots.html). -->
     <div class="facts"><span>Java Edition 26.1.2+</span><span>Works offline</span><span>Modern &amp; medieval sets</span></div>
+    <div class="badges"><img src="../../docs/badges/badge-download.svg" alt=""><img src="../../docs/badges/badge-microsoft-store.svg" alt=""><img src="../../docs/badges/badge-mc.svg" alt=""></div>
   </div>
   <img class="city modern" src="../../docs/pics/modern_iso.png" alt="">
 <script>

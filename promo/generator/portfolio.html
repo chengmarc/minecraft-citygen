@@ -1,0 +1,43 @@
+<!doctype html>
+<!-- A portfolio tile for a job profile (Boss 直聘, 猎聘, 脉脉): render.py loads this page at 1080 x 1080 into
+     promo/out/portfolio/portfolio.png. It's mostly seen as a thumbnail about 1.5 cm wide, four to a row, so the city fills the square
+     and only the name, at the top, has to read at that size; the tag under it is for when the tile is opened.
+     The same layout on every repo's tile, so they read as a set. The backdrop and the city are the README's
+     (docs/pics/base.png, docs/pics/modern_iso.png), as on the social preview (social.html). -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="brand.css">
+<style>
+  html, body { width: 1080px; height: 1080px; }
+  body::before { display: none; }
+  .backdrop { position: absolute; inset: -12px; background: url(../../docs/pics/base.png) 30% center / cover no-repeat; filter: blur(5px); }
+  .shade { position: absolute; inset: 0; background: linear-gradient(180deg, rgba(0, 0, 0, 0.62) 0%, rgba(0, 0, 0, 0.35) 30%, rgba(0, 0, 0, 0.1) 60%, rgba(0, 0, 0, 0.3) 100%); }
+
+  /* The label: icon and name in the top-left corner, over a shade so they read on anything. */
+  .label { position: absolute; left: 0; right: 0; top: 0; z-index: 5; display: flex; align-items: center; gap: 30px; padding: 52px 56px 0; text-shadow: 0 2px 14px rgba(0, 0, 0, 0.7); }
+  .label img { width: 156px; height: 156px; flex: none; filter: drop-shadow(0 8px 16px rgba(0, 0, 0, 0.5)); }
+  .label b { display: block; width: max-content; white-space: nowrap; font-size: 124px; line-height: 0.95; font-weight: 700; letter-spacing: -0.03em; }
+  .label b .brand { text-shadow: none; filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.85)); }
+  .label small { display: block; margin-top: 14px; font: 600 40px "Segoe UI Variable Text", "Segoe UI", sans-serif; color: rgba(255, 255, 255, 0.88); }
+
+  /* The modern city, as large as the square allows, its corners off the sides. */
+  .city { position: absolute; left: -150px; top: 250px; width: 1380px; filter: drop-shadow(0 24px 30px rgba(0, 0, 0, 0.6)); }
+</style>
+</head>
+<body>
+  <div class="backdrop"></div>
+  <div class="shade"></div>
+  <img class="city" src="../../docs/pics/modern_iso.png" alt="">
+  <div class="label">
+    <img src="../../src/app-icon.svg" alt="">
+    <span><b>MC <span class="brand">CityGen</span></b><small>Modular city generator</small></span>
+  </div>
+<script>
+  // The name shrinks, if it must, to fit beside the icon.
+  const name = document.querySelector(".label b"), room = 1080 - 2 * 56 - 156 - 30;
+  const width = name.getBoundingClientRect().width;
+  if (width > room) name.style.fontSize = 124 * room / width + "px";
+</script>
+</body>
+</html>

@@ -2,14 +2,14 @@
 
 How to fill in a Partner Center submission for MC CityGen, in its order: Properties, Store listings, Submission
 options. What's entered once for the product or the submission is here, to paste. What's entered per language is that
-language's Store listing: its text in `localization/<code>.md`, and its images in `dist/<code>/`. Pricing
+language's Store listing: its text in `localization/<code>.md`, and its images in `promo/out/store/microsoft-store/<code>/`. Pricing
 and availability, Age ratings and Packages are filled in Partner Center directly. The images are made by
-`python store-listing/generator/render.py`, and only the README's three English screenshots, in `docs/screenshots/`, are kept in git.
+`python promo/generator/render.py`, and only the README's three English screenshots, in `docs/screenshots/`, are kept in git.
 
 The app and its listing call the game "MC": Mojang's usage guidelines don't allow its name in a product's name,
 and the Store has turned down submissions that used it. The name only appears where the guidelines ask for it: the
 disclaimer at the end of the description and the trademark credit. The app's name is the one reserved in Partner
-Center (`MSIX_DISPLAY_NAME` in [build_windows_release.py](../packaging/build_windows_release.py)).
+Center (`MSIX_DISPLAY_NAME` in [build_windows_release.py](../../packaging/build_windows_release.py)).
 
 ## Properties
 
@@ -56,8 +56,8 @@ The fields in `localization/<code>.md`, within Partner Center's limits, which
 
 ### Screenshots
 
-From `dist/<code>/`, in this order (the first is shown first). Each shows the app's window in that
-language, on the cities in `generator/scenes.json`:
+From `promo/out/store/microsoft-store/<code>/`, in this order (the first is shown first). Each shows the app's window in that
+language, on the cities in `promo/generator/scenes.json`:
 
 1. `screenshot-1-promo.png`: the Build tab, a whole modern city from the buildings you make
 2. `screenshot-2-size.png`: the Build tab, a medieval village, from village to metropolis
@@ -67,7 +67,7 @@ language, on the cities in `generator/scenes.json`:
 
 ### Store logos
 
-From `dist/<code>/`. The tile has no words, so it's the same in every language.
+From `promo/out/store/microsoft-store/<code>/`. The tile has no words, so it's the same in every language.
 
 | Slot | File |
 |---|---|
