@@ -7,9 +7,7 @@
   <img src="docs/badges/badge-mc.svg" height="50">
 
   <h1>Minecraft CityGen - Modular City Generator</h1>
-  
-  <img src="docs/social-preview.png">
-  
+ 
 </div>
 
 ## Screenshots
