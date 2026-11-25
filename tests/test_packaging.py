@@ -213,7 +213,7 @@ def test_the_readme_shows_the_english_screenshots_git_tracks(tmp_path, monkeypat
     render.copy_readme_screenshots(english, tmp_path / "screenshots")
 
     copied = sorted(path.name for path in (tmp_path / "screenshots").iterdir())
-    assert copied == ["screenshot-1-promo.png", "screenshot-2-size.png", "screenshot-3-styles.png"]
+    assert copied == ["screenshot-1-promo.png"]
     readme = (PROMO.parent / "README.md").read_text(encoding="utf-8")
     assert [name for name in copied if f"docs/screenshots/{name}" in readme] == copied
 

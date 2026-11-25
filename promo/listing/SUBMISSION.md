@@ -4,7 +4,7 @@ How to fill in a Partner Center submission for MC CityGen, in its order: Propert
 options. What's entered once for the product or the submission is here, to paste. What's entered per language is that
 language's Store listing: its text in `localization/<code>.md`, and its images in `promo/out/store/microsoft-store/<code>/`. Pricing
 and availability, Age ratings and Packages are filled in Partner Center directly. The images are made by
-`python promo/generator/render.py`, and only the README's three English screenshots, in `docs/screenshots/`, are kept in git.
+`python promo/generator/render.py`, and only the README's English screenshot, in `docs/screenshots/`, is kept in git.
 
 The app and its listing call the game "MC": Mojang's usage guidelines don't allow its name in a product's name,
 and the Store has turned down submissions that used it. The name only appears where the guidelines ask for it: the

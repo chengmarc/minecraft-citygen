@@ -129,7 +129,7 @@ It shoots the app's real page in each language over those pictures, with
 Microsoft Edge in headless mode (`capture_windows.py`), then draws each language's images
 in `promo/out/store/microsoft-store/<code>/` from `promo/generator/logo.html` (box art, poster art, tile icon) and
 `promo/generator/shots.html` (the screenshots). Git keeps none of these, only
-`scenes.json` and the README's three English screenshots, which this command copies into
+`scenes.json` and the README's English screenshot, the promo shot, which this command copies into
 `docs/screenshots/`. Every changed screenshot stays in git history, about 3 MB each, so commit them
 for a release, not for every render. Change the captions in
 `promo/generator/captions.js`, and the matching claims in

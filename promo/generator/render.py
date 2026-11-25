@@ -4,7 +4,7 @@
                                              screenshots (../listing/SUBMISSION.md says where each goes)
     promo/out/social-preview.png             GitHub's social preview, uploaded in the repo's Settings -> Social preview
     promo/out/portfolio.png                  a square tile for the portfolio section of a job profile
-    docs/app-icon.png, docs/screenshots/     what the README shows: the icon, and the first three English screenshots
+    docs/app-icon.png, docs/screenshots/     what the README shows: the icon, and the first English screenshot
 
 They are drawn by the pages beside this script (logo.html, shots.html, social.html, portfolio.html) from the app's
 own files: its icon, the pictures in docs/pics/, and its window in each language, which capture_windows.py shoots
@@ -37,9 +37,9 @@ EDGE_PROFILE = ROOT / "build" / "edge-render"  # a profile of its own, so a runn
 LANGUAGES = ("en", "de", "es", "fr", "ja", "pt", "ru", "zh")
 SHOTS = ("promo", "size", "styles", "extract", "preview")
 
-# What the README shows: the first screenshots in English, copied where git tracks them.
+# What the README shows: the first screenshot in English, copied where git tracks it.
 README_SCREENSHOTS = ROOT / "docs" / "screenshots"
-README_SHOTS = 3
+README_SHOTS = 1
 
 # Each image: file (from the repo root), page (with its hash), its size in CSS pixels, and its scale.
 # Partner Center's sizes: screenshots 1366 x 768 or larger, box art 2160 x 2160, poster art 1440 x 2160, tile 300 x 300.

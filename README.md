@@ -10,11 +10,9 @@
  
 </div>
 
-## Screenshots
+## Screenshot
 
 <img src="docs/screenshots/screenshot-1-promo.png">
-<img src="docs/screenshots/screenshot-2-size.png">
-<img src="docs/screenshots/screenshot-3-styles.png">
  
 ## Generated Cities
 
