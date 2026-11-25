@@ -7,7 +7,5 @@ __pycache__/
 
 build/
 dist/
-
-# The images promo/generator/ renders, all uploaded by hand: made again whenever they're needed, never kept.
-/promo/out/
 appdata/
+/promo/out/

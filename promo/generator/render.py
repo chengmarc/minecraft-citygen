@@ -53,13 +53,15 @@ STORE_IMAGES = [
     *((f"{STORE}/{code}/poster-art-1440x2160.png", f"logo.html#{code}", 720, 1080, 2) for code in LANGUAGES),
     *((f"{STORE}/{code}/store-logo-300.png", f"logo.html#{code}.tile.300", 300, 300, 1) for code in LANGUAGES),
 ]
-# GitHub's social preview: 1280 x 640, under 1 MB. The portfolio tile: square, mostly seen as a small thumbnail.
+# GitHub's social preview: 1280 x 640, under 1 MB (MAX_BYTES). The portfolio tile: square, mostly seen as a small thumbnail.
 OTHER_IMAGES = [
     ("promo/out/social-preview.png", "social.html", 1280, 640, 1),
     ("promo/out/portfolio.png", "portfolio.html", 1080, 1080, 1),
     ("docs/app-icon.png", "logo.html#en.tile.180", 180, 180, 1),
 ]
 IMAGES = STORE_IMAGES + OTHER_IMAGES
+# Most bytes a file may have, where a site limits it.
+MAX_BYTES = {"promo/out/social-preview.png": 1_000_000}
 
 
 def find_edge() -> str:
@@ -99,7 +101,18 @@ def render(edge: str, name: str, page: str, width: int, height: int, scale: int)
     expected = (width * scale, height * scale)
     if size != expected:
         raise SystemExit(f"{name} is {size[0]} x {size[1]}, expected {expected[0]} x {expected[1]}.")
-    print(f"{name}  {size[0]} x {size[1]}")
+    limit = MAX_BYTES.get(name)
+    if limit:
+        # Edge's PNG isn't compressed as far as it goes: the same pixels, saved again at PNG's best, are smaller.
+        from PIL import Image
+
+        with Image.open(file) as image:
+            image.load()
+        image.save(file, optimize=True)
+        if file.stat().st_size > limit:
+            raise SystemExit(f"{name} is {file.stat().st_size:,} bytes, over {limit:,}: make the page simpler, "
+                             "such as its backdrop more blurred.")
+    print(f"{name}  {size[0]} x {size[1]}" + (f"  {file.stat().st_size:,} bytes" if limit else ""))
 
 
 def main() -> None:
